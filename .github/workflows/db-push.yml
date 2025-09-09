@@ -15,13 +15,14 @@ jobs:
         with:
           node-version: '20'
 
-      # Install pnpm on the runner
       - uses: pnpm/action-setup@v4
         with:
           version: 9
-          run_install: true   # runs `pnpm install`
 
-      # Push schema to Supabase using the secret DB URL
+      # Ensure project deps are installed BEFORE drizzle runs
+      - name: Install deps
+        run: pnpm install
+
       - name: Drizzle push to Supabase
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
