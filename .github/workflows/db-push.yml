@@ -31,7 +31,8 @@ jobs:
           pnpm ls drizzle-orm || true
           pnpm ls drizzle-kit || true
 
+      # ✅ Use the local CLI, NOT dlx
       - name: Drizzle push to Supabase
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
-        run: pnpm dlx drizzle-kit@0.31.4 push
+        run: pnpm exec drizzle-kit push
