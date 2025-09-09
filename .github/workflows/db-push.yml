@@ -10,15 +10,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'pnpm'
-      - name: Enable corepack & install
-        run: |
-          corepack enable
-          pnpm install
+
+      # Install pnpm on the runner
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+          run_install: true   # runs `pnpm install`
+
+      # Push schema to Supabase using the secret DB URL
       - name: Drizzle push to Supabase
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
-        run: pnpm dlx drizzle-kit@latest push
+        run: pnpm dlx drizzle-kit@0.31.4 push
