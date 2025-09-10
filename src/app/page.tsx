@@ -1,5 +1,6 @@
 "use client"
 
+import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
@@ -24,6 +25,7 @@ export default function HomePage() {
   const [hasReadTerms, setHasReadTerms] = useState(false)
   const [agreedToTerms, setAgreedToTerms] = useState(false)
   const termsRef = useRef<HTMLDivElement>(null)
+  const router = useRouter()
 
   const handleTermsScroll = () => {
     if (termsRef.current) {
@@ -61,9 +63,13 @@ export default function HomePage() {
               <span className="text-gray-400 text-sm cursor-not-allowed">About</span>
             </nav>
             <div className="flex items-center gap-3">
-              <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white">
-                Login / Sign Up
-              </Button>
+            <Button 
+              size="sm" 
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+              onClick={() => router.push('/login')} // Add this onClick handler
+            >
+              Login / Sign Up
+            </Button>
             </div>
           </div>
         </div>
