@@ -134,44 +134,44 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">How DNounce Works</h2>
-            <p className="text-gray-600">
+            <p className="text-gray-600 max-w-3xl mx-auto">
               A transparent, fair process that protects both plaintiffs and defendants while ensuring accountability
             </p>
           </div>
 
-          <div className="border border-blue-300 rounded-lg p-6 mb-8 bg-blue-50">
-            <div className="space-y-4 text-sm">
+          <div className="border border-blue-300 rounded-lg p-8 mb-8 bg-blue-50 mx-auto max-w-4xl">
+            <div className="space-y-6 text-sm">
               <div className="flex items-start gap-3">
-                <span className="font-semibold text-blue-700">1. Case Submission:</span>
+                <span className="font-semibold text-blue-700 min-w-[180px]">1. Case Submission:</span>
                 <span className="text-blue-600">User submits evidence of misconduct through our secure platform</span>
               </div>
 
               <div className="flex items-start gap-3">
-                <span className="font-semibold text-blue-700">2. AI Verification (Up to 72 hours):</span>
+                <span className="font-semibold text-blue-700 min-w-[180px]">2. AI Verification (Up to 72 hours):</span>
                 <span className="text-blue-600">AI analyzes evidence authenticity and classifies case</span>
               </div>
 
               <div className="flex items-start gap-3">
-                <span className="font-semibold text-blue-700">3. Notification:</span>
+                <span className="font-semibold text-blue-700 min-w-[180px]">3. Notification:</span>
                 <div className="text-blue-600">
                   <div>Both parties notified immediately after AI verification is completed</div>
-                  <div className="ml-4">• Plaintiff: Learns whether AI classified case as evidence-based or opinion-based</div>
-                  <div className="ml-4">• Defendant: Receives case details, classification, and right to challenge</div>
+                  <div className="ml-4 mt-1">• Plaintiff: Learns whether AI classified case as evidence-based or opinion-based</div>
+                  <div className="ml-4 mt-1">• Defendant: Receives case details, classification, and right to challenge</div>
                 </div>
               </div>
 
               <div className="flex items-start gap-3">
-                <span className="font-semibold text-blue-700">4. Publication:</span>
+                <span className="font-semibold text-blue-700 min-w-[180px]">4. Publication:</span>
                 <span className="text-blue-600">Case published after verification. Remains public unless defendant requests deletion and joins debate</span>
               </div>
 
               <div className="flex items-start gap-3">
-                <span className="font-semibold text-blue-700">5. Defendant Response & Debate:</span>
+                <span className="font-semibold text-blue-700 min-w-[180px]">5. Defendant Response & Debate:</span>
                 <span className="text-blue-600">If deletion requested, both parties engage in 72-hour debate with evidence submission</span>
               </div>
 
               <div className="flex items-start gap-3">
-                <span className="font-semibold text-blue-700">6. Community Voting:</span>
+                <span className="font-semibold text-blue-700 min-w-[180px]">6. Community Voting:</span>
                 <span className="text-blue-600">Community decides whether to grant deletion request based on evidence presented</span>
               </div>
             </div>
@@ -562,317 +562,335 @@ export default function HomePage() {
         </div>
       </section>
 
-      <Card className="p-8 mt-16" id="submit-case-section">
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">Submit a Case</h2>
-          <p className="text-lg text-gray-600 mb-6">Report misconduct with evidence-based accountability</p>
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-            <div className="flex items-center justify-center gap-2 text-yellow-800">
-              <AlertTriangle className="h-5 w-5" />
-              <span className="font-medium">Demonstration Only</span>
+      <section className="max-w-4xl mx-auto px-4">
+        <Card className="p-8 mt-16" id="submit-case-section">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">Submit a Case</h2>
+            <p className="text-lg text-gray-600 mb-6">Report misconduct with evidence-based accountability</p>
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6 mx-auto max-w-md">
+              <div className="flex items-center justify-center gap-2 text-yellow-800">
+                <AlertTriangle className="h-5 w-5" />
+                <span className="font-medium">Demonstration Only</span>
+              </div>
+              <p className="text-sm text-yellow-700 mt-1 text-center">
+                This form shows what the case submission process looks like. You must be logged in to submit an actual
+                case.
+              </p>
             </div>
-            <p className="text-sm text-yellow-700 mt-1">
-              This form shows what the case submission process looks like. You must be logged in to submit an actual
-              case.
-            </p>
           </div>
-        </div>
 
-        <form className="space-y-8">
-          {/* Defendant Information */}
-          <div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-6">Defendant Information</h3>
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  First Name <span className="text-red-500">*</span>
-                </label>
-                <Input placeholder="" className="w-full" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Middle Initial</label>
-                <Input placeholder="" className="w-full max-w-20" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
-                <Input placeholder="" className="w-full" />
-              </div>
+          <form className="space-y-8">
+            {/* Defendant Information */}
+            <div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-6 text-center">Defendant Information</h3>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    First Name <span className="text-red-500">*</span>
+                  </label>
+                  <Input placeholder="" className="w-full" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Middle Initial</label>
+                  <Input placeholder="" className="w-full max-w-20" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
+                  <Input placeholder="" className="w-full" />
+                </div>
 
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Contact Info <span className="text-red-500">*</span>
-                </label>
-                <div className="grid md:grid-cols-2 gap-4 items-center">
-                  <div>
-                    <label className="block text-xs text-gray-600 mb-1">Email</label>
-                    <Input type="email" placeholder="" className="w-full" />
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <span className="text-sm text-gray-500 font-medium">or</span>
-                    <div className="flex-1">
-                      <label className="block text-xs text-gray-600 mb-1">Contact Mobile Phone</label>
-                      <Input type="tel" placeholder="" className="w-full" />
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Contact Info <span className="text-red-500">*</span>
+                  </label>
+                  <div className="grid md:grid-cols-2 gap-4 items-center">
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Email</label>
+                      <Input type="email" placeholder="" className="w-full" />
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <span className="text-sm text-gray-500 font-medium">or</span>
+                      <div className="flex-1">
+                        <label className="block text-xs text-gray-600 mb-1">Contact Mobile Phone</label>
+                        <Input type="tel" placeholder="" className="w-full" />
+                      </div>
                     </div>
                   </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    At least one contact method is required for defendant notification
+                  </p>
                 </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  At least one contact method is required for defendant notification
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Organization/Company</label>
+                  <Input placeholder="" className="w-full" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Relationship Type <span className="text-red-500">*</span>
+                  </label>
+                  <Select
+                    onValueChange={(value) => {
+                      const otherField = document.getElementById("other-relationship")
+                      if (otherField) {
+                        otherField.style.display = value === "other" ? "block" : "none"
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select relationship type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="business">Business</SelectItem>
+                      <SelectItem value="personal">Personal</SelectItem>
+                      <SelectItem value="professional">Professional</SelectItem>
+                      <SelectItem value="academic">Academic</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <div id="other-relationship" style={{ display: "none" }} className="mt-3">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Please specify relationship <span className="text-red-500">*</span>
+                    </label>
+                    <Input placeholder="Describe your relationship to the defendant" className="w-full" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Location Field */}
+              <div className="mt-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Location (City) <span className="text-red-500">*</span>
+                </label>
+                <Input placeholder="Enter City" className="w-full" />
+              </div>
+            </div>
+
+            {/* Case Details */}
+            <div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-6 text-center">Case Details</h3>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Case Details <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  className="w-full min-h-[120px] p-3 border border-gray-300 rounded-md resize-none"
+                  placeholder="Provide a clear summary of the misconduct..."
+                />
+              </div>
+            </div>
+
+            {/* Evidence Upload */}
+            <div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-6 text-center">Evidence Upload</h3>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h4 className="text-lg font-medium text-gray-700 mb-2">Upload Evidence Files</h4>
+                <p className="text-gray-500 mb-2">Drag and drop files or click to browse</p>
+                <p className="text-sm text-gray-400">Supported: Images, PDFs, Audio, Video, Documents</p>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
+                <h4 className="font-medium text-gray-900 mb-2">Evidence Quality Notice:</h4>
+                <p className="text-sm text-gray-700">
+                  High-quality evidence (verified documents, communications, recordings) will be classified as
+                  "Evidence-Based" and may qualify for anonymous submission. Personal accounts without supporting
+                  documentation will be classified as "Opinion-Based" and require identification.
+                </p>
+            </div>
+            </div>
+
+            {/* Legal Acknowledgment Required */}
+            <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+              <div className="text-center mb-6">
+                <AlertTriangle className="h-8 w-8 text-red-600 mx-auto mb-2" />
+                <h3 className="text-xl font-semibold text-red-800">Legal Acknowledgment Required</h3>
+                <p className="text-red-700 mt-2">
+                  Please read and acknowledge these important legal notices before using DNounce
                 </p>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Organization/Company</label>
-                <Input placeholder="" className="w-full" />
+              {/* Scrollable Terms Container */}
+              <div
+                ref={termsRef}
+                onScroll={handleTermsScroll}
+                className="bg-white border border-red-200 rounded-lg p-6 max-h-96 overflow-y-auto mb-6"
+              >
+                <div className="space-y-6">
+                  {/* Legal Certification */}
+                  <div>
+                    <h4 className="font-semibold text-red-800 mb-3">Legal Certification</h4>
+                    <p className="text-sm text-red-700 mb-2">I certify under penalty of perjury that:</p>
+                    <ul className="space-y-1 text-sm text-red-700 ml-4">
+                      <li>• All information provided is true and accurate to the best of my knowledge</li>
+                      <li>• I have not exaggerated, omitted key facts, or made deliberate misrepresentations</li>
+                      <li>• I understand that false accusations may result in legal action against me</li>
+                      <li>• I have reviewed and agree to DNounce's Terms of Service and Content Policy</li>
+                    </ul>
+                  </div>
+
+                  {/* Legal Warning */}
+                  <div>
+                    <h4 className="font-semibold text-red-800 mb-3">Legal Warning</h4>
+                    <p className="text-sm text-red-700">
+                      DNounce is designed for legitimate accountability purposes only. Misuse of this platform for
+                      harassment, defamation, or false accusations may result in:
+                    </p>
+                    <ul className="space-y-1 text-sm text-red-700 ml-4 mt-2">
+                      <li>• Civil liability for defamation, libel, or other torts</li>
+                      <li>• Criminal penalties in some jurisdictions</li>
+                      <li>• Permanent ban from DNounce</li>
+                      <li>• Public disclosure of your identity to the defendant</li>
+                    </ul>
+                  </div>
+
+                  {/* Defendant Rights */}
+                  <div>
+                    <h4 className="font-semibold text-red-800 mb-3">Defendant Rights</h4>
+                    <p className="text-sm text-red-700">
+                      By submitting this case, you acknowledge that the defendant has certain rights:
+                    </p>
+                    <ul className="space-y-1 text-sm text-red-700 ml-4 mt-2">
+                      <li>• To be notified when this case is published</li>
+                      <li>• To respond and present counter-evidence</li>
+                      <li>• To request deletion and participate in community debate</li>
+                      <li>• To take legal action if they believe your accusations are false</li>
+                    </ul>
+                  </div>
+
+                  {/* Evidence Requirements */}
+                  <div>
+                    <h4 className="font-semibold text-red-800 mb-3">Evidence Requirements</h4>
+                    <p className="text-sm text-red-700">
+                      Your case must meet minimum evidence standards to be published:
+                    </p>
+                    <ul className="space-y-1 text-sm text-red-700 ml-4 mt-2">
+                      <li>• Verifiable documentation (emails, messages, recordings, etc.)</li>
+                      <li>• Specific dates, times, and factual details</li>
+                      <li>• No hearsay, rumors, or unsubstantiated claims</li>
+                      <li>• No personal attacks or inflammatory language</li>
+                    </ul>
+                  </div>
+
+                  {/* Privacy Notice */}
+                  <div>
+                    <h4 className="font-semibold text-red-800 mb-3">Privacy Notice</h4>
+                    <p className="text-sm text-red-700">
+                      Your personal information may be disclosed under certain circumstances:
+                    </p>
+                    <ul className="space-y-1 text-sm text-red-700 ml-4 mt-2">
+                      <li>• If required by law or legal process</li>
+                      <li>• If the defendant files a legitimate legal claim</li>
+                      <li>• If DNounce determines disclosure is necessary to prevent harm</li>
+                      <li>• If you submit opinion-based cases without sufficient evidence</li>
+                    </ul>
+                  </div>
+
+                  {/* Community Guidelines */}
+                  <div>
+                    <h4 className="font-semibold text-red-800 mb-3">Community Guidelines</h4>
+                    <p className="text-sm text-red-700">You agree to abide by our community standards:</p>
+                    <ul className="space-y-1 text-sm text-red-700 ml-4 mt-2">
+                      <li>• Focus on behavior and conduct, not personal characteristics</li>
+                      <li>• Provide constructive, factual information</li>
+                      <li>• Respect the defendant's right to respond</li>
+                      <li>• No doxxing, harassment, or vigilante actions</li>
+                    </ul>
+                  </div>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Relationship Type <span className="text-red-500">*</span>
+
+              {/* Scroll Notice */}
+              {!hasReadTerms && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-6 text-center">
+                  <p className="text-sm text-yellow-700">
+                    Please scroll through all terms to enable submission. This ensures you've read the important legal
+                    information.
+                  </p>
+                </div>
+              )}
+
+              {/* Agreement Checkbox */}
+              <div className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  id="agree-terms"
+                  checked={agreedToTerms}
+                  onChange={(e) => setAgreedToTerms(e.target.checked)}
+                  disabled={!hasReadTerms}
+                  className="mt-1"
+                />
+                <label htmlFor="agree-terms" className="text-sm text-red-700">
+                  I have read and understand these terms. I certify that my submission complies with all requirements
+                  and that false accusations may result in legal consequences. I understand that DNounce is not
+                  responsible for the content I submit.
                 </label>
-                <Select
-                  onValueChange={(value) => {
-                    const otherField = document.getElementById("other-relationship")
-                    if (otherField) {
-                      otherField.style.display = value === "other" ? "block" : "none"
-                    }
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select relationship type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="business">Business</SelectItem>
-                    <SelectItem value="personal">Personal</SelectItem>
-                    <SelectItem value="professional">Professional</SelectItem>
-                    <SelectItem value="academic">Academic</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-                <div id="other-relationship" style={{ display: "none" }} className="mt-3">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Please specify relationship <span className="text-red-500">*</span>
-                  </label>
-                  <Input placeholder="Describe your relationship to the defendant" className="w-full" />
-                </div>
               </div>
             </div>
 
-            <div className="mt-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Location (City) <span className="text-red-500">*</span>
-              </label>
-              <div className="space-y-3">
-                <Input placeholder="Enter primary location (e.e., Flushing, Queens, New York)" className="w-full" />
-                <div className="flex items-start gap-2">
-                  <Input placeholder="Add additional location identifier (optional)" className="w-full" />
-                  <Button type="button" variant="outline" size="sm" className="whitespace-nowrap bg-transparent">
-                    + Add More
-                  </Button>
-                </div>
-              </div>
-              <p className="text-xs text-gray-500 mt-2">
-                Add multiple location identifiers to help people find this case. For example: "Flushing" + "Queens" +
-                "New York" or "Downtown" + "Manhattan" + "NYC"
-              </p>
+            {/* Submit Button */}
+            <div className="text-center">
+              <Button
+                type="button"
+                className="bg-red-600 hover:bg-red-700 text-white px-8 py-3"
+                disabled={!agreedToTerms}
+              >
+                <Upload className="mr-2 h-5 w-5" />
+                Submit Case for Review
+              </Button>
+              {!agreedToTerms && (
+                <p className="text-sm text-red-600 mt-2">
+                  You must read and agree to the terms before submitting
+                </p>
+              )}
             </div>
-          </div>
+          </form>
+        </Card>
+      </section>
 
-          {/* Case Details */}
-          <div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-6">Case Details</h3>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Case Summary <span className="text-red-500">*</span>
-              </label>
-              <textarea
-                className="w-full min-h-[120px] p-3 border border-gray-300 rounded-md resize-none"
-                placeholder="Provide a clear summary of the misconduct..."
-              />
-            </div>
-          </div>
-
-          {/* Evidence Upload */}
-          <div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-6">Evidence Upload</h3>
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-              <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h4 className="text-lg font-medium text-gray-700 mb-2">Upload Evidence Files</h4>
-              <p className="text-gray-500 mb-2">Drag and drop files or click to browse</p>
-              <p className="text-sm text-gray-400">Supported: Images, PDFs, Audio, Video, Documents</p>
-            </div>
-
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
-              <h4 className="font-medium text-gray-900 mb-2">Evidence Quality Notice:</h4>
-              <p className="text-sm text-gray-700">
-                High-quality evidence (verified documents, communications, recordings) will be classified as
-                "Evidence-Based" and may qualify for anonymous submission. Personal accounts without supporting
-                documentation will be classified as "Opinion-Based" and require identification.
-              </p>
-            </div>
-          </div>
-
-          {/* Legal Acknowledgment Required */}
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-            <div className="text-center mb-6">
-              <AlertTriangle className="h-8 w-8 text-red-600 mx-auto mb-2" />
-              <h3 className="text-xl font-semibold text-red-800">Legal Acknowledgment Required</h3>
-              <p className="text-red-700 mt-2">
-                Please read and acknowledge these important legal notices before using DNounce
-              </p>
-            </div>
-
-            {/* Scrollable Terms Container */}
-            <div
-              ref={termsRef}
-              onScroll={handleTermsScroll}
-              className="bg-white border border-red-200 rounded-lg p-6 max-h-96 overflow-y-auto mb-6"
-            >
-              <div className="space-y-6">
-                {/* Legal Certification */}
-                <div>
-                  <h4 className="font-semibold text-red-800 mb-3">Legal Certification</h4>
-                  <p className="text-sm text-red-700 mb-2">I certify under penalty of perjury that:</p>
-                  <ul className="space-y-1 text-sm text-red-700 ml-4">
-                    <li>• All information provided is true and accurate to the best of my knowledge</li>
-                    <li>• I have not exaggerated, omitted key facts, or made deliberate misrepresentations</li>
-                    <li>• I understand that false accusations may result in legal action against me</li>
-                    <li>• I have reviewed and agree to DNounce's Terms of Service and Content Policy</li>
-                  </ul>
-                </div>
-
-                {/* Legal Consequences Warning */}
-                <div>
-                  <h4 className="font-semibold text-red-800 mb-3">Legal Consequences Warning</h4>
-                  <p className="text-sm text-red-700 mb-2">
-                    I understand that false accusations may result in legal action for:
-                  </p>
-                  <ul className="space-y-1 text-sm text-red-700 ml-4">
-                    <li>
-                      • <strong>Defamation/Libel:</strong> Publishing false statements that damage reputation
-                    </li>
-                    <li>
-                      • <strong>False Light Invasion of Privacy:</strong> Publicly portraying someone in a misleading way
-                    </li>
-                    <li>
-                      • <strong>Intentional Infliction of Emotional Distress:</strong> Extreme and outrageous conduct
-                      causing severe emotional harm
-                    </li>
-                    <li>
-                      • <strong>Civil Harassment:</strong> Creating a credible threat to someone's safety or peace
-                    </li>
-                  </ul>
-                </div>
-
-                {/* Platform Rules */}
-                <div>
-                  <h4 className="font-semibold text-red-800 mb-3">Platform Rules</h4>
-                  <p className="text-sm text-red-700 mb-2">I understand and agree that:</p>
-                  <ul className="space-y-1 text-sm text-red-700 ml-4">
-                    <li>• DNounce is not responsible for the content I submit or its legal consequences</li>
-                    <li>• I must have verifiable evidence for all claims made</li>
-                    <li>• I will not submit rumors, hearsay, or unverified information</li>
-                    <li>• The defendant will be notified and given opportunity to respond</li>
-                    <li>• Cases may be removed if they violate platform policies or laws</li>
-                  </ul>
-                </div>
-
-                {/* Privacy Notice */}
-                <div>
-                  <h4 className="font-semibold text-red-800 mb-3">Privacy Notice</h4>
-                  <p className="text-sm text-red-700 mb-2">
-                    I understand that my information may be disclosed to:
-                  </p>
-                  <ul className="space-y-1 text-sm text-red-700 ml-4">
-                    <li>• The defendant and their legal representatives</li>
-                    <li>• Law enforcement or government agencies if required by law</li>
-                    <li>• Third parties in response to valid legal process (subpoenas, court orders)</li>
-                    <li>• The public if my case is published and I choose non-anonymous submission</li>
-                  </ul>
-                </div>
-
-                {/* Jurisdiction Notice */}
-                <div>
-                  <h4 className="font-semibold text-red-800 mb-3">Jurisdiction Notice</h4>
-                  <p className="text-sm text-red-700">
-                    I understand that legal disputes may be subject to the laws of the jurisdiction where the defendant
-                    resides or where the alleged misconduct occurred, and that DNounce may be required to comply with
-                    legal requests from various jurisdictions.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                id="agree-terms"
-                checked={agreedToTerms}
-                onChange={(e) => setAgreedToTerms(e.target.checked)}
-                disabled={!hasReadTerms}
-                className="h-4 w-4 text-red-600 border-red-300 rounded focus:ring-red-500"
-              />
-              <label htmlFor="agree-terms" className="text-sm font-medium text-red-700">
-                I have read and understand these legal notices and accept full responsibility for my submission
-              </label>
-            </div>
-            {!hasReadTerms && (
-              <p className="text-xs text-red-600 mt-2">
-                Please scroll through all legal notices to enable the agreement checkbox
-              </p>
-            )}
-          </div>
-
-          <div className="text-center">
-            <Button
-              type="button"
-              className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 text-lg"
-              disabled={!agreedToTerms}
-            >
-              <Upload className="mr-2 h-5 w-5" />
-              Submit Case for Review
-            </Button>
-          </div>
-        </form>
-      </Card>
-
-      <footer className="bg-gray-900 text-white py-12">
-        <div className="max-w-6xl mx-auto px-4">
+      <footer className="bg-gray-900 text-white py-12 mt-16">
+        <div className="max-w-7xl mx-auto px-4">
           <div className="grid md:grid-cols-4 gap-8">
             <div>
-              <h3 className="text-lg font-semibold mb-4">DNounce</h3>
-              <p className="text-gray-400 text-sm">
-                Evidence-based accountability through community-driven investigation and AI verification.
-              </p>
-            </div>
-            <div>
-              <h4 className="text-sm font-semibold uppercase tracking-wider mb-4">Platform</h4>
+              <h4 className="font-semibold mb-4">DNounce</h4>
               <ul className="space-y-2 text-sm text-gray-400">
+                <li>About Us</li>
                 <li>How It Works</li>
-                <li>Search Cases</li>
-                <li>Submit Case</li>
-                <li>Voting</li>
+                <li>Our Mission</li>
+                <li>Team</li>
               </ul>
             </div>
             <div>
-              <h4 className="text-sm font-semibold uppercase tracking-wider mb-4">Legal</h4>
+              <h4 className="font-semibold mb-4">Resources</h4>
+              <ul className="space-y-2 text-sm text-gray-400">
+                <li>Help Center</li>
+                <li>Community Guidelines</li>
+                <li>Safety Tips</li>
+                <li>Legal Resources</li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-semibold mb-4">Legal</h4>
               <ul className="space-y-2 text-sm text-gray-400">
                 <li>Terms of Service</li>
                 <li>Privacy Policy</li>
                 <li>Content Policy</li>
-                <li>Legal FAQ</li>
+                <li>Cookie Policy</li>
               </ul>
             </div>
             <div>
-              <h4 className="text-sm font-semibold uppercase tracking-wider mb-4">Support</h4>
+              <h4 className="font-semibold mb-4">Contact</h4>
               <ul className="space-y-2 text-sm text-gray-400">
-                <li>Help Center</li>
-                <li>Contact Support</li>
-                <li>Community Guidelines</li>
-                <li>Report Abuse</li>
+                <li>Support</li>
+                <li>Press</li>
+                <li>Partnerships</li>
+                <li>Feedback</li>
               </ul>
             </div>
           </div>
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center">
-            <p className="text-sm text-gray-400">© 2024 DNounce. All rights reserved.</p>
+          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-sm text-gray-400">
+            <p>© 2024 DNounce. All rights reserved.</p>
+            <p className="mt-2">Accountability through verified evidence and community oversight.</p>
           </div>
         </div>
       </footer>
