@@ -56,7 +56,7 @@ export default function HomePage() {
 
             <nav className="hidden md:flex items-center gap-8">
               <span className="text-gray-400 text-sm cursor-not-allowed">Search</span>
-              <span className="text-gray-400 text-sm cursor-not-allowed">How It Works</span>
+              <span className="text-gray-400 text-sm cursor-not-allowed">How DNounce Works</span>
               <span className="text-gray-400 text-sm cursor-not-allowed">Voting</span>
               <span className="text-gray-400 text-sm cursor-not-allowed">Guidelines</span>
               <span className="text-gray-400 text-sm cursor-not-allowed">Legal</span>
