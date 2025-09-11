@@ -54,28 +54,28 @@ export default function HomePage() {
               <span className="text-4xl font-bold text-gray-900">DNounce</span>
             </div>
 
-            <nav className="hidden md:flex items-center gap-8">
+            <nav className="hidden md:flex flex-1 justify-center gap-12">
               <button
                 onClick={() => document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" })}
-                className="text-gray-600 hover:text-blue-600 text-sm"
+                className="text-gray-700 font-medium hover:text-red-700 transition-colors text-sm"
               >
                 How DNounce Works
               </button>
               <button
                 onClick={() => document.getElementById("voting-section")?.scrollIntoView({ behavior: "smooth" })}
-                className="text-gray-600 hover:text-blue-600 text-sm"
+                className="text-gray-700 font-medium hover:text-red-700 transition-colors text-sm"
               >
                 Voting
               </button>
               <button
                 onClick={() => document.getElementById("guidelines-section")?.scrollIntoView({ behavior: "smooth" })}
-                className="text-gray-600 hover:text-blue-600 text-sm"
+                className="text-gray-700 font-medium hover:text-red-700 transition-colors text-sm"
               >
                 Guidelines
               </button>
               <button
                 onClick={() => document.getElementById("legal-section")?.scrollIntoView({ behavior: "smooth" })}
-                className="text-gray-600 hover:text-blue-600 text-sm"
+                className="text-gray-700 font-medium hover:text-red-700 transition-colors text-sm"
               >
                 Legal
               </button>
@@ -134,7 +134,7 @@ export default function HomePage() {
             </div>
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4 text-yellow-500" />
-              <span>72-Hour Verification Period</span>
+              <span>Up to 72-Hour Verification Period</span>
             </div>
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4 text-purple-500" />
@@ -160,37 +160,41 @@ export default function HomePage() {
           <div className="border border-blue-300 rounded-lg p-8 mb-8 bg-blue-50 mx-auto max-w-4xl">
             <div className="space-y-6 text-sm">
               <div className="flex items-start gap-3">
-                <span className="font-semibold text-blue-700 min-w-[180px]">1. Case Submission:</span>
-                <span className="text-blue-600">User submits evidence of misconduct through our secure platform</span>
+                <span className="text-blue-600">
+                  <span className="font-semibold text-blue-700">1. Case Submission:</span> User submits evidence of misconduct through our secure platform
+                </span>
               </div>
 
               <div className="flex items-start gap-3">
-                <span className="font-semibold text-blue-700 min-w-[180px]">2. AI Verification (Up to 72 hours):</span>
-                <span className="text-blue-600">AI analyzes evidence authenticity and classifies case</span>
+                <span className="text-blue-600">
+                  <span className="font-semibold text-blue-700">2. AI Verification (Up to 72 hours):</span> AI analyzes evidence authenticity and classifies case
+                </span>
               </div>
 
               <div className="flex items-start gap-3">
-                <span className="font-semibold text-blue-700 min-w-[180px]">3. Notification:</span>
-                <div className="text-blue-600">
-                  <div>Both parties notified immediately after AI verification is completed</div>
+                <span className="text-blue-600">
+                  <span className="font-semibold text-blue-700">3. Notification:</span> Both parties notified immediately after AI verification is completed
                   <div className="ml-4 mt-1">• Plaintiff: Learns whether AI classified case as evidence-based or opinion-based</div>
                   <div className="ml-4 mt-1">• Defendant: Receives case details, classification, and right to challenge</div>
-                </div>
+                </span>
               </div>
 
               <div className="flex items-start gap-3">
-                <span className="font-semibold text-blue-700 min-w-[180px]">4. Publication:</span>
-                <span className="text-blue-600">Case published after verification. Remains public unless defendant requests deletion and joins debate</span>
+                <span className="text-blue-600">
+                  <span className="font-semibold text-blue-700">4. Publication:</span> Case published after verification. Remains public unless defendant requests deletion and joins debate
+                </span>
               </div>
 
               <div className="flex items-start gap-3">
-                <span className="font-semibold text-blue-700 min-w-[180px]">5. Defendant Response & Debate:</span>
-                <span className="text-blue-600">If deletion requested, both parties engage in 72-hour debate with evidence submission</span>
+                <span className="text-blue-600">
+                  <span className="font-semibold text-blue-700">5. Defendant Response & Debate:</span> If deletion requested, both parties engage in 72-hour debate with evidence submission
+                </span>
               </div>
 
               <div className="flex items-start gap-3">
-                <span className="font-semibold text-blue-700 min-w-[180px]">6. Community Voting:</span>
-                <span className="text-blue-600">Community decides whether to grant deletion request based on evidence presented</span>
+                <span className="text-blue-600">
+                  <span className="font-semibold text-blue-700">6. Community Voting:</span> Community decides whether to grant deletion request based on evidence presented
+                </span>
               </div>
             </div>
           </div>
