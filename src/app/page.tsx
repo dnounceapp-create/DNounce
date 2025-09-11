@@ -27,6 +27,11 @@ export default function HomePage() {
   const termsRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
 
+  const [name, setName] = useState("")
+  const [relationship, setRelationship] = useState("all")
+  const [otherRelationship, setOtherRelationship] = useState("");
+  const [location, setLocation] = useState("")
+
   const handleTermsScroll = () => {
     if (termsRef.current) {
       const { scrollTop, scrollHeight, clientHeight } = termsRef.current
@@ -38,21 +43,24 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200">
+    <div className="min-h-screen bg-gray-50 pt-20">
+      <header className="bg-white border-b border-gray-200 fixed top-0 left-0 w-full z-50">
         <div className="max-w-7xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Image
-                src="/logo.png"
-                alt="DNounce Logo"
-                width={96}
-                height={96}
-                className="rounded-md"
-                priority
-              />
-              <span className="text-4xl font-bold text-gray-900">DNounce</span>
-            </div>
+          <div
+            className="flex items-center gap-4 cursor-pointer"
+            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          >
+            <Image
+              src="/logo.png"
+              alt="DNounce Logo"
+              width={96}
+              height={96}
+              className="rounded-md"
+              priority
+            />
+            <span className="text-4xl font-bold text-gray-900">DNounce</span>
+          </div>
 
             <nav className="hidden md:flex flex-1 justify-center gap-12">
               <button
@@ -208,41 +216,87 @@ export default function HomePage() {
             <p className="text-gray-600">Find accountability records and case information</p>
           </div>
 
-          <Card className="p-6 bg-white">
-            <div className="grid md:grid-cols-3 gap-4 mb-4">
+          <Card className="p-8 bg-white shadow-lg rounded-xl">
+            {/* Title */}
+            <h3 className="text-lg font-semibold text-gray-800 mb-6 text-center">
+              Find Defendants
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-6">
+              {/* Name Field */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
-                <Input placeholder="Enter defendant name..." className="w-full" />
+                <label className="block text-sm font-medium text-gray-700">Name</label>
+                <Input
+                  placeholder="e.g. John Doe"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500"
+                />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Relationship Type</label>
-                <Select>
-                  <SelectTrigger>
+
+              {/* Relationship Field */}
+              <div className="relative z-50">
+                <label className="block text-sm font-medium text-gray-700">Relationship</label>
+                <Select value={relationship} onValueChange={setRelationship}>
+                  <SelectTrigger className="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500">
                     <SelectValue placeholder="All Types" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="z-50 bg-white shadow-lg rounded-lg">
                     <SelectItem value="all">All Types</SelectItem>
                     <SelectItem value="business">Business</SelectItem>
                     <SelectItem value="personal">Personal</SelectItem>
                     <SelectItem value="professional">Professional</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
                   </SelectContent>
                 </Select>
+
+                {/* Extra Input when 'Other' selected */}
+                {relationship === "other" && (
+                  <Input
+                    placeholder="Enter custom relationship..."
+                    value={otherRelationship}
+                    onChange={(e) => setOtherRelationship(e.target.value)}
+                    className="mt-3 w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500"
+                  />
+                )}
               </div>
+
+              {/* Location Field */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
-                <Input placeholder="City or neighborhood..." className="w-full" />
+                <label className="block text-sm font-medium text-gray-700">Location</label>
+                <Input
+                  placeholder="City or neighborhood..."
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  className="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500"
+                />
                 <p className="text-xs text-gray-500 mt-1">
                   Type city name to see neighborhoods, or neighborhood to see full location
                 </p>
               </div>
             </div>
-            <div className="text-center">
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white px-8" disabled>
-                <Search className="mr-2 h-4 w-4" />
+
+            {/* Buttons */}
+            <div className="flex justify-center gap-4">
+              <Button className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-md">
                 Search Defendants
+              </Button>
+              <Button
+                variant="outline"
+                className="px-6 py-2 rounded-md"
+                onClick={() => {
+                  setName("");
+                  setRelationship("all");
+                  setOtherRelationship("");
+                  setLocation("");
+                }}
+              >
+                Clear Filters
               </Button>
             </div>
           </Card>
+
+
 
           <div className="mt-8">
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
