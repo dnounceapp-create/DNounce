@@ -338,6 +338,31 @@ export default function HomePage() {
                   </div>
 
                   <div className="mb-6">
+                    <div className="mb-6">
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-gray-900">82%</div>
+                        <div className="text-sm text-gray-500">Defendant Score</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-gray-900">76%</div>
+                        <div className="text-sm text-gray-500">Overall User Score</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-gray-900">88%</div>
+                        <div className="text-sm text-gray-500">Plaintiff Score</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-gray-900">70%</div>
+                        <div className="text-sm text-gray-500">Voter Score</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-gray-900">91%</div>
+                        <div className="text-sm text-gray-500">Citizen Score</div>
+                      </div>
+                    </div>
+
+                    {/* Case Breakdown stays below */}
                     <h4 className="font-medium text-gray-900 mb-3">Case Breakdown</h4>
                     <div className="grid grid-cols-3 gap-4">
                       <div className="text-center">
@@ -353,6 +378,7 @@ export default function HomePage() {
                         <div className="text-sm text-gray-500">Opinion-Based</div>
                       </div>
                     </div>
+                  </div>
                   </div>
 
                   <div>
