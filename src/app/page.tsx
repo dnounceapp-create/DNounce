@@ -55,12 +55,30 @@ export default function HomePage() {
             </div>
 
             <nav className="hidden md:flex items-center gap-8">
-              <span className="text-gray-400 text-sm cursor-not-allowed">Search</span>
-              <span className="text-gray-400 text-sm cursor-not-allowed">How DNounce Works</span>
-              <span className="text-gray-400 text-sm cursor-not-allowed">Voting</span>
-              <span className="text-gray-400 text-sm cursor-not-allowed">Guidelines</span>
-              <span className="text-gray-400 text-sm cursor-not-allowed">Legal</span>
-              <span className="text-gray-400 text-sm cursor-not-allowed">About</span>
+              <button
+                onClick={() => document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" })}
+                className="text-gray-600 hover:text-blue-600 text-sm"
+              >
+                How DNounce Works
+              </button>
+              <button
+                onClick={() => document.getElementById("voting-section")?.scrollIntoView({ behavior: "smooth" })}
+                className="text-gray-600 hover:text-blue-600 text-sm"
+              >
+                Voting
+              </button>
+              <button
+                onClick={() => document.getElementById("guidelines-section")?.scrollIntoView({ behavior: "smooth" })}
+                className="text-gray-600 hover:text-blue-600 text-sm"
+              >
+                Guidelines
+              </button>
+              <button
+                onClick={() => document.getElementById("legal-section")?.scrollIntoView({ behavior: "smooth" })}
+                className="text-gray-600 hover:text-blue-600 text-sm"
+              >
+                Legal
+              </button>
             </nav>
             <div className="flex items-center gap-3">
             <Button 
@@ -130,7 +148,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="bg-white py-16">
+      <section id="how-it-works" className="bg-white py-16">
         <div className="max-w-6xl mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">How DNounce Works</h2>
@@ -334,7 +352,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="bg-white py-16">
+      <section id="voting-section" className="bg-white py-16">
         <div className="max-w-4xl mx-auto px-4">
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">Community Voting</h2>
@@ -787,7 +805,7 @@ export default function HomePage() {
                   </div>
 
                   {/* Community Guidelines */}
-                  <div>
+                  <section id="guidelines-section">
                     <h4 className="font-semibold text-red-800 mb-3">Community Guidelines</h4>
                     <p className="text-sm text-red-700">You agree to abide by our community standards:</p>
                     <ul className="space-y-1 text-sm text-red-700 ml-4 mt-2">
@@ -796,7 +814,7 @@ export default function HomePage() {
                       <li>• Respect the defendant's right to respond</li>
                       <li>• No doxxing, harassment, or vigilante actions</li>
                     </ul>
-                  </div>
+                  </section>
                 </div>
               </div>
 
