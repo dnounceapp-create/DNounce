@@ -700,18 +700,11 @@ export default function HomePage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Relationship Type <span className="text-red-500">*</span>
                   </label>
-                  <Select
-                    onValueChange={(value) => {
-                      const otherField = document.getElementById("other-relationship")
-                      if (otherField) {
-                        otherField.style.display = value === "other" ? "block" : "none"
-                      }
-                    }}
-                  >
-                    <SelectTrigger>
+                  <Select value={relationship} onValueChange={setRelationship}>
+                    <SelectTrigger className="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500">
                       <SelectValue placeholder="Select relationship type" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="z-50 bg-white shadow-lg rounded-lg">
                       <SelectItem value="business">Business</SelectItem>
                       <SelectItem value="personal">Personal</SelectItem>
                       <SelectItem value="professional">Professional</SelectItem>
@@ -719,12 +712,15 @@ export default function HomePage() {
                       <SelectItem value="other">Other</SelectItem>
                     </SelectContent>
                   </Select>
-                  <div id="other-relationship" style={{ display: "none" }} className="mt-3">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Please specify relationship <span className="text-red-500">*</span>
-                    </label>
-                    <Input placeholder="Describe your relationship to the defendant" className="w-full" />
-                  </div>
+
+                  {relationship === "other" && (
+                    <Input
+                      placeholder="Please specify relationship..."
+                      value={otherRelationship}
+                      onChange={(e) => setOtherRelationship(e.target.value)}
+                      className="mt-3 w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500"
+                    />
+                  )}
                 </div>
               </div>
 
