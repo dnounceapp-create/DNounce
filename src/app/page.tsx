@@ -235,25 +235,30 @@ export default function HomePage() {
               </div>
 
               {/* Relationship Field */}
-              <div className="relative z-50">
+              <div>
                 <label className="block text-sm font-medium text-gray-700">Relationship</label>
                 <Select value={relationship} onValueChange={setRelationship}>
-                  <SelectTrigger className="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500">
-                    <SelectValue placeholder="All Types" />
+                  <SelectTrigger className="w-full border-gray-300">
+                    <SelectValue placeholder="Select relationship" />
                   </SelectTrigger>
-                  <SelectContent className="z-50 bg-white shadow-lg rounded-lg">
-                    <SelectItem value="all">All Types</SelectItem>
-                    <SelectItem value="business">Business</SelectItem>
-                    <SelectItem value="personal">Personal</SelectItem>
-                    <SelectItem value="professional">Professional</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
+                  <SelectContent
+                    className="z-50 bg-white shadow-lg rounded-lg border border-gray-200"
+                    style={{
+                      backgroundColor: "#ffffff", // solid background
+                      color: "#1f2937", // dark gray text (tailwind gray-800)
+                    }}
+                  >
+                    <SelectItem value="all" className="text-gray-800">All Types</SelectItem>
+                    <SelectItem value="business" className="text-gray-800">Business</SelectItem>
+                    <SelectItem value="personal" className="text-gray-800">Personal</SelectItem>
+                    <SelectItem value="professional" className="text-gray-800">Professional</SelectItem>
+                    <SelectItem value="other" className="text-gray-800">Other</SelectItem>
                   </SelectContent>
                 </Select>
 
-                {/* Extra Input when 'Other' selected */}
                 {relationship === "other" && (
                   <Input
-                    placeholder="Enter custom relationship..."
+                    placeholder="Please specify relationship..."
                     value={otherRelationship}
                     onChange={(e) => setOtherRelationship(e.target.value)}
                     className="mt-3 w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500"
@@ -268,7 +273,7 @@ export default function HomePage() {
                   placeholder="City or neighborhood..."
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
-                  className="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-lg border-gray-200 focus:ring-2 focus:ring-blue-500"
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   Type city name to see neighborhoods, or neighborhood to see full location
@@ -697,19 +702,23 @@ export default function HomePage() {
                   <Input placeholder="" className="w-full" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Relationship Type <span className="text-red-500">*</span>
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700">Relationship</label>
                   <Select value={relationship} onValueChange={setRelationship}>
-                    <SelectTrigger className="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500">
-                      <SelectValue placeholder="Select relationship type" />
+                    <SelectTrigger className="w-full border-gray-300">
+                      <SelectValue placeholder="Select relationship" />
                     </SelectTrigger>
-                    <SelectContent className="z-50 bg-white shadow-lg rounded-lg">
-                      <SelectItem value="business">Business</SelectItem>
-                      <SelectItem value="personal">Personal</SelectItem>
-                      <SelectItem value="professional">Professional</SelectItem>
-                      <SelectItem value="academic">Academic</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
+                    <SelectContent
+                      className="z-50 bg-white shadow-lg rounded-lg border border-gray-200"
+                      style={{
+                        backgroundColor: "#ffffff", // solid background
+                        color: "#1f2937", // dark gray text (tailwind gray-800)
+                      }}
+                    >
+                      <SelectItem value="all" className="text-gray-800">All Types</SelectItem>
+                      <SelectItem value="business" className="text-gray-800">Business</SelectItem>
+                      <SelectItem value="personal" className="text-gray-800">Personal</SelectItem>
+                      <SelectItem value="professional" className="text-gray-800">Professional</SelectItem>
+                      <SelectItem value="other" className="text-gray-800">Other</SelectItem>
                     </SelectContent>
                   </Select>
 
