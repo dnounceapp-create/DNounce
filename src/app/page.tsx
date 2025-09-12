@@ -325,16 +325,6 @@ export default function HomePage() {
                         <span>📍</span> San Francisco, CA
                       </p>
                     </div>
-                    <div className="text-right">
-                      <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
-                        <span className="text-2xl font-bold text-red-600">3.2</span>
-                      </div>
-                      <div className="text-xs text-gray-500 text-center mt-1">
-                        DNounce Score
-                        <br />
-                        Based on 8 cases
-                      </div>
-                    </div>
                   </div>
 
                   <div className="mb-6">
