@@ -317,7 +317,7 @@ export default function HomePage() {
                   <User className="h-8 w-8 text-gray-600" />
                 </div>
                 <div className="flex-1">
-                  <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-start justify-between mb-6">
                     <div>
                       <h3 className="text-xl font-semibold text-gray-900">John Example</h3>
                       <p className="text-sm text-gray-600">Software Manager at TechCorp Inc.</p>
@@ -325,11 +325,9 @@ export default function HomePage() {
                         <span>📍</span> San Francisco, CA
                       </p>
                     </div>
-                  </div>
 
-                  <div className="mb-6">
-                    <div className="mb-6">
-                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6">
+                    {/* Scores */}
+                    <div className="grid grid-cols-5 gap-6">
                       <div className="text-center">
                         <div className="text-2xl font-bold text-gray-900">82%</div>
                         <div className="text-sm text-gray-500">Defendant Score</div>
@@ -351,24 +349,6 @@ export default function HomePage() {
                         <div className="text-sm text-gray-500">Citizen Score</div>
                       </div>
                     </div>
-
-                    {/* Case Breakdown stays below */}
-                    <h4 className="font-medium text-gray-900 mb-3">Case Breakdown</h4>
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-gray-900">8</div>
-                        <div className="text-sm text-gray-500">Total Cases</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-green-600">5</div>
-                        <div className="text-sm text-gray-500">Evidence-Based</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-yellow-600">3</div>
-                        <div className="text-sm text-gray-500">Opinion-Based</div>
-                      </div>
-                    </div>
-                  </div>
                   </div>
 
                   <div>
