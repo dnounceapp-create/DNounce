@@ -717,11 +717,11 @@ export default function HomePage() {
                       <SelectValue placeholder="Select relationship type" />
                     </SelectTrigger>
                     <SelectContent className="z-50 bg-white shadow-lg rounded-lg border border-gray-200">
-                      <SelectItem value="business">Business</SelectItem>
-                      <SelectItem value="personal">Personal</SelectItem>
-                      <SelectItem value="professional">Professional</SelectItem>
-                      <SelectItem value="academic">Academic</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
+                      <SelectItem value="business" className="text-gray-800 hover:bg-gray-100">Business</SelectItem>
+                      <SelectItem value="personal" className="text-gray-800 hover:bg-gray-100">Personal</SelectItem>
+                      <SelectItem value="professional" className="text-gray-800 hover:bg-gray-100">Professional</SelectItem>
+                      <SelectItem value="academic" className="text-gray-800 hover:bg-gray-100">Academic</SelectItem>
+                      <SelectItem value="other" className="text-gray-800 hover:bg-gray-100">Other</SelectItem>
                     </SelectContent>
 
                   </Select>
