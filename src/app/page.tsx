@@ -317,7 +317,7 @@ export default function HomePage() {
                   <User className="h-8 w-8 text-gray-600" />
                 </div>
                 <div className="flex-1">
-                  <div className="flex items-start justify-between mb-6">
+                  <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-6 gap-6">
                     <div>
                       <h3 className="text-xl font-semibold text-gray-900">John Example</h3>
                       <p className="text-sm text-gray-600">Software Manager at TechCorp Inc.</p>
@@ -325,28 +325,27 @@ export default function HomePage() {
                         <span>📍</span> San Francisco, CA
                       </p>
                     </div>
-
-                    {/* Scores */}
-                    <div className="grid grid-cols-5 gap-6">
+              
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 flex-1">
                       <div className="text-center">
                         <div className="text-2xl font-bold text-gray-900">82%</div>
-                        <div className="text-sm text-gray-500">Defendant Score</div>
+                        <div className="text-xs sm:text-sm text-gray-500">Defendant Score</div>
                       </div>
                       <div className="text-center">
                         <div className="text-2xl font-bold text-gray-900">76%</div>
-                        <div className="text-sm text-gray-500">Overall User Score</div>
+                        <div className="text-xs sm:text-sm text-gray-500">Overall User Score</div>
                       </div>
                       <div className="text-center">
                         <div className="text-2xl font-bold text-gray-900">88%</div>
-                        <div className="text-sm text-gray-500">Plaintiff Score</div>
+                        <div className="text-xs sm:text-sm text-gray-500">Plaintiff Score</div>
                       </div>
                       <div className="text-center">
                         <div className="text-2xl font-bold text-gray-900">70%</div>
-                        <div className="text-sm text-gray-500">Voter Score</div>
+                        <div className="text-xs sm:text-sm text-gray-500">Voter Score</div>
                       </div>
                       <div className="text-center">
                         <div className="text-2xl font-bold text-gray-900">91%</div>
-                        <div className="text-sm text-gray-500">Citizen Score</div>
+                        <div className="text-xs sm:text-sm text-gray-500">Citizen Score</div>
                       </div>
                     </div>
                   </div>
