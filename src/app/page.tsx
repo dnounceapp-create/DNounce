@@ -402,46 +402,71 @@ export default function HomePage() {
             </div>
 
             <Card className="p-6 bg-white">
-              <div className="flex items-start gap-4">
-                <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center">
+              <div className="flex flex-col md:flex-row gap-6">
+                {/* Avatar */}
+                <div className="flex-shrink-0 w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto md:mx-0">
                   <User className="h-8 w-8 text-gray-600" />
                 </div>
+
+                {/* Main Content */}
                 <div className="flex-1">
-                  <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-6 gap-6">
-                    <div>
+                  {/* Name, Title, Location + Scores */}
+                  <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6 mb-6">
+                    <div className="text-center md:text-left">
                       <h3 className="text-xl font-semibold text-gray-900">John Example</h3>
                       <p className="text-sm text-gray-600">Software Manager at TechCorp Inc.</p>
-                      <p className="text-sm text-gray-500 flex items-center gap-1">
+                      <p className="text-sm text-gray-500 flex items-center justify-center md:justify-start gap-1">
                         <span>📍</span> San Francisco, CA
                       </p>
                     </div>
-              
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 flex-1">
+
+                    {/* Scores */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 w-full md:w-auto">
                       <div className="text-center">
                         <div className="text-2xl font-bold text-gray-900">82%</div>
-                        <div className="text-xs sm:text-sm text-gray-500">Defendant Score</div>
+                        <div className="text-xs text-gray-500">Defendant Score</div>
                       </div>
                       <div className="text-center">
                         <div className="text-2xl font-bold text-gray-900">76%</div>
-                        <div className="text-xs sm:text-sm text-gray-500">Overall User Score</div>
+                        <div className="text-xs text-gray-500">Overall User Score</div>
                       </div>
                       <div className="text-center">
                         <div className="text-2xl font-bold text-gray-900">88%</div>
-                        <div className="text-xs sm:text-sm text-gray-500">Plaintiff Score</div>
+                        <div className="text-xs text-gray-500">Plaintiff Score</div>
                       </div>
                       <div className="text-center">
                         <div className="text-2xl font-bold text-gray-900">70%</div>
-                        <div className="text-xs sm:text-sm text-gray-500">Voter Score</div>
+                        <div className="text-xs text-gray-500">Voter Score</div>
                       </div>
                       <div className="text-center">
                         <div className="text-2xl font-bold text-gray-900">91%</div>
-                        <div className="text-xs sm:text-sm text-gray-500">Citizen Score</div>
+                        <div className="text-xs text-gray-500">Citizen Score</div>
                       </div>
                     </div>
                   </div>
 
+                  {/* Case Breakdown */}
+                  <div className="mb-6">
+                    <h4 className="font-medium text-gray-900 mb-3 text-center md:text-left">Case Breakdown</h4>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-gray-900">8</div>
+                        <div className="text-sm text-gray-500">Total Cases</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-green-600">5</div>
+                        <div className="text-sm text-gray-500">Evidence-Based</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-yellow-600">3</div>
+                        <div className="text-sm text-gray-500">Opinion-Based</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Recent Cases */}
                   <div>
-                    <h4 className="font-medium text-gray-900 mb-3">Recent Cases</h4>
+                    <h4 className="font-medium text-gray-900 mb-3 text-center md:text-left">Recent Cases</h4>
                     <div className="space-y-4">
                       <div className="border-b border-gray-100 pb-4">
                         <div className="flex items-start justify-between mb-2">
@@ -451,7 +476,7 @@ export default function HomePage() {
                         <p className="text-sm text-gray-600 mb-2">
                           Verified email exchanges and documented incidents of inappropriate workplace behavior...
                         </p>
-                        <div className="flex items-center gap-4 text-xs text-gray-500">
+                        <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500">
                           <span>📅 Dec 15, 2024</span>
                           <span>💬 24 comments</span>
                           <span>✅ AI Verified</span>
@@ -473,7 +498,7 @@ export default function HomePage() {
                         <p className="text-sm text-gray-600 mb-2">
                           Personal account of micromanagement and team communication issues...
                         </p>
-                        <div className="flex items-center gap-4 text-xs text-gray-500">
+                        <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500">
                           <span>📅 Dec 10, 2024</span>
                           <span>💬 12 comments</span>
                           <span>👤 By: Sarah M.</span>
