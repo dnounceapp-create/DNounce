@@ -1,8 +1,8 @@
 "use client"
 
+import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
-import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -21,12 +21,40 @@ import {
   User,
 } from "lucide-react"
 
+
+
 export default function HomePage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [hasReadTerms, setHasReadTerms] = useState(false)
   const [agreedToTerms, setAgreedToTerms] = useState(false)
   const termsRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      const menu = document.getElementById("mobile-menu")
+      const button = document.getElementById("menu-button")
+
+      if (
+        menu &&
+        !menu.contains(event.target as Node) &&
+        button &&
+        !button.contains(event.target as Node)
+      ) {
+        setMobileMenuOpen(false)
+      }
+    }
+
+    if (mobileMenuOpen) {
+      document.addEventListener("mousedown", handleClickOutside)
+    } else {
+      document.removeEventListener("mousedown", handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+    }
+  }, [mobileMenuOpen])
 
   const [name, setName] = useState("")
   const [relationship, setRelationship] = useState("all")
@@ -69,26 +97,34 @@ export default function HomePage() {
               {/* Desktop Nav */}
               <nav className="hidden md:flex flex-1 justify-center gap-12">
                 <button
-                  onClick={() => document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" })}
-                  className="text-gray-700 font-medium hover:text-red-700 transition-colors text-sm"
+                  onClick={() => {
+                    document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" })
+                    setMobileMenuOpen(false) // close menu after click
+                  }}
                 >
                   How DNounce Works
                 </button>
                 <button
-                  onClick={() => document.getElementById("voting-section")?.scrollIntoView({ behavior: "smooth" })}
-                  className="text-gray-700 font-medium hover:text-red-700 transition-colors text-sm"
+                  onClick={() => {
+                    document.getElementById("voting-section")?.scrollIntoView({ behavior: "smooth" })
+                    setMobileMenuOpen(false) // close menu after click
+                  }}
                 >
                   Voting
                 </button>
                 <button
-                  onClick={() => document.getElementById("guidelines-section")?.scrollIntoView({ behavior: "smooth" })}
-                  className="text-gray-700 font-medium hover:text-red-700 transition-colors text-sm"
+                  onClick={() => {
+                    document.getElementById("Guidelines-section")?.scrollIntoView({ behavior: "smooth" })
+                    setMobileMenuOpen(false) // close menu after click
+                  }}
                 >
                   Guidelines
                 </button>
                 <button
-                  onClick={() => document.getElementById("legal-section")?.scrollIntoView({ behavior: "smooth" })}
-                  className="text-gray-700 font-medium hover:text-red-700 transition-colors text-sm"
+                  onClick={() => {
+                    document.getElementById("legal-section")?.scrollIntoView({ behavior: "smooth" })
+                    setMobileMenuOpen(false) // close menu after click
+                  }}
                 >
                   Legal
                 </button>
