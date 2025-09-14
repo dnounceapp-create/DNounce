@@ -34,7 +34,7 @@ export default function HomePage() {
     function handleClickOutside(event: MouseEvent) {
       const menu = document.getElementById("mobile-menu")
       const button = document.getElementById("menu-button")
-
+  
       if (
         menu &&
         !menu.contains(event.target as Node) &&
@@ -44,13 +44,11 @@ export default function HomePage() {
         setMobileMenuOpen(false)
       }
     }
-
+  
     if (mobileMenuOpen) {
       document.addEventListener("mousedown", handleClickOutside)
-    } else {
-      document.removeEventListener("mousedown", handleClickOutside)
     }
-
+  
     return () => {
       document.removeEventListener("mousedown", handleClickOutside)
     }
@@ -97,91 +95,88 @@ export default function HomePage() {
               {/* Desktop Nav */}
               <nav className="hidden md:flex flex-1 justify-center gap-12">
                 <button
+                  onClick={() => document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" })}
+                  className="text-gray-700 font-medium hover:text-red-700 transition-colors text-sm"
+                >
+                  How DNounce Works
+                </button>
+                <button
+                  onClick={() => document.getElementById("voting-section")?.scrollIntoView({ behavior: "smooth" })}
+                  className="text-gray-700 font-medium hover:text-red-700 transition-colors text-sm"
+                >
+                  Voting
+                </button>
+                <button
+                  onClick={() => document.getElementById("guidelines-section")?.scrollIntoView({ behavior: "smooth" })}
+                  className="text-gray-700 font-medium hover:text-red-700 transition-colors text-sm"
+                >
+                  Guidelines
+                </button>
+                <button
+                  onClick={() => document.getElementById("legal-section")?.scrollIntoView({ behavior: "smooth" })}
+                  className="text-gray-700 font-medium hover:text-red-700 transition-colors text-sm"
+                >
+                  Legal
+                </button>
+              </nav>
+
+              {/* Login Button + Mobile Menu Button */}
+              <div className="flex items-center gap-3">
+                <Button
+                  size="sm"
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  onClick={() => router.push("/login")}
+                >
+                  Login / Sign Up
+                </Button>
+                {/* Hamburger */}
+                <div className="md:hidden flex items-center">
+                  <button
+                    id="menu-button"
+                    onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                    className="p-2 rounded-md text-gray-700 hover:bg-gray-100 focus:outline-none"
+                  >
+                    ☰
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Mobile Dropdown Nav */}
+            {mobileMenuOpen && (
+              <div id="mobile-menu" className="md:hidden mt-3 space-y-2">
+                <button
                   onClick={() => {
                     document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" })
-                    setMobileMenuOpen(false) // close menu after click
+                    setMobileMenuOpen(false)
                   }}
+                  className="block w-full text-left text-gray-700 font-medium hover:text-red-700 transition-colors text-sm"
                 >
                   How DNounce Works
                 </button>
                 <button
                   onClick={() => {
                     document.getElementById("voting-section")?.scrollIntoView({ behavior: "smooth" })
-                    setMobileMenuOpen(false) // close menu after click
+                    setMobileMenuOpen(false)
                   }}
+                  className="block w-full text-left text-gray-700 font-medium hover:text-red-700 transition-colors text-sm"
                 >
                   Voting
                 </button>
                 <button
                   onClick={() => {
-                    document.getElementById("Guidelines-section")?.scrollIntoView({ behavior: "smooth" })
-                    setMobileMenuOpen(false) // close menu after click
+                    document.getElementById("guidelines-section")?.scrollIntoView({ behavior: "smooth" })
+                    setMobileMenuOpen(false)
                   }}
+                  className="block w-full text-left text-gray-700 font-medium hover:text-red-700 transition-colors text-sm"
                 >
                   Guidelines
                 </button>
                 <button
                   onClick={() => {
                     document.getElementById("legal-section")?.scrollIntoView({ behavior: "smooth" })
-                    setMobileMenuOpen(false) // close menu after click
+                    setMobileMenuOpen(false)
                   }}
-                >
-                  Legal
-                </button>
-              </nav>
-
-              {/* Desktop Login Button */}
-              <div className="hidden md:flex items-center gap-3">
-                <Button
-                  size="sm"
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                  onClick={() => router.push("/login")}
-                >
-                  Login / Sign Up
-                </Button>
-              </div>
-
-              {/* Mobile Login + Menu */}
-              <div className="md:hidden flex items-center gap-3">
-                <Button
-                  size="sm"
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                  onClick={() => router.push("/login")}
-                >
-                  Login / Sign Up
-                </Button>
-                <button
-                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                  className="p-2 rounded-md text-gray-700 hover:bg-gray-100 focus:outline-none"
-                >
-                  ☰
-                </button>
-              </div>
-            </div>
-
-            {/* Mobile Dropdown Nav */}
-            {mobileMenuOpen && (
-              <div className="md:hidden mt-3 space-y-2">
-                <button
-                  onClick={() => document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" })}
-                  className="block w-full text-left text-gray-700 font-medium hover:text-red-700 transition-colors text-sm"
-                >
-                  How DNounce Works
-                </button>
-                <button
-                  onClick={() => document.getElementById("voting-section")?.scrollIntoView({ behavior: "smooth" })}
-                  className="block w-full text-left text-gray-700 font-medium hover:text-red-700 transition-colors text-sm"
-                >
-                  Voting
-                </button>
-                <button
-                  onClick={() => document.getElementById("guidelines-section")?.scrollIntoView({ behavior: "smooth" })}
-                  className="block w-full text-left text-gray-700 font-medium hover:text-red-700 transition-colors text-sm"
-                >
-                  Guidelines
-                </button>
-                <button
-                  onClick={() => document.getElementById("legal-section")?.scrollIntoView({ behavior: "smooth" })}
                   className="block w-full text-left text-gray-700 font-medium hover:text-red-700 transition-colors text-sm"
                 >
                   Legal
