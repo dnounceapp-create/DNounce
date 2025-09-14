@@ -22,6 +22,7 @@ import {
 } from "lucide-react"
 
 export default function HomePage() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [hasReadTerms, setHasReadTerms] = useState(false)
   const [agreedToTerms, setAgreedToTerms] = useState(false)
   const termsRef = useRef<HTMLDivElement>(null)
@@ -45,61 +46,114 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-gray-50 pt-20">
       <header className="bg-white border-b border-gray-200 fixed top-0 left-0 w-full z-50">
-        <div className="max-w-7xl mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
-          <div
-            className="flex items-center gap-4 cursor-pointer"
-            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-          >
-            <Image
-              src="/logo.png"
-              alt="DNounce Logo"
-              width={96}
-              height={96}
-              className="rounded-md"
-              priority
-            />
-            <span className="text-4xl font-bold text-gray-900">DNounce</span>
-          </div>
+          <div className="max-w-7xl mx-auto px-4 py-3">
+            <div className="flex items-center justify-between">
+              {/* Logo + Title */}
+              <div
+                className="flex items-center gap-2 sm:gap-4 cursor-pointer"
+                onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+              >
+                <Image
+                  src="/logo.png"
+                  alt="DNounce Logo"
+                  width={40}
+                  height={40}
+                  className="rounded-md"
+                  priority
+                />
+                <span className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900">
+                  DNounce
+                </span>
+              </div>
 
-            <nav className="hidden md:flex flex-1 justify-center gap-12">
-              <button
-                onClick={() => document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" })}
-                className="text-gray-700 font-medium hover:text-red-700 transition-colors text-sm"
-              >
-                How DNounce Works
-              </button>
-              <button
-                onClick={() => document.getElementById("voting-section")?.scrollIntoView({ behavior: "smooth" })}
-                className="text-gray-700 font-medium hover:text-red-700 transition-colors text-sm"
-              >
-                Voting
-              </button>
-              <button
-                onClick={() => document.getElementById("guidelines-section")?.scrollIntoView({ behavior: "smooth" })}
-                className="text-gray-700 font-medium hover:text-red-700 transition-colors text-sm"
-              >
-                Guidelines
-              </button>
-              <button
-                onClick={() => document.getElementById("legal-section")?.scrollIntoView({ behavior: "smooth" })}
-                className="text-gray-700 font-medium hover:text-red-700 transition-colors text-sm"
-              >
-                Legal
-              </button>
-            </nav>
-            <div className="flex items-center gap-3">
-            <Button 
-              size="sm" 
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-              onClick={() => router.push('/login')} // Add this onClick handler
-            >
-              Login / Sign Up
-            </Button>
+              {/* Desktop Nav */}
+              <nav className="hidden md:flex flex-1 justify-center gap-12">
+                <button
+                  onClick={() => document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" })}
+                  className="text-gray-700 font-medium hover:text-red-700 transition-colors text-sm"
+                >
+                  How DNounce Works
+                </button>
+                <button
+                  onClick={() => document.getElementById("voting-section")?.scrollIntoView({ behavior: "smooth" })}
+                  className="text-gray-700 font-medium hover:text-red-700 transition-colors text-sm"
+                >
+                  Voting
+                </button>
+                <button
+                  onClick={() => document.getElementById("guidelines-section")?.scrollIntoView({ behavior: "smooth" })}
+                  className="text-gray-700 font-medium hover:text-red-700 transition-colors text-sm"
+                >
+                  Guidelines
+                </button>
+                <button
+                  onClick={() => document.getElementById("legal-section")?.scrollIntoView({ behavior: "smooth" })}
+                  className="text-gray-700 font-medium hover:text-red-700 transition-colors text-sm"
+                >
+                  Legal
+                </button>
+              </nav>
+
+              {/* Desktop Login Button */}
+              <div className="hidden md:flex items-center gap-3">
+                <Button
+                  size="sm"
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  onClick={() => router.push("/login")}
+                >
+                  Login / Sign Up
+                </Button>
+              </div>
+
+              {/* Mobile Menu Button */}
+              <div className="md:hidden flex items-center">
+                <button
+                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                  className="p-2 rounded-md text-gray-700 hover:bg-gray-100 focus:outline-none"
+                >
+                  ☰
+                </button>
+              </div>
             </div>
+
+            {/* Mobile Dropdown Nav */}
+            {mobileMenuOpen && (
+              <div className="md:hidden mt-3 space-y-2">
+                <button
+                  onClick={() => document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" })}
+                  className="block w-full text-left text-gray-700 font-medium hover:text-red-700 transition-colors text-sm"
+                >
+                  How DNounce Works
+                </button>
+                <button
+                  onClick={() => document.getElementById("voting-section")?.scrollIntoView({ behavior: "smooth" })}
+                  className="block w-full text-left text-gray-700 font-medium hover:text-red-700 transition-colors text-sm"
+                >
+                  Voting
+                </button>
+                <button
+                  onClick={() => document.getElementById("guidelines-section")?.scrollIntoView({ behavior: "smooth" })}
+                  className="block w-full text-left text-gray-700 font-medium hover:text-red-700 transition-colors text-sm"
+                >
+                  Guidelines
+                </button>
+                <button
+                  onClick={() => document.getElementById("legal-section")?.scrollIntoView({ behavior: "smooth" })}
+                  className="block w-full text-left text-gray-700 font-medium hover:text-red-700 transition-colors text-sm"
+                >
+                  Legal
+                </button>
+                <Button
+                  size="sm"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                  onClick={() => router.push("/login")}
+                >
+                  Login / Sign Up
+                </Button>
+              </div>
+            )}
           </div>
-        </div>
-      </header>
+        </header>
 
       <section className="bg-gray-50 py-16">
         <div className="max-w-4xl mx-auto px-4 text-center">
