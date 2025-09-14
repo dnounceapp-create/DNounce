@@ -105,8 +105,15 @@ export default function HomePage() {
                 </Button>
               </div>
 
-              {/* Mobile Menu Button */}
-              <div className="md:hidden flex items-center">
+              {/* Mobile Login + Menu */}
+              <div className="md:hidden flex items-center gap-3">
+                <Button
+                  size="sm"
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  onClick={() => router.push("/login")}
+                >
+                  Login / Sign Up
+                </Button>
                 <button
                   onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                   className="p-2 rounded-md text-gray-700 hover:bg-gray-100 focus:outline-none"
@@ -143,13 +150,6 @@ export default function HomePage() {
                 >
                   Legal
                 </button>
-                <Button
-                  size="sm"
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                  onClick={() => router.push("/login")}
-                >
-                  Login / Sign Up
-                </Button>
               </div>
             )}
           </div>
