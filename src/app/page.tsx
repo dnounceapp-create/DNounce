@@ -87,7 +87,7 @@ export default function HomePage() {
   const [location, setLocation] = useState("");
 
   // 🔽 Supabase-powered states list
-  const [states, setStates] = useState<{ abbr: string; name: string }[]>([]);
+  const [states, setStates] = useState<{ state_abbreviation: string; full_state_name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
 
@@ -135,7 +135,7 @@ export default function HomePage() {
         .from("states")
         .select("state_abbreviation, full_state_name")
         .order("full_state_name", { ascending: true });
-  
+        
       console.log("Supabase fetch result:", data, error); // 👈
   
       if (error) {
