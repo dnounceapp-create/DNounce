@@ -1,5 +1,6 @@
 "use client";
 
+import { searchDefendantsQuery } from "@/lib/searchDefendantsQuery";
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -39,6 +40,9 @@ import {
 } from "lucide-react";
 
 export default function HomePage() {
+  const [formKey, setFormKey] = useState(0);
+  const [relationshipTypes, setRelationshipTypes] = useState<{ id: string; label: string; value: string }[]>([]);
+  const [relLoading, setRelLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"cases" | "badges">("cases");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [hasReadTerms, setHasReadTerms] = useState(false);
@@ -87,6 +91,44 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
 
+  const handleSearch = async () => {
+    const filters = {
+      name,
+      organization,
+      category,
+      location,
+      state,
+      relationship,
+      otherRelationship,
+    };
+  
+    const { data, error } = await searchDefendantsQuery(filters);
+  
+    if (error) {
+      console.error("Search error:", error);
+    } else {
+      console.log("Search results:", data);
+    }
+  };
+
+  useEffect(() => {
+    async function fetchRelationshipTypes() {
+      const { data, error } = await supabase
+        .from("relationship_types")
+        .select("id, label, value")
+        .order("label", { ascending: true });
+  
+      if (error) {
+        console.error("Error fetching relationship types:", error);
+      } else {
+        setRelationshipTypes(data || []);
+      }
+      setRelLoading(false);
+    }
+  
+    fetchRelationshipTypes();
+  }, []);
+  
   useEffect(() => {
     async function fetchStates() {
       const { data, error } = await supabase
@@ -126,6 +168,30 @@ export default function HomePage() {
         setHasReadTerms(true)
       }
     }
+  }
+
+  function handleSearchRedirect() {
+    const params = new URLSearchParams({
+      name,
+      organization,
+      category,
+      location,
+      state,
+      relationship,
+      otherRelationship: relationship === "other" ? otherRelationship : "",
+    });
+  
+    router.push(`/searchdefendants?${params.toString()}`);
+  }
+
+  function handleClear() {
+    setName("");
+    setOrganization("");
+    setCategory("");
+    setLocation("");
+    setState("");
+    setRelationship("all"); // or ""
+    setOtherRelationship("");
   }
 
   return (
@@ -361,12 +427,8 @@ export default function HomePage() {
           </div>
 
           <Card className="p-8 bg-white shadow-lg rounded-xl">
-            {/* Title */}
-            <h3 className="text-lg font-semibold text-gray-800 mb-6 text-center">
-              Find Defendants
-            </h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div key={formKey} className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-6">
               {/* Name Field */}
               <div className="flex flex-col">
                 <label className="mb-1 text-sm font-semibold text-gray-700">Name</label>
@@ -392,25 +454,31 @@ export default function HomePage() {
               {/* Relationship Field */}
               <div className="flex flex-col">
                 <label className="mb-1 text-sm font-semibold text-gray-700">Relationship</label>
-                <Select value={relationship} onValueChange={setRelationship}>
-                  <SelectTrigger className="w-full rounded-xl border-gray-300">
-                    <SelectValue placeholder="Select relationship" />
-                  </SelectTrigger>
-                  <SelectContent className="z-50 bg-white shadow-lg rounded-lg border border-gray-200">
-                    <SelectItem value="all">All Types</SelectItem>
-                    <SelectItem value="business">Business</SelectItem>
-                    <SelectItem value="personal">Personal</SelectItem>
-                    <SelectItem value="professional">Professional</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
 
-                {relationship === "other" && (
+                {relLoading ? (
+                  <p className="text-sm text-gray-400">Loading relationships...</p>
+                ) : (
+                  <Select value={relationship} onValueChange={setRelationship}>
+                    <SelectTrigger className="w-full rounded-xl border-gray-300">
+                      <SelectValue placeholder="Select relationship" />
+                    </SelectTrigger>
+                    <SelectContent className="z-50 bg-white shadow-lg rounded-lg border border-gray-200">
+                      {relationshipTypes.map((rel) => (
+                        <SelectItem key={rel.id} value={rel.id}>
+                          {rel.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+
+                {/* 👇 Only show if "Other" selected */}
+                {relationshipTypes.find((rel) => rel.id === relationship)?.value === "other" && (
                   <Input
-                    placeholder="Please specify relationship..."
+                    placeholder="Please specify..."
                     value={otherRelationship}
                     onChange={(e) => setOtherRelationship(e.target.value)}
-                    className="mt-3 w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500"
+                    className="mt-3 w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500"
                   />
                 )}
               </div>
@@ -457,9 +525,8 @@ export default function HomePage() {
                       ) : state ? (
                         // show selected state (abbr + name)
                         states.find((s) => s.state_abbreviation === state)?.full_state_name +
-                        " (" +
-                        state +
-                        ")"
+                        " - " +
+                        state
                       ) : (
                         <span className="text-gray-400">Select a state...</span>
                       )}
@@ -505,17 +572,22 @@ export default function HomePage() {
 
             {/* Buttons */}
             <div className="flex justify-center gap-4">
-              <Button className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-md">
-                Search Defendants
+              <Button onClick={handleSearchRedirect}>
+                Search Defendant
               </Button>
+
               <Button
                 variant="outline"
                 className="px-6 py-2 rounded-md"
                 onClick={() => {
                   setName("");
+                  setOrganization("");
+                  setCategory("");
+                  setLocation("");
+                  setState("");
                   setRelationship("all");
                   setOtherRelationship("");
-                  setLocation("");
+                  setFormKey((prev) => prev + 1); // 👈 force re-render reset
                 }}
               >
                 Clear Filters
