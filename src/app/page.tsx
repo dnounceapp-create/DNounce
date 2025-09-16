@@ -1,13 +1,28 @@
-"use client"
+"use client";
 
-import { useState, useRef, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import Image from "next/image"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
+import { supabase } from "@/lib/supabaseClient"; // ✅ supabase client
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 import {
   Search,
   Upload,
@@ -19,45 +34,89 @@ import {
   Clock,
   Eye,
   User,
-} from "lucide-react"
-
-
+  ChevronsUpDown,
+  Check,
+} from "lucide-react";
 
 export default function HomePage() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [hasReadTerms, setHasReadTerms] = useState(false)
-  const [agreedToTerms, setAgreedToTerms] = useState(false)
-  const termsRef = useRef<HTMLDivElement>(null)
-  const router = useRouter()
+  const [activeTab, setActiveTab] = useState<"cases" | "badges">("cases");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [hasReadTerms, setHasReadTerms] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const termsRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    console.log("SUPABASE URL:", process.env.NEXT_PUBLIC_SUPABASE_URL);
+    console.log("Anon key exists:", !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+  }, []);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      const menu = document.getElementById("mobile-menu")
-      const button = document.getElementById("menu-button")
-  
+      const menu = document.getElementById("mobile-menu");
+      const button = document.getElementById("menu-button");
+
       if (
         menu &&
         !menu.contains(event.target as Node) &&
         button &&
         !button.contains(event.target as Node)
       ) {
-        setMobileMenuOpen(false)
+        setMobileMenuOpen(false);
       }
     }
-  
-    if (mobileMenuOpen) {
-      document.addEventListener("mousedown", handleClickOutside)
-    }
-  
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside)
-    }
-  }, [mobileMenuOpen])
 
-  const [name, setName] = useState("")
-  const [relationship, setRelationship] = useState("all")
+    if (mobileMenuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [mobileMenuOpen]);
+
+  const [name, setName] = useState("");
+  const [organization, setOrganization] = useState("");
+  const [relationship, setRelationship] = useState("all");
   const [otherRelationship, setOtherRelationship] = useState("");
-  const [location, setLocation] = useState("")
+  const [category, setCategory] = useState("");
+  const [location, setLocation] = useState("");
+
+  // 🔽 Supabase-powered states list
+  const [states, setStates] = useState<{ abbr: string; name: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    async function fetchStates() {
+      const { data, error } = await supabase
+        .from("states")
+        .select("state_abbreviation, full_state_name")
+        .order("full_state_name", { ascending: true });
+  
+      console.log("Supabase fetch result:", data, error); // 👈
+  
+      if (error) {
+        console.error("Error fetching states:", JSON.stringify(error, null, 2));
+      } else {
+        setStates(data || []);
+        if (!data || data.length === 0) {
+          console.warn('No rows returned from "states".');
+        }
+      }
+      setLoading(false);
+    }
+    fetchStates();
+  }, []);
+
+  const [state, setState] = useState("");
+
+  // 👇 find selected state (works for abbreviation or full name)
+  const selectedState = states.find(
+    (s) =>
+      s.state_abbreviation === state ||
+      s.full_state_name.toLowerCase() === state?.toLowerCase()
+  );
 
   const handleTermsScroll = () => {
     if (termsRef.current) {
@@ -307,37 +366,42 @@ export default function HomePage() {
               Find Defendants
             </h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
               {/* Name Field */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Name</label>
+              <div className="flex flex-col">
+                <label className="mb-1 text-sm font-semibold text-gray-700">Name</label>
                 <Input
                   placeholder="e.g. John Doe"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              {/* Organization/Company Field */}
+              <div className="flex flex-col">
+                <label className="mb-1 text-sm font-semibold text-gray-700">Organization/Company</label>
+                <Input
+                  placeholder="e.g. Acme Inc."
+                  value={organization}
+                  onChange={(e) => setOrganization(e.target.value)}
+                  className="w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
               {/* Relationship Field */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Relationship</label>
+              <div className="flex flex-col">
+                <label className="mb-1 text-sm font-semibold text-gray-700">Relationship</label>
                 <Select value={relationship} onValueChange={setRelationship}>
-                  <SelectTrigger className="w-full border-gray-300">
+                  <SelectTrigger className="w-full rounded-xl border-gray-300">
                     <SelectValue placeholder="Select relationship" />
                   </SelectTrigger>
-                  <SelectContent
-                    className="z-50 bg-white shadow-lg rounded-lg border border-gray-200"
-                    style={{
-                      backgroundColor: "#ffffff", // solid background
-                      color: "#1f2937", // dark gray text (tailwind gray-800)
-                    }}
-                  >
-                    <SelectItem value="all" className="text-gray-800">All Types</SelectItem>
-                    <SelectItem value="business" className="text-gray-800">Business</SelectItem>
-                    <SelectItem value="personal" className="text-gray-800">Personal</SelectItem>
-                    <SelectItem value="professional" className="text-gray-800">Professional</SelectItem>
-                    <SelectItem value="other" className="text-gray-800">Other</SelectItem>
+                  <SelectContent className="z-50 bg-white shadow-lg rounded-lg border border-gray-200">
+                    <SelectItem value="all">All Types</SelectItem>
+                    <SelectItem value="business">Business</SelectItem>
+                    <SelectItem value="personal">Personal</SelectItem>
+                    <SelectItem value="professional">Professional</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
                   </SelectContent>
                 </Select>
 
@@ -346,22 +410,95 @@ export default function HomePage() {
                     placeholder="Please specify relationship..."
                     value={otherRelationship}
                     onChange={(e) => setOtherRelationship(e.target.value)}
-                    className="mt-3 w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500"
+                    className="mt-3 w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500"
                   />
                 )}
               </div>
 
+              {/* Category Field */}
+              <div className="flex flex-col">
+                <label className="mb-1 text-sm font-semibold text-gray-700">Category</label>
+                <Input
+                  placeholder="e.g. Client, Family, Vendor..."
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
               {/* Location Field */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Location</label>
+              <div className="flex flex-col">
+                <label className="mb-1 text-sm font-semibold text-gray-700">Location</label>
                 <Input
                   placeholder="City or neighborhood..."
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
-                  className="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Type city name to see neighborhoods, or neighborhood to see full location
+                  Type city name to see neighborhoods, or neighborhood to see full location.
+                </p>
+              </div>
+
+              {/* State Field */}
+              <div className="flex flex-col">
+                <label className="mb-1 text-sm font-semibold text-gray-700">State</label>
+
+                <Popover open={open} onOpenChange={setOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={open}
+                      className="w-full justify-between rounded-lg border-gray-300 text-left"
+                    >
+                      {loading ? (
+                        <span className="text-gray-400">Loading states...</span>
+                      ) : state ? (
+                        // show selected state (abbr + name)
+                        states.find((s) => s.state_abbreviation === state)?.full_state_name +
+                        " (" +
+                        state +
+                        ")"
+                      ) : (
+                        <span className="text-gray-400">Select a state...</span>
+                      )}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+
+                  <PopoverContent className="w-[300px] p-0">
+                    <Command>
+                      <CommandInput placeholder="Type to search state..." />
+                      <CommandList>
+                        <CommandEmpty>No matching states.</CommandEmpty>
+                        <CommandGroup>
+                          {states.map((s) => (
+                            <CommandItem
+                              key={s.state_abbreviation}
+                              value={`${s.full_state_name} ${s.state_abbreviation}`}
+                              onSelect={() => {
+                                setState(s.state_abbreviation);
+                                setOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  s.state_abbreviation === state ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {s.full_state_name} ({s.state_abbreviation})
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+
+                <p className="mt-1 text-xs text-gray-500">
+                  Start typing to filter states by name or abbreviation (e.g. “NY” or “New…”)
                 </p>
               </div>
             </div>
@@ -410,39 +547,60 @@ export default function HomePage() {
 
                 {/* Main Content */}
                 <div className="flex-1">
-                  {/* Name, Title, Location + Scores */}
-                  <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6 mb-6">
-                    <div className="text-center md:text-left">
+                  <div className="flex items-start justify-between mb-6">
+                    <div>
                       <h3 className="text-xl font-semibold text-gray-900">John Example</h3>
                       <p className="text-sm text-gray-600">Software Manager at TechCorp Inc.</p>
-                      <p className="text-sm text-gray-500 flex items-center justify-center md:justify-start gap-1">
+                      <p className="text-sm text-gray-500 flex items-center gap-1">
                         <span>📍</span> San Francisco, CA
                       </p>
                     </div>
 
                     {/* Scores */}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 w-full md:w-auto">
+                    <div className="grid grid-cols-5 gap-6">
                       <div className="text-center">
                         <div className="text-2xl font-bold text-gray-900">82%</div>
-                        <div className="text-xs text-gray-500">Defendant Score</div>
+                        <div className="text-sm text-gray-500">Defendant Score</div>
                       </div>
                       <div className="text-center">
                         <div className="text-2xl font-bold text-gray-900">76%</div>
-                        <div className="text-xs text-gray-500">Overall User Score</div>
+                        <div className="text-sm text-gray-500">Overall User Score</div>
                       </div>
                       <div className="text-center">
                         <div className="text-2xl font-bold text-gray-900">88%</div>
-                        <div className="text-xs text-gray-500">Plaintiff Score</div>
+                        <div className="text-sm text-gray-500">Plaintiff Score</div>
                       </div>
                       <div className="text-center">
                         <div className="text-2xl font-bold text-gray-900">70%</div>
-                        <div className="text-xs text-gray-500">Voter Score</div>
+                        <div className="text-sm text-gray-500">Voter Score</div>
                       </div>
                       <div className="text-center">
                         <div className="text-2xl font-bold text-gray-900">91%</div>
-                        <div className="text-xs text-gray-500">Citizen Score</div>
+                        <div className="text-sm text-gray-500">Citizen Score</div>
                       </div>
                     </div>
+                  </div>
+
+                  {/* ✅ Buttons go here, now full width */}
+                  <div className="flex border-b border-gray-200 mb-6 w-full">
+                    <button
+                      onClick={() => setActiveTab("cases")}
+                      className={`w-1/2 py-3 text-center text-sm font-medium transition-colors
+                        ${activeTab === "cases"
+                          ? "text-blue-600 border-b-2 border-blue-600"
+                          : "text-gray-600 hover:text-blue-600"}`}
+                    >
+                      Cases Against Me
+                    </button>
+                    <button
+                      onClick={() => setActiveTab("badges")}
+                      className={`w-1/2 py-3 text-center text-sm font-medium transition-colors
+                        ${activeTab === "badges"
+                          ? "text-blue-600 border-b-2 border-blue-600"
+                          : "text-gray-600 hover:text-blue-600"}`}
+                    >
+                      Reputations & Badges
+                    </button>
                   </div>
 
                   {/* Case Breakdown */}
