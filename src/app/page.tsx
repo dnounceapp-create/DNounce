@@ -604,7 +604,7 @@ export default function HomePage() {
                   setOrganization("");
                   setCategory("");
                   setLocation("");
-                  setState("");
+                  setSearchState("");
                   setRelationship("all");
                   setOtherRelationship("");
                   setFormKey((prev) => prev + 1); // 👈 force re-render reset
