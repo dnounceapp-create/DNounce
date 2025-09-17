@@ -40,16 +40,40 @@ import {
 } from "lucide-react";
 
 export default function HomePage() {
+  const [activeTab, setActiveTab] = useState<"cases" | "reputations">("cases");
   const [formKey, setFormKey] = useState(0);
   const [relationshipTypes, setRelationshipTypes] = useState<{ id: string; label: string; value: string }[]>([]);
   const [relLoading, setRelLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"cases" | "badges">("cases");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [hasReadTerms, setHasReadTerms] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const termsRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
-
+  const [randomReputations, setRandomReputations] = useState<any[]>([]);
+  const [randomBadges, setRandomBadges] = useState<any[]>([]);
+  
+  useEffect(() => {
+    async function fetchRandomData() {
+      // Fetch 2 random reputations
+      const { data: repData, error: repError } = await supabase
+        .from("reputations")
+        .select("id, title, description")
+        .limit(2);
+  
+      if (!repError && repData) setRandomReputations(repData);
+  
+      // Fetch 3 random badges
+      const { data: badgeData, error: badgeError } = await supabase
+        .from("badges")
+        .select("id, label, icon, color")
+        .limit(3);
+  
+      if (!badgeError && badgeData) setRandomBadges(badgeData);
+    }
+  
+    fetchRandomData();
+  }, []);
+  
   useEffect(() => {
     console.log("SUPABASE URL:", process.env.NEXT_PUBLIC_SUPABASE_URL);
     console.log("Anon key exists:", !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
@@ -654,95 +678,139 @@ export default function HomePage() {
                   </div>
 
                   {/* ✅ Buttons go here, now full width */}
-                  <div className="flex border-b border-gray-200 mb-6 w-full">
+                  <div className="flex border-b mb-6 text-sm font-medium">
                     <button
                       onClick={() => setActiveTab("cases")}
-                      className={`w-1/2 py-3 text-center text-sm font-medium transition-colors
-                        ${activeTab === "cases"
+                      className={`flex-1 text-center px-4 py-2 ${
+                        activeTab === "cases"
                           ? "text-blue-600 border-b-2 border-blue-600"
-                          : "text-gray-600 hover:text-blue-600"}`}
+                          : "text-gray-500 hover:text-gray-700"
+                      }`}
                     >
                       Cases Against Me
                     </button>
                     <button
-                      onClick={() => setActiveTab("badges")}
-                      className={`w-1/2 py-3 text-center text-sm font-medium transition-colors
-                        ${activeTab === "badges"
+                      onClick={() => setActiveTab("reputations")}
+                      className={`flex-1 text-center px-4 py-2 ${
+                        activeTab === "reputations"
                           ? "text-blue-600 border-b-2 border-blue-600"
-                          : "text-gray-600 hover:text-blue-600"}`}
+                          : "text-gray-500 hover:text-gray-700"
+                      }`}
                     >
                       Reputations & Badges
                     </button>
                   </div>
 
-                  {/* Case Breakdown */}
-                  <div className="mb-6">
-                    <h4 className="font-medium text-gray-900 mb-3 text-center md:text-left">Case Breakdown</h4>
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-gray-900">8</div>
-                        <div className="text-sm text-gray-500">Total Cases</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-green-600">5</div>
-                        <div className="text-sm text-gray-500">Evidence-Based</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-yellow-600">3</div>
-                        <div className="text-sm text-gray-500">Opinion-Based</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Recent Cases */}
-                  <div>
-                    <h4 className="font-medium text-gray-900 mb-3 text-center md:text-left">Recent Cases</h4>
-                    <div className="space-y-4">
-                      <div className="border-b border-gray-100 pb-4">
-                        <div className="flex items-start justify-between mb-2">
-                          <h5 className="font-medium text-gray-900">Workplace Harassment Documentation</h5>
-                          <Badge className="bg-green-100 text-green-800 text-xs">EVIDENCE-BASED</Badge>
+                  {/* CASES TAB CONTENT */}
+                  {activeTab === "cases" && (
+                    <>
+                      {/* Case Breakdown */}
+                      <div className="mb-6">
+                        <h4 className="font-medium text-gray-900 mb-3 text-center md:text-left">Case Breakdown</h4>
+                        <div className="grid grid-cols-3 gap-4">
+                          <div className="text-center">
+                            <div className="text-2xl font-bold text-gray-900">8</div>
+                            <div className="text-sm text-gray-500">Total Cases</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-2xl font-bold text-green-600">5</div>
+                            <div className="text-sm text-gray-500">Evidence-Based</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-2xl font-bold text-yellow-600">3</div>
+                            <div className="text-sm text-gray-500">Opinion-Based</div>
+                          </div>
                         </div>
-                        <p className="text-sm text-gray-600 mb-2">
-                          Verified email exchanges and documented incidents of inappropriate workplace behavior...
-                        </p>
-                        <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500">
-                          <span>📅 Dec 15, 2024</span>
-                          <span>💬 24 comments</span>
-                          <span>✅ AI Verified</span>
-                        </div>
-                        <Button
-                          variant="link"
-                          className="text-gray-400 p-0 h-auto text-sm mt-2 cursor-not-allowed"
-                          disabled
-                        >
-                          View Case
-                        </Button>
                       </div>
 
+                      {/* Recent Cases */}
                       <div>
-                        <div className="flex items-start justify-between mb-2">
-                          <h5 className="font-medium text-gray-900">Management Style Concerns</h5>
-                          <Badge className="bg-yellow-100 text-yellow-800 text-xs">OPINION-BASED</Badge>
+                        <h4 className="font-medium text-gray-900 mb-3 text-center md:text-left">Recent Cases</h4>
+                        <div className="space-y-4">
+                          <div className="border-b border-gray-100 pb-4">
+                            <div className="flex items-start justify-between mb-2">
+                              <h5 className="font-medium text-gray-900">Workplace Harassment Documentation</h5>
+                              <Badge className="bg-green-100 text-green-800 text-xs">EVIDENCE-BASED</Badge>
+                            </div>
+                            <p className="text-sm text-gray-600 mb-2">
+                              Verified email exchanges and documented incidents of inappropriate workplace behavior...
+                            </p>
+                            <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500">
+                              <span>📅 Dec 15, 2024</span>
+                              <span>💬 24 comments</span>
+                              <span>✅ AI Verified</span>
+                            </div>
+                            <Button
+                              variant="link"
+                              className="text-gray-400 p-0 h-auto text-sm mt-2 cursor-not-allowed"
+                              disabled
+                            >
+                              View Case
+                            </Button>
+                          </div>
+
+                          <div>
+                            <div className="flex items-start justify-between mb-2">
+                              <h5 className="font-medium text-gray-900">Management Style Concerns</h5>
+                              <Badge className="bg-yellow-100 text-yellow-800 text-xs">OPINION-BASED</Badge>
+                            </div>
+                            <p className="text-sm text-gray-600 mb-2">
+                              Personal account of micromanagement and team communication issues...
+                            </p>
+                            <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500">
+                              <span>📅 Dec 10, 2024</span>
+                              <span>💬 12 comments</span>
+                              <span>👤 By: Sarah M.</span>
+                            </div>
+                            <Button
+                              variant="link"
+                              className="text-gray-400 p-0 h-auto text-sm mt-2 cursor-not-allowed"
+                              disabled
+                            >
+                              View Case
+                            </Button>
+                          </div>
                         </div>
-                        <p className="text-sm text-gray-600 mb-2">
-                          Personal account of micromanagement and team communication issues...
-                        </p>
-                        <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500">
-                          <span>📅 Dec 10, 2024</span>
-                          <span>💬 12 comments</span>
-                          <span>👤 By: Sarah M.</span>
-                        </div>
-                        <Button
-                          variant="link"
-                          className="text-gray-400 p-0 h-auto text-sm mt-2 cursor-not-allowed"
-                          disabled
-                        >
-                          View Case
-                        </Button>
                       </div>
+                    </>
+                  )}
+
+                  {/* REPUTATIONS & BADGES TAB CONTENT */}
+                  {activeTab === "reputations" && (
+                    <div>
+                      {/* Reputations */}
+                      <h4 className="font-medium text-gray-900 mb-3">Reputations</h4>
+                      {randomReputations.length ? (
+                        <ul className="list-disc list-inside text-sm text-gray-600">
+                          {randomReputations.map((rep) => (
+                            <li key={rep.id}>
+                              <span className="font-medium">{rep.title}</span>: {rep.description}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-gray-500 text-sm">No reputations found.</p>
+                      )}
+
+                      {/* Badges */}
+                      <h4 className="font-medium text-gray-900 mb-3 mt-6">Badges</h4>
+                      {randomBadges.length ? (
+                        <div className="flex flex-wrap gap-2">
+                          {randomBadges.map((badge) => (
+                            <span
+                              key={badge.id}
+                              className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-gray-100 border"
+                            >
+                              <span className="mr-1">{badge.icon}</span>
+                              {badge.label}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-gray-500 text-sm">No badges found.</p>
+                      )}
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
             </Card>
