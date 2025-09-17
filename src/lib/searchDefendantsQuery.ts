@@ -26,7 +26,9 @@ export async function searchDefendantsQuery(filters: {
     ),
     defendant_locations (
       locations ( name )
-    )
+    ),
+    reputations ( id, title, description ),   -- NEW
+    badges ( id, label, color, icon )
     `
   );
 
