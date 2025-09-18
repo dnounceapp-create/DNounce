@@ -51,7 +51,37 @@ export default function HomePage() {
   const router = useRouter();
   const [randomReputations, setRandomReputations] = useState<any[]>([]);
   const [randomBadges, setRandomBadges] = useState<any[]>([]);
+  const [locationInput, setLocationInput] = useState("");
+  const [locationSuggestions, setLocationSuggestions] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchSuggestions = async () => {
+      if (!locationInput) {
+        setLocationSuggestions([]);
+        return;
+      }
   
+      try {
+        const res = await fetch(`/api/location?input=${encodeURIComponent(locationInput)}`);
+        const data = await res.json();
+  
+        if (!data || !Array.isArray(data.predictions)) {
+          setLocationSuggestions([]);
+        } else {
+          setLocationSuggestions(data.predictions);
+        }
+      } catch (err) {
+        console.error("Error fetching suggestions:", err);
+        setLocationSuggestions([]);
+      }
+    };
+  
+    // ⏳ Debounce: wait 300ms after user stops typing
+    const delayDebounce = setTimeout(fetchSuggestions, 300);
+  
+    return () => clearTimeout(delayDebounce);
+  }, [locationInput]);
+
   useEffect(() => {
     async function fetchRandomData() {
       // Fetch 2 random reputations
@@ -113,7 +143,6 @@ export default function HomePage() {
   // 🔽 Supabase-powered states list
   const [states, setStates] = useState<{ state_abbreviation: string; full_state_name: string }[]>([]);
   const [loading, setLoading] = useState(true);
-  const [openSearchState, setOpenSearchState] = useState(false);
   const [openSubmitState, setOpenSubmitState] = useState(false);
   const [searchRelationship, setSearchRelationship] = useState("all");
   const [searchOtherRelationship, setSearchOtherRelationship] = useState("");
@@ -126,7 +155,6 @@ export default function HomePage() {
       organization,
       category,
       location,
-      state: searchState,
       relationship,
       otherRelationship,
     };
@@ -158,29 +186,6 @@ export default function HomePage() {
     fetchRelationshipTypes();
   }, []);
   
-  useEffect(() => {
-    async function fetchStates() {
-      const { data, error } = await supabase
-        .from("states")
-        .select("state_abbreviation, full_state_name")
-        .order("full_state_name", { ascending: true });
-        
-      console.log("Supabase fetch result:", data, error); // 👈
-  
-      if (error) {
-        console.error("Error fetching states:", JSON.stringify(error, null, 2));
-      } else {
-        setStates(data || []);
-        if (!data || data.length === 0) {
-          console.warn('No rows returned from "states".');
-        }
-      }
-      setLoading(false);
-    }
-    fetchStates();
-  }, []);
-
-  const [searchState, setSearchState] = useState("");
   const [submitState, setSubmitState] = useState("");
 
   const handleTermsScroll = () => {
@@ -199,7 +204,6 @@ export default function HomePage() {
       organization,
       category,
       location,
-      state: searchState,
       relationship,
       otherRelationship: relationship === "other" ? otherRelationship : "",
     });
@@ -212,7 +216,6 @@ export default function HomePage() {
     setOrganization("");
     setCategory("");
     setLocation("");
-    setSearchState("");   // ✅ reset search state
     setRelationship("all");
     setOtherRelationship("");
   }
@@ -522,72 +525,38 @@ export default function HomePage() {
               {/* Location Field */}
               <div className="flex flex-col">
                 <label className="mb-1 text-sm font-semibold text-gray-700">Location</label>
-                <Input
-                  placeholder="City or neighborhood..."
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  className="w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500"
-                />
+                <div className="relative">
+                  <Input
+                    placeholder="City or neighborhood..."
+                    value={locationInput}
+                    onChange={(e) => setLocationInput(e.target.value)}
+                    className="w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500"
+                  />
+                  {locationSuggestions.length > 0 && (
+                    <ul className="absolute z-50 bg-white border rounded-md w-full shadow-md mt-1 max-h-60 overflow-y-auto">
+                      {locationSuggestions.map((s, idx) => {
+                        // Our backend already returns "Astoria, NY" style descriptions
+                        const cleanLabel = s.description;
+
+                        return (
+                          <li
+                            key={idx}
+                            className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                            onClick={() => {
+                              setLocation(cleanLabel);
+                              setLocationInput(cleanLabel);
+                              setLocationSuggestions([]);
+                            }}
+                          >
+                            {cleanLabel}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
                 <p className="text-xs text-gray-500 mt-1">
                   Type city name to see neighborhoods, or neighborhood to see full location.
-                </p>
-              </div>
-
-              {/* State Field (Search Profiles) */}
-              <div className="flex flex-col">
-                <label className="mb-1 text-sm font-semibold text-gray-700">State</label>
-
-                <Popover open={openSearchState} onOpenChange={setOpenSearchState}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={openSearchState}
-                      className="w-full justify-between rounded-lg border-gray-300 text-left"
-                    >
-                      {loading ? (
-                        <span className="text-gray-400">Loading states...</span>
-                      ) : searchState ? (
-                        `${states.find((s) => s.state_abbreviation === searchState)?.full_state_name} (${searchState})`
-                      ) : (
-                        <span className="text-gray-400">Select a state...</span>
-                      )}
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-
-                  <PopoverContent className="w-[300px] p-0">
-                    <Command>
-                      <CommandInput placeholder="Type to search state..." />
-                      <CommandList>
-                        <CommandEmpty>No matching states.</CommandEmpty>
-                        <CommandGroup>
-                          {states.map((s) => (
-                            <CommandItem
-                              key={s.state_abbreviation}
-                              value={`${s.full_state_name} ${s.state_abbreviation}`}
-                              onSelect={() => {
-                                setSearchState(s.state_abbreviation);
-                                setOpenSearchState(false);
-                              }}
-                            >
-                              <Check
-                                className={cn(
-                                  "mr-2 h-4 w-4",
-                                  s.state_abbreviation === searchState ? "opacity-100" : "opacity-0"
-                                )}
-                              />
-                              {s.full_state_name} ({s.state_abbreviation})
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-
-                <p className="mt-1 text-xs text-gray-500">
-                  Start typing to filter states by name or abbreviation (e.g. "NY" or "New...")
                 </p>
               </div>
             </div>
@@ -606,7 +575,6 @@ export default function HomePage() {
                   setOrganization("");
                   setCategory("");
                   setLocation("");
-                  setSearchState("");
                   setRelationship("all");
                   setOtherRelationship("");
                   setFormKey((prev) => prev + 1); // 👈 force re-render reset
@@ -1191,64 +1159,6 @@ export default function HomePage() {
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   Type city name to see neighborhoods, or neighborhood to see full location.
-                </p>
-              </div>
-
-              {/* State Field (Submit Record) */}
-              <div className="flex flex-col">
-                <label className="mb-1 text-sm font-semibold text-gray-700">State</label>
-
-                <Popover open={openSubmitState} onOpenChange={setOpenSubmitState}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={openSubmitState}
-                      className="w-full justify-between rounded-lg border-gray-300 text-left"
-                    >
-                      {loading ? (
-                        <span className="text-gray-400">Loading states...</span>
-                      ) : submitState ? (
-                        `${states.find((s) => s.state_abbreviation === submitState)?.full_state_name} (${submitState})`
-                      ) : (
-                        <span className="text-gray-400">Select a state...</span>
-                      )}
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-
-                  <PopoverContent className="w-[300px] p-0">
-                    <Command>
-                      <CommandInput placeholder="Type to search state..." />
-                      <CommandList>
-                        <CommandEmpty>No matching states.</CommandEmpty>
-                        <CommandGroup>
-                          {states.map((s) => (
-                            <CommandItem
-                              key={s.state_abbreviation}
-                              value={`${s.full_state_name} ${s.state_abbreviation}`}
-                              onSelect={() => {
-                                setSubmitState(s.state_abbreviation);
-                                setOpenSubmitState(false);
-                              }}
-                            >
-                              <Check
-                                className={cn(
-                                  "mr-2 h-4 w-4",
-                                  s.state_abbreviation === submitState ? "opacity-100" : "opacity-0"
-                                )}
-                              />
-                              {s.full_state_name} ({s.state_abbreviation})
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-
-                <p className="mt-1 text-xs text-gray-500">
-                  Start typing to filter states by name or abbreviation (e.g. "NY" or "New...")
                 </p>
               </div>
             </div>
