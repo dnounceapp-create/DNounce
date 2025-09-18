@@ -4,21 +4,21 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 
 // Define the type based on the actual Supabase response structure
-type Defendant = {
+type Subject = {
   id: string;
   name: string;
   organizations: Array<{ name: string }>;
   categories: Array<{ name: string }>;
-  defendant_relationships: Array<{ relationship_types: { value: string; label: string } }>;
+  subject_relationships: Array<{ relationship_types: { value: string; label: string } }>;
   relationship_type_other: Array<{ custom_value: string }>;
-  defendant_states: Array<{ states: { state_abbreviation: string; full_state_name: string } }>;
-  defendant_locations: Array<{ locations: { name: string } }>;
+  subject_states: Array<{ states: { state_abbreviation: string; full_state_name: string } }>;
+  subject_locations: Array<{ locations: { name: string } }>;
 };
 
 // This component needs to be wrapped in Suspense
 function SearchResultsContent() {
   const searchParams = useSearchParams();
-  const [results, setResults] = useState<Defendant[]>([]);
+  const [results, setResults] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -37,24 +37,24 @@ function SearchResultsContent() {
 
       try {
         // Import dynamically to avoid SSR issues
-        const { searchDefendantsQuery } = await import("@/lib/searchDefendantsQuery");
-        const { data, error } = await searchDefendantsQuery(filters);
+        const { searchSubjectsQuery } = await import("@/lib/searchSubjectsQuery");
+        const { data, error } = await searchSubjectsQuery(filters);
 
         if (error) {
           console.error("Search error:", error);
         } else {
           // Transform the data to match our type
-          const defendants = (data || []).map((item: any) => ({
+          const subjects = (data || []).map((item: any) => ({
             id: item.id,
             name: item.name,
             organizations: item.organizations || [],
             categories: item.categories || [],
-            defendant_relationships: item.defendant_relationships || [],
+            subject_relationships: item.subject_relationships || [],
             relationship_type_other: item.relationship_type_other || [],
-            defendant_states: item.defendant_states || [],
-            defendant_locations: item.defendant_locations || [],
+            subject_states: item.subject_states || [],
+            subject_locations: item.subject_locations || [],
           }));
-          setResults(defendants);
+          setResults(subjects);
         }
       } catch (err) {
         console.error("Unexpected error:", err);
@@ -72,34 +72,34 @@ function SearchResultsContent() {
     <div className="max-w-4xl mx-auto p-6">
       <h1 className="text-2xl font-bold mb-4">Search Results</h1>
       {results.length === 0 ? (
-        <p className="text-gray-500">No defendants found.</p>
+        <p className="text-gray-500">No subjects found.</p>
       ) : (
         <div className="space-y-4">
-          {results.map((def) => (
-            <div key={def.id} className="p-4 bg-white rounded-lg shadow">
-              <h2 className="text-lg font-semibold">{def.name}</h2>
+          {results.map((subject) => (
+            <div key={subject.id} className="p-4 bg-white rounded-lg shadow">
+              <h2 className="text-lg font-semibold">{subject.name}</h2>
               <p className="text-sm text-gray-600">
-                Categories: {def.categories.map((c) => c.name).join(", ") || "—"}
+                Categories: {subject.categories.map((c) => c.name).join(", ") || "—"}
               </p>
               <p className="text-sm text-gray-600">
-                Organizations: {def.organizations.map((o) => o.name).join(", ") || "—"}
+                Organizations: {subject.organizations.map((o) => o.name).join(", ") || "—"}
               </p>
               <p className="text-sm text-gray-600">
                 States:{" "}
-                {def.defendant_states.map((s) => s.states.state_abbreviation).join(", ") || "—"}
+                {subject.subject_states.map((s) => s.states.state_abbreviation).join(", ") || "—"}
               </p>
               <p className="text-sm text-gray-600">
-                Locations: {def.defendant_locations.map((l) => l.locations.name).join(", ") || "—"}
+                Locations: {subject.subject_locations.map((l) => l.locations.name).join(", ") || "—"}
               </p>
               <p className="text-sm text-gray-600">
                 Relationships:{" "}
-                {def.defendant_relationships.map((r) => r.relationship_types.label).join(", ") ||
+                {subject.subject_relationships.map((r) => r.relationship_types.label).join(", ") ||
                   "—"}
               </p>
-              {def.relationship_type_other && def.relationship_type_other.length > 0 && (
+              {subject.relationship_type_other && subject.relationship_type_other.length > 0 && (
                 <p className="text-sm text-gray-600">
                   Other Relationship:{" "}
-                  {def.relationship_type_other.map((o) => o.custom_value).join(", ")}
+                  {subject.relationship_type_other.map((o) => o.custom_value).join(", ")}
                 </p>
               )}
             </div>
@@ -110,7 +110,7 @@ function SearchResultsContent() {
   );
 }
 
-export default function SearchDefendantsPage() {
+export default function SearchSubjectsPage() {
   return (
     <Suspense fallback={<div className="p-6">Loading search parameters...</div>}>
       <SearchResultsContent />

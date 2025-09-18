@@ -2,7 +2,7 @@
 
 import { supabase } from "@/lib/supabaseClient";
 
-export async function searchDefendantsQuery(filters: {
+export async function searchSubjectsQuery(filters: {
   name?: string;
   organization?: string;
   category?: string;
@@ -11,23 +11,23 @@ export async function searchDefendantsQuery(filters: {
   relationship?: string;
   otherRelationship?: string;
 }) {
-  let query = supabase.from("defendants").select(
+  let query = supabase.from("subjects").select(
     `
     id,
     name,
     organizations ( name ),
     categories ( name ),
-    defendant_relationships (
+    subject_relationships (
       relationship_types ( value, label )
     ),
     relationship_type_other ( custom_value ),
-    defendant_states (
+    subject_states (
       states ( state_abbreviation, full_state_name )
     ),
-    defendant_locations (
+    subject_locations (
       locations ( name )
     ),
-    reputations ( id, title, description ),   -- NEW
+    reputations ( id, title, description ),
     badges ( id, label, color, icon )
     `
   );
@@ -45,15 +45,15 @@ export async function searchDefendantsQuery(filters: {
   }
 
   if (filters.location) {
-    query = query.ilike("defendant_locations.locations.name", `%${filters.location}%`);
+    query = query.ilike("subject_locations.locations.name", `%${filters.location}%`);
   }
 
   if (filters.state) {
-    query = query.eq("defendant_states.states.state_abbreviation", filters.state);
+    query = query.eq("subject_states.states.state_abbreviation", filters.state);
   }
 
   if (filters.relationship && filters.relationship !== "all") {
-    query = query.eq("defendant_relationships.relationship_types.value", filters.relationship);
+    query = query.eq("subject_relationships.relationship_types.value", filters.relationship);
   }
 
   if (filters.otherRelationship) {
