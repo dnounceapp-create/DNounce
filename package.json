@@ -42,7 +42,6 @@
     "typescript": "^5"
   }
 }
-
 {
   "name": "dnounce",
   "version": "1.0.0",
