@@ -55,20 +55,22 @@ export default function HomePage() {
   const [locationSuggestions, setLocationSuggestions] = useState<any[]>([]);
 
   useEffect(() => {
-    const fetchSuggestions = async () => {
-      if (!locationInput) {
+    const fetchSuggestions = async (query: string) => {
+      if (!query) {
         setLocationSuggestions([]);
         return;
       }
   
       try {
-        const res = await fetch(`/api/location?input=${encodeURIComponent(locationInput)}`);
+        const res = await fetch(`/api/location?input=${encodeURIComponent(query)}`);
         const data = await res.json();
   
-        if (!data || !Array.isArray(data.predictions)) {
+        if (data.error) {
+          console.error("API error:", data.error, data.details);
           setLocationSuggestions([]);
         } else {
-          setLocationSuggestions(data.predictions);
+          // ✅ Backend already gives { description: "Astoria, NY, USA" }
+          setLocationSuggestions(data.predictions || []);
         }
       } catch (err) {
         console.error("Error fetching suggestions:", err);
@@ -76,9 +78,7 @@ export default function HomePage() {
       }
     };
   
-    // ⏳ Debounce: wait 300ms after user stops typing
-    const delayDebounce = setTimeout(fetchSuggestions, 300);
-  
+    const delayDebounce = setTimeout(() => fetchSuggestions(locationInput), 300); // debounce
     return () => clearTimeout(delayDebounce);
   }, [locationInput]);
 
@@ -527,31 +527,27 @@ export default function HomePage() {
                 <label className="mb-1 text-sm font-semibold text-gray-700">Location</label>
                 <div className="relative">
                   <Input
-                    placeholder="City or neighborhood..."
+                    type="text"
                     value={locationInput}
                     onChange={(e) => setLocationInput(e.target.value)}
+                    placeholder="City or neighborhood..."
                     className="w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500"
                   />
                   {locationSuggestions.length > 0 && (
                     <ul className="absolute z-50 bg-white border rounded-md w-full shadow-md mt-1 max-h-60 overflow-y-auto">
-                      {locationSuggestions.map((s, idx) => {
-                        // Our backend already returns "Astoria, NY" style descriptions
-                        const cleanLabel = s.description;
-
-                        return (
-                          <li
-                            key={idx}
-                            className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
-                            onClick={() => {
-                              setLocation(cleanLabel);
-                              setLocationInput(cleanLabel);
-                              setLocationSuggestions([]);
-                            }}
-                          >
-                            {cleanLabel}
-                          </li>
-                        );
-                      })}
+                      {locationSuggestions.map((s, idx) => (
+                        <li
+                          key={idx}
+                          className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                          onClick={() => {
+                            setLocation(s.description);
+                            setLocationInput(s.description);
+                            setLocationSuggestions([]);
+                          }}
+                        >
+                          {s.description}
+                        </li>
+                      ))}
                     </ul>
                   )}
                 </div>
