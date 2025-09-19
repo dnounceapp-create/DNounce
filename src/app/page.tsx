@@ -202,14 +202,14 @@ export default function HomePage() {
 
   function handleSearchRedirect() {
     const params = new URLSearchParams({
-      name,
+      profileId,
       nickname,
-      profileId, // ✅ added
+      name,
       organization,
       category,
       location,
-      relationship,
-      otherRelationship: relationship === "other" ? otherRelationship : "",
+      relationship: searchRelationship,
+      otherRelationship: searchRelationship === "other" ? searchOtherRelationship : "",
     });
   }
 
@@ -598,17 +598,18 @@ export default function HomePage() {
               variant="outline"
               className="px-6 py-2 rounded-md"
               onClick={() => {
-                setName("");
+                setProfileId("");
                 setNickname("");
-                setProfileId(""); // ✅ clear profileId too
+                setName("");
                 setOrganization("");
                 setCategory("");
                 setLocation("");
-                setLocationInput(""); // ✅ clear input box
-                setLocationSuggestions([]); // ✅ clear dropdown
-                setSearchRelationship(""); // ✅ reset relationship
+                setLocationInput("");       // clears the location text box
+                setLocationSuggestions([]); // clears the dropdown
+                setSearchRelationship("");
+                setSearchOtherRelationship("");
                 setOtherRelationship("");
-                setFormKey((prev) => prev + 1); // 👈 force re-render reset
+                setFormKey((prev) => prev + 1); // 👈 still keeps the force reset
               }}
             >
               Clear Filters
