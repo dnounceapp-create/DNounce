@@ -153,12 +153,14 @@ export default function HomePage() {
 
   const handleSearch = async () => {
     const filters = {
+      profileId,
+      nickname,
       name,
       organization,
       category,
       location,
-      relationship,
-      otherRelationship,
+      relationship: searchRelationship,
+      otherRelationship: searchRelationship === "other" ? searchOtherRelationship : "",
     };
   
     const { data, error } = await searchSubjectsQuery(filters);
@@ -214,12 +216,18 @@ export default function HomePage() {
   }
 
   function handleClear() {
+    setProfileId("");
+    setNickname("");
     setName("");
     setOrganization("");
     setCategory("");
     setLocation("");
-    setRelationship("all");
+    setLocationInput("");
+    setLocationSuggestions([]);
+    setSearchRelationship("");
+    setSearchOtherRelationship("");
     setOtherRelationship("");
+    setFormKey((prev) => prev + 1);
   }
 
   return (
