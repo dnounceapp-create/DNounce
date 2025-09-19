@@ -1,5 +1,6 @@
 "use client";
 
+import { MapPin } from "lucide-react";
 import { searchSubjectsQuery } from "@/lib/searchSubjectsQuery";
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -538,21 +539,24 @@ export default function HomePage() {
                       {locationSuggestions.map((s, idx) => (
                         <li
                           key={idx}
-                          className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                          className="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-2"
                           onClick={() => {
                             setLocation(s.description);
                             setLocationInput(s.description);
                             setLocationSuggestions([]);
                           }}
                         >
-                          {s.description}
+                          <MapPin className="w-4 h-4 text-gray-600 shrink-0" />
+                          <span className="font-semibold text-gray-800 text-sm leading-tight">
+                            {s.description}
+                          </span>
                         </li>
                       ))}
                     </ul>
                   )}
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  Type city name to see neighborhoods, or neighborhood to see full location.
+                  Type neighborhoods/towns or cities only.
                 </p>
               </div>
             </div>

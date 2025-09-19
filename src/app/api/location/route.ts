@@ -69,7 +69,9 @@ const STATE_ABBREVIATIONS: { [key: string]: string } = {
   'washington': 'WA',
   'west virginia': 'WV',
   'wisconsin': 'WI',
-  'wyoming': 'WY'
+  'wyoming': 'WY',
+  'district of columbia': 'DC',
+  'dc': 'DC'
 };
 
 // Function to abbreviate state names
