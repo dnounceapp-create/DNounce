@@ -134,9 +134,10 @@ export default function HomePage() {
     };
   }, [mobileMenuOpen]);
 
+  const [profileId, setProfileId] = useState("");
   const [name, setName] = useState("");
+  const [nickname, setNickname] = useState("");
   const [organization, setOrganization] = useState("");
-  const [relationship, setRelationship] = useState("all");
   const [otherRelationship, setOtherRelationship] = useState("");
   const [category, setCategory] = useState("");
   const [location, setLocation] = useState("");
@@ -145,7 +146,7 @@ export default function HomePage() {
   const [states, setStates] = useState<{ state_abbreviation: string; full_state_name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [openSubmitState, setOpenSubmitState] = useState(false);
-  const [searchRelationship, setSearchRelationship] = useState("all");
+  const [searchRelationship, setSearchRelationship] = useState("");
   const [searchOtherRelationship, setSearchOtherRelationship] = useState("");
   const [submitRelationship, setSubmitRelationship] = useState("");
   const [submitOtherRelationship, setSubmitOtherRelationship] = useState("");
@@ -202,14 +203,14 @@ export default function HomePage() {
   function handleSearchRedirect() {
     const params = new URLSearchParams({
       name,
+      nickname,
+      profileId, // ✅ added
       organization,
       category,
       location,
       relationship,
       otherRelationship: relationship === "other" ? otherRelationship : "",
     });
-  
-    router.push(`/searchsubjects?${params.toString()}`);
   }
 
   function handleClear() {
@@ -458,13 +459,38 @@ export default function HomePage() {
           <Card className="p-8 bg-white shadow-lg rounded-xl">
 
             <div key={formKey} className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-6">
+              {/* Profile ID Field */}
+              <div className="flex flex-col">
+                <label className="mb-1 text-sm font-semibold text-gray-700">Profile ID</label>
+                <Input
+                  placeholder="e.g. 12345"
+                  type="text"
+                  value={profileId}
+                  onChange={(e) => setProfileId(e.target.value)}
+                  className="w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
               {/* Name Field */}
               <div className="flex flex-col">
                 <label className="mb-1 text-sm font-semibold text-gray-700">Name</label>
                 <Input
                   placeholder="e.g. John Doe"
+                  type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
+                  className="w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              {/* Nickname Field */}
+              <div className="flex flex-col">
+                <label className="mb-1 text-sm font-semibold text-gray-700">Also Known As</label>
+                <Input
+                  placeholder="Enter nickname"
+                  type="text"
+                  value={nickname}
+                  onChange={(e) => setNickname(e.target.value)}
                   className="w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -488,10 +514,10 @@ export default function HomePage() {
                   <p className="text-sm text-gray-400">Loading relationships...</p>
                 ) : (
                   <Select value={searchRelationship} onValueChange={setSearchRelationship}>
-                    <SelectTrigger className="w-full rounded-lg border-gray-300">
+                    <SelectTrigger className="w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500">
                       <SelectValue placeholder="Select relationship" />
                     </SelectTrigger>
-                    <SelectContent className="z-50 bg-white shadow-lg rounded-lg border border-gray-200">
+                    <SelectContent className="z-50 bg-white shadow-lg rounded-xl border border-gray-200">
                       {relationshipTypes.map((rel) => (
                         <SelectItem key={rel.id} value={rel.id}>
                           {rel.label}
@@ -499,7 +525,7 @@ export default function HomePage() {
                       ))}
                     </SelectContent>
                   </Select>
-                 )}
+                )}
 
                 {/* 👇 Only show if "Other" selected */}
                 {relationshipTypes.find((rel) => rel.id === searchRelationship)?.value === "other" && (
@@ -507,7 +533,7 @@ export default function HomePage() {
                     placeholder="Please specify..."
                     value={searchOtherRelationship}
                     onChange={(e) => setSearchOtherRelationship(e.target.value)}
-                    className="mt-3 w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500"
+                    className="mt-3 w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500"
                   />
                 )}
               </div>
@@ -517,6 +543,7 @@ export default function HomePage() {
                 <label className="mb-1 text-sm font-semibold text-gray-700">Category</label>
                 <Input
                   placeholder="e.g. Client, Family, Vendor..."
+                  type="text"
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
                   className="w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500"
@@ -568,20 +595,24 @@ export default function HomePage() {
               </Button>
 
               <Button
-                variant="outline"
-                className="px-6 py-2 rounded-md"
-                onClick={() => {
-                  setName("");
-                  setOrganization("");
-                  setCategory("");
-                  setLocation("");
-                  setRelationship("all");
-                  setOtherRelationship("");
-                  setFormKey((prev) => prev + 1); // 👈 force re-render reset
-                }}
-              >
-                Clear Filters
-              </Button>
+              variant="outline"
+              className="px-6 py-2 rounded-md"
+              onClick={() => {
+                setName("");
+                setNickname("");
+                setProfileId(""); // ✅ clear profileId too
+                setOrganization("");
+                setCategory("");
+                setLocation("");
+                setLocationInput(""); // ✅ clear input box
+                setLocationSuggestions([]); // ✅ clear dropdown
+                setSearchRelationship(""); // ✅ reset relationship
+                setOtherRelationship("");
+                setFormKey((prev) => prev + 1); // 👈 force re-render reset
+              }}
+            >
+              Clear Filters
+            </Button>
             </div>
           </Card>
 
@@ -619,26 +650,26 @@ export default function HomePage() {
                     </div>
 
                     {/* Scores */}
-                    <div className="grid grid-cols-5 gap-6">
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-gray-900">82%</div>
-                        <div className="text-sm text-gray-500">Subject Score</div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 text-center mt-4">
+                      <div>
+                        <p className="text-xl font-bold text-gray-900">82%</p>
+                        <p className="text-sm text-gray-600">Subject Score</p>
                       </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-gray-900">76%</div>
-                        <div className="text-sm text-gray-500">Overall User Score</div>
+                      <div>
+                        <p className="text-xl font-bold text-gray-900">76%</p>
+                        <p className="text-sm text-gray-600">Overall User Score</p>
                       </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-gray-900">88%</div>
-                        <div className="text-sm text-gray-500">Contributor Score</div>
+                      <div>
+                        <p className="text-xl font-bold text-gray-900">88%</p>
+                        <p className="text-sm text-gray-600">Contributor Score</p>
                       </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-gray-900">70%</div>
-                        <div className="text-sm text-gray-500">Voter Score</div>
+                      <div>
+                        <p className="text-xl font-bold text-gray-900">70%</p>
+                        <p className="text-sm text-gray-600">Voter Score</p>
                       </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-gray-900">91%</div>
-                        <div className="text-sm text-gray-500">Citizen Score</div>
+                      <div>
+                        <p className="text-xl font-bold text-gray-900">91%</p>
+                        <p className="text-sm text-gray-600">Citizen Score</p>
                       </div>
                     </div>
                   </div>
