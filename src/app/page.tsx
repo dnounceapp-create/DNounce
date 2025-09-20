@@ -40,6 +40,57 @@ import {
   Check,
 } from "lucide-react";
 
+function buildNoProfileMessage(filters: {
+  profileId?: string;
+  nickname?: string;
+  name?: string;
+  organization?: string;
+  category?: string;
+  location?: string;
+  relationship?: string;
+  otherRelationship?: string;
+  relationshipTypes?: { id: string; label: string; value?: string }[];
+}) {
+  const parts: string[] = [];
+
+  if (filters.profileId) {
+    parts.push(`with profile ID ${filters.profileId}`);
+  }
+
+  if (filters.nickname) {
+    parts.push(`known as "${filters.nickname}"`);
+  }
+
+  if (filters.name) {
+    parts.push(`named ${filters.name}`);
+  }
+
+  if (filters.organization) {
+    parts.push(`at ${filters.organization}`);
+  }
+
+  if (filters.category) {
+    parts.push(`in category ${filters.category}`);
+  }
+
+  if (filters.location) {
+    parts.push(`in ${filters.location}`);
+  }
+
+  if (filters.relationship) {
+    const relType = filters.relationshipTypes?.find(
+      (rel) => rel.id === filters.relationship
+    );
+    if (relType?.value === "other" && filters.otherRelationship) {
+      parts.push(`with other relationship being ${filters.otherRelationship}`);
+    } else if (relType) {
+      parts.push(`with a ${relType.label.toLowerCase()} relationship`);
+    }
+  }
+
+  return `No profile found ${parts.join(" ")}. Sorry.`;
+}
+
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState<"records" | "reputations">("records");
   const [formKey, setFormKey] = useState(0);
@@ -54,6 +105,10 @@ export default function HomePage() {
   const [randomBadges, setRandomBadges] = useState<any[]>([]);
   const [locationInput, setLocationInput] = useState("");
   const [locationSuggestions, setLocationSuggestions] = useState<any[]>([]);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchMessage, setSearchMessage] = useState("");
+  const [showResults, setShowResults] = useState(false);
 
   useEffect(() => {
     const fetchSuggestions = async (query: string) => {
@@ -61,25 +116,31 @@ export default function HomePage() {
         setLocationSuggestions([]);
         return;
       }
-  
+    
       try {
         const res = await fetch(`/api/location?input=${encodeURIComponent(query)}`);
+        
+        // Check if the response is OK first
+        if (!res.ok) {
+          throw new Error(`Location API returned ${res.status}`);
+        }
+        
         const data = await res.json();
-  
+    
         if (data.error) {
-          console.error("API error:", data.error, data.details);
+          console.error("Location API error:", data.error, data.details);
           setLocationSuggestions([]);
         } else {
           // ✅ Backend already gives { description: "Astoria, NY, USA" }
           setLocationSuggestions(data.predictions || []);
         }
       } catch (err) {
-        console.error("Error fetching suggestions:", err);
+        console.error("Error fetching location suggestions:", err);
         setLocationSuggestions([]);
       }
     };
-  
-    const delayDebounce = setTimeout(() => fetchSuggestions(locationInput), 300); // debounce
+    
+    const delayDebounce = setTimeout(() => fetchSuggestions(locationInput), 300);
     return () => clearTimeout(delayDebounce);
   }, [locationInput]);
 
@@ -151,6 +212,60 @@ export default function HomePage() {
   const [submitRelationship, setSubmitRelationship] = useState("");
   const [submitOtherRelationship, setSubmitOtherRelationship] = useState("");
 
+  const handleSearchRedirect = async () => {
+    setSearchLoading(true);
+    setSearchMessage("");
+    setShowResults(false);
+    
+    const query = new URLSearchParams({
+      name: name || "",
+      nickname: nickname || "",
+      organization: organization || "",
+      category: category || "",
+      location: location || "",
+      relationship: searchRelationship || "",
+      profileId: profileId || "",
+    });
+  
+    try {
+      const res = await fetch(`/api/profiles?${query.toString()}`);
+      const data = await res.json();
+  
+      if (!res.ok) {
+        console.error("API error:", data.error || data.details);
+        setSearchMessage("Something went wrong. Please try again.");
+        setSearchLoading(false);
+        return;
+      }
+  
+      if (data.profiles.length === 0) {
+        const message = buildNoProfileMessage({
+          profileId,
+          nickname,
+          name,
+          organization,
+          category,
+          location,
+          relationship: searchRelationship,
+          otherRelationship: searchOtherRelationship,
+          relationshipTypes,
+        });
+      
+        setSearchMessage(message);
+        setSearchResults([]);
+      } else {
+        setSearchResults(data.profiles);
+        setSearchMessage(`Found ${data.profiles.length} profile(s)`);
+        setShowResults(true);
+      }
+    } catch (err) {
+      console.error("Unexpected error:", err);
+      setSearchMessage("Unexpected error. Please try again.");
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+  
   const handleSearch = async () => {
     const filters = {
       profileId,
@@ -202,20 +317,7 @@ export default function HomePage() {
     }
   }
 
-  function handleSearchRedirect() {
-    const params = new URLSearchParams({
-      profileId,
-      nickname,
-      name,
-      organization,
-      category,
-      location,
-      relationship: searchRelationship,
-      otherRelationship: searchRelationship === "other" ? searchOtherRelationship : "",
-    });
-  }
-
-  function handleClear() {
+  const handleClear = () => {
     setProfileId("");
     setNickname("");
     setName("");
@@ -227,8 +329,11 @@ export default function HomePage() {
     setSearchRelationship("");
     setSearchOtherRelationship("");
     setOtherRelationship("");
+    setSearchResults([]);
+    setSearchMessage("");
+    setShowResults(false);
     setFormKey((prev) => prev + 1);
-  }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 pt-20">
@@ -623,6 +728,39 @@ export default function HomePage() {
               Clear Filters
             </Button>
             </div>
+
+            {/* Loading Indicator */}
+            {searchLoading && (
+              <div className="mt-6 flex justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              </div>
+            )}
+
+            {/* Search Results Message */}
+            {searchMessage && (
+              <div className={`mt-4 p-4 rounded-lg text-center ${
+                searchResults.length > 0 
+                  ? "bg-green-50 text-green-800 border border-green-200" 
+                  : "bg-yellow-50 text-yellow-800 border border-yellow-200"
+              }`}>
+                {searchMessage}
+              </div>
+            )}
+
+            {/* Actual Search Results */}
+            {showResults && searchResults.length > 0 && (
+              <div className="mt-6">
+                <h3 className="text-lg font-semibold mb-4">Search Results</h3>
+                {searchResults.map((profile) => (
+                  <Card key={profile.id} className="p-4 mb-4">
+                    <h4 className="font-medium">{profile.name || "Unnamed Profile"}</h4>
+                    <p className="text-sm text-gray-600">ID: {profile.id}</p>
+                    {profile.organization && <p className="text-sm">Organization: {profile.organization}</p>}
+                    {profile.location && <p className="text-sm">Location: {profile.location}</p>}
+                  </Card>
+                ))}
+              </div>
+            )}
           </Card>
 
 
