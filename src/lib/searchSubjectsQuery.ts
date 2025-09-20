@@ -59,3 +59,5 @@ export async function searchSubjects(filters: Filters) {
     return []; // Always return an array, never throw
   }
 }
+
+export const searchSubjectsQuery = searchSubjects;
