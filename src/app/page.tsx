@@ -279,12 +279,11 @@ export default function HomePage() {
       otherRelationship: searchRelationship === "other" ? searchOtherRelationship : "",
     };
   
-    const { data, error } = await searchSubjects(filters);
-  
-    if (error) {
-      console.error("Search error:", error);
+    const results = await searchSubjects(filters);
+    if (results && results.length > 0) {
+      console.log("Search results:", results);
     } else {
-      console.log("Search results:", data);
+      console.log("No results found");
     }
   };
 
