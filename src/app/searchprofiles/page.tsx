@@ -38,26 +38,23 @@ function SearchResultsContent() {
       try {
         // Import dynamically to avoid SSR issues
         const { searchSubjects } = await import("@/lib/searchSubjectsQuery");
-        const { data, error } = await searchSubjects(filters);
-
-        if (error) {
-          console.error("Search error:", error);
-        } else {
-          // Transform the data to match our type
-          const subjects = (data || []).map((item: any) => ({
-            id: item.id,
-            name: item.name,
-            organizations: item.organizations || [],
-            categories: item.categories || [],
-            subject_relationships: item.subject_relationships || [],
-            relationship_type_other: item.relationship_type_other || [],
-            subject_states: item.subject_states || [],
-            subject_locations: item.subject_locations || [],
-          }));
-          setResults(subjects);
-        }
+        const data = await searchSubjects(filters);
+      
+        // Transform the data to match our type
+        const subjects = (data || []).map((item: any) => ({
+          id: item.id,
+          name: item.name,
+          organizations: item.organizations || [],
+          categories: item.categories || [],
+          subject_relationships: item.subject_relationships || [],
+          relationship_type_other: item.relationship_type_other || [],
+          subject_states: item.subject_states || [],
+          subject_locations: item.subject_locations || [],
+        }));
+      
+        setResults(subjects);
       } catch (err) {
-        console.error("Unexpected error:", err);
+        console.error("Search error:", err);
       } finally {
         setLoading(false);
       }
