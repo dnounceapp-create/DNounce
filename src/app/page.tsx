@@ -1,4 +1,5 @@
 "use client";
+// Deployment trigger - search functionality improvements
 
 import { MapPin } from "lucide-react";
 import { searchSubjects } from "@/lib/searchSubjectsQuery";
