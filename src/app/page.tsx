@@ -223,29 +223,27 @@ export default function HomePage() {
     setSearchLoading(true);
     setSearchMessage("");
     setShowResults(false);
-    
-    const query = new URLSearchParams({
-      name: name || "",
-      nickname: nickname || "",
-      organization: organization || "",
-      category: category || "",
-      location: location || "",
-      relationship: searchRelationship || "",
-      profileId: profileId || "",
-    });
+  
+    const filters = {
+      profileId,
+      nickname,
+      name,
+      organization,
+      category,
+      location,
+      relationship: searchRelationship,
+      otherRelationship: searchRelationship === "other" ? searchOtherRelationship : "",
+    };
   
     try {
-      const res = await fetch(`/api/profiles?${query.toString()}`);
-      const data = await res.json();
+      // Call backend query
+      const results = await searchSubjects(filters);
   
-      if (!res.ok) {
-        console.error("API error:", data.error || data.details);
-        setSearchMessage("Something went wrong. Please try again.");
-        setSearchLoading(false);
-        return;
-      }
-  
-      if (data.profiles.length === 0) {
+      if (results.length > 0) {
+        setSearchResults(results);
+        setSearchMessage(`Found ${results.length} profile(s)`);
+        setShowResults(true);
+      } else {
         const message = buildNoProfileMessage({
           profileId,
           nickname,
@@ -257,13 +255,9 @@ export default function HomePage() {
           otherRelationship: searchOtherRelationship,
           relationshipTypes,
         });
-      
+  
         setSearchMessage(message);
         setSearchResults([]);
-      } else {
-        setSearchResults(data.profiles);
-        setSearchMessage(`Found ${data.profiles.length} profile(s)`);
-        setShowResults(true);
       }
     } catch (err) {
       console.error("Unexpected error:", err);

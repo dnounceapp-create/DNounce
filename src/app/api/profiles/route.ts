@@ -7,8 +7,8 @@ export async function GET(req: Request) {
 
     const filters = {
       profileId: searchParams.get("profileId") || undefined,
-      nickname: searchParams.get("nickname") || undefined,
       name: searchParams.get("name") || undefined,
+      nickname: searchParams.get("nickname") || undefined,
       organization: searchParams.get("organization") || undefined,
       category: searchParams.get("category") || undefined,
       location: searchParams.get("location") || undefined,
@@ -16,13 +16,13 @@ export async function GET(req: Request) {
       otherRelationship: searchParams.get("otherRelationship") || undefined,
     };
 
-    const data = await searchSubjects(filters);
+    const results = await searchSubjects(filters);
 
-    return NextResponse.json({ profiles: data });
+    return NextResponse.json({ profiles: results });
   } catch (err: any) {
-    console.error("❌ Server error:", err);
+    console.error("❌ API error:", err.message);
     return NextResponse.json(
-      { error: "Server error", details: String(err) },
+      { error: "Server error", details: err.message },
       { status: 500 }
     );
   }
