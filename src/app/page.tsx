@@ -278,7 +278,7 @@ export default function HomePage() {
       otherRelationship: searchRelationship === "other" ? searchOtherRelationship : "",
     };
   
-    const { data, error } = await searchSubjectsQuery(filters);
+    const { data, error } = await searchSubjects(filters);
   
     if (error) {
       console.error("Search error:", error);
