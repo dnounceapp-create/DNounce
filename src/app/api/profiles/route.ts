@@ -5,33 +5,34 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
 
-    // Collect filters safely
     const filters = {
-      profileId: searchParams.get("profileId") || undefined,
-      nickname: searchParams.get("nickname") || undefined,
-      name: searchParams.get("name") || undefined,
-      organization: searchParams.get("organization") || undefined,
-      category: searchParams.get("category") || undefined,
-      location: searchParams.get("location") || undefined,
-      relationship: searchParams.get("relationship") || undefined,
-      otherRelationship: searchParams.get("otherRelationship") || undefined,
+      profileId: searchParams.get("profileId") || "",
+      nickname: searchParams.get("nickname") || "",
+      name: searchParams.get("name") || "",
+      organization: searchParams.get("organization") || "",
+      category: searchParams.get("category") || "",
+      location: searchParams.get("location") || "",
+      relationship: searchParams.get("relationship") || "",
+      otherRelationship: searchParams.get("otherRelationship") || "",
     };
 
-    console.log("📥 Incoming profile search filters:", filters);
+    const { data, error } = await searchSubjects(filters);
 
-    const results = await searchSubjects(filters);
+    if (error) {
+      console.error("❌ Database error:", error.message);
+      return NextResponse.json(
+        { error: "Database error", details: error.message, profiles: [] },
+        { status: 200 } // 👈 Still return 200, just with empty profiles
+      );
+    }
 
-    console.log("📤 Query results:", results);
-
-    return NextResponse.json({ profiles: results });
+    // Always respond with profiles (empty array if nothing found)
+    return NextResponse.json({ profiles: data || [] }, { status: 200 });
   } catch (err: any) {
-    console.error("❌ profiles API failed:", err);
+    console.error("❌ Unexpected server error:", err);
     return NextResponse.json(
-      {
-        error: "Server error",
-        details: err.message || String(err),
-      },
-      { status: 500 }
+      { error: "Unexpected server error", details: err.message, profiles: [] },
+      { status: 200 } // 👈 Also return 200 here
     );
   }
 }

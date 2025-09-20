@@ -200,6 +200,9 @@ export default function HomePage() {
   const [otherRelationship, setOtherRelationship] = useState("");
   const [category, setCategory] = useState("");
   const [location, setLocation] = useState("");
+  const [hashtag, setHashtag] = useState("");
+  const [hashtagMessage, setHashtagMessage] = useState("");
+  const [hashtagLoading, setHashtagLoading] = useState(false);
   const [submitName, setSubmitName] = useState<string>("");
   const [submitNickname, setSubmitNickname] = useState<string>("");
   const [submitOrganization, setSubmitOrganization] = useState<string>("");
@@ -287,6 +290,41 @@ export default function HomePage() {
       console.log("Search results:", results);
     } else {
       console.log("No results found");
+    }
+  };
+
+  const handleHashtagSearch = async () => {
+    if (!hashtag.trim()) {
+      setHashtagMessage("Please enter a hashtag.");
+      return;
+    }
+  
+    setHashtagLoading(true);
+    setHashtagMessage("");
+  
+    try {
+      const res = await fetch(`/api/hashtags?hashtag=${encodeURIComponent(hashtag)}`);
+  
+      if (!res.ok) {
+        console.error("API error:", res.statusText);
+        setHashtagMessage(`No records found using #${hashtag}`);
+        return;
+      }
+  
+      const data = await res.json();
+  
+      if (!data.records || data.records.length === 0) {
+        setHashtagMessage(`No records found using #${hashtag}`);
+        return;
+      }
+  
+      // ✅ If records exist, redirect to hashtag feed page
+      router.push(`/hashtags/${encodeURIComponent(hashtag)}`);
+    } catch (err) {
+      console.error("Unexpected error:", err);
+      setHashtagMessage(`No records found using #${hashtag}`);
+    } finally {
+      setHashtagLoading(false);
     }
   };
 
@@ -726,30 +764,41 @@ export default function HomePage() {
 
             {/* Buttons */}
             <div className="flex justify-center gap-4">
-              <Button onClick={handleSearchRedirect}>
+              <Button
+                onClick={handleSearchRedirect}
+                disabled={
+                  !(
+                    profileId ||
+                    nickname ||
+                    name ||
+                    organization ||
+                    category ||
+                    location ||
+                    searchRelationship ||
+                    searchOtherRelationship
+                  )
+                }
+              >
                 Search Profile
               </Button>
 
               <Button
-              variant="outline"
-              className="px-6 py-2 rounded-md"
-              onClick={() => {
-                setProfileId("");
-                setNickname("");
-                setName("");
-                setOrganization("");
-                setCategory("");
-                setLocation("");
-                setLocationInput("");       // clears the location text box
-                setLocationSuggestions([]); // clears the dropdown
-                setSearchRelationship("");
-                setSearchOtherRelationship("");
-                setOtherRelationship("");
-                setFormKey((prev) => prev + 1); // 👈 still keeps the force reset
-              }}
-            >
-              Clear Filters
-            </Button>
+                variant="outline"
+                className="px-6 py-2 rounded-md"
+                onClick={() => {
+                  setProfileId("");
+                  setNickname("");
+                  setName("");
+                  setOrganization("");
+                  setCategory("");
+                  setLocation("");
+                  setSearchRelationship("");
+                  setSearchOtherRelationship("");
+                  setFormKey((prev) => prev + 1);
+                }}
+              >
+                Clear Filters
+              </Button>
             </div>
 
             {/* Loading Indicator */}
@@ -786,7 +835,50 @@ export default function HomePage() {
             )}
           </Card>
 
+          {/* Hashtag Search Section */}
+          <Card className="p-8 bg-white shadow-lg rounded-xl mt-8">
+            <div className="flex flex-col items-center">
+              <label className="mb-2 text-sm font-semibold text-gray-700">
+                Search Hashtag
+              </label>
+              <Input
+                type="text"
+                value={hashtag}
+                onChange={(e) => setHashtag(e.target.value)}
+                placeholder="Enter a hashtag (e.g. #BarberLife)"
+                className="w-full md:w-1/2 rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500 text-center"
+              />
 
+              {/* Buttons */}
+              <div className="flex justify-center gap-4 mt-6">
+                <Button
+                  onClick={handleHashtagSearch}
+                  disabled={!hashtag || hashtagLoading}   // ✅ disabled if input empty or loading
+                  className="px-6 py-2 rounded-md text-sm"
+                >
+                  {hashtagLoading ? "Searching..." : "Search Hashtag"}
+                </Button>
+
+                <Button
+                  variant="outline"
+                  className="px-6 py-2 rounded-md text-sm"
+                  onClick={() => {
+                    setHashtag("");
+                    setHashtagMessage("");
+                  }}
+                >
+                  Clear
+                </Button>
+              </div>
+
+              {/* Messages */}
+              {hashtagMessage && (
+                <p className="mt-4 text-sm text-gray-600 text-center">
+                  {hashtagMessage}
+                </p>
+              )}
+            </div>
+          </Card>
 
           <div className="mt-8">
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
