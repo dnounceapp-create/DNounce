@@ -6,33 +6,24 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
 
     const filters = {
-      profileId: searchParams.get("profileId") || "",
-      nickname: searchParams.get("nickname") || "",
-      name: searchParams.get("name") || "",
-      organization: searchParams.get("organization") || "",
-      category: searchParams.get("category") || "",
-      location: searchParams.get("location") || "",
-      relationship: searchParams.get("relationship") || "",
-      otherRelationship: searchParams.get("otherRelationship") || "",
+      profileId: searchParams.get("profileId") || undefined,
+      nickname: searchParams.get("nickname") || undefined,
+      name: searchParams.get("name") || undefined,
+      organization: searchParams.get("organization") || undefined,
+      category: searchParams.get("category") || undefined,
+      location: searchParams.get("location") || undefined,
+      relationship: searchParams.get("relationship") || undefined,
+      otherRelationship: searchParams.get("otherRelationship") || undefined,
     };
 
-    const { data, error } = await searchSubjects(filters);
+    const data = await searchSubjects(filters);
 
-    if (error) {
-      console.error("❌ Database error:", error.message);
-      return NextResponse.json(
-        { error: "Database error", details: error.message, profiles: [] },
-        { status: 200 } // 👈 Still return 200, just with empty profiles
-      );
-    }
-
-    // Always respond with profiles (empty array if nothing found)
-    return NextResponse.json({ profiles: data || [] }, { status: 200 });
+    return NextResponse.json({ profiles: data });
   } catch (err: any) {
-    console.error("❌ Unexpected server error:", err);
+    console.error("❌ Server error:", err);
     return NextResponse.json(
-      { error: "Unexpected server error", details: err.message, profiles: [] },
-      { status: 200 } // 👈 Also return 200 here
+      { error: "Server error", details: String(err) },
+      { status: 500 }
     );
   }
 }
