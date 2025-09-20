@@ -37,8 +37,8 @@ function SearchResultsContent() {
 
       try {
         // Import dynamically to avoid SSR issues
-        const { searchSubjectsQuery } = await import("@/lib/searchSubjectsQuery");
-        const { data, error } = await searchSubjectsQuery(filters);
+        const { searchSubjects } = await import("@/lib/searchSubjectsQuery");
+        const { data, error } = await searchSubjects(filters);
 
         if (error) {
           console.error("Search error:", error);
