@@ -41,7 +41,17 @@ import {
   Check,
 } from "lucide-react";
 
-function buildNoProfileMessage(filters: {
+function buildNoProfileMessage({
+  profileId,
+  nickname,
+  name,
+  organization,
+  category,
+  location,
+  relationship,
+  otherRelationship,
+  relationshipTypes,
+}: {
   profileId?: string;
   nickname?: string;
   name?: string;
@@ -50,46 +60,31 @@ function buildNoProfileMessage(filters: {
   location?: string;
   relationship?: string;
   otherRelationship?: string;
-  relationshipTypes?: { id: string; label: string; value?: string }[];
+  relationshipTypes: { id: string; label: string; value?: string }[];
 }) {
-  const parts: string[] = [];
+  const capitalizeFirst = (str: string) =>
+    str.charAt(0).toUpperCase() + str.slice(1);
 
-  if (filters.profileId) {
-    parts.push(`with profile ID ${filters.profileId}`);
-  }
+  const pieces: string[] = [];
 
-  if (filters.nickname) {
-    parts.push(`known as "${filters.nickname}"`);
-  }
-
-  if (filters.name) {
-    parts.push(`named ${filters.name}`);
-  }
-
-  if (filters.organization) {
-    parts.push(`at ${filters.organization}`);
-  }
-
-  if (filters.category) {
-    parts.push(`in category ${filters.category}`);
-  }
-
-  if (filters.location) {
-    parts.push(`in ${filters.location}`);
-  }
-
-  if (filters.relationship) {
-    const relType = filters.relationshipTypes?.find(
-      (rel) => rel.id === filters.relationship
-    );
-    if (relType?.value === "other" && filters.otherRelationship) {
-      parts.push(`with other relationship being ${filters.otherRelationship}`);
-    } else if (relType) {
-      parts.push(`with a ${relType.label.toLowerCase()} relationship`);
+  if (profileId) pieces.push(`with profile ID ${profileId}`);
+  if (nickname) pieces.push(`known as "${capitalizeFirst(nickname)}"`);
+  if (name) pieces.push(`named ${capitalizeFirst(name)}`);
+  if (organization) pieces.push(`at ${capitalizeFirst(organization)}`);
+  if (category) pieces.push(`identified as ${capitalizeFirst(category)}`);
+  if (location) pieces.push(`in ${location}`);
+  if (relationship) {
+    const relType = relationshipTypes.find(rel => rel.id === relationship);
+    if (relType) {
+      if (relType.value === "other" && otherRelationship) {
+        pieces.push(`with other relationship being ${otherRelationship}`);
+      } else {
+        pieces.push(`with a ${relType.label.toLowerCase()} relationship`);
+      }
     }
   }
 
-  return `No profile found ${parts.join(" ")}. Sorry.`;
+  return `No profile found ${pieces.join(" ")}.`;
 }
 
 export default function HomePage() {
@@ -123,7 +118,9 @@ export default function HomePage() {
         
         // Check if the response is OK first
         if (!res.ok) {
-          throw new Error(`Location API returned ${res.status}`);
+          console.warn("⚠️ Location API failed:", res.status);
+          setLocationSuggestions([]); // fallback to empty
+          return;
         }
         
         const data = await res.json();
@@ -203,15 +200,21 @@ export default function HomePage() {
   const [otherRelationship, setOtherRelationship] = useState("");
   const [category, setCategory] = useState("");
   const [location, setLocation] = useState("");
-
+  const [submitName, setSubmitName] = useState<string>("");
+  const [submitNickname, setSubmitNickname] = useState<string>("");
+  const [submitOrganization, setSubmitOrganization] = useState<string>("");
+  const [submitRelationship, setSubmitRelationship] = useState<string>("");
+  const [submitOtherRelationship, setSubmitOtherRelationship] = useState<string>("");
+  const [submitCategory, setSubmitCategory] = useState<string>("");
+  const [submitLocation, setSubmitLocation] = useState<string>("");
+  
   // 🔽 Supabase-powered states list
   const [states, setStates] = useState<{ state_abbreviation: string; full_state_name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [openSubmitState, setOpenSubmitState] = useState(false);
   const [searchRelationship, setSearchRelationship] = useState("");
   const [searchOtherRelationship, setSearchOtherRelationship] = useState("");
-  const [submitRelationship, setSubmitRelationship] = useState("");
-  const [submitOtherRelationship, setSubmitOtherRelationship] = useState("");
+
 
   const handleSearchRedirect = async () => {
     setSearchLoading(true);
@@ -591,7 +594,13 @@ export default function HomePage() {
                   placeholder="e.g. John Doe"
                   type="text"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value
+                      .split(" ")
+                      .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+                      .join(" ");
+                    setName(value);
+                  }}
                   className="w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -603,7 +612,13 @@ export default function HomePage() {
                   placeholder="Enter nickname"
                   type="text"
                   value={nickname}
-                  onChange={(e) => setNickname(e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value
+                      .split(" ")
+                      .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+                      .join(" ");
+                    setNickname(value);
+                  }}
                   className="w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -614,7 +629,13 @@ export default function HomePage() {
                 <Input
                   placeholder="e.g. Acme Inc."
                   value={organization}
-                  onChange={(e) => setOrganization(e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value
+                      .split(" ")
+                      .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+                      .join(" ");
+                    setOrganization(value);
+                  }}
                   className="w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -655,12 +676,14 @@ export default function HomePage() {
               <div className="flex flex-col">
                 <label className="mb-1 text-sm font-semibold text-gray-700">Category</label>
                 <Input
-                  placeholder="e.g. Client, Family, Vendor..."
-                  type="text"
+                  placeholder="e.g. Barber, Waitress, Doctor..."
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
                   className="w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500"
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  Use a label that best fits how you may find this person.
+                </p>
               </div>
 
               {/* Location Field */}
@@ -1040,19 +1063,19 @@ export default function HomePage() {
                 <span className="font-semibold text-red-700">5-Downvote Badge of Shame:</span>
                 <span className="text-red-600"> Get 5+ downvotes on your explanation → automatic "</span>
                 <span className="text-yellow-600">⚠ Low-Quality Voter</span>
-                <span className="text-red-600">" badge for the life of the case.</span>
+                <span className="text-red-600">" badge for the life of the record.</span>
               </div>
 
               <div>
                 <span className="font-semibold text-red-700">33% Voter Trigger + Public Execution:</span>
                 <span className="text-red-600"> If 33% of voters flag you + 50% public approval → automatic "</span>
                 <span className="text-red-600 font-semibold">CONVICTED Lost Voting Right</span>
-                <span className="text-red-600">" badge for the life of the case.</span>
+                <span className="text-red-600">" badge for the life of the record.</span>
               </div>
 
               <div className="text-red-600">
                 <span className="font-medium">
-                  Poor explanations damage your reputation in each case permanently and lowers your "Voter" Score. Write thoughtful, detailed reasoning.
+                  Poor explanations damage your reputation in each record permanently and lowers your "Voter" Score. Write thoughtful, detailed reasoning.
                 </span>
               </div>
             </div>
@@ -1274,6 +1297,33 @@ export default function HomePage() {
                 <label className="mb-1 text-sm font-semibold text-gray-700">Subject's Name</label>
                 <Input
                   placeholder="e.g. John Doe"
+                  type="text"
+                  value={submitName}
+                  onChange={(e) => {
+                    const value = e.target.value
+                      .split(" ")
+                      .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+                      .join(" ");
+                    setSubmitName(value);
+                  }}
+                  className="w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              {/* Nickname Field */}
+              <div className="flex flex-col">
+                <label className="mb-1 text-sm font-semibold text-gray-700">Also Known As</label>
+                <Input
+                  placeholder="e.g. Johnny"
+                  type="text"
+                  value={submitNickname}
+                  onChange={(e) => {
+                    const value = e.target.value
+                      .split(" ")
+                      .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+                      .join(" ");
+                    setSubmitNickname(value);
+                  }}
                   className="w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -1283,6 +1333,15 @@ export default function HomePage() {
                 <label className="mb-1 text-sm font-semibold text-gray-700">Organization/Company</label>
                 <Input
                   placeholder="e.g. Acme Inc."
+                  type="text"
+                  value={submitOrganization}
+                  onChange={(e) => {
+                    const value = e.target.value
+                      .split(" ")
+                      .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+                      .join(" ");
+                    setSubmitOrganization(value);
+                  }}
                   className="w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -1313,7 +1372,13 @@ export default function HomePage() {
                   <Input
                     placeholder="Please specify..."
                     value={submitOtherRelationship}
-                    onChange={(e) => setSubmitOtherRelationship(e.target.value)}
+                    onChange={(e) => {
+                      const value = e.target.value
+                        .split(" ")
+                        .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+                        .join(" ");
+                      setSubmitOtherRelationship(value);
+                    }}
                     className="mt-3 w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500"
                   />
                 )}
@@ -1323,9 +1388,12 @@ export default function HomePage() {
               <div className="flex flex-col">
                 <label className="mb-1 text-sm font-semibold text-gray-700">Category</label>
                 <Input
-                  placeholder="e.g. Client, Family, Vendor..."
+                  placeholder="e.g. Barber, Waitress, Doctor..."
                   className="w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500"
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                Use a label that best fits how you may find this person.
+                </p>
               </div>
 
               {/* Location Field */}
@@ -1333,6 +1401,9 @@ export default function HomePage() {
                 <label className="mb-1 text-sm font-semibold text-gray-700">Location</label>
                 <Input
                   placeholder="City or neighborhood..."
+                  type="text"
+                  value={submitLocation}
+                  onChange={(e) => setSubmitLocation(e.target.value)}
                   className="w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500"
                 />
                 <p className="text-xs text-gray-500 mt-1">
