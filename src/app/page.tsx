@@ -1,7 +1,7 @@
 "use client";
 
 import { MapPin } from "lucide-react";
-import { searchSubjectsQuery } from "@/lib/searchSubjectsQuery";
+import { searchSubjects } from "@/lib/searchSubjectsQuery";
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
