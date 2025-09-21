@@ -2,11 +2,9 @@
 // Deployment trigger - search functionality improvements
 
 import { MapPin } from "lucide-react";
-import { searchSubjects } from "@/lib/searchSubjectsQuery";
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { supabase } from "@/lib/supabaseClient"; // ✅ supabase client
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -91,7 +89,6 @@ export default function HomePage() {
   const [activeTab, setActiveTab] = useState<"records" | "reputations">("records");
   const [formKey, setFormKey] = useState(0);
   const [relationshipTypes, setRelationshipTypes] = useState<{ id: string; label: string; value: string }[]>([]);
-  const [relLoading, setRelLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [hasReadTerms, setHasReadTerms] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
@@ -144,29 +141,24 @@ export default function HomePage() {
 
   useEffect(() => {
     async function fetchRandomData() {
-      // Fetch 2 random reputations
-      const { data: repData, error: repError } = await supabase
-        .from("reputations")
-        .select("id, title, description")
-        .limit(2);
+      try {
+        const res = await fetch("/api/reputations");
+        const data = await res.json();
+        setRandomReputations(data || []);
+      } catch (err) {
+        console.error("Error fetching reputations:", err);
+      }
   
-      if (!repError && repData) setRandomReputations(repData);
-  
-      // Fetch 3 random badges
-      const { data: badgeData, error: badgeError } = await supabase
-        .from("badges")
-        .select("id, label, icon, color")
-        .limit(3);
-  
-      if (!badgeError && badgeData) setRandomBadges(badgeData);
+      try {
+        const res = await fetch("/api/badges");
+        const data = await res.json();
+        setRandomBadges(data || []);
+      } catch (err) {
+        console.error("Error fetching badges:", err);
+      }
     }
   
     fetchRandomData();
-  }, []);
-  
-  useEffect(() => {
-    console.log("SUPABASE URL:", process.env.NEXT_PUBLIC_SUPABASE_URL);
-    console.log("Anon key exists:", !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
   }, []);
 
   useEffect(() => {
@@ -210,11 +202,6 @@ export default function HomePage() {
   const [submitOtherRelationship, setSubmitOtherRelationship] = useState<string>("");
   const [submitCategory, setSubmitCategory] = useState<string>("");
   const [submitLocation, setSubmitLocation] = useState<string>("");
-  
-  // 🔽 Supabase-powered states list
-  const [states, setStates] = useState<{ state_abbreviation: string; full_state_name: string }[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [openSubmitState, setOpenSubmitState] = useState(false);
   const [searchRelationship, setSearchRelationship] = useState("");
   const [searchOtherRelationship, setSearchOtherRelationship] = useState("");
 
@@ -236,9 +223,19 @@ export default function HomePage() {
     };
   
     try {
-      // Call backend query
-      const results = await searchSubjects(filters);
-  
+      // Call backend API instead of Supabase directly
+      const res = await fetch("/api/search-subjects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(filters),
+      });
+    
+      if (!res.ok) {
+        throw new Error(`Search API failed: ${res.status}`);
+      }
+    
+      const results = await res.json();
+    
       if (results.length > 0) {
         setSearchResults(results);
         setSearchMessage(`Found ${results.length} profile(s)`);
@@ -255,7 +252,7 @@ export default function HomePage() {
           otherRelationship: searchOtherRelationship,
           relationshipTypes,
         });
-  
+    
         setSearchMessage(message);
         setSearchResults([]);
       }
@@ -264,26 +261,6 @@ export default function HomePage() {
       setSearchMessage("Unexpected error. Please try again.");
     } finally {
       setSearchLoading(false);
-    }
-  };
-  
-  const handleSearch = async () => {
-    const filters = {
-      profileId,
-      nickname,
-      name,
-      organization,
-      category,
-      location,
-      relationship: searchRelationship,
-      otherRelationship: searchRelationship === "other" ? searchOtherRelationship : "",
-    };
-  
-    const results = await searchSubjects(filters);
-    if (results && results.length > 0) {
-      console.log("Search results:", results);
-    } else {
-      console.log("No results found");
     }
   };
 
@@ -324,23 +301,17 @@ export default function HomePage() {
 
   useEffect(() => {
     async function fetchRelationshipTypes() {
-      const { data, error } = await supabase
-        .from("relationship_types")
-        .select("id, label, value")
-        .order("label", { ascending: true });
-  
-      if (error) {
-        console.error("Error fetching relationship types:", error);
-      } else {
+      try {
+        const res = await fetch("/api/relationship-types");
+        const data = await res.json();
         setRelationshipTypes(data || []);
+      } catch (err) {
+        console.error("Error fetching relationship types:", err);
       }
-      setRelLoading(false);
     }
   
     fetchRelationshipTypes();
   }, []);
-  
-  const [submitState, setSubmitState] = useState("");
 
   const handleTermsScroll = () => {
     if (termsRef.current) {
@@ -676,22 +647,18 @@ export default function HomePage() {
               <div className="flex flex-col">
                 <label className="mb-1 text-sm font-semibold text-gray-700">Relationship</label>
 
-                {relLoading ? (
-                  <p className="text-sm text-gray-400">Loading relationships...</p>
-                ) : (
-                  <Select value={searchRelationship} onValueChange={setSearchRelationship}>
-                    <SelectTrigger className="w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500">
-                      <SelectValue placeholder="Select relationship" />
-                    </SelectTrigger>
-                    <SelectContent className="z-50 bg-white shadow-lg rounded-xl border border-gray-200">
-                      {relationshipTypes.map((rel) => (
-                        <SelectItem key={rel.id} value={rel.id}>
-                          {rel.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
+                <Select value={searchRelationship} onValueChange={setSearchRelationship}>
+                  <SelectTrigger className="w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500">
+                    <SelectValue placeholder="Select relationship" />
+                  </SelectTrigger>
+                  <SelectContent className="z-50 bg-white shadow-lg rounded-xl border border-gray-200">
+                    {relationshipTypes.map((rel) => (
+                      <SelectItem key={rel.id} value={rel.id}>
+                        {rel.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
                 {/* 👇 Only show if "Other" selected */}
                 {relationshipTypes.find((rel) => rel.id === searchRelationship)?.value === "other" && (
@@ -1436,22 +1403,18 @@ export default function HomePage() {
               <div className="flex flex-col">
                 <label className="mb-1 text-sm font-semibold text-gray-700">Relationship</label>
 
-                {relLoading ? (
-                  <p className="text-sm text-gray-400">Loading relationships...</p>
-                ) : (
-                  <Select value={submitRelationship} onValueChange={setSubmitRelationship}>
-                    <SelectTrigger className="w-full rounded-lg border-gray-300">
-                      <SelectValue placeholder="Select relationship" />
-                    </SelectTrigger>
-                    <SelectContent className="z-50 bg-white shadow-lg rounded-lg border border-gray-200">
-                      {relationshipTypes.map((rel) => (
-                        <SelectItem key={rel.id} value={rel.id}>
-                          {rel.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
+                <Select value={searchRelationship} onValueChange={setSearchRelationship}>
+                  <SelectTrigger className="w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500">
+                    <SelectValue placeholder="Select relationship" />
+                  </SelectTrigger>
+                  <SelectContent className="z-50 bg-white shadow-lg rounded-xl border border-gray-200">
+                    {relationshipTypes.map((rel) => (
+                      <SelectItem key={rel.id} value={rel.id}>
+                        {rel.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
                 {/* 👇 Only show if "Other" selected */}
                 {relationshipTypes.find((rel) => rel.id === submitRelationship)?.value === "other" && (
