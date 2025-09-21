@@ -1,37 +1,12 @@
 {
   "name": "DNounce",
   "short_name": "DNounce",
+  "id": "/",
   "start_url": "/",
   "display": "standalone",
-  "orientation": "portrait",
   "background_color": "#ffffff",
   "theme_color": "#1d4ed8",
-  "description": "Review and Community feedback platform",
   "icons": [
-    {
-      "src": "/icons/logoicon-120x120.png",
-      "sizes": "120x120",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/icons/logoicon-152x152.png",
-      "sizes": "152x152",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/icons/logoicon-167x167.png",
-      "sizes": "167x167",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/icons/logoicon-180x180.png",
-      "sizes": "180x180",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
     {
       "src": "/icons/logoicon-192x192.png",
       "sizes": "192x192",

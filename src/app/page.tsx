@@ -833,13 +833,13 @@ export default function HomePage() {
           <Card className="p-8 bg-white shadow-lg rounded-xl mt-8">
             <div className="flex flex-col items-center">
               <label className="mb-2 text-sm font-semibold text-gray-700">
-                Search Hashtag
+                Search A Hashtag
               </label>
               <Input
                 type="text"
                 value={hashtag}
                 onChange={(e) => setHashtag(e.target.value)}
-                placeholder="Enter a hashtag (e.g. #BarberLife)"
+                placeholder="Enter a hashtag (e.g. #Barber)"
                 className="w-full md:w-1/2 rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500 text-center"
               />
 
