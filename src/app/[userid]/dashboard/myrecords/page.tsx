@@ -1,50 +1,34 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
+import React from 'react';
 
-export default function MyRecordsPage({ params }: { params: { userid: string } }) {
-  const [stats, setStats] = useState<any>(null);
-  const [records, setRecords] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+type Props = {
+  params: {
+    userid: string;
+  };
+};
 
-  useEffect(() => {
-    async function fetchData() {
-      const res = await fetch("/api/records/myrecords"); // ✅ matches API
-      const data = await res.json();
-      setStats(data.stats);
-      setRecords(data.items);
-      setLoading(false);
-    }
-    fetchData();
-  }, []);
-
-  if (loading) return <p>Loading...</p>;
+export default function MyRecordsPage({ params }: Props) {
+  const { userid } = params;
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">My Records</h1>
+      <h1 className="text-3xl font-bold mb-4">My Records</h1>
+      <p className="text-gray-700">
+        Welcome to your dashboard, <span className="font-mono">{userid}</span>.
+      </p>
 
-      {/* Stats */}
-      {stats && (
-        <div className="flex gap-6 mb-6">
-          <div className="bg-gray-100 rounded p-4">Total: {stats.total}</div>
-          <div className="bg-gray-100 rounded p-4">Kept: {stats.kept}</div>
-          <div className="bg-gray-100 rounded p-4">Deleted: {stats.deleted}</div>
+      {/* Example content section */}
+      <div className="mt-8 space-y-4">
+        <div className="p-4 border rounded-lg shadow-sm bg-white">
+          <h2 className="text-xl font-semibold">Record 1</h2>
+          <p className="text-sm text-gray-500">Details about this record go here.</p>
         </div>
-      )}
 
-      {/* Records */}
-      <div className="space-y-4">
-        {records.map((r) => (
-          <div key={r.id} className="border rounded p-4">
-            <p className="font-semibold">
-              {r.contributor_alias} → {r.subject_name}
-            </p>
-            <p>Type: {r.record_type}</p>
-            <p>Status: {r.stage || r.outcome}</p>
-            <p>Submitted: {new Date(r.submitted_at).toLocaleDateString()}</p>
-          </div>
-        ))}
+        <div className="p-4 border rounded-lg shadow-sm bg-white">
+          <h2 className="text-xl font-semibold">Record 2</h2>
+          <p className="text-sm text-gray-500">Details about this record go here.</p>
+        </div>
       </div>
     </div>
   );
