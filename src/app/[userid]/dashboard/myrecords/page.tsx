@@ -2,13 +2,7 @@
 
 import React from 'react';
 
-type Props = {
-  params: {
-    userid: string;
-  };
-};
-
-export default function MyRecordsPage({ params }: Props) {
+export default function MyRecordsPage({ params }: { params: { userid: string } }) {
   const { userid } = params;
 
   return (
@@ -18,7 +12,7 @@ export default function MyRecordsPage({ params }: Props) {
         Welcome to your dashboard, <span className="font-mono">{userid}</span>.
       </p>
 
-      {/* Example content section */}
+      {/* Example content */}
       <div className="mt-8 space-y-4">
         <div className="p-4 border rounded-lg shadow-sm bg-white">
           <h2 className="text-xl font-semibold">Record 1</h2>
