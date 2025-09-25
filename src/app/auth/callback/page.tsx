@@ -1,50 +1,43 @@
 'use client';
-//hi
-import { Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+
 import { useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 
-function AuthCallbackInner() {
-  const searchParams = useSearchParams();
+export default function AuthCallback() {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     const handleAuth = async () => {
-      // 1) Complete the PKCE flow (sets session cookie)
-      const { error: exchangeError } = await supabase.auth.exchangeCodeForSession();
-      if (exchangeError) {
-        console.error('exchangeCodeForSession error:', exchangeError.message);
+      // Grab the ?code= param from Supabase redirect
+      const code = searchParams.get('code');
+      if (!code) {
         router.replace('/loginsignup');
         return;
       }
 
-      // 2) Get the signed-in user
-      const {
-        data: { user },
-        error,
-      } = await supabase.auth.getUser();
+      // Exchange the code for a session
+      const { error } = await supabase.auth.exchangeCodeForSession({ code });
 
-      if (error || !user) {
-        console.error('getUser error:', error?.message);
+      if (error) {
+        console.error('exchangeCodeForSession error:', error.message);
         router.replace('/loginsignup');
         return;
       }
 
-      // 3) Redirect to dashboard
-      router.replace(`/${user.id}/dashboard/myrecords`);
+      // Get the logged-in user
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (user) {
+        router.replace(`/${user.id}/dashboard/myrecords`);
+      } else {
+        router.replace('/loginsignup');
+      }
     };
 
     handleAuth();
   }, [router, searchParams]);
 
-  return <p className="text-center mt-20">Signing you in…</p>;
-}
-
-export default function AuthCallbackPage() {
-  return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <AuthCallbackInner />
-    </Suspense>
-  );
+  return <p className="text-center mt-10">Finishing sign-in…</p>;
 }
