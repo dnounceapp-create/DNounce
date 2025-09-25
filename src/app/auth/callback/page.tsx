@@ -9,7 +9,7 @@ export default function CallbackPage() {
   const supabase = createClientComponentClient();
 
   useEffect(() => {
-    const handleAuth = async () => {
+    const handleSession = async () => {
       const {
         data: { session },
       } = await supabase.auth.getSession();
@@ -22,8 +22,8 @@ export default function CallbackPage() {
       }
     };
 
-    handleAuth();
+    handleSession();
   }, [router, supabase]);
 
-  return <p>Signing you in...</p>;
+  return <p>Loading...</p>;
 }
