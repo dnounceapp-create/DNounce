@@ -19,12 +19,11 @@ export default function LoginSignupPage() {
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
+        queryParams: { access_type: 'offline', prompt: 'consent' },
       },
     });
   
-    if (error) {
-      alert(error.message);
-    }
+    if (error) alert(error.message);
   };
 
   const handleLogin = async (e: React.FormEvent) => {
