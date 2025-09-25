@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 
-export default function AuthCallback() {
+function AuthCallbackInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -16,7 +16,7 @@ export default function AuthCallback() {
         return;
       }
 
-      // For your Supabase version, pass the string directly
+      // Your Supabase version expects a string, not an object
       const { error } = await supabase.auth.exchangeCodeForSession(code);
 
       if (error) {
@@ -38,4 +38,12 @@ export default function AuthCallback() {
   }, [router, searchParams]);
 
   return <p className="text-center mt-10">Finishing sign-in…</p>;
+}
+
+export default function AuthCallback() {
+  return (
+    <Suspense fallback={<p className="text-center mt-10">Loading…</p>}>
+      <AuthCallbackInner />
+    </Suspense>
+  );
 }
