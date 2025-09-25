@@ -1,30 +1,38 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabaseClient';
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabaseClient";
 
 export default function AuthCallbackPage() {
   const router = useRouter();
 
   useEffect(() => {
-    (async () => {
-      // Middleware will set/refresh the session from the OAuth callback
-      const { data, error } = await supabase.auth.getSession();
+    const handleRedirect = async () => {
+      // Get the current session
+      const { data: { session }, error } = await supabase.auth.getSession();
 
-      if (error || !data?.session?.user?.id) {
-        router.replace('/loginsignup?error=auth');
+      if (error) {
+        console.error("Error getting session:", error.message);
+        router.push("/loginsignup"); // fallback if something breaks
         return;
       }
 
-      const userId = data.session.user.id;
-      router.replace(`/${userId}/dashboard/myrecords`);
-    })();
+      if (session?.user) {
+        const userId = session.user.id;
+        // ✅ Redirect to your desired dashboard
+        router.replace(`/${userId}/dashboard/myrecords`);
+      } else {
+        router.push("/loginsignup");
+      }
+    };
+
+    handleRedirect();
   }, [router]);
 
   return (
     <div className="flex items-center justify-center min-h-screen">
-      <p className="text-lg font-medium">Signing you in…</p>
+      <p className="text-gray-600">Signing you in...</p>
     </div>
   );
 }
