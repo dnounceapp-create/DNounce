@@ -15,14 +15,13 @@ export default function LoginSignupPage() {
 
   // Google login/signup
   const handleGoogle = async () => {
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
+    // Let Supabase use its Site URL → /auth/callback (we handle redirect there)
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
       options: {
-        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
-        queryParams: { access_type: 'offline', prompt: 'consent' },
+        queryParams: { access_type: "offline", prompt: "consent" },
       },
     });
-  
     if (error) alert(error.message);
   };
 
