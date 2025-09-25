@@ -1,53 +1,50 @@
-"use client";
+'use client';
 
-import { Suspense, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect } from 'react';
+import { supabase } from '@/lib/supabaseClient';
 
-function CallbackInner() {
-  const router = useRouter();
+function AuthCallbackInner() {
   const searchParams = useSearchParams();
-  const supabase = createClientComponentClient();
+  const router = useRouter();
 
   useEffect(() => {
     const handleAuth = async () => {
-      try {
-        // Exchange ?code= for a session
-        const { error: exchangeError } =
-          await supabase.auth.exchangeCodeForSession(searchParams.toString());
-
-        if (exchangeError) {
-          console.error("exchangeCodeForSession error:", exchangeError);
-          router.replace("/loginsignup");
-          return;
-        }
-
-        // Get signed-in user
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-
-        if (user) {
-          router.replace(`/${user.id}/dashboard/myrecords`);
-        } else {
-          router.replace("/loginsignup");
-        }
-      } catch (err) {
-        console.error("Callback error:", err);
-        router.replace("/loginsignup");
+      // 1) Complete the PKCE flow (sets session cookie)
+      const { error: exchangeError } = await supabase.auth.exchangeCodeForSession();
+      if (exchangeError) {
+        console.error('exchangeCodeForSession error:', exchangeError.message);
+        router.replace('/loginsignup');
+        return;
       }
+
+      // 2) Get the signed-in user
+      const {
+        data: { user },
+        error,
+      } = await supabase.auth.getUser();
+
+      if (error || !user) {
+        console.error('getUser error:', error?.message);
+        router.replace('/loginsignup');
+        return;
+      }
+
+      // 3) Redirect to dashboard
+      router.replace(`/${user.id}/dashboard/myrecords`);
     };
 
     handleAuth();
-  }, [supabase, searchParams, router]);
+  }, [router, searchParams]);
 
-  return <p>Finishing sign-in…</p>;
+  return <p className="text-center mt-20">Signing you in…</p>;
 }
 
-export default function CallbackPage() {
+export default function AuthCallbackPage() {
   return (
-    <Suspense fallback={<p>Loading...</p>}>
-      <CallbackInner />
+    <Suspense fallback={<div>Loading...</div>}>
+      <AuthCallbackInner />
     </Suspense>
   );
 }
