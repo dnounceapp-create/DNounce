@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 
-export default function CallbackPage() {
+function CallbackInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClientComponentClient();
@@ -22,7 +22,7 @@ export default function CallbackPage() {
           return;
         }
 
-        // Get the signed-in user
+        // Get signed-in user
         const {
           data: { user },
         } = await supabase.auth.getUser();
@@ -42,4 +42,12 @@ export default function CallbackPage() {
   }, [supabase, searchParams, router]);
 
   return <p>Finishing sign-in…</p>;
+}
+
+export default function CallbackPage() {
+  return (
+    <Suspense fallback={<p>Loading...</p>}>
+      <CallbackInner />
+    </Suspense>
+  );
 }
