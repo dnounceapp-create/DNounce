@@ -10,15 +10,14 @@ export default function AuthCallback() {
 
   useEffect(() => {
     const handleAuth = async () => {
-      // Grab the ?code= param from Supabase redirect
       const code = searchParams.get('code');
       if (!code) {
         router.replace('/loginsignup');
         return;
       }
 
-      // Exchange the code for a session
-      const { error } = await supabase.auth.exchangeCodeForSession({ code });
+      // For your Supabase version, pass the string directly
+      const { error } = await supabase.auth.exchangeCodeForSession(code);
 
       if (error) {
         console.error('exchangeCodeForSession error:', error.message);
@@ -26,7 +25,6 @@ export default function AuthCallback() {
         return;
       }
 
-      // Get the logged-in user
       const { data: { user } } = await supabase.auth.getUser();
 
       if (user) {
