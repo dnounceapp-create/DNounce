@@ -1,65 +1,93 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { supabase } from '@/lib/supabaseClient';
-import Link from 'next/link';
-import Image from 'next/image';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import Image from "next/image";
+import Link from "next/link";
 
 export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState('');
-  const [msg, setMsg] = useState<string | null>(null);
+  const supabase = createClientComponentClient();
+  const router = useRouter();
+
+  const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setMsg(null);
+    setErrorMsg("");
+    setMessage("");
 
+    if (!email) {
+      setErrorMsg("Please enter your email.");
+      return;
+    }
+
+    setLoading(true);
+
+    // Send reset email (Supabase will use your updated template with ConfirmationURL)
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password`,
     });
 
     setLoading(false);
-    if (error) setMsg(error.message);
-    else setMsg('✅ Password reset link sent! Check your email.');
+
+    if (error) {
+      setErrorMsg(error.message);
+    } else {
+      setMessage("If an account exists, a password reset link has been sent to your email.");
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Top nav bar */}
-      <header className="flex items-center justify-between px-10 py-6 bg-white shadow-sm">
-        <Link href="/" className="flex items-center gap-4">
-          <Image src="/logo.png" alt="DNounce logo" width={80} height={80} />
-          <span className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900">
-            DNounce
-          </span>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4">
+      {/* Header with logo + DNounce */}
+      <div className="absolute top-6 left-6 flex items-center gap-2">
+        <Link href="/">
+          <Image src="/logo.png" alt="DNounce Logo" width={32} height={32} />
         </Link>
-      </header>
+        <Link href="/" className="text-xl font-bold text-gray-800">
+          DNounce
+        </Link>
+      </div>
 
-      {/* Main content */}
-      <main className="flex-1 flex items-center justify-center px-4">
-        <div className="w-full max-w-md bg-white shadow-lg rounded-xl p-8">
-          <h2 className="text-2xl font-semibold text-center mb-6">Forgot Password</h2>
-          {msg && <p className="text-center text-sm mb-4 text-red-500">{msg}</p>}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <input
-              type="email"
-              placeholder="Enter your email"
-              className="w-full px-3 py-2 border rounded-md"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700"
-            >
-              {loading ? 'Sending…' : 'Send Reset Link'}
-            </button>
-          </form>
-        </div>
-      </main>
+      <div className="w-full max-w-md bg-white rounded-2xl shadow p-6">
+        <h2 className="text-2xl font-bold text-gray-900 text-center mb-4">
+          Forgot Password
+        </h2>
+
+        {errorMsg && (
+          <p className="text-red-600 text-sm text-center mb-3">{errorMsg}</p>
+        )}
+        {message && (
+          <p className="text-green-600 text-sm text-center mb-3">{message}</p>
+        )}
+
+        <form onSubmit={handleForgotPassword} className="space-y-4">
+          <input
+            type="email"
+            placeholder="Enter your email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+          />
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-2 px-4 bg-blue-600 text-white font-semibold rounded-lg shadow hover:bg-blue-700 disabled:opacity-50"
+          >
+            {loading ? "Sending..." : "Send Reset Link"}
+          </button>
+        </form>
+
+        <p className="text-sm text-gray-600 text-center mt-4">
+          <Link href="/loginsignup" className="text-blue-600 hover:underline">
+            Back to Login
+          </Link>
+        </p>
+      </div>
     </div>
   );
 }
