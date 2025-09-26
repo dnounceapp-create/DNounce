@@ -89,13 +89,13 @@ function AuthCallbackInner() {
         return;
       }
 
-      // Manually handle the exchange
+      // Manually handle the exchange - use hardcoded URL
       try {
-        const response = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=pkce`, {
+        const response = await fetch(`https://etfhkltquzhysvmhbkfg.supabase.co/auth/v1/token?grant_type=pkce`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'apikey': supabaseAnonKey,
+            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV0ZmhrbHRxdXpoeXN2bWhia2ZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg2NjE1NTMsImV4cCI6MjA3NDIzNzU1M30.za1h1oCZPD4vPwQllsHrX2_pXrZtrXLOQv63ErN2W6I',
           },
           body: JSON.stringify({
             auth_code: code,
