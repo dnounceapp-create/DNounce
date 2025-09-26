@@ -12,8 +12,8 @@ function AuthCallbackInner() {
     const handleAuth = async () => {
       const code = searchParams.get('code');
       if (code) {
-        // ✅ exchange code → set session
-        const { error } = await supabase.auth.exchangeCodeForSession({ code: code as string });
+        // ✅ FIX: Pass code directly as string, not wrapped in object
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
   
         if (error) {
           console.error('exchangeCodeForSession error:', error.message);
