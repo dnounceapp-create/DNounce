@@ -1,3 +1,4 @@
+// src/app/auth/callback/page.tsx
 'use client';
 
 import { Suspense, useEffect } from 'react';
@@ -10,12 +11,20 @@ function AuthCallbackInner() {
 
   useEffect(() => {
     const handleAuth = async () => {
+      // Check if Supabase client is properly configured
+      if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+        console.error('❌ Supabase environment variables missing');
+        alert('Configuration error. Please contact support.');
+        router.replace('/loginsignup');
+        return;
+      }
+
       const code = searchParams.get('code');
       const error = searchParams.get('error');
       
       console.log('🔐 Auth Callback - Code:', code ? 'YES' : 'NO');
-      console.log('🔐 Auth Callback - Error:', error);
-      console.log('🔐 Current URL:', window.location.href);
+      console.log('🔐 Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
+      console.log('🔐 Anon Key exists:', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 
       if (error) {
         console.error('❌ OAuth error parameter:', error);
@@ -35,13 +44,18 @@ function AuthCallbackInner() {
         
         if (exchangeError) {
           console.error('❌ Exchange error:', exchangeError);
-          alert('Authentication failed: ' + exchangeError.message);
+          
+          if (exchangeError.message.includes('API key') || exchangeError.status === 401) {
+            alert('Configuration error: Invalid API key. Please check environment variables.');
+          } else {
+            alert('Authentication failed: ' + exchangeError.message);
+          }
+          
           router.replace('/loginsignup');
           return;
         }
 
         console.log('✅ Code exchanged successfully');
-        console.log('🔐 Session data:', data);
 
         // Wait for session to be established
         await new Promise(resolve => setTimeout(resolve, 2000));
@@ -67,7 +81,7 @@ function AuthCallbackInner() {
         }
 
         if (user?.id) {
-          console.log('🎯 Redirecting to dashboard:', `/${user.id}/dashboard/myrecords`);
+          console.log('🎯 Redirecting to dashboard');
           router.replace(`/${user.id}/dashboard/myrecords`);
         } else {
           console.error('❌ No user ID found after retries');
