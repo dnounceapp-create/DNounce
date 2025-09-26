@@ -17,19 +17,16 @@ export default function LoginSignupPage() {
   const handleGoogle = async () => {
     console.log('🔐 Starting Google OAuth...');
     
-    const { data, error } = await supabase.auth.signInWithOAuth({
+    const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
-        // Remove queryParams for now to simplify
       },
     });
   
     if (error) {
       console.error('❌ Google OAuth error:', error);
       alert('Google sign-in failed: ' + error.message);
-    } else {
-      console.log('✅ Google OAuth initiated:', data);
     }
   };
 
