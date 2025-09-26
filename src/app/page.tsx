@@ -383,8 +383,8 @@ export default function HomePage() {
                 <Image
                   src="/logo.png"
                   alt="DNounce Logo"
-                  width={80}
-                  height={80}
+                  width={40}
+                  height={40}
                   className="rounded-md"
                   priority
                 />
@@ -426,7 +426,7 @@ export default function HomePage() {
                 <Button
                   size="sm"
                   className="bg-blue-600 hover:bg-blue-700 text-white"
-                  onClick={() => router.push("/loginsignup")}
+                  onClick={() => router.push("/login")}
                 >
                   Login / Sign Up
                 </Button>
