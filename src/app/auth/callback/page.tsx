@@ -11,30 +11,37 @@ function AuthCallbackInner() {
   useEffect(() => {
     const handleAuth = async () => {
       const code = searchParams.get('code');
-
       if (code) {
-        // ✅ Exchange code for a session
-        const { error } = await supabase.auth.exchangeCodeForSession(code);
-
+        // ✅ exchange code → set session
+        const { error } = await supabase.auth.exchangeCodeForSession({ code: code as string });
+  
         if (error) {
           console.error('exchangeCodeForSession error:', error.message);
-          router.replace('/loginsignup'); // fallback if OAuth fails
+          router.replace('/loginsignup');
           return;
         }
-
-        // ✅ Get the logged-in user
+  
+        // ✅ wait for user to be available
         const { data: { user } } = await supabase.auth.getUser();
-
-        if (user) {
-          router.replace(`/${user.id}/dashboard/myrecords`); // 🔥 send user straight to dashboard
+  
+        if (user?.id) {
+          router.replace(`/${user.id}/dashboard/myrecords`);
         } else {
-          router.replace('/loginsignup'); // fallback if no user
+          // 👀 Instead of throwing user back to login, wait and retry once
+          setTimeout(async () => {
+            const { data: { user: retryUser } } = await supabase.auth.getUser();
+            if (retryUser?.id) {
+              router.replace(`/${retryUser.id}/dashboard/myrecords`);
+            } else {
+              router.replace('/loginsignup');
+            }
+          }, 1000);
         }
       } else {
-        router.replace('/loginsignup'); // fallback if no code in URL
+        router.replace('/loginsignup');
       }
     };
-
+  
     handleAuth();
   }, [router, searchParams]);
 
