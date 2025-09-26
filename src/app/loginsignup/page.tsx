@@ -19,11 +19,17 @@ export default function LoginSignupPage() {
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
-        queryParams: { access_type: 'offline', prompt: 'consent' },
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent'
+        }
       },
     });
 
-    if (error) alert(error.message);
+    if (error) {
+      console.error('Google OAuth error:', error);
+      alert('Google sign-in failed: ' + error.message);
+    }
   };
 
   // Email/password login
