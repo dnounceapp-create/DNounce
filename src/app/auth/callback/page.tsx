@@ -11,29 +11,27 @@ function AuthCallbackInner() {
   useEffect(() => {
     const handleAuth = async () => {
       const code = searchParams.get('code');
-      if (!code) {
-        router.replace('/loginsignup');
-        return;
-      }
-
-      // Your Supabase version expects a string, not an object
-      const { error } = await supabase.auth.exchangeCodeForSession(code);
-
-      if (error) {
-        console.error('exchangeCodeForSession error:', error.message);
-        router.replace('/loginsignup');
-        return;
-      }
-
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (user) {
-        router.replace(`/${user.id}/dashboard/myrecords`);
+      if (code) {
+        // ✅ Only once, no args
+        const { error } = await supabase.auth.exchangeCodeForSession();
+  
+        if (error) {
+          console.error('exchangeCodeForSession error:', error.message);
+          router.replace('/loginsignup');
+          return;
+        }
+  
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          router.replace(`/${user.id}/dashboard/myrecords`);
+        } else {
+          router.replace('/loginsignup');
+        }
       } else {
         router.replace('/loginsignup');
       }
     };
-
+  
     handleAuth();
   }, [router, searchParams]);
 

@@ -1,5 +1,5 @@
 'use client';
-
+//hi
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import Link from 'next/link';
@@ -15,13 +15,14 @@ export default function LoginSignupPage() {
 
   // Google login/signup
   const handleGoogle = async () => {
-    // Let Supabase use its Site URL → /auth/callback (we handle redirect there)
     const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
+      provider: 'google',
       options: {
-        queryParams: { access_type: "offline", prompt: "consent" },
+        redirectTo: `${window.location.origin}/auth/callback`, // ✅ always send through callback
+        queryParams: { access_type: 'offline', prompt: 'consent' },
       },
     });
+  
     if (error) alert(error.message);
   };
 
