@@ -1,9 +1,7 @@
-import type { NextConfig } from "next";
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  // Force clean builds
+  cleanDistDir: true,
+}
 
-const nextConfig: NextConfig = {
-  async redirects() {
-    return []; // no redirects from root
-  },
-};
-
-export default nextConfig;
+module.exports = nextConfig
