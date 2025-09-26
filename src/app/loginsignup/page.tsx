@@ -21,6 +21,7 @@ export default function LoginSignupPage() {
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
+        // Remove complex query params
       },
     });
   

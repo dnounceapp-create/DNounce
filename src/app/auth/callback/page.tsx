@@ -19,30 +19,31 @@ function AuthCallbackInner() {
 
       if (error) {
         console.error('❌ OAuth error:', error);
+        alert('OAuth error: ' + error);
         router.replace('/loginsignup');
         return;
       }
 
       if (!code) {
         console.error('❌ No auth code found');
+        alert('No authentication code received');
         router.replace('/loginsignup');
         return;
       }
 
       try {
-        console.log('🔄 Exchanging auth code for session...');
+        console.log('🔄 Exchanging code for session...');
         
-        // Fix: Ensure we have both code and code verifier
-        const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+        // Simple exchange - let Supabase handle PKCE
+        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
         
-        console.log('🔐 Exchange response:', { data, error: exchangeError });
-
         if (exchangeError) {
           console.error('❌ Exchange error:', exchangeError);
           
-          if (exchangeError.message.includes('code verifier')) {
-            // PKCE issue - try a different approach
-            await handlePKCEFallback(code);
+          // If PKCE fails, try refreshing the page to restart auth
+          if (exchangeError.message.includes('code verifier') || exchangeError.message.includes('non-empty')) {
+            alert('Session expired. Please try logging in again.');
+            router.replace('/loginsignup');
             return;
           }
           
@@ -51,80 +52,43 @@ function AuthCallbackInner() {
           return;
         }
 
-        console.log('✅ Session exchange successful!');
+        console.log('✅ Code exchanged successfully!');
         
-        // Get the user
+        // Wait a moment for session to persist
         await new Promise(resolve => setTimeout(resolve, 1000));
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
         
-        if (userError) {
-          console.error('❌ User error:', userError);
-          router.replace('/loginsignup');
-          return;
+        // Get user with retry logic
+        let user = null;
+        for (let i = 0; i < 3; i++) {
+          const { data: { user: currentUser }, error: userError } = await supabase.auth.getUser();
+          
+          if (userError) {
+            console.error('❌ Get user error:', userError);
+            break;
+          }
+          
+          if (currentUser?.id) {
+            user = currentUser;
+            console.log('✅ User found:', user.id);
+            break;
+          }
+          
+          console.log('🔄 Waiting for user session...', i + 1);
+          await new Promise(resolve => setTimeout(resolve, 1000));
         }
 
         if (user?.id) {
-          console.log('🎯 User authenticated:', user.id);
+          console.log('🎯 Redirecting to dashboard');
           router.replace(`/${user.id}/dashboard/myrecords`);
         } else {
           console.error('❌ No user found after authentication');
+          alert('Authentication completed but user not found. Please try again.');
           router.replace('/loginsignup');
         }
 
       } catch (catchError) {
         console.error('💥 Unexpected error:', catchError);
-        router.replace('/loginsignup');
-      }
-    };
-
-    const handlePKCEFallback = async (code: string) => {
-      console.log('🔄 Trying PKCE fallback...');
-      // Sometimes the code verifier is in localStorage
-      const codeVerifier = localStorage.getItem('supabase.auth.codeVerifier');
-      console.log('🔐 Code verifier from storage:', codeVerifier);
-      
-      if (!codeVerifier) {
-        alert('Authentication error: Missing session data. Please try logging in again.');
-        router.replace('/loginsignup');
-        return;
-      }
-
-      // Manually handle the exchange - use hardcoded URL
-      try {
-        const response = await fetch(`https://etfhkltquzhysvmhbkfg.supabase.co/auth/v1/token?grant_type=pkce`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV0ZmhrbHRxdXpoeXN2bWhia2ZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg2NjE1NTMsImV4cCI6MjA3NDIzNzU1M30.za1h1oCZPD4vPwQllsHrX2_pXrZtrXLOQv63ErN2W6I',
-          },
-          body: JSON.stringify({
-            auth_code: code,
-            code_verifier: codeVerifier,
-          }),
-        });
-        
-        const data = await response.json();
-        console.log('🔐 Manual PKCE response:', data);
-        
-        if (data.access_token) {
-          // Set the session manually
-          const { error: setError } = await supabase.auth.setSession({
-            access_token: data.access_token,
-            refresh_token: data.refresh_token,
-          });
-          
-          if (!setError) {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user?.id) {
-              router.replace(`/${user.id}/dashboard/myrecords`);
-              return;
-            }
-          }
-        }
-        
-        router.replace('/loginsignup');
-      } catch (error) {
-        console.error('❌ PKCE fallback failed:', error);
+        alert('Authentication error. Please try again.');
         router.replace('/loginsignup');
       }
     };
