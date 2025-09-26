@@ -1,3 +1,4 @@
+// src/app/auth/callback/page.tsx
 'use client';
 
 import { Suspense, useEffect } from 'react';
@@ -11,46 +12,74 @@ function AuthCallbackInner() {
   useEffect(() => {
     const handleAuth = async () => {
       const code = searchParams.get('code');
-      if (code) {
-        // ✅ FIX: Pass code directly as string, not wrapped in object
+      
+      if (!code) {
+        router.replace('/loginsignup');
+        return;
+      }
+
+      try {
+        // Exchange code for session
         const { error } = await supabase.auth.exchangeCodeForSession(code);
-  
+
         if (error) {
-          console.error('exchangeCodeForSession error:', error.message);
+          console.error('Authentication error:', error.message);
           router.replace('/loginsignup');
           return;
         }
-  
-        // ✅ wait for user to be available
-        const { data: { user } } = await supabase.auth.getUser();
-  
+
+        // Get user with retry logic
+        const getUserWithRetry = async (retries = 0): Promise<any> => {
+          const { data: { user }, error } = await supabase.auth.getUser();
+          
+          if (error) throw error;
+          
+          if (user?.id) {
+            return user;
+          }
+          
+          if (retries < 3) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            return getUserWithRetry(retries + 1);
+          }
+          
+          return null;
+        };
+
+        const user = await getUserWithRetry();
+        
         if (user?.id) {
           router.replace(`/${user.id}/dashboard/myrecords`);
         } else {
-          // 👀 Instead of throwing user back to login, wait and retry once
-          setTimeout(async () => {
-            const { data: { user: retryUser } } = await supabase.auth.getUser();
-            if (retryUser?.id) {
-              router.replace(`/${retryUser.id}/dashboard/myrecords`);
-            } else {
-              router.replace('/loginsignup');
-            }
-          }, 1000);
+          router.replace('/loginsignup');
         }
-      } else {
+
+      } catch (error) {
+        console.error('Auth callback error:', error);
         router.replace('/loginsignup');
       }
     };
-  
+
     handleAuth();
   }, [router, searchParams]);
 
-  return <p className="text-center mt-10">Finishing sign-in…</p>;
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+        <p className="mt-4 text-lg">Completing sign-in...</p>
+      </div>
+    </div>
+  );
 }
 
 export default function AuthCallback() {
   return (
-    <Suspense fallback={<p className="text-center mt-10">Loading…</p>}>
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Loading...</p>
+      </div>
+    }>
       <AuthCallbackInner />
     </Suspense>
   );
