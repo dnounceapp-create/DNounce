@@ -1,5 +1,5 @@
 'use client';
-//hi
+
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import Link from 'next/link';
@@ -13,33 +13,32 @@ export default function LoginSignupPage() {
   const [signupPassword, setSignupPassword] = useState('');
   const router = useRouter();
 
-  // Google login/signup
+  // Google login
   const handleGoogle = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`, // ✅ always send through callback
+        redirectTo: `${window.location.origin}/auth/callback`,
         queryParams: { access_type: 'offline', prompt: 'consent' },
       },
     });
-  
+
     if (error) alert(error.message);
   };
 
+  // Email/password login
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-  
     const { error } = await supabase.auth.signInWithPassword({
       email: loginEmail,
       password: loginPassword,
     });
-  
+
     if (error) {
       alert(error.message);
       return;
     }
-  
-    // fetch session → get user id → go to dashboard
+
     const { data } = await supabase.auth.getSession();
     const userId = data?.session?.user?.id;
     if (userId) {
@@ -47,23 +46,22 @@ export default function LoginSignupPage() {
     }
   };
 
+  // Email/password signup
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-  
     const { error } = await supabase.auth.signUp({
       email: signupEmail,
       password: signupPassword,
     });
-  
+
     if (error) {
       alert(error.message);
       return;
     }
-  
-    // If email confirmation is OFF, we’ll have a session right away
+
     const { data } = await supabase.auth.getSession();
     const userId = data?.session?.user?.id;
-  
+
     if (userId) {
       router.replace(`/${userId}/dashboard/myrecords`);
     } else {
@@ -76,9 +74,10 @@ export default function LoginSignupPage() {
       {/* Top nav bar */}
       <header className="flex items-center justify-between px-10 py-6 bg-white shadow-sm">
         <Link href="/" className="flex items-center gap-4">
-          {/* Bigger logo + word */}
-          <Image src="/logo.png" alt="DNounce logo" width={80} height={80} />
-          <span className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900">DNounce</span>
+          <Image src="/logo.png" alt="DNounce logo" width={60} height={60} />
+          <span className="text-lg sm:text-2xl md:text-3xl font-bold text-gray-900">
+            DNounce
+          </span>
         </Link>
       </header>
 
@@ -105,7 +104,6 @@ export default function LoginSignupPage() {
                   onChange={(e) => setLoginPassword(e.target.value)}
                 />
 
-                {/* Forgot password link */}
                 <div className="text-right">
                   <Link
                     href="/forgot-password"
@@ -122,6 +120,8 @@ export default function LoginSignupPage() {
                   Login
                 </button>
               </form>
+
+              {/* Google login */}
               <div className="mt-6">
                 <button
                   type="button"
@@ -145,7 +145,9 @@ export default function LoginSignupPage() {
 
             {/* Signup section */}
             <div className="w-full max-w-md bg-white shadow-lg rounded-xl p-8">
-              <h2 className="text-2xl font-semibold text-center mb-6">Create Account</h2>
+              <h2 className="text-2xl font-semibold text-center mb-6">
+                Create Account
+              </h2>
               <form onSubmit={handleSignup} className="space-y-4">
                 <input
                   type="email"
@@ -168,6 +170,8 @@ export default function LoginSignupPage() {
                   Create Account
                 </button>
               </form>
+
+              {/* Google signup */}
               <div className="mt-6">
                 <button
                   type="button"
