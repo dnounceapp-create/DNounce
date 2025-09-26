@@ -1,9 +1,11 @@
+// src/app/auth/callback/page.tsx
 'use client';
-import { useEffect } from 'react';
+
+import { Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 
-export default function AuthCallback() {
+function AuthCallbackInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -26,7 +28,6 @@ export default function AuthCallback() {
 
         if (error) {
           console.error('❌ Exchange error:', error);
-          // Show exact error
           alert('Error: ' + error.message);
           router.replace('/loginsignup');
           return;
@@ -63,5 +64,20 @@ export default function AuthCallback() {
         <p className="mt-4 text-lg">Signing you in...</p>
       </div>
     </div>
+  );
+}
+
+export default function AuthCallback() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-lg">Loading...</p>
+        </div>
+      </div>
+    }>
+      <AuthCallbackInner />
+    </Suspense>
   );
 }
