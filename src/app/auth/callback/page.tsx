@@ -11,22 +11,40 @@ function AuthCallbackInner() {
 
   useEffect(() => {
     const handleAuth = async () => {
+      // Debug: log all search parameters
+      console.log('🔐 All search parameters:');
+      searchParams.forEach((value, key) => {
+        console.log(`  ${key}: ${value}`);
+      });
+
       const code = searchParams.get('code');
       const error = searchParams.get('error');
+      const error_description = searchParams.get('error_description');
       
-      console.log('🔐 Auth callback - Code:', code);
-      console.log('🔐 Error param:', error);
+      console.log('🔐 Current URL:', window.location.href);
+      console.log('🔐 Code parameter:', code);
+      console.log('🔐 Error parameter:', error);
+      console.log('🔐 Error description:', error_description);
 
+      // Check for OAuth errors first
       if (error) {
-        console.error('❌ OAuth error:', error);
-        alert('OAuth error: ' + error);
+        console.error('❌ OAuth error:', error, error_description);
+        alert(`OAuth error: ${error_description || error}`);
         router.replace('/loginsignup');
         return;
       }
 
       if (!code) {
-        console.error('❌ No auth code found');
-        alert('No authentication code received');
+        console.error('❌ No code parameter found in URL');
+        console.log('🔐 Full URL search:', window.location.search);
+        
+        // Check if there are any parameters at all
+        if (window.location.search) {
+          alert('Authentication response received but missing code. URL: ' + window.location.search);
+        } else {
+          alert('No authentication response received. The OAuth flow may have been interrupted.');
+        }
+        
         router.replace('/loginsignup');
         return;
       }
@@ -34,19 +52,10 @@ function AuthCallbackInner() {
       try {
         console.log('🔄 Exchanging code for session...');
         
-        // Simple exchange - let Supabase handle PKCE
         const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
         
         if (exchangeError) {
           console.error('❌ Exchange error:', exchangeError);
-          
-          // If PKCE fails, try refreshing the page to restart auth
-          if (exchangeError.message.includes('code verifier') || exchangeError.message.includes('non-empty')) {
-            alert('Session expired. Please try logging in again.');
-            router.replace('/loginsignup');
-            return;
-          }
-          
           alert('Authentication failed: ' + exchangeError.message);
           router.replace('/loginsignup');
           return;
@@ -54,35 +63,22 @@ function AuthCallbackInner() {
 
         console.log('✅ Code exchanged successfully!');
         
-        // Wait a moment for session to persist
+        // Get user with retry logic
         await new Promise(resolve => setTimeout(resolve, 1000));
         
-        // Get user with retry logic
-        let user = null;
-        for (let i = 0; i < 3; i++) {
-          const { data: { user: currentUser }, error: userError } = await supabase.auth.getUser();
-          
-          if (userError) {
-            console.error('❌ Get user error:', userError);
-            break;
-          }
-          
-          if (currentUser?.id) {
-            user = currentUser;
-            console.log('✅ User found:', user.id);
-            break;
-          }
-          
-          console.log('🔄 Waiting for user session...', i + 1);
-          await new Promise(resolve => setTimeout(resolve, 1000));
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        
+        if (userError) {
+          console.error('❌ Get user error:', userError);
+          router.replace('/loginsignup');
+          return;
         }
 
         if (user?.id) {
-          console.log('🎯 Redirecting to dashboard');
+          console.log('🎯 User authenticated:', user.id);
           router.replace(`/${user.id}/dashboard/myrecords`);
         } else {
           console.error('❌ No user found after authentication');
-          alert('Authentication completed but user not found. Please try again.');
           router.replace('/loginsignup');
         }
 

@@ -16,18 +16,21 @@ export default function LoginSignupPage() {
   // Google login
   const handleGoogle = async () => {
     console.log('🔐 Starting Google OAuth...');
+    console.log('🔐 Redirect URL:', `${window.location.origin}/auth/callback`);
     
-    const { error } = await supabase.auth.signInWithOAuth({
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
-        // Remove complex query params
+        skipBrowserRedirect: false, // Ensure browser redirect happens
       },
     });
   
     if (error) {
       console.error('❌ Google OAuth error:', error);
       alert('Google sign-in failed: ' + error.message);
+    } else {
+      console.log('✅ OAuth initiated:', data);
     }
   };
 
