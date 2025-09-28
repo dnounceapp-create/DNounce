@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@openai/codex':
+        specifier: ^0.42.0
+        version: 0.42.0
       '@radix-ui/react-dialog':
         specifier: ^1.1.15
         version: 1.1.15(@types/react-dom@19.1.9(@types/react@19.1.12))(@types/react@19.1.12)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -47,6 +50,9 @@ importers:
       next:
         specifier: 15.5.2
         version: 15.5.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      openai:
+        specifier: ^5.23.1
+        version: 5.23.1(ws@8.18.3)
       pg:
         specifier: ^8.16.3
         version: 8.16.3
@@ -701,6 +707,11 @@ packages:
   '@nolyfill/is-core-module@1.0.39':
     resolution: {integrity: sha512-nn5ozdjYQpUCZlWGuxcJY/KpxkWQs4DcbMCmKojjyrYDEAGy4Ce19NN4v5MduafTwJlbKc99UA8YhSVqq9yPZA==}
     engines: {node: '>=12.4.0'}
+
+  '@openai/codex@0.42.0':
+    resolution: {integrity: sha512-jLpMrQuq1gIBzBKbKMwAzXOh+5uwE+ht3RHUb2Ov7P50fjAxPKDZa0+zpqkhHTspm8Rw6Vdrm4I4L+Z03usCkg==}
+    engines: {node: '>=20'}
+    hasBin: true
 
   '@radix-ui/number@1.1.1':
     resolution: {integrity: sha512-MkKCwxlXTgz6CFoJx3pCwn07GKp36+aZyu/u2Ln2VrA5DcdyCZkASEDBTd8x5whTQQL5CiYf4prXKLcgQdv29g==}
@@ -2308,6 +2319,18 @@ packages:
     resolution: {integrity: sha512-gXah6aZrcUxjWg2zR2MwouP2eHlCBzdV4pygudehaKXSGW4v2AsRQUK+lwwXhii6KFZcunEnmSUoYp5CXibxtA==}
     engines: {node: '>= 0.4'}
 
+  openai@5.23.1:
+    resolution: {integrity: sha512-APxMtm5mln4jhKhAr0d5zP9lNsClx4QwJtg8RUvYSSyxYCTHLNJnLEcSHbJ6t0ori8Pbr9HZGfcPJ7LEy73rvQ==}
+    hasBin: true
+    peerDependencies:
+      ws: ^8.18.0
+      zod: ^3.23.8
+    peerDependenciesMeta:
+      ws:
+        optional: true
+      zod:
+        optional: true
+
   optionator@0.9.4:
     resolution: {integrity: sha512-6IpQ7mKUxRcZNLIObR0hz7lxsapSSIYNZJwXPGeF0mTVqGKFIXj1DQcMoT22S3ROcLyY/rz0PWaWZ9ayWmad9g==}
     engines: {node: '>= 0.8.0'}
@@ -3199,6 +3222,8 @@ snapshots:
       fastq: 1.19.1
 
   '@nolyfill/is-core-module@1.0.39': {}
+
+  '@openai/codex@0.42.0': {}
 
   '@radix-ui/number@1.1.1': {}
 
@@ -4903,6 +4928,10 @@ snapshots:
       call-bound: 1.0.4
       define-properties: 1.2.1
       es-object-atoms: 1.1.1
+
+  openai@5.23.1(ws@8.18.3):
+    optionalDependencies:
+      ws: 8.18.3
 
   optionator@0.9.4:
     dependencies:

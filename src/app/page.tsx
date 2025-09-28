@@ -1,6 +1,7 @@
 "use client";
 // Deployment trigger - search functionality improvements
 
+import Link from "next/link";
 import { MapPin } from "lucide-react";
 import { searchSubjects } from "@/lib/searchSubjectsQuery";
 import { useState, useRef, useEffect } from "react";
@@ -426,7 +427,7 @@ export default function HomePage() {
                 <Button
                   size="sm"
                   className="bg-blue-600 hover:bg-blue-700 text-white"
-                  onClick={() => router.push("/login")}
+                  onClick={() => router.push("/loginsignup")}
                 >
                   Login / Sign Up
                 </Button>
