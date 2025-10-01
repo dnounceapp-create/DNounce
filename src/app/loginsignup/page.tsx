@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabaseClient";
 
 export default function LoginSignupPage() {
@@ -106,14 +107,18 @@ export default function LoginSignupPage() {
                 </button>
               </form>
               <div className="mt-6">
-                <button
-                  type="button"
-                  onClick={handleGoogle}
-                  className="flex items-center justify-center w-full px-4 py-2 border rounded-md hover:bg-gray-100"
-                >
-                  <img src="/google-logo.svg" alt="Google" className="w-5 h-5 mr-2 inline-block" />
-                  Continue with Google
-                </button>
+              <button
+                type="button"
+                onClick={handleGoogle}
+                className="flex items-center justify-center w-full px-4 py-2 border rounded-md hover:bg-gray-100"
+              >
+                <img
+                  src="/googleicon.svg"
+                  alt="Google"
+                  className="w-5 h-5 mr-2 inline-block"
+                />
+                Continue with Google
+              </button>
               </div>
             </div>
 
@@ -150,7 +155,11 @@ export default function LoginSignupPage() {
                   onClick={handleGoogle}
                   className="flex items-center justify-center w-full px-4 py-2 border rounded-md hover:bg-gray-100"
                 >
-                  <img src="/google-logo.svg" alt="Google" className="w-5 h-5 mr-2 inline-block" />
+                  <img
+                    src="/googleicon.svg"
+                    alt="Google"
+                    className="w-5 h-5 mr-2 inline-block"
+                  />
                   Sign up with Google
                 </button>
               </div>
