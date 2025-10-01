@@ -1,8 +1,12 @@
-import { createClient } from "@supabase/supabase-js"
+import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/+$/, "")!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-console.log("Supabase URL (sanitized):", supabaseUrl)
+// ✅ Debug log — will show only first 10 chars for safety
+if (typeof window !== "undefined") {
+  console.log("Supabase URL:", supabaseUrl);
+  console.log("Supabase Key (partial):", supabaseAnonKey?.substring(0, 10));
+}
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
