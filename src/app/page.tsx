@@ -384,9 +384,8 @@ export default function HomePage() {
                 <Image
                   src="/logo.png"
                   alt="DNounce Logo"
-                  width={40}
-                  height={40}
-                  className="rounded-md"
+                  width={60}
+                  height={60}
                   priority
                 />
                 <span className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900">
