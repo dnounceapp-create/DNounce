@@ -6,6 +6,10 @@ import Link from "next/link";
 import Image from "next/image";
 
 export default function ForgotPasswordPage() {
+  console.log(
+    "Supabase URL:", process.env.NEXT_PUBLIC_SUPABASE_URL,
+    "Supabase Key:", process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.slice(0, 10) + "..."
+  );
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
