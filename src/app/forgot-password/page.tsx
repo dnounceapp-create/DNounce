@@ -84,7 +84,11 @@ export default function ForgotPasswordPage() {
             </button>
           </form>
 
-          {{message}
+          {message && (
+            <div className="mt-4 text-center text-sm">
+              {message}
+            </div>
+          )}
 
           <div className="mt-6 text-center">
             <Link
