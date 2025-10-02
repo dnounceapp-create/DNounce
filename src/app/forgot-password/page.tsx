@@ -11,7 +11,7 @@ export default function ForgotPasswordPage() {
     "Supabase Key:", process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.slice(0, 10) + "..."
   );
   const [email, setEmail] = useState("");
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState<React.ReactNode>("");
   const [loading, setLoading] = useState(false);
 
   const handleReset = async (e: React.FormEvent) => {
@@ -24,12 +24,28 @@ export default function ForgotPasswordPage() {
     });
 
     if (error) {
-      setMessage("Error: " + error.message);
+      setMessage(
+        <div className="flex items-center gap-2 text-red-600">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+          <span>Error: {error.message}</span>
+        </div>
+      );
     } else {
-      setMessage("Check your email for a password reset link.");
+      setMessage(
+        <div className="flex items-start gap-2 text-blue-600">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M12 20c4.418 0 8-3.582 8-8s-3.582-8-8-8-8 3.582-8 8 3.582 8 8 8z" />
+          </svg>
+          <span>
+            Check your email for a password reset link.  
+            It may take a few minutes, and sometimes lands in **Spam/Junk**.  
+            The email will come from <strong>noreply@mail.app.supabase.io</strong>.
+          </span>
+        </div>
+      );
     }
-
-    setLoading(false);
   };
 
   return (
@@ -68,9 +84,7 @@ export default function ForgotPasswordPage() {
             </button>
           </form>
 
-          {message && (
-            <p className="mt-4 text-center text-sm text-gray-700">{message}</p>
-          )}
+          {{message}
 
           <div className="mt-6 text-center">
             <Link
