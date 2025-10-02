@@ -41,11 +41,14 @@ export default function ForgotPasswordPage() {
           <span>
             Check your email for a password reset link.  
             It may take a few minutes, and sometimes lands in **Spam/Junk**.  
-            The email will come from <strong>noreply@mail.app.supabase.io</strong>.
+            The email will come from <strong>support@dnounce.com</strong>.
           </span>
         </div>
       );
     }
+
+    setLoading(false);
+
   };
 
   return (
