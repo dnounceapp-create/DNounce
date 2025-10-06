@@ -14,6 +14,22 @@ export default function LoginSignupPage() {
   const [signupPassword, setSignupPassword] = useState("");
   const router = useRouter();
 
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      const user = data.session?.user;
+  
+      // ✅ Only redirect if definitely logged in (and not onboarding)
+      if (user?.user_metadata?.onboardingComplete) {
+        router.replace("/dashboard/myrecords");
+      } else if (user && !user.user_metadata?.onboardingComplete) {
+        router.replace("/user-setup");
+      }
+    };
+  
+    checkSession();
+  }, [router]);
+
   // Google login
   const handleGoogle = async () => {
     if (typeof window === "undefined") return;
@@ -30,20 +46,6 @@ export default function LoginSignupPage() {
       alert("Login failed: " + error.message);
     }
   };
-
-  useEffect(() => {
-    const checkSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      const user = data.session?.user;
-  
-      // ✅ Only redirect if the user is already signed in
-      if (user) {
-        router.replace("/dashboard/myrecords");
-      }
-    };
-  
-    checkSession();
-  }, [router]);
 
   // Email/password login
   const handleLogin = async (e: React.FormEvent) => {

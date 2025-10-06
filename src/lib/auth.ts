@@ -53,15 +53,13 @@ export function useAuth(options: UseAuthOptions = {}) {
       const isOnboarded = Boolean(user.user_metadata?.onboardingComplete);
       if (
         redirectToSetupIfFirstTime &&
-        user && // only if user is logged in
-        !isOnboarded &&
+        user && // ✅ make sure user exists first
+        isOnboarded === false &&
         pathname !== "/user-setup" &&
-        pathname !== "/loginsignup" && // don't redirect from login/signup
         !pathname.startsWith("/auth") &&
-        !pathname.startsWith("/_next") // extra safety for build routes
+        pathname !== "/loginsignup" // ✅ prevent loop from login/signup
       ) {
         router.replace("/user-setup");
-        return;
       }
 
       // 5️⃣ Subscribe to auth changes
