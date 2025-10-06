@@ -77,6 +77,7 @@ export function useAuth(options: UseAuthOptions = {}) {
           redirectToSetupIfFirstTime &&
           !isOnboarded &&
           pathname !== "/user-setup" &&
+          pathname !== "/loginsignup" && // 🧱 prevent redirect from login page
           !pathname.startsWith("/auth")
         ) {
           router.replace("/user-setup");
