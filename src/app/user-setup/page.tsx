@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
-import { useAuthUser } from "@/hooks/useAuthUser";
+import { useAuthUser } from "@/hooks/useAuth";
 import Image from "next/image";
 import { Loader2, CheckCircle2 } from "lucide-react";
 
