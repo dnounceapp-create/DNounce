@@ -1,7 +1,10 @@
+"use client";
+
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import ServiceWorkerRegister from "./service-worker-register"; // 👈 client component
+
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
