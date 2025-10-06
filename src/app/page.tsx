@@ -89,6 +89,7 @@ function buildNoProfileMessage({
 }
 
 export default function HomePage() {
+  const [scrollProgress, setScrollProgress] = useState(0);
   const [activeTab, setActiveTab] = useState<"records" | "reputations">("records");
   const [formKey, setFormKey] = useState(0);
   const [relationshipTypes, setRelationshipTypes] = useState<{ id: string; label: string; value: string }[]>([]);
@@ -106,6 +107,18 @@ export default function HomePage() {
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchMessage, setSearchMessage] = useState("");
   const [showResults, setShowResults] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const scrolled = (scrollTop / docHeight) * 100;
+      setScrollProgress(scrolled);
+    };
+  
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   useEffect(() => {
     const fetchSuggestions = async (query: string) => {
@@ -486,6 +499,24 @@ export default function HomePage() {
             )}
           </div>
         </header>
+
+      {/* 🔽 Scroll Progress Bar */}
+      <div
+        className="fixed left-0 w-full h-[2px] bg-transparent"
+        style={{
+          top: "5.2rem", // aligns at the divider below the top bar
+          zIndex: 60,
+          position: "fixed",
+        }}
+      >
+        <div
+          className="h-full bg-gradient-to-r from-blue-500 via-cyan-400 to-violet-500 blur-[1px] shadow-[0_0_12px_#38bdf8]"
+          style={{
+            width: `${scrollProgress}%`,
+            transition: "width 0.15s linear",
+          }}
+        ></div>
+      </div>
 
       <section className="bg-gray-50 py-16">
         <div className="max-w-4xl mx-auto px-4 text-center">

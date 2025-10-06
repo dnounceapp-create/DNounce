@@ -29,6 +29,11 @@ export default function LoginSignupPage() {
     }
   };
 
+
+  const params = new URLSearchParams(window.location.search);
+  const next = params.get("next") || "/dashboard/myrecords";
+  router.replace(next);
+
   // Email/password login
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,7 +47,7 @@ export default function LoginSignupPage() {
     }
     const { data } = await supabase.auth.getSession();
     const userId = data?.session?.user?.id;
-    if (userId) router.replace(`/${userId}/dashboard/myrecords`);
+    if (userId) router.replace("/dashboard/myrecords");
   };
 
   // Email/password signup
@@ -59,7 +64,7 @@ export default function LoginSignupPage() {
     const { data } = await supabase.auth.getSession();
     const userId = data?.session?.user?.id;
     if (userId) {
-      router.replace(`/${userId}/dashboard/myrecords`);
+      router.replace("/dashboard/myrecords");
     } else {
       alert("Check your email to confirm your account, then sign in.");
     }

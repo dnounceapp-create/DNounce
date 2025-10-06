@@ -1,5 +1,6 @@
 "use client";
 
+import { useAuth } from "@/lib/auth";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -23,6 +24,7 @@ const navItems = [
   { name: "Records I've Voted", href: "/dashboard/voted", icon: Vote },
   { name: "Pinned Records", href: "/dashboard/pinned", icon: Pin },
   { name: "Following Cases", href: "/dashboard/following", icon: Eye },
+  { name: "My Profile", href: "/dashboard/profile", icon: User }
 ];
 
 export default function DashboardLayout({
@@ -31,6 +33,22 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+
+  const { user, loading } = useAuth({
+    redirectIfUnauthed: true,
+    redirectToSetupIfFirstTime: true, // first-time users go to /user-setup
+    loginPath: "/loginsignup",
+  });
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen grid place-items-center text-sm text-gray-500">
+        Checking your session…
+      </div>
+    );
+  }
+  
+  if (!user) return null;
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
