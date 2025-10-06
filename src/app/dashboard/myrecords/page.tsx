@@ -96,7 +96,7 @@ const filterLabels: Record<string, string> = {
 type FiltersState = { status?: string; time?: string; rcredibilityrecord?: string };
 
 function RecordMeta({ record }: { record: RecordItem }) {
-  const dateRef = useRef<HTMLParagraphElement>(null); // hooks must live at top of a component
+  const dateRef = useRef<HTMLParagraphElement>(null);
 
   return (
     <div className="flex flex-col items-start max-w-max">
@@ -128,7 +128,7 @@ function timeAgo(dateString: string) {
   return years === 1 ? "About 1 year ago" : `About ${years} years ago`;
 }
 
-function StageStepper({ current, widthRef }: { current: number; widthRef: React.RefObject<HTMLElement> }) {
+function StageStepper({ current, widthRef }: { current: number; widthRef: React.RefObject<HTMLParagraphElement> }) {
   const steps = [1, 2, 3, 4, 5, 6, 7];
   const [containerWidth, setContainerWidth] = useState(0);
 
