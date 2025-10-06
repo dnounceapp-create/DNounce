@@ -32,11 +32,17 @@ export default function LoginSignupPage() {
   };
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      const next = params.get("next") || "/dashboard/myrecords";
-      router.replace(next);
-    }
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      const user = data.session?.user;
+  
+      // ✅ Only redirect if the user is already signed in
+      if (user) {
+        router.replace("/dashboard/myrecords");
+      }
+    };
+  
+    checkSession();
   }, [router]);
 
   // Email/password login
