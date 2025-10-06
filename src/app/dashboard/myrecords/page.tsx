@@ -93,7 +93,7 @@ const filterLabels: Record<string, string> = {
   credibilityrecord: "Credibility Record",
 };
 
-type FiltersState = { status?: string; time?: string; rcredibilityrecord?: string };
+type FiltersState = { status?: string; time?: string; credibilityrecord?: string };
 
 function RecordMeta({ record }: { record: RecordItem }) {
   const dateRef = useRef<HTMLParagraphElement>(null);
@@ -128,7 +128,7 @@ function timeAgo(dateString: string) {
   return years === 1 ? "About 1 year ago" : `About ${years} years ago`;
 }
 
-function StageStepper({ current, widthRef }: { current: number; widthRef: React.RefObject<HTMLParagraphElement> }) {
+function StageStepper({ current, widthRef }: { current: number; widthRef: React.RefObject<HTMLParagraphElement | null> }) {
   const steps = [1, 2, 3, 4, 5, 6, 7];
   const [containerWidth, setContainerWidth] = useState(0);
 
@@ -175,7 +175,13 @@ function StageStepper({ current, widthRef }: { current: number; widthRef: React.
 }
 
 // Floating legend component
-function FloatingLegend({ stageLabels, outcomeLabels }) {
+function FloatingLegend({
+  stageLabels,
+  outcomeLabels,
+}: {
+  stageLabels: Record<number, { label: string; color: string }>;
+  outcomeLabels: Record<string, { label: string; color: string }>;
+}) {
   const [isOpen, setIsOpen] = useState(false); // default minimized
   const [pos, setPos] = useState({ x: 20, y: 200 });
   const [dragging, setDragging] = useState(false);
@@ -320,29 +326,34 @@ export default function MyRecordsPage() {
   };
 
   // ---- Sorting comparator ---------------------------------------------------
-  const sortComparator = (key: string) => {
+  const sortComparator = (key: string): ((a: RecordItem, b: RecordItem) => number) => {
     switch (key) {
       case "Newest Submitted":
-        return (a, b) => new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime();
+        return (a: RecordItem, b: RecordItem) =>
+          new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime();
       case "Oldest Submitted":
-        return (a, b) => new Date(a.submitted_at).getTime() - new Date(b.submitted_at).getTime();
+        return (a: RecordItem, b: RecordItem) =>
+          new Date(a.submitted_at).getTime() - new Date(b.submitted_at).getTime();
       case "Stage (1 → 7)":
-        return (a, b) => {
+        return (a: RecordItem, b: RecordItem) => {
           if (a.stage == null && b.stage == null) return 0;
           if (a.stage == null) return 1;
           if (b.stage == null) return -1;
           return a.stage - b.stage;
         };
       case "Record ID":
-        return (a, b) => a.id - b.id;
+        return (a: RecordItem, b: RecordItem) => a.id - b.id;
       case "Subject (A → Z)":
-        return (a, b) => a.subject_name.localeCompare(b.subject_name);
+        return (a: RecordItem, b: RecordItem) =>
+          a.subject_name.localeCompare(b.subject_name);
       case "Votes":
-        return (a, b) => b.votes - a.votes;
+        return (a: RecordItem, b: RecordItem) => b.votes - a.votes;
       case "Views":
-        return (a, b) => b.views - a.views;
+        return (a: RecordItem, b: RecordItem) => b.views - a.views;
       case "Last Activity":
-        return (a, b) => new Date(b.last_activity_at).getTime() - new Date(a.last_activity_at).getTime();
+        return (a: RecordItem, b: RecordItem) =>
+          new Date(b.last_activity_at).getTime() -
+          new Date(a.last_activity_at).getTime();
       default:
         return () => 0;
     }
