@@ -28,112 +28,122 @@ const navItems = [
   { name: "Following Cases", href: "/dashboard/following", icon: Eye },
 ];
 
+// 🧭 Legend label mappings (same as before, cleaned up)
+const stageLabels = [
+  { label: "AI Verification in Progress", color: "bg-blue-500" },
+  { label: "Subject Notified", color: "bg-purple-500" },
+  { label: "Published", color: "bg-green-500" },
+  { label: "Deletion Request / Debate", color: "bg-yellow-500" },
+  { label: "Subject Dispute & Debate", color: "bg-orange-500" },
+  { label: "Voting in Progress", color: "bg-pink-500" },
+  { label: "Anonymity Active", color: "bg-gray-500" },
+];
+
+const outcomeLabels = [
+  { label: "Kept on page", color: "bg-emerald-600" },
+  { label: "Deleted from page", color: "bg-red-600" },
+];
+
+// 🪄 Floating legend component
+function FloatingLegend() {
+  const [pos, setPos] = useState({ x: 20, y: 20 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const legendRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+      setPos({
+        x: Math.max(0, e.clientX - offset.x),
+        y: Math.max(0, e.clientY - offset.y),
+      });
+    };
+    const handleMouseUp = () => setIsDragging(false);
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isDragging, offset]);
+
+  // mobile-safe default: bottom-right
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setPos({ x: window.innerWidth - 220, y: window.innerHeight - 280 });
+      }
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  return (
+    <div
+      ref={legendRef}
+      className="fixed z-[90] select-none cursor-move rounded-xl shadow-lg backdrop-blur-lg border border-white/20 bg-white/80 p-4 w-64 text-sm"
+      style={{
+        left: pos.x,
+        top: pos.y,
+        transform: "translate(0, 0)",
+        transition: isDragging ? "none" : "transform 0.1s ease-out",
+      }}
+      onMouseDown={(e) => {
+        if (!legendRef.current) return;
+        const rect = legendRef.current.getBoundingClientRect();
+        setIsDragging(true);
+        setOffset({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+      }}
+    >
+      <h3 className="font-semibold text-gray-800 mb-2 text-center">Legend</h3>
+
+      <div className="space-y-3">
+        <div>
+          <p className="text-xs font-medium text-gray-600 mb-1">Stages</p>
+          <ul className="space-y-1">
+            {stageLabels.map((s) => (
+              <li key={s.label} className="flex items-center gap-2">
+                <span
+                  className={`w-3 h-3 rounded-full ${s.color} flex-shrink-0`}
+                ></span>
+                <span className="text-xs text-gray-800">{s.label}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div>
+          <p className="text-xs font-medium text-gray-600 mb-1">Outcomes</p>
+          <ul className="space-y-1">
+            {outcomeLabels.map((s) => (
+              <li key={s.label} className="flex items-center gap-2">
+                <span
+                  className={`w-3 h-3 rounded-full ${s.color} flex-shrink-0`}
+                ></span>
+                <span className="text-xs text-gray-800">{s.label}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const [menuOpen, setMenuOpen] = useState(false);
   const { user, loading } = useAuth({
     redirectIfUnauthed: true,
     redirectToSetupIfFirstTime: true,
     loginPath: "/loginsignup",
   });
 
-  // --- Mobile menu state
-  const [menuOpen, setMenuOpen] = useState(false);
-
-  // --- Edge-swipe gesture state (mobile)
-  const draggingRef = useRef(false);
-  const startXRef = useRef(0);
-  const currentXRef = useRef(0);
-  const [dragX, setDragX] = useState(0); // visual transform while dragging
-
-  // Auto-close mobile menu when route changes (feels native)
   useEffect(() => {
     if (menuOpen) setMenuOpen(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
-
-  // Lock body scroll when menu is open
-  useEffect(() => {
-    const { style } = document.body;
-    const prev = style.overflow;
-    if (menuOpen) style.overflow = "hidden";
-    else style.overflow = prev || "";
-    return () => {
-      style.overflow = prev || "";
-    };
-  }, [menuOpen]);
-
-  // Touch handlers for edge swipe
-  const onTouchStart = (e: React.TouchEvent) => {
-    const x = e.touches[0].clientX;
-
-    // start drag if:
-    // 1) menu is open (allow closing with swipe), or
-    // 2) user started from very left edge (<= 20px) to open
-    const fromEdge = x <= 20;
-    if (menuOpen || fromEdge) {
-      draggingRef.current = true;
-      startXRef.current = x;
-      currentXRef.current = x;
-      setDragX(0);
-    }
-  };
-
-  const onTouchMove = (e: React.TouchEvent) => {
-    if (!draggingRef.current) return;
-    currentXRef.current = e.touches[0].clientX;
-
-    const delta = currentXRef.current - startXRef.current;
-
-    // If menu is open, we allow swiping left to close (delta < 0).
-    // If menu is closed but starting at edge, allow pulling right to open (delta > 0 up to drawer width).
-    const width = 256; // 64 * 4 (w-64)
-    let translate = 0;
-
-    if (menuOpen) {
-      // drawer starts at 0 (visible) -> we translate negative as user swipes left
-      translate = Math.min(0, Math.max(-width, delta));
-    } else {
-      // drawer starts at -width -> visually it increases toward 0 as user drags right
-      // we store as positive right-pull so we can map later
-      translate = Math.max(0, Math.min(width, delta));
-    }
-
-    setDragX(translate);
-  };
-
-  const onTouchEnd = () => {
-    if (!draggingRef.current) return;
-    draggingRef.current = false;
-
-    const width = 256;
-    const threshold = 60; // distance to decide commit
-
-    if (menuOpen) {
-      // user swiped left to close?
-      if (dragX < -threshold) setMenuOpen(false);
-      // otherwise snap back open
-    } else {
-      // user pulled from edge to open?
-      if (dragX > threshold) setMenuOpen(true);
-      // otherwise stay closed
-    }
-
-    // reset visual
-    setDragX(0);
-  };
-
-  // Compute inline style for the mobile drawer during drag
-  const mobileDrawerStyle: React.CSSProperties = (() => {
-    const width = 256;
-    // When open normally (not dragging), translateX: 0
-    // When closed normally (not dragging), translateX: -100%
-    if (dragX === 0) return {};
-    // When open & dragging left, dragX is negative up to -width -> direct map to translateX(px)
-    if (menuOpen && dragX <= 0) return { transform: `translateX(${dragX}px)` };
-    // When closed & dragging from edge, dragX is positive up to width -> base -width + dragX
-    if (!menuOpen && dragX >= 0) return { transform: `translateX(${dragX - width}px)` };
-    return {};
-  })();
 
   if (loading) {
     return (
@@ -142,11 +152,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </div>
     );
   }
+
   if (!user) return null;
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Header (sticky) */}
+      {/* Header */}
       <header className="px-4 sm:px-8 py-4 bg-white shadow-sm flex items-center justify-between sticky top-0 z-30">
         <Link
           href="/dashboard/myrecords"
@@ -169,36 +180,31 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </Link>
         </div>
 
-        {/* Mobile Menu Toggle */}
+        {/* Mobile Menu */}
         <button
           className="md:hidden p-2 rounded-md hover:bg-gray-100 transition"
-          onClick={() => setMenuOpen((v) => !v)}
-          aria-label="Toggle menu"
-          aria-expanded={menuOpen}
+          onClick={() => setMenuOpen(!menuOpen)}
         >
-          {menuOpen ? <X className="w-6 h-6 text-gray-700" /> : <Menu className="w-6 h-6 text-gray-700" />}
+          {menuOpen ? (
+            <X className="w-6 h-6 text-gray-700" />
+          ) : (
+            <Menu className="w-6 h-6 text-gray-700" />
+          )}
         </button>
       </header>
 
-      {/* Mobile overlay */}
-      <div
-        className={`fixed inset-0 bg-black/40 backdrop-blur-sm z-40 transition-all duration-300 ${
-          menuOpen ? "opacity-100 visible" : "opacity-0 invisible"
-        } md:hidden`}
-        onClick={() => setMenuOpen(false)}
-      />
+      {/* Mobile Sidebar */}
+      {menuOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 md:hidden"
+          onClick={() => setMenuOpen(false)}
+        />
+      )}
 
-      {/* Mobile slide-over drawer */}
       <aside
         className={`fixed top-0 left-0 h-full w-64 bg-white shadow-lg z-50 transform transition-transform duration-300 ease-in-out md:static md:translate-x-0 ${
           menuOpen ? "translate-x-0" : "-translate-x-full"
         }`}
-        style={mobileDrawerStyle}
-        // Gesture handlers only on mobile-sized view; harmless otherwise
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        onTouchEnd={onTouchEnd}
-        aria-hidden={!menuOpen}
       >
         <div className="p-6 border-b flex items-center justify-between bg-white/80 backdrop-blur-md">
           <span className="font-semibold text-gray-900 text-lg">Menu</span>
@@ -229,9 +235,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </nav>
       </aside>
 
-      {/* Main content row */}
+      {/* Main Section */}
       <div className="flex flex-1">
-        {/* Desktop sidebar (unchanged) */}
         <aside className="hidden md:block w-64 bg-white border-r shadow-sm p-6 space-y-2 sticky top-0 h-screen">
           {navItems.map((item) => {
             const active = pathname === item.href;
@@ -253,11 +258,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           })}
         </aside>
 
-        {/* Page content */}
-        <main className="flex-1 p-4 sm:p-8 overflow-y-auto">{children}</main>
+        <main className="flex-1 p-4 sm:p-8 overflow-y-auto relative">
+          {children}
+          {/* 🪄 Global Legend */}
+          <FloatingLegend />
+        </main>
       </div>
 
-      {/* Footer (unchanged) */}
+      {/* Footer */}
       <footer className="bg-[#0A1120] text-gray-300 py-12">
         <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>

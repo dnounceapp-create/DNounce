@@ -3,7 +3,7 @@
 import { CheckCircle, AlertTriangle, CircleAlert } from "lucide-react"; 
 import { useMemo, useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { ChevronDown, ChevronUp, X } from "lucide-react";
+import { X } from "lucide-react";
 import Image from "next/image";
 
 const DEFAULT_SORT = "Newest Submitted" as const;
@@ -170,109 +170,6 @@ function StageStepper({ current, widthRef }: { current: number; widthRef: React.
           </div>
         );
       })}
-    </div>
-  );
-}
-
-// Floating legend component
-function FloatingLegend({
-  stageLabels,
-  outcomeLabels,
-}: {
-  stageLabels: Record<number, { label: string; color: string }>;
-  outcomeLabels: Record<string, { label: string; color: string }>;
-}) {
-  const [isOpen, setIsOpen] = useState(false); // default minimized
-  const [pos, setPos] = useState({ x: 20, y: 200 });
-  const [dragging, setDragging] = useState(false);
-  const dragRef = useRef<{ offsetX: number; offsetY: number } | null>(null);
-
-  useEffect(() => {
-    setPos({ x: 20, y: window.innerHeight - 220 }); // move to bottom after mount
-  }, []);
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    setDragging(true);
-    dragRef.current = { offsetX: e.clientX - pos.x, offsetY: e.clientY - pos.y };
-    e.preventDefault();
-  };
-
-  const handleMouseMove = (e: MouseEvent) => {
-    if (!dragging || !dragRef.current) return;
-    setPos({
-      x: e.clientX - dragRef.current.offsetX,
-      y: e.clientY - dragRef.current.offsetY,
-    });
-  };
-
-  const handleMouseUp = () => {
-    setDragging(false);
-    dragRef.current = null;
-  };
-
-  useEffect(() => {
-    if (dragging) {
-      window.addEventListener("mousemove", handleMouseMove);
-      window.addEventListener("mouseup", handleMouseUp);
-    } else {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
-    }
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
-    };
-  }, [dragging]);
-
-  return (
-    <div
-      className="fixed bg-white shadow-lg border rounded-md w-72 text-xs z-50"
-      style={{ left: pos.x, top: pos.y }}
-    >
-      {/* Header = draggable bar */}
-      <div
-        onMouseDown={handleMouseDown}
-        className="cursor-move bg-gray-100 px-3 py-2 flex justify-between items-center rounded-t-md"
-      >
-        <span className="font-medium text-gray-700">Status Legend</span>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsOpen(!isOpen);
-          }}
-        >
-          {isOpen ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
-        </button>
-      </div>
-
-      {isOpen && (
-        <div className="p-3 text-sm space-y-4 max-h-[70vh] overflow-y-auto">
-          {/* Verification Process */}
-          <div>
-            <h4 className="font-medium text-gray-600 mb-1">Verification Process</h4>
-            <ul className="space-y-1">
-              {[1, 2, 3, 4, 5, 6].map((n) => (
-                <li key={n} className={`px-2 py-1 rounded ${stageLabels[n].color}`}>
-                  {n}. {stageLabels[n].label}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Final Outcomes */}
-          <div>
-            <h4 className="font-medium text-gray-600 mb-1">Final Outcomes</h4>
-            <ul className="space-y-1">
-              <li className={`px-2 py-1 rounded ${outcomeLabels["kept"].color}`}>
-                {outcomeLabels["kept"].label}
-              </li>
-              <li className={`px-2 py-1 rounded ${outcomeLabels["deleted"].color}`}>
-                {outcomeLabels["deleted"].label}
-              </li>
-            </ul>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -699,9 +596,6 @@ export default function MyRecordsPage() {
           </div>
         </div>
       </main>
-
-      {/* Floating Legend */}
-      <FloatingLegend stageLabels={stageLabels} outcomeLabels={outcomeLabels} />
     </div>
   );
 }
