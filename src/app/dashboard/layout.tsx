@@ -87,15 +87,18 @@ function FloatingLegend() {
   useEffect(() => {
     const handleTouchMove = (e: TouchEvent) => {
       if (!isDragging || !e.touches[0]) return;
+      const touch = e.touches[0];
       setPos({
-        x: Math.max(0, e.touches[0].clientX - offset.x),
-        y: Math.max(0, e.touches[0].clientY - offset.y),
+        x: Math.max(0, touch.clientX - offset.x),
+        y: Math.max(0, touch.clientY - offset.y),
       });
     };
+  
     const handleTouchEnd = () => setIsDragging(false);
   
     window.addEventListener("touchmove", handleTouchMove);
     window.addEventListener("touchend", handleTouchEnd);
+  
     return () => {
       window.removeEventListener("touchmove", handleTouchMove);
       window.removeEventListener("touchend", handleTouchEnd);
