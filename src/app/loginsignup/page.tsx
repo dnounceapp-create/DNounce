@@ -13,17 +13,16 @@ export default function LoginSignupPage() {
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
   const router = useRouter();
+  const [activeMobileTab, setActiveMobileTab] = useState<"login" | "signup">("login");
 
   useEffect(() => {
     const checkSession = async () => {
       const { data } = await supabase.auth.getSession();
       const user = data.session?.user;
-  
-      // If you're already logged in and you manually hit /loginsignup,
-      // send to the dashboard, regardless of onboarding status.
+
       if (user) router.replace("/dashboard/myrecords");
     };
-  
+
     checkSession();
   }, [router]);
 
@@ -37,7 +36,7 @@ export default function LoginSignupPage() {
         queryParams: { prompt: "select_account" },
       },
     });
-  
+
     if (error) {
       console.error("OAuth error:", error);
       alert("Login failed: " + error.message);
@@ -47,152 +46,153 @@ export default function LoginSignupPage() {
   // Email/password login
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-  
-    // Step 1: Try signing in
     const { error } = await supabase.auth.signInWithPassword({
       email: loginEmail,
       password: loginPassword,
     });
-  
     if (error) {
       alert(error.message);
       return;
     }
-  
-    // Step 2: Get the logged-in user
+
     const { data } = await supabase.auth.getUser();
     const user = data?.user;
-  
     if (!user) return;
-  
-    // Step 3: Check if onboarding is complete
+
     const onboarded = !!user.user_metadata?.onboardingComplete;
-  
-    // Step 4: Redirect based on onboarding status
-    if (onboarded) {
-      router.replace("/dashboard/myrecords");
-    } else {
-      router.replace("/user-setup");
-    }
+    router.replace(onboarded ? "/dashboard/myrecords" : "/user-setup");
   };
 
   // Email/password signup
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-  
-    // Step 1: Create account
     const { error } = await supabase.auth.signUp({
       email: signupEmail,
       password: signupPassword,
     });
-  
     if (error) {
       alert(error.message);
       return;
     }
-  
-    // Step 2: Check if a session was immediately created
+
     const { data: { session } } = await supabase.auth.getSession();
-  
-    // Step 3: Decide what to do next
-    if (session) {
-      // 🟢 Usually means the user is auto-signed in
-      router.replace("/user-setup"); // send to onboarding first
-    } else {
-      // 🟡 Some setups require email confirmation before login
-      alert("Check your email to confirm your account, then sign in.");
-    }
+    if (session) router.replace("/user-setup");
+    else alert("Check your email to confirm your account, then sign in.");
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-[100dvh] pb-[env(safe-area-inset-bottom)] bg-gray-50 flex flex-col">
       {/* Top nav bar */}
-      <header className="flex items-center justify-between px-10 py-6 bg-white shadow-sm">
+      <header className="flex items-center justify-between px-4 sm:px-6 md:px-10 py-4 sm:py-5 bg-white shadow-sm">
         <Link href="/" className="flex items-center gap-4">
           <Image src="/logo.png" alt="DNounce logo" width={60} height={60} />
-          <span className="text-lg sm:text-2xl md:text-3xl font-bold text-gray-900">DNounce</span>
+          <span className="text-lg sm:text-2xl md:text-3xl font-bold text-gray-900">
+            DNounce
+          </span>
         </Link>
       </header>
 
       {/* Main content */}
-      <main className="flex-1 flex items-center justify-center px-6 py-16">
-        <div className="w-full max-w-5xl bg-white shadow-xl rounded-2xl p-12">
-          <div className="flex flex-col items-center gap-16">
+      <main className="flex-1 flex items-center justify-center px-4 sm:px-6 py-8 sm:py-12">
+        <div className="w-full max-w-md sm:max-w-lg md:max-w-3xl lg:max-w-5xl bg-white shadow-xl rounded-2xl p-6 sm:p-8 md:p-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10 items-start">
+
             {/* Login section */}
-            <div className="w-full max-w-md bg-white shadow-lg rounded-xl p-8">
+            <div className={`w-full max-w-md bg-white shadow-lg rounded-xl p-6 sm:p-8 ${activeMobileTab==="login" ? "block" : "hidden"} md:block`}>
               <h2 className="text-2xl font-semibold text-center mb-6">Login</h2>
               <form onSubmit={handleLogin} className="space-y-4">
+
+                {/* 👇 UPDATED login inputs */}
                 <input
                   type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  autoCapitalize="none"
+                  autoCorrect="off"
                   placeholder="Email"
-                  className="w-full px-3 py-2 border rounded-md"
+                  className="w-full h-12 px-3 border rounded-lg text-base"
                   value={loginEmail}
                   onChange={(e) => setLoginEmail(e.target.value)}
                 />
                 <input
                   type="password"
+                  autoComplete="current-password"
                   placeholder="Password"
-                  className="w-full px-3 py-2 border rounded-md"
+                  className="w-full h-12 px-3 border rounded-lg text-base"
                   value={loginPassword}
                   onChange={(e) => setLoginPassword(e.target.value)}
                 />
+
                 <div className="text-right">
-                  <Link href="/forgot-password" className="text-sm text-blue-600 hover:underline">
+                  <Link
+                    href="/forgot-password"
+                    className="text-sm text-blue-600 hover:underline inline-block py-2"
+                  >
                     Forgot password?
                   </Link>
                 </div>
-                <button type="submit" className="w-full py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700">
+                <button
+                  type="submit"
+                  className="w-full h-12 rounded-lg bg-blue-600 text-white text-base font-medium hover:bg-blue-700"
+                >
                   Login
                 </button>
               </form>
+
               <div className="mt-6">
-              <button
-                type="button"
-                onClick={handleGoogle}
-                className="flex items-center justify-center w-full px-4 py-2 border rounded-md hover:bg-gray-100"
-              >
-                <img
-                  src="/googleicon.svg"
-                  alt="Google"
-                  className="w-5 h-5 mr-2 inline-block"
-                />
-                Continue with Google
-              </button>
+                <button
+                  type="button"
+                  onClick={handleGoogle}
+                  className="flex items-center justify-center w-full h-12 px-4 border rounded-lg text-base hover:bg-gray-50"
+                >
+                  <img
+                    src="/googleicon.svg"
+                    alt="Google"
+                    className="w-5 h-5 mr-2 inline-block"
+                  />
+                  Continue with Google
+                </button>
               </div>
             </div>
 
-            {/* Divider */}
-            <div className="w-full flex items-center justify-center">
-              <div className=" w-full max-w-md h-px bg-gray-300" />
-            </div>
-
             {/* Signup section */}
-            <div className="w-full max-w-md bg-white shadow-lg rounded-xl p-8">
+            <div className={`w-full max-w-md bg-white shadow-lg rounded-xl p-6 sm:p-8 ${activeMobileTab==="signup" ? "block" : "hidden"} md:block`}>
               <h2 className="text-2xl font-semibold text-center mb-6">Create Account</h2>
               <form onSubmit={handleSignup} className="space-y-4">
+
+                {/* 👇 UPDATED signup inputs */}
                 <input
                   type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  autoCapitalize="none"
+                  autoCorrect="off"
                   placeholder="Email"
-                  className="w-full px-3 py-2 border rounded-md"
+                  className="w-full h-12 px-3 border rounded-lg text-base"
                   value={signupEmail}
                   onChange={(e) => setSignupEmail(e.target.value)}
                 />
                 <input
                   type="password"
+                  autoComplete="new-password"
                   placeholder="Password"
-                  className="w-full px-3 py-2 border rounded-md"
+                  className="w-full h-12 px-3 border rounded-lg text-base"
                   value={signupPassword}
                   onChange={(e) => setSignupPassword(e.target.value)}
                 />
-                <button type="submit" className="w-full py-2 rounded-md bg-green-600 text-white hover:bg-green-700">
+                <button
+                  type="submit"
+                  className="w-full h-12 rounded-lg bg-green-600 text-white text-base font-medium hover:bg-green-700"
+                >
                   Create Account
                 </button>
               </form>
+
               <div className="mt-6">
                 <button
                   type="button"
                   onClick={handleGoogle}
-                  className="flex items-center justify-center w-full px-4 py-2 border rounded-md hover:bg-gray-100"
+                  className="flex items-center justify-center w-full h-12 px-4 border rounded-lg text-base hover:bg-gray-50"
                 >
                   <img
                     src="/googleicon.svg"
@@ -203,6 +203,7 @@ export default function LoginSignupPage() {
                 </button>
               </div>
             </div>
+
           </div>
         </div>
       </main>
