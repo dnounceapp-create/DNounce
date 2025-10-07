@@ -96,7 +96,7 @@ function FloatingLegend() {
   
     const handleTouchEnd = () => setIsDragging(false);
   
-    window.addEventListener("touchmove", handleTouchMove);
+    window.addEventListener("touchmove", handleTouchMove, { passive: false });
     window.addEventListener("touchend", handleTouchEnd);
   
     return () => {
@@ -135,6 +135,14 @@ function FloatingLegend() {
         const rect = legendRef.current.getBoundingClientRect();
         setIsDragging(true);
         setOffset({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+      }}
+      onTouchStart={(e) => {
+        if (!legendRef.current || !e.touches[0]) return;
+        e.preventDefault();
+        const touch = e.touches[0];
+        const rect = legendRef.current.getBoundingClientRect();
+        setIsDragging(true);
+        setOffset({ x: touch.clientX - rect.left, y: touch.clientY - rect.top });
       }}
     >
       <div className="flex items-center justify-between mb-2">
