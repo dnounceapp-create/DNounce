@@ -87,6 +87,7 @@ function FloatingLegend() {
   useEffect(() => {
     const handleTouchMove = (e: TouchEvent) => {
       if (!isDragging || !e.touches[0]) return;
+      e.preventDefault(); // 🩵 stops page scrolling while dragging
       const touch = e.touches[0];
       setPos({
         x: Math.max(10, Math.min(window.innerWidth - 220, touch.clientX - offset.x)),
@@ -94,7 +95,10 @@ function FloatingLegend() {
       });
     };
   
-    const handleTouchEnd = () => setIsDragging(false);
+    const handleTouchEnd = () => {
+      setIsDragging(false);
+      document.body.style.overflow = ""; // 🩵 restores normal scroll
+    };
   
     window.addEventListener("touchmove", handleTouchMove, { passive: false });
     window.addEventListener("touchend", handleTouchEnd);
@@ -138,11 +142,11 @@ function FloatingLegend() {
       }}
       onTouchStart={(e) => {
         if (!legendRef.current || !e.touches[0]) return;
-        e.preventDefault();
         const touch = e.touches[0];
         const rect = legendRef.current.getBoundingClientRect();
         setIsDragging(true);
         setOffset({ x: touch.clientX - rect.left, y: touch.clientY - rect.top });
+        document.body.style.overflow = "hidden"; // 🩵 stops background scrolling
       }}
     >
       <div className="flex items-center justify-between mb-2">
