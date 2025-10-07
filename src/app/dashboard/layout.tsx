@@ -84,14 +84,32 @@ function FloatingLegend() {
     };
   }, [isDragging, offset]);
 
+  useEffect(() => {
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!isDragging || !e.touches[0]) return;
+      setPos({
+        x: Math.max(0, e.touches[0].clientX - offset.x),
+        y: Math.max(0, e.touches[0].clientY - offset.y),
+      });
+    };
+    const handleTouchEnd = () => setIsDragging(false);
+  
+    window.addEventListener("touchmove", handleTouchMove);
+    window.addEventListener("touchend", handleTouchEnd);
+    return () => {
+      window.removeEventListener("touchmove", handleTouchMove);
+      window.removeEventListener("touchend", handleTouchEnd);
+    };
+  }, [isDragging, offset]);
+
   // mobile-safe default: bottom-right
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth < 768) {
-        setPos((prev) => ({
-          x: window.innerWidth - 220,
-          y: Math.min(prev.y, window.innerHeight - 200),
-        }));
+        setPos({
+          x: Math.max(10, window.innerWidth - 250),
+          y: Math.max(10, window.innerHeight - 180),
+        });
       }
     };
     handleResize();
@@ -102,7 +120,7 @@ function FloatingLegend() {
   return (
     <div
       ref={legendRef}
-      className="fixed z-[90] select-none cursor-move rounded-xl shadow-lg backdrop-blur-lg border border-white/20 bg-white/80 p-4 w-64 text-sm"
+      className="fixed z-[90] select-none cursor-move rounded-xl shadow-lg backdrop-blur-lg border border-white/20 bg-white/80 p-3 sm:p-4 w-56 sm:w-64 text-xs sm:text-sm"
       style={{
         left: pos.x,
         top: pos.y,
@@ -120,10 +138,10 @@ function FloatingLegend() {
         <h3 className="font-semibold text-gray-800">Legend</h3>
         <button
           onClick={(e) => {
-            e.stopPropagation(); // prevent drag trigger
+            e.stopPropagation();
             setCollapsed((prev) => !prev);
           }}
-          className="p-1 rounded hover:bg-gray-100 transition"
+          className="p-2 sm:p-1 rounded-md hover:bg-gray-100 active:scale-95 transition"
           aria-label={collapsed ? "Expand legend" : "Collapse legend"}
         >
           {collapsed ? (
