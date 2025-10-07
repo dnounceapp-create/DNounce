@@ -14,7 +14,9 @@ import {
   Settings,
   Star,
   Menu,
-  X,
+  X, 
+  ChevronDown, 
+  ChevronUp,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
@@ -46,10 +48,24 @@ const outcomeLabels = [
 
 // 🪄 Floating legend component
 function FloatingLegend() {
+  const [collapsed, setCollapsed] = useState(false);
   const [pos, setPos] = useState({ x: 20, y: 20 });
   const [isDragging, setIsDragging] = useState(false);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const legendRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("floatingLegendState");
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      setPos(parsed.pos || { x: 20, y: 20 });
+      setCollapsed(parsed.collapsed || false);
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("floatingLegendState", JSON.stringify({ pos, collapsed }));
+  }, [pos, collapsed]);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -72,7 +88,10 @@ function FloatingLegend() {
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth < 768) {
-        setPos({ x: window.innerWidth - 220, y: window.innerHeight - 280 });
+        setPos((prev) => ({
+          x: window.innerWidth - 220,
+          y: Math.min(prev.y, window.innerHeight - 200),
+        }));
       }
     };
     handleResize();
@@ -97,8 +116,25 @@ function FloatingLegend() {
         setOffset({ x: e.clientX - rect.left, y: e.clientY - rect.top });
       }}
     >
-      <h3 className="font-semibold text-gray-800 mb-2 text-center">Legend</h3>
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="font-semibold text-gray-800">Legend</h3>
+        <button
+          onClick={(e) => {
+            e.stopPropagation(); // prevent drag trigger
+            setCollapsed((prev) => !prev);
+          }}
+          className="p-1 rounded hover:bg-gray-100 transition"
+          aria-label={collapsed ? "Expand legend" : "Collapse legend"}
+        >
+          {collapsed ? (
+            <ChevronDown className="w-4 h-4 text-gray-600" />
+          ) : (
+            <ChevronUp className="w-4 h-4 text-gray-600" />
+          )}
+        </button>
+      </div>
 
+      {!collapsed && (
       <div className="space-y-3">
         <div>
           <p className="text-xs font-medium text-gray-600 mb-1">Stages</p>
