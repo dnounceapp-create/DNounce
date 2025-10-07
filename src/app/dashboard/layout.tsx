@@ -164,9 +164,9 @@ function FloatingLegend() {
           </ul>
         </div>
       </div>
-    </div>
-  );
-}
+    )}
+  </div>
+);}
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
