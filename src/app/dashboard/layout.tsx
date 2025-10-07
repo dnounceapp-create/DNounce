@@ -71,8 +71,8 @@ function FloatingLegend() {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isDragging) return;
       setPos({
-        x: Math.max(0, e.clientX - offset.x),
-        y: Math.max(0, e.clientY - offset.y),
+        x: Math.max(10, Math.min(window.innerWidth - 220, e.clientX - offset.x)),
+        y: Math.max(10, Math.min(window.innerHeight - 100, e.clientY - offset.y)),
       });
     };
     const handleMouseUp = () => setIsDragging(false);
@@ -89,8 +89,8 @@ function FloatingLegend() {
       if (!isDragging || !e.touches[0]) return;
       const touch = e.touches[0];
       setPos({
-        x: Math.max(0, touch.clientX - offset.x),
-        y: Math.max(0, touch.clientY - offset.y),
+        x: Math.max(10, Math.min(window.innerWidth - 220, touch.clientX - offset.x)),
+        y: Math.max(10, Math.min(window.innerHeight - 100, touch.clientY - offset.y)),
       });
     };
   
@@ -110,8 +110,8 @@ function FloatingLegend() {
     const handleResize = () => {
       if (window.innerWidth < 768) {
         setPos({
-          x: Math.max(10, window.innerWidth - 250),
-          y: Math.max(10, window.innerHeight - 180),
+          x: Math.max(10, Math.min(window.innerWidth - 220, 16)),
+          y: Math.max(10, Math.min(window.innerHeight - 150, 100)),
         });
       }
     };
