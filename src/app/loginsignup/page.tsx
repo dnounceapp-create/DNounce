@@ -19,12 +19,9 @@ export default function LoginSignupPage() {
       const { data } = await supabase.auth.getSession();
       const user = data.session?.user;
   
-      // ✅ Only redirect if definitely logged in (and not onboarding)
-      if (user?.user_metadata?.onboardingComplete) {
-        router.replace("/dashboard/myrecords");
-      } else if (user && !user.user_metadata?.onboardingComplete) {
-        router.replace("/user-setup");
-      }
+      // If you're already logged in and you manually hit /loginsignup,
+      // send to the dashboard, regardless of onboarding status.
+      if (user) router.replace("/dashboard/myrecords");
     };
   
     checkSession();
@@ -50,35 +47,59 @@ export default function LoginSignupPage() {
   // Email/password login
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+  
+    // Step 1: Try signing in
     const { error } = await supabase.auth.signInWithPassword({
       email: loginEmail,
       password: loginPassword,
     });
+  
     if (error) {
       alert(error.message);
       return;
     }
-    const { data } = await supabase.auth.getSession();
-    const userId = data?.session?.user?.id;
-    if (userId) router.replace("/dashboard/myrecords");
+  
+    // Step 2: Get the logged-in user
+    const { data } = await supabase.auth.getUser();
+    const user = data?.user;
+  
+    if (!user) return;
+  
+    // Step 3: Check if onboarding is complete
+    const onboarded = !!user.user_metadata?.onboardingComplete;
+  
+    // Step 4: Redirect based on onboarding status
+    if (onboarded) {
+      router.replace("/dashboard/myrecords");
+    } else {
+      router.replace("/user-setup");
+    }
   };
 
   // Email/password signup
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+  
+    // Step 1: Create account
     const { error } = await supabase.auth.signUp({
       email: signupEmail,
       password: signupPassword,
     });
+  
     if (error) {
       alert(error.message);
       return;
     }
-    const { data } = await supabase.auth.getSession();
-    const userId = data?.session?.user?.id;
-    if (userId) {
-      router.replace("/dashboard/myrecords");
+  
+    // Step 2: Check if a session was immediately created
+    const { data: { session } } = await supabase.auth.getSession();
+  
+    // Step 3: Decide what to do next
+    if (session) {
+      // 🟢 Usually means the user is auto-signed in
+      router.replace("/user-setup"); // send to onboarding first
     } else {
+      // 🟡 Some setups require email confirmation before login
       alert("Check your email to confirm your account, then sign in.");
     }
   };
