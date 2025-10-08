@@ -295,8 +295,8 @@ export default function MyRecordsPage() {
     setSort(DEFAULT_SORT);
   };
 
-  const handleRequestDeletion = (id: number) => {
-    alert(`Request deletion for record #${id}`);
+  const handleDisputeRecord = (id: number) => {
+    alert(`Dispute Record for record #${id}`);
   };
 
   // ---- UI -------------------------------------------------------------------
@@ -461,7 +461,7 @@ export default function MyRecordsPage() {
             <div>Record Name</div>
             <div className="text-center">Status</div>
             <div className="text-center">Credibility Record</div>
-            <div className="flex justify-center">Request Deletion</div>
+            <div className="flex justify-center">Dispute Record</div>
           </div>
 
           {displayRecords.length === 0 ? (
@@ -546,10 +546,10 @@ export default function MyRecordsPage() {
                 <div className="mt-3 md:mt-0 flex md:justify-center">
                   {record.stage === 3 && !stageConfig[3].flags.interactionsLocked ? (
                     <button
-                      onClick={() => handleRequestDeletion(record.id)}
+                      onClick={() => handleDisputeRecord(record.id)}
                       className="px-3 py-2 bg-orange-500 text-white text-xs sm:text-sm rounded-md hover:bg-orange-600 active:scale-[0.99] transition"
                     >
-                      Request Deletion
+                      Dispute Record
                     </button>
                   ) : (
                     <span className="text-[11px] sm:text-xs text-gray-400">—</span>

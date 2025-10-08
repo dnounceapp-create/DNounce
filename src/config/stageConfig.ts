@@ -134,7 +134,7 @@ export const stageConfig: Record<number, StageConfig> = {
     flags: { isPublic: true, interactionsLocked: false },
     actions: {
       subject: [
-        "⚖️ Can Request Deletion (Dispute Record) or Comment under moderation rules.",
+        "⚖️ Can Dispute Record or Comment under moderation rules.",
       ],
       contributor: ["🗑️ Can delete their own record if desired."],
       voter: ["🚫 Not active unless the record is escalated."],
