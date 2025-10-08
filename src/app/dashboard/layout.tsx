@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth } from "@/lib/auth";
-import { stageConfig, STAGE_ORDER } from "@/config/stageConfig";
+import { stageConfig, STAGE_ORDER, outcomeLabels } from "@/config/stageConfig";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -176,8 +176,8 @@ function FloatingLegend() {
               
                   {/* Color dot */}
                   <span
-                    className={`w-3 h-3 rounded-full flex-shrink-0 ${s.ui.chipClass}`}
-                  ></span>
+                    className={`w-3 h-3 rounded-full flex-shrink-0 border border-black/40 ${s.ui.chipClass}`}
+                  />
               
                   {/* Label */}
                   <span

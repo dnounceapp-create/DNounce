@@ -235,3 +235,20 @@ export const stageConfig: Record<number, StageConfig> = {
     ui: { chipClass: "bg-gray-100 text-gray-700" },
   },
 };
+
+/** Outcome labels — final results after voting */
+export interface OutcomeLabel {
+  label: string;
+  color: string;
+}
+
+export const outcomeLabels: OutcomeLabel[] = [
+  {
+    label: "Kept on page",
+    color: "bg-green-100 text-green-700 border border-black/30",
+  },
+  {
+    label: "Deleted from page",
+    color: "bg-red-100 text-red-700 border border-black/30",
+  },
+];
