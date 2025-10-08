@@ -31,11 +31,6 @@ const navItems = [
   { name: "Following Cases", href: "/dashboard/following", icon: Eye },
 ];
 
-const outcomeLabels = [
-  { label: "Kept on page", color: "bg-emerald-600" },
-  { label: "Deleted from page", color: "bg-red-600" },
-];
-
 // 🪄 Floating legend component
 function FloatingLegend() {
   const [collapsed, setCollapsed] = useState(false);
