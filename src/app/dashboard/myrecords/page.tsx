@@ -5,6 +5,7 @@ import { useMemo, useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { X } from "lucide-react";
 import Image from "next/image";
+import { stageConfig, STAGE_ORDER } from "@/config/stageConfig";
 
 const DEFAULT_SORT = "Newest Submitted" as const;
 
@@ -70,17 +71,6 @@ const mockRecords: RecordItem[] = [
   // ...etc
 ];
 
-// Stage & outcome labels/colors
-const stageLabels: Record<number, { label: string; color: string }> = {
-  1: { label: "AI Verification in Progress", color: "bg-blue-100 text-blue-700" },
-  2: { label: "Subject Notified", color: "bg-green-100 text-green-700" },
-  3: { label: "Published", color: "bg-yellow-100 text-yellow-700" },
-  4: { label: "Deletion Request / Debate", color: "bg-pink-100 text-pink-700" },
-  5: { label: "Subject Dispute & Debate", color: "bg-purple-100 text-purple-700" },
-  6: { label: "Voting in Progress", color: "bg-indigo-100 text-indigo-700" },
-  7: { label: "Anonymity Active", color: "bg-gray-100 text-gray-700" },
-};
-
 const outcomeLabels: Record<string, { label: string; color: string }> = {
   kept: { label: "Kept on page", color: "bg-green-200 text-green-800" },
   deleted: { label: "Deleted from page", color: "bg-red-200 text-red-800" },
@@ -139,7 +129,7 @@ function StageStepper({
   current: number;
   widthRef: React.RefObject<HTMLParagraphElement | null>;
 }) {
-  const steps = [1, 2, 3, 4, 5, 6, 7];
+  const steps = [...STAGE_ORDER];
   const [containerWidth, setContainerWidth] = useState(0);
 
   useEffect(() => {
@@ -499,25 +489,36 @@ export default function MyRecordsPage() {
 
                 {/* Status */}
                 <div className="mt-3 md:mt-0 text-left md:text-center">
-                  <span className="inline-block px-2 py-1 rounded-full text-[11px] sm:text-xs font-medium">
-                    {record.stage && record.stage !== 7 ? (
-                      <span
-                        className={`inline-block px-2 py-1 rounded-full text-[11px] sm:text-xs font-medium ${stageLabels[record.stage].color}`}
-                      >
-                        {stageLabels[record.stage].label}
-                      </span>
-                    ) : record.outcome ? (
-                      <span
-                        className={`inline-block px-2 py-1 rounded-full text-[11px] sm:text-xs font-medium ${outcomeLabels[record.outcome].color}`}
-                      >
-                        {outcomeLabels[record.outcome].label}
-                      </span>
-                    ) : (
-                      <span className="inline-block px-2 py-1 rounded-full text-[11px] sm:text-xs font-medium bg-gray-100 text-gray-600">
-                        —
-                      </span>
-                    )}
-                  </span>
+                  {record.stage && record.stage !== 7 ? (
+                    (() => {
+                      const s = stageConfig[record.stage];
+                      if (!s) {
+                        return (
+                          <span className="inline-block px-2 py-1 rounded-full text-[11px] sm:text-xs font-medium bg-gray-100 text-gray-600">
+                            —
+                          </span>
+                        );
+                      }
+                      return (
+                        <span
+                          className={`inline-block px-2 py-1 rounded-full text-[11px] sm:text-xs font-medium ${s.ui.chipClass}`}
+                          title={`${s.timeline.summary} — ${s.happens}`}
+                        >
+                          {s.label}
+                        </span>
+                      );
+                    })()
+                  ) : record.outcome ? (
+                    <span
+                      className={`inline-block px-2 py-1 rounded-full text-[11px] sm:text-xs font-medium ${outcomeLabels[record.outcome].color}`}
+                    >
+                      {outcomeLabels[record.outcome].label}
+                    </span>
+                  ) : (
+                    <span className="inline-block px-2 py-1 rounded-full text-[11px] sm:text-xs font-medium bg-gray-100 text-gray-600">
+                      —
+                    </span>
+                  )}
                 </div>
 
                 {/* Credibility */}
@@ -543,7 +544,7 @@ export default function MyRecordsPage() {
 
                 {/* Action */}
                 <div className="mt-3 md:mt-0 flex md:justify-center">
-                  {record.stage === 2 ? (
+                  {record.stage === 3 && !stageConfig[3].flags.interactionsLocked ? (
                     <button
                       onClick={() => handleRequestDeletion(record.id)}
                       className="px-3 py-2 bg-orange-500 text-white text-xs sm:text-sm rounded-md hover:bg-orange-600 active:scale-[0.99] transition"
