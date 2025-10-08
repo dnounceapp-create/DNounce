@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuth } from "@/lib/auth";
+import { stageConfig, STAGE_ORDER } from "@/config/stageConfig";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -28,17 +29,6 @@ const navItems = [
   { name: "Records I've Voted", href: "/dashboard/voted", icon: Vote },
   { name: "Pinned Records", href: "/dashboard/pinned", icon: Pin },
   { name: "Following Cases", href: "/dashboard/following", icon: Eye },
-];
-
-// 🧭 Legend label mappings (same as before, cleaned up)
-const stageLabels = [
-  { label: "AI Verification in Progress", color: "bg-blue-500" },
-  { label: "Subject Notified", color: "bg-purple-500" },
-  { label: "Published", color: "bg-green-500" },
-  { label: "Deletion Request / Debate", color: "bg-yellow-500" },
-  { label: "Subject Dispute & Debate", color: "bg-orange-500" },
-  { label: "Voting in Progress", color: "bg-pink-500" },
-  { label: "Anonymity Active", color: "bg-gray-500" },
 ];
 
 const outcomeLabels = [
@@ -172,14 +162,41 @@ function FloatingLegend() {
         <div>
           <p className="text-xs font-medium text-gray-600 mb-1">Stages</p>
           <ul className="space-y-1">
-            {stageLabels.map((s) => (
-              <li key={s.label} className="flex items-center gap-2">
-                <span
-                  className={`w-3 h-3 rounded-full ${s.color} flex-shrink-0`}
-                ></span>
-                <span className="text-xs text-gray-800">{s.label}</span>
-              </li>
-            ))}
+            {STAGE_ORDER.map((id) => {
+              const s = stageConfig[id];
+              return (
+                <li key={s.label} className="flex items-center gap-2 relative group">
+                  <span
+                    className={`w-3 h-3 rounded-full flex-shrink-0 ${s.ui.chipClass}`}
+                  ></span>
+
+                  {/* label (focusable for keyboard users) */}
+                  <span
+                    tabIndex={0}
+                    className="text-xs text-gray-800 outline-none"
+                  >
+                    {s.label}
+                  </span>
+
+                  {/* tooltip */}
+                  <div
+                    className="
+                      absolute left-5 top-full mt-1
+                      max-w-[260px] rounded-md bg-gray-900 text-gray-100
+                      text-[10px] sm:text-xs p-2 shadow-lg z-[999]
+                      opacity-0 scale-95
+                      group-hover:opacity-100 group-hover:scale-100
+                      group-focus-within:opacity-100 group-focus-within:scale-100
+                      transition-all duration-150
+                      pointer-events-none group-hover:pointer-events-auto
+                    "
+                  >
+                    <p className="font-semibold text-gray-50">{s.timeline.summary}</p>
+                    <p className="text-gray-300 leading-snug mt-0.5">{s.happens}</p>
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         </div>
 

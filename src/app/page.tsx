@@ -591,7 +591,7 @@ export default function HomePage() {
 
               <div className="flex items-start gap-3">
                 <span className="text-blue-600">
-                  <span className="font-semibold text-blue-700">2. AI Verification (Up to 72 hours):</span> Analyzes any supporting evidence and recommends a credibility label.
+                  <span className="font-semibold text-blue-700">2. AI Credibility Label Classification (Up to 72 hours):</span> Analyzes any supporting evidence and recommends a credibility label.
                   <div className="ml-4 mt-1">✅ Evidence-Supported</div>
                   <div className="ml-4 mt-1">💭 Opinion Experience-Based</div>
                   <div className="ml-4 mt-1">⚠️ Unable to Give Verification Recommendation</div>
@@ -600,7 +600,7 @@ export default function HomePage() {
 
               <div className="flex items-start gap-3">
                 <span className="text-blue-600">
-                  <span className="font-semibold text-blue-700">3. Notification:</span> Both parties notified immediately after AI verification is completed
+                  <span className="font-semibold text-blue-700">3. Notification:</span> Both parties notified immediately after AI credibility label classification is completed
                   <div className="ml-4 mt-1">• Contributor: Learns whether AI classified record as evidence-based or opinion-based</div>
                   <div className="ml-4 mt-1">• Subject: Receives record details, classification, and right to challenge</div>
                 </span>
@@ -1579,7 +1579,7 @@ export default function HomePage() {
                 <h4 className="font-semibold mb-2">Important Legal Notice:</h4>
                 <p className="mb-2">
                   By submitting this feedback, you acknowledge that DNounce is a public reputation platform and your
-                  submission may be publicly visible after AI verification.
+                  submission may be publicly visible after AI credibility label classification.
                 </p>
                 <p className="mb-2">
                   You certify that your submission is truthful to the best of your knowledge and based on either
@@ -1593,7 +1593,7 @@ export default function HomePage() {
                   the information through our dispute resolution process.
                 </p>
                 <p className="mb-2">
-                  All submissions undergo AI verification and may be reviewed by community moderators before
+                  All submissions undergo AI credibility label classification and may be reviewed by community moderators before
                   publication.
                 </p>
                 <p className="mb-2">
@@ -1631,7 +1631,7 @@ export default function HomePage() {
               </div>
               <p className="text-sm text-yellow-700">
                 DNounce provides a platform for reputation documentation but does not guarantee the accuracy of
-                user submissions. We employ AI verification and community moderation processes, but users should
+                user submissions. We employ AI credibility label classification and community moderation processes, but users should
                 independently verify information and consult legal professionals for specific advice. This platform
                 is not a substitute for formal legal processes.
               </p>
