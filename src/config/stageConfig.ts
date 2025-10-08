@@ -101,7 +101,7 @@ export const stageConfig: Record<number, StageConfig> = {
       voter: ["🚫 Not applicable — voters not active yet."],
       citizen: ["🚫 Not visible."],
     },
-    ui: { chipClass: "bg-blue-500" },
+    ui: { chipClass: "bg-blue-100 text-blue-700" },
   },
 
   2: {
@@ -119,7 +119,7 @@ export const stageConfig: Record<number, StageConfig> = {
       voter: ["🚫 Not active yet."],
       citizen: ["🚫 Not visible."],
     },
-    ui: { chipClass: "bg-purple-500" },
+    ui: { chipClass: "bg-purple-100 text-purple-700" },
   },
 
   3: {
@@ -142,7 +142,7 @@ export const stageConfig: Record<number, StageConfig> = {
         "💬 Can interact normally (comment, react, flag) as a public participant until escalation.",
       ],
     },
-    ui: { chipClass: "bg-green-500" },
+    ui: { chipClass: "bg-green-100 text-green-700" },
   },
 
   4: {
@@ -160,7 +160,7 @@ export const stageConfig: Record<number, StageConfig> = {
       voter: ["View-only."],
       citizen: ["View-only (interactions locked once escalated)."],
     },
-    ui: { chipClass: "bg-yellow-500" },
+    ui: { chipClass: "bg-pink-100 text-pink-700" },
   },
 
   5: {
@@ -179,7 +179,7 @@ export const stageConfig: Record<number, StageConfig> = {
       voter: ["View-only."],
       citizen: ["View-only (no comments/reactions during active dispute)."],
     },
-    ui: { chipClass: "bg-orange-500" },
+    ui: { chipClass: "bg-orange-100 text-orange-700" },
   },
 
   6: {
@@ -205,7 +205,7 @@ export const stageConfig: Record<number, StageConfig> = {
         "💡 Can interact only if eligible to vote.",
       ],
     },
-    ui: { chipClass: "bg-pink-500" },
+    ui: { chipClass: "bg-indigo-100 text-indigo-700" },
   },
 
   7: {
@@ -232,6 +232,6 @@ export const stageConfig: Record<number, StageConfig> = {
       ],
       citizen: ["🌐 Can view and interact publicly as part of the final archive."],
     },
-    ui: { chipClass: "bg-gray-500" },
+    ui: { chipClass: "bg-gray-100 text-gray-700" },
   },
 };
