@@ -259,8 +259,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </span>
         </Link>
 
-        {/* Desktop Settings */}
-        <div className="hidden md:flex items-center gap-3">
+        {/* Right-side Controls */}
+        <div className="flex items-center gap-2 md:gap-3">
+          {/* Mobile Menu */}
+          <button
+            className="md:hidden p-2 rounded-md hover:bg-gray-100 transition"
+            onClick={() => setMenuOpen(!menuOpen)}
+          >
+            {menuOpen ? (
+              <X className="w-6 h-6 text-gray-700" />
+            ) : (
+              <Menu className="w-6 h-6 text-gray-700" />
+            )}
+          </button>
+
+          {/* Settings Icon (visible on both mobile + desktop) */}
           <Link
             href="/dashboard/settings"
             className="p-2 rounded-full hover:bg-gray-100 transition"
@@ -269,18 +282,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <Settings className="w-5 h-5 text-gray-600" />
           </Link>
         </div>
-
-        {/* Mobile Menu */}
-        <button
-          className="md:hidden p-2 rounded-md hover:bg-gray-100 transition"
-          onClick={() => setMenuOpen(!menuOpen)}
-        >
-          {menuOpen ? (
-            <X className="w-6 h-6 text-gray-700" />
-          ) : (
-            <Menu className="w-6 h-6 text-gray-700" />
-          )}
-        </button>
       </header>
 
       {/* Mobile Sidebar */}
