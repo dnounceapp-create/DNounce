@@ -37,9 +37,9 @@ export function computeEarliestPublishAt(
   aiCompleteAt: Date | string
 ): Date {
   const sub = typeof submittedAt === "string" ? new Date(submittedAt) : submittedAt;
-  const ai = typeof aiCompleteAt === "string" ? new Date(aiCompleteAt) : ai;
+  const aiDate = typeof aiCompleteAt === "string" ? new Date(aiCompleteAt) : aiCompleteAt;
   const plus72h = new Date(sub.getTime() + 72 * 60 * 60 * 1000);
-  const aiPlus24h = new Date(ai.getTime() + 24 * 60 * 60 * 1000);
+  const aiPlus24h = new Date(aiDate.getTime() + 24 * 60 * 60 * 1000);
   return new Date(Math.max(plus72h.getTime(), aiPlus24h.getTime()));
 }
 
