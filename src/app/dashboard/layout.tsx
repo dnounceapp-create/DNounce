@@ -165,20 +165,29 @@ function FloatingLegend() {
             {STAGE_ORDER.map((id) => {
               const s = stageConfig[id];
               return (
-                <li key={s.label} className="flex items-center gap-2 relative group">
+                <li
+                  key={s.label}
+                  className="flex items-center gap-2 sm:gap-3 relative group"
+                >
+                  {/* Stage number */}
+                  <span className="text-gray-700 text-[11px] font-semibold w-4 text-right">
+                    {id}.
+                  </span>
+              
+                  {/* Color dot */}
                   <span
                     className={`w-3 h-3 rounded-full flex-shrink-0 ${s.ui.chipClass}`}
                   ></span>
-
-                  {/* label (focusable for keyboard users) */}
+              
+                  {/* Label */}
                   <span
                     tabIndex={0}
                     className="text-xs text-gray-800 outline-none"
                   >
                     {s.label}
                   </span>
-
-                  {/* tooltip */}
+              
+                  {/* Tooltip */}
                   <div
                     className="
                       absolute left-5 top-full mt-1
@@ -195,7 +204,7 @@ function FloatingLegend() {
                     <p className="text-gray-300 leading-snug mt-0.5">{s.happens}</p>
                   </div>
                 </li>
-              );
+              );              
             })}
           </ul>
         </div>
