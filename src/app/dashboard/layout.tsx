@@ -19,9 +19,22 @@ import {
   ChevronDown, 
   ChevronUp,
 } from "lucide-react";
+import {
+  User as UserIcon,
+  UserCircle2,
+  Bell,
+  Globe,
+  Moon,
+  Flag,
+  MessageSquare,
+  MonitorUp,
+  Info,
+  LogOut,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-const navItems = [
+// Main dashboard nav
+const MAIN_NAV = [
   { name: "My Reputation", href: "/dashboard/reputation", icon: Star },
   { name: "My Profile", href: "/dashboard/profile", icon: User },
   { name: "Records Submitted", href: "/dashboard/records-submitted", icon: Layers },
@@ -29,6 +42,19 @@ const navItems = [
   { name: "Records I've Voted", href: "/dashboard/voted", icon: Vote },
   { name: "Pinned Records", href: "/dashboard/pinned", icon: Pin },
   { name: "Following Cases", href: "/dashboard/following", icon: Eye },
+];
+
+// Settings nav (shown on /dashboard/settings/*)
+const SETTINGS_NAV = [
+  { name: "Account", href: "/dashboard/settings/account", icon: UserIcon },
+  { name: "Profile Info", href: "/dashboard/settings/profile", icon: UserCircle2 },
+  { name: "Notifications", href: "/dashboard/settings/notifications", icon: Bell },
+  { name: "Language", href: "/dashboard/settings/language", icon: Globe },
+  { name: "Display", href: "/dashboard/settings/display", icon: Moon },
+  { name: "Report Issue", href: "/dashboard/settings/report", icon: Flag },
+  { name: "Contact Support", href: "/dashboard/settings/support", icon: MessageSquare },
+  { name: "IT Support", href: "/dashboard/settings/it-support", icon: MonitorUp },
+  { name: "Terms & Conditions", href: "/dashboard/settings/terms", icon: Info },
 ];
 
 // 🪄 Floating legend component
@@ -230,6 +256,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     redirectToSetupIfFirstTime: true,
     loginPath: "/loginsignup",
   });
+  const inSettings = pathname.startsWith("/dashboard/settings");
+  const currentNav = inSettings ? SETTINGS_NAV : MAIN_NAV;
 
   useEffect(() => {
     if (menuOpen) setMenuOpen(false);
@@ -292,26 +320,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         />
       )}
 
-      <aside
-        className={`fixed top-0 left-0 h-full w-64 bg-white shadow-lg z-50 transform transition-transform duration-300 ease-in-out md:static md:translate-x-0 md:hidden ${
-          menuOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        <div className="p-6 border-b flex items-center justify-between bg-white/80 backdrop-blur-md">
-          <span className="font-semibold text-gray-900 text-lg">Menu</span>
-          <button onClick={() => setMenuOpen(false)} aria-label="Close menu">
-            <X className="w-5 h-5 text-gray-600" />
-          </button>
-        </div>
-
-        <nav className="p-4 space-y-1 overflow-y-auto h-[calc(100%-4rem)]">
-          {navItems.map((item) => {
+      {menuOpen && (
+        <div className="fixed top-0 left-0 w-64 bg-white h-full shadow-lg z-50 p-6 space-y-2 md:hidden">
+          {currentNav.map((item) => {
             const active = pathname === item.href;
             const Icon = item.icon;
             return (
               <Link
                 key={item.name}
                 href={item.href}
+                onClick={() => setMenuOpen(false)}
                 className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition ${
                   active
                     ? "bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-sm"
@@ -323,13 +341,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </Link>
             );
           })}
-        </nav>
-      </aside>
+
+          {inSettings && (
+            <div className="mt-auto pt-4 border-t">
+              <Link
+                href="/logout"
+                className="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-red-600 hover:bg-red-50"
+              >
+                <LogOut className="w-4 h-4" />
+                Log Out
+              </Link>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Main Section */}
       <div className="flex flex-1">
         <aside className="hidden md:block w-64 bg-white border-r shadow-sm p-6 space-y-2 sticky top-0 h-screen">
-          {navItems.map((item) => {
+          {currentNav.map((item) => {
             const active = pathname === item.href;
             const Icon = item.icon;
             return (
@@ -347,12 +377,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </Link>
             );
           })}
+
+          {inSettings && (
+            <div className="mt-auto pt-4 border-t">
+              <Link
+                href="/logout"
+                className="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-red-600 hover:bg-red-50"
+              >
+                <LogOut className="w-4 h-4" />
+                Log Out
+              </Link>
+            </div>
+          )}
         </aside>
+
 
         <main className="flex-1 p-4 sm:p-8 overflow-y-auto relative">
           {children}
           {/* 🪄 Global Legend */}
-          <FloatingLegend />
+          {!inSettings && <FloatingLegend />}
         </main>
       </div>
 
