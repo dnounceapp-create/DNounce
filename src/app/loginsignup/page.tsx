@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { supabase } from "@/lib/supabaseClient";
-import type { Factor } from "@supabase/auth-js";
+import type { Factor } from "@supabase/supabase-js";
 
 export default function LoginSignupPage() {
   const [loginEmail, setLoginEmail] = useState("");
