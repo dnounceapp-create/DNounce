@@ -6,7 +6,7 @@ import Link from "next/link";
 import { ChevronLeft, Lock, ShieldCheck, Mail, X } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 
-export default function AccountPrivacyPage() {
+export default function AccountSecurityPage() {
   const router = useRouter();
   const [showResetModal, setShowResetModal] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -452,18 +452,9 @@ export default function AccountPrivacyPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 p-4 sm:p-6 lg:p-8">
-      <div className="max-w-3xl mx-auto">
-        <Link
-          href="/dashboard/settings"
-          className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900 mb-6"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          Back to Settings
-        </Link>
-
-        <h1 className="text-3xl font-bold mb-2">Account & Privacy</h1>
+        <h1 className="text-3xl font-bold mb-2">Account & Security</h1>
         <p className="text-gray-600 mb-8">
-          Manage your login credentials, privacy settings, and account details.
+          Manage your login credentials, security settings, and account details.
         </p>
 
         {message && (
