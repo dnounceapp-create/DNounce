@@ -452,6 +452,7 @@ export default function AccountSecurityPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 p-4 sm:p-6 lg:p-8">
+      <div className="max-w-3xl mx-auto">
         <h1 className="text-3xl font-bold mb-2">Account & Security</h1>
         <p className="text-gray-600 mb-8">
           Manage your login credentials, security settings, and account details.
