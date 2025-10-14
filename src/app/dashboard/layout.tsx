@@ -47,7 +47,6 @@ const MAIN_NAV = [
 // Settings nav (shown on /dashboard/settings/*)
 const SETTINGS_NAV = [
   { name: "Account", href: "/dashboard/settings/account", icon: UserIcon },
-  { name: "Profile Info", href: "/dashboard/settings/profile", icon: UserCircle2 },
   { name: "Notifications", href: "/dashboard/settings/notifications", icon: Bell },
   { name: "Language", href: "/dashboard/settings/language", icon: Globe },
   { name: "Display", href: "/dashboard/settings/display", icon: Moon },
