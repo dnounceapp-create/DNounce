@@ -256,6 +256,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     loginPath: "/loginsignup",
   });
   const inSettings = pathname.startsWith("/dashboard/settings");
+  const inSubmit = pathname.startsWith("/dashboard/submit");
   const currentNav = inSettings ? SETTINGS_NAV : MAIN_NAV;
 
   useEffect(() => {
@@ -288,6 +289,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* Right-side Controls */}
         <div className="flex items-center gap-2 md:gap-3">
+          {/* 🧾 Submit a Record Button */}
+          <Link
+            href="/dashboard/submit"
+            className="hidden md:inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 active:scale-95 transition-all"
+            title="Submit a new record"
+          >
+            <FileText className="w-4 h-4" />
+            Submit a Record
+          </Link>
+
+          {/* 🧾 Mobile Submit Button (icon only) */}
+          <Link
+            href="/dashboard/submit"
+            className="md:hidden p-2 rounded-md hover:bg-blue-100 text-blue-700 transition"
+            title="Submit a new record"
+          >
+            <FileText className="w-5 h-5" />
+          </Link>
+
           {/* Mobile Menu */}
           <button
             className="md:hidden p-2 rounded-md hover:bg-gray-100 transition"
@@ -300,7 +320,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             )}
           </button>
 
-          {/* Settings Icon (visible on both mobile + desktop) */}
+          {/* Settings Icon */}
           <Link
             href="/dashboard/settings"
             className="p-2 rounded-full hover:bg-gray-100 transition"
@@ -357,7 +377,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Main Section */}
       <div className="flex flex-1">
-        <aside className="hidden md:block w-64 bg-white border-r shadow-sm p-6 space-y-2 sticky top-0 h-screen">
+        <aside className="hidden md:block w-64 bg-white border-r shadow-sm p-6 space-y-2 h-auto">
           {currentNav.map((item) => {
             const active = pathname === item.href;
             const Icon = item.icon;
@@ -394,7 +414,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <main className="flex-1 p-4 sm:p-8 overflow-y-auto relative">
           {children}
           {/* 🪄 Global Legend */}
-          {!inSettings && <FloatingLegend />}
+          {!inSettings && !inSubmit && <FloatingLegend />}
         </main>
       </div>
 

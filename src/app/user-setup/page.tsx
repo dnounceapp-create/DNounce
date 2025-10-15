@@ -6,6 +6,7 @@ import Image from "next/image";
 import { supabase } from "@/lib/supabaseClient";
 import { Loader2, CheckCircle2, ChevronLeft } from "lucide-react";
 import Link from "next/link";
+import { MapPin } from "lucide-react";
 
 function formatPhoneNumber(value: string) {
   const digits = value.replace(/\D/g, "");
@@ -31,6 +32,38 @@ export default function UserSetupPage() {
     phone: "",
     location: "",
   });
+
+  const [locationSuggestions, setLocationSuggestions] = useState<any[]>([]);
+
+  // ✅ Fetch location suggestions from /api/location
+  useEffect(() => {
+    const q = form.location.trim();
+    if (!q) {
+      setLocationSuggestions([]);
+      return;
+    }
+
+    const fetchSuggestions = async () => {
+      try {
+        const res = await fetch(`/api/location?input=${encodeURIComponent(q)}`);
+        if (!res.ok) {
+          console.warn("⚠️ Location API failed during setup:", res.status);
+          setLocationSuggestions([]);
+          return;
+        }
+
+        const data = await res.json();
+        setLocationSuggestions(data.predictions || []);
+      } catch (err) {
+        console.error("Location suggestions error (setup):", err);
+        setLocationSuggestions([]);
+      }
+    };
+
+    const id = setTimeout(fetchSuggestions, 300); // debounce typing
+    return () => clearTimeout(id);
+  }, [form.location]);
+
 
   // ---------- Guard + pre-check ----------
   useEffect(() => {
@@ -161,7 +194,7 @@ export default function UserSetupPage() {
             <div className="flex justify-start mb-3">
               <Link
                 href="/loginsignup"
-                className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-all"
+                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-white bg-gradient-to-r from-blue-500 to-indigo-500 hover:opacity-90 active:scale-95 transition-all shadow-sm"
               >
                 <ChevronLeft className="w-4 h-4" />
                 Back to sign in
@@ -259,18 +292,43 @@ export default function UserSetupPage() {
               />
             </div>
 
-            <div>
+            <div className="relative">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Location *
               </label>
+
               <input
                 required
                 name="location"
                 value={form.location}
                 onChange={handleChange}
-                placeholder="e.g., Queens, NY"
+                placeholder="City or neighborhood..."
                 className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
               />
+
+              {locationSuggestions.length > 0 && (
+                <ul className="absolute z-50 bg-white border rounded-md w-full shadow-md mt-1 max-h-60 overflow-y-auto">
+                  {locationSuggestions.map((s: any, idx: number) => (
+                    <li
+                      key={idx}
+                      className="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-2"
+                      onClick={() => {
+                        setForm((prev) => ({ ...prev, location: s.description }));
+                        setLocationSuggestions([]);
+                      }}
+                    >
+                      <MapPin className="w-4 h-4 text-gray-600 shrink-0" />
+                      <span className="font-semibold text-gray-800 text-sm leading-tight">
+                        {s.description}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              <p className="text-xs text-gray-500 mt-1">
+                Type city name to see neighborhoods, or neighborhood to see full location.
+              </p>
             </div>
 
             {error && (

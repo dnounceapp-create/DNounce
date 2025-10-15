@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, Lock, ShieldCheck, Mail, X } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
+import { MapPin } from "lucide-react";
 
 export default function AccountSecurityPage() {
   const router = useRouter();
@@ -54,6 +55,8 @@ export default function AccountSecurityPage() {
     location: "",
   });
 
+  const [locationSuggestions, setLocationSuggestions] = useState<any[]>([]);
+
   const capitalizeFirstLetter = (value: string) => {
     if (!value) return value;
     return value.charAt(0).toUpperCase() + value.slice(1);
@@ -92,6 +95,35 @@ export default function AccountSecurityPage() {
 
     loadData();
   }, [router]);
+
+  // ✅ Location autocomplete (wired to /api/location)
+  useEffect(() => {
+    const q = accountdetails.location?.trim();
+    if (!q) {
+      setLocationSuggestions([]);
+      return;
+    }
+
+    const fetchSuggestions = async () => {
+      try {
+        const res = await fetch(`/api/location?input=${encodeURIComponent(q)}`);
+        if (!res.ok) {
+          console.warn("⚠️ Location API failed in Account Settings:", res.status);
+          setLocationSuggestions([]);
+          return;
+        }
+
+        const data = await res.json();
+        setLocationSuggestions(data.predictions || []);
+      } catch (err) {
+        console.error("Location autocomplete error:", err);
+        setLocationSuggestions([]);
+      }
+    };
+
+    const id = setTimeout(fetchSuggestions, 300); // debounce typing
+    return () => clearTimeout(id);
+  }, [accountdetails.location]);
 
   // ✅ Hide success messages automatically
   useEffect(() => {
@@ -563,21 +595,48 @@ export default function AccountSecurityPage() {
               />
             </div>
 
-            <div className="mt-4">
+            <div className="mt-4 relative">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Location *
               </label>
+
               <input
                 disabled={!isEditing}
+                type="text"
                 value={accountdetails.location}
                 onChange={(e) =>
                   setaccountDetails({
                     ...accountdetails,
-                    location: capitalizeFirstLetter(e.target.value),
+                    location: e.target.value,
                   })
                 }
+                placeholder="City or neighborhood..."
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white disabled:bg-gray-100 disabled:text-gray-500 focus:ring-2 focus:ring-blue-500"
               />
+
+              {locationSuggestions.length > 0 && isEditing && (
+                <ul className="absolute z-50 bg-white border rounded-md w-full shadow-md mt-1 max-h-60 overflow-y-auto">
+                  {locationSuggestions.map((s: any, idx: number) => (
+                    <li
+                      key={idx}
+                      className="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-2"
+                      onClick={() => {
+                        setaccountDetails({ ...accountdetails, location: s.description });
+                        setLocationSuggestions([]);
+                      }}
+                    >
+                      <MapPin className="w-4 h-4 text-gray-600 shrink-0" />
+                      <span className="font-semibold text-gray-800 text-sm leading-tight">
+                        {s.description}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              <p className="text-xs text-gray-500 mt-1">
+                Type a city name to see neighborhoods, or neighborhood to see full location.
+              </p>
             </div>
           </section>
 
