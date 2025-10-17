@@ -89,17 +89,76 @@ export default function AccountSecurityPage() {
   // 🧩 Handle saving cropped image (preview only for now)
   const handleCropSave = async () => {
     if (!selectedImage || !croppedAreaPixels) return;
-
+  
+    // 1) Get a circular PNG data URL from the cropper
     const imageDataUrl = await getCroppedImg(
       URL.createObjectURL(selectedImage),
       croppedAreaPixels
     );
-
-    setCroppedImage(imageDataUrl);
-    setAvatarUrl(imageDataUrl);
-    setShowCropModal(false);
+  
+    // 2) Convert data URL → Blob → File
+    const res = await fetch(imageDataUrl);
+    const blob = await res.blob();
+    const file = new File([blob], "avatar.png", { type: "image/png" });
+  
+    // 3) Upload + save URL to DB
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    if (!userId) {
+      setMessage?.("❌ Not signed in.");
+      setMessageType?.("error");
+      return;
+    }
+  
+    try {
+      const publicUrl = await uploadAvatarAndSaveUrl(file, userId);
+  
+      // 4) Update local UI
+      setCroppedImage(publicUrl);
+      setAvatarUrl(publicUrl);
+      setShowCropModal(false);
+  
+      // If you have toast/message state on this page:
+      setMessage?.("✅ Profile picture updated!");
+      setMessageType?.("success");
+    } catch (err: any) {
+      setMessage?.("❌ " + (err?.message || "Failed to upload avatar."));
+      setMessageType?.("error");
+    }
   };
+  
 
+  async function uploadAvatarAndSaveUrl(file: File, userId: string) {
+    const ext = file.name.split(".").pop()?.toLowerCase() || "png";
+    const path = `${userId}/avatar.${ext}`; // stable path per user
+  
+    // 1) upload (overwrite allowed)
+    const { error: uploadErr } = await supabase
+      .storage
+      .from("avatars")
+      .upload(path, file, { upsert: true, contentType: file.type });
+  
+    if (uploadErr) throw uploadErr;
+  
+    // 2) get public URL
+    const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+    const publicUrl = data.publicUrl;
+  
+    // 3) save to DB
+    const { error: dbErr } = await supabase
+      .from("user_accountdetails")
+      .update({ avatar_url: publicUrl })
+      .eq("user_id", userId);
+  
+    // If using the RPC instead, use:
+    // const { error: dbErr } = await supabase.rpc("update_user_accountdetails", { ...otherFields, p_avatar_url: publicUrl });
+  
+    if (dbErr) throw dbErr;
+  
+    return publicUrl;
+  }
+  
+  
   // helper for creating image object
   const createImage = (url: string): Promise<HTMLImageElement> =>
     new Promise((resolve, reject) => {
@@ -616,7 +675,11 @@ export default function AccountSecurityPage() {
                 onClick={() => {
                   setCrop({ x: 0, y: 0 });
                   setZoom(1);
-                  setShowAvatarOptionsModal(true);
+                  if (avatarUrl) setShowAvatarOptionsModal(true);
+                    setShowAvatarOptionsModal(true); // show modal only if user already has a picture
+                  else document.getElementById("avatar-upload")?.click();
+                    document.getElementById("avatar-upload")?.click(); // open gallery directly if no avatar yet
+                  }
                 }}
                 className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 bg-white rounded-full p-2 shadow-md 
                           opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-200 hover:scale-110"
