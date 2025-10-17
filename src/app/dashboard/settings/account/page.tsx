@@ -3,9 +3,10 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, Lock, ShieldCheck, Mail, X } from "lucide-react";
+import { ShieldCheck, Mail, X, User, Pencil, MapPin } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
-import { MapPin } from "lucide-react";
+import NextImage from "next/image";
+import Cropper from "react-easy-crop";
 
 export default function AccountSecurityPage() {
   const router = useRouter();
@@ -36,8 +37,87 @@ export default function AccountSecurityPage() {
   const [phoneCode, setPhoneCode] = useState("");
   const [phoneChangeCode, setPhoneChangeCode] = useState("");
   const PHONE_CHANGE_ENABLED = false;
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [showAvatarMenu, setShowAvatarMenu] = useState(false);
+  const [showAvatarOptionsModal, setShowAvatarOptionsModal] = useState(false);
+  const [showCropModal, setShowCropModal] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
+  const [croppedImage, setCroppedImage] = useState<string | null>(null);
 
-  const formatPhoneNumber = (value: string) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+  
+    setSelectedImage(file);
+    setShowCropModal(true);
+  };
+
+  // 🖼️ Utility: Create cropped image from react-easy-crop data
+  const getCroppedImg = async (imageSrc: string, pixelCrop: any): Promise<string> => {
+    const image = await createImage(imageSrc);
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+
+    if (!ctx) throw new Error("Failed to create canvas context");
+
+    const diameter = Math.min(pixelCrop.width, pixelCrop.height);
+    canvas.width = diameter;
+    canvas.height = diameter;
+
+    ctx.beginPath();
+    ctx.arc(diameter / 2, diameter / 2, diameter / 2, 0, 2 * Math.PI);
+    ctx.clip();
+
+    ctx.drawImage(
+      image,
+      pixelCrop.x,
+      pixelCrop.y,
+      pixelCrop.width,
+      pixelCrop.height,
+      0,
+      0,
+      diameter,
+      diameter
+    );
+
+    return canvas.toDataURL("image/png");
+  };
+
+  // 🧩 Handle saving cropped image (preview only for now)
+  const handleCropSave = async () => {
+    if (!selectedImage || !croppedAreaPixels) return;
+
+    const imageDataUrl = await getCroppedImg(
+      URL.createObjectURL(selectedImage),
+      croppedAreaPixels
+    );
+
+    setCroppedImage(imageDataUrl);
+    setAvatarUrl(imageDataUrl);
+    setShowCropModal(false);
+  };
+
+  // helper for creating image object
+  const createImage = (url: string): Promise<HTMLImageElement> =>
+    new Promise((resolve, reject) => {
+      // 🧠 Ensure we're in the browser before using Image()
+      if (typeof window === "undefined") {
+        reject(new Error("createImage must be called in a browser environment"));
+        return;
+      }
+  
+      const GlobalImage = window.Image || Image; // safely reference browser Image
+      const image = new GlobalImage();
+      image.crossOrigin = "anonymous";
+      image.src = url;
+      image.onload = () => resolve(image);
+      image.onerror = (error) => reject(error);
+    });
+  
+    const formatPhoneNumber = (value: string) => {
     const digits = value.replace(/\D/g, ""); // Remove non-numeric chars
   
     if (digits.length <= 3) return digits;
@@ -135,6 +215,16 @@ export default function AccountSecurityPage() {
       return () => clearTimeout(timer);
     }
   }, [message]);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (!(e.target as HTMLElement).closest(".avatar-menu-container")) {
+        setShowAvatarMenu(false);
+      }
+    };
+    window.addEventListener("click", handleClickOutside);
+    return () => window.removeEventListener("click", handleClickOutside);
+  }, []);  
 
   const handleEditClick = () => {
     setShowAuthModal(true);
@@ -503,6 +593,83 @@ export default function AccountSecurityPage() {
         )}
 
         <div className="bg-white border border-gray-200 shadow-sm rounded-2xl p-6 space-y-8 transition-all">
+          
+          {/* 🖼️ Avatar Display */}
+          <div className="flex justify-center mb-6">
+            <div className="relative group">
+              {avatarUrl ? (
+                <NextImage
+                src={croppedImage || avatarUrl || "/default-avatar.png"}
+                alt="User Avatar"
+                width={120}
+                height={120}
+                className="rounded-full object-cover border border-gray-300 shadow-sm group-hover:scale-105 transition-transform duration-200"
+              />              
+              ) : (
+                <div className="relative w-28 h-28 rounded-full overflow-hidden bg-transparent flex items-center justify-center border border-gray-200 shadow-sm">
+                  <User className="w-12 h-12 text-gray-400" />
+                </div>
+              )}
+
+              {/* ✏️ Pencil Icon Overlay (appears on hover) */}
+              <button
+                onClick={() => {
+                  setCrop({ x: 0, y: 0 });
+                  setZoom(1);
+                  setShowAvatarOptionsModal(true); // open the modal instead of dropdown
+                }}
+                className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 bg-white rounded-full p-2 shadow-md opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110"
+              >
+                <Pencil className="w-4 h-4 text-gray-600" />
+              </button>
+
+              {/* 📂 Dropdown Menu for Recrop / Change */}
+              {showAvatarMenu && (
+                <div className="absolute bottom-12 left-1/2 -translate-x-1/2 bg-white border border-gray-200 shadow-lg rounded-lg py-1 z-50">
+                  {avatarUrl && (
+                    <button
+                      onClick={() => {
+                        setCrop({ x: 0, y: 0 });
+                        setZoom(1);
+                        fetch(avatarUrl)
+                          .then((res) => res.blob())
+                          .then((blob) => {
+                            const file = new File([blob], "recrop.png", { type: "image/png" });
+                            setSelectedImage(file);
+                            setShowCropModal(true);
+                            setShowAvatarMenu(false);
+                          });
+                      }}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Re-crop Current Picture
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => {
+                      setCrop({ x: 0, y: 0 });
+                      setZoom(1);
+                      setShowAvatarMenu(false);
+                      document.getElementById("avatar-upload")?.click();
+                    }}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    Upload New Picture
+                  </button>
+                </div>
+              )}
+
+              <input
+                id="avatar-upload"
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="hidden"
+              />
+            </div>
+          </div>
+          
           {/* Account Details Section */}
           <section>
             <h2 className="text-lg font-semibold mb-3 text-gray-900">
@@ -1183,6 +1350,130 @@ export default function AccountSecurityPage() {
                 className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
               >
                 {verifying ? "Saving..." : "Save Number"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🖼️ Crop Modal */}
+      {showCropModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-2xl border border-gray-200 p-6 sm:p-8 w-full max-w-lg relative">
+            {/* ❌ Close */}
+            <button
+              className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition-all"
+              onClick={() => setShowCropModal(false)}
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* 🧠 Header */}
+            <h2 className="text-2xl font-semibold text-center mb-4 text-gray-900">
+              Crop Your Profile Picture
+            </h2>
+
+            {/* 🖼️ Crop Area */}
+            <div className="relative w-full h-72 bg-gray-100 rounded-xl overflow-hidden shadow-inner border border-gray-200">
+              {selectedImage && (
+                <Cropper
+                  image={URL.createObjectURL(selectedImage)}
+                  crop={crop}
+                  zoom={zoom}
+                  aspect={1}
+                  cropShape="round"
+                  showGrid={false}
+                  onCropChange={setCrop}
+                  onZoomChange={setZoom}
+                  onCropComplete={(_, croppedAreaPixels) =>
+                    setCroppedAreaPixels(croppedAreaPixels)
+                  }
+                />
+              )}
+            </div>
+
+            {/* 🧭 Controls */}
+            <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <input
+                type="range"
+                min={1}
+                max={3}
+                step={0.1}
+                value={zoom}
+                onChange={(e) => setZoom(Number(e.target.value))}
+                className="w-full sm:w-2/3 accent-blue-600"
+              />
+              <button
+                onClick={handleCropSave}
+                className="w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 shadow-md hover:shadow-lg active:scale-95 transition-all"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
+      {/* 🧩 Avatar Options Modal */}
+      {showAvatarOptionsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-sm relative border border-gray-200">
+            {/* ❌ Close Button */}
+            <button
+              onClick={() => setShowAvatarOptionsModal(false)}
+              className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition-all"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* 🧠 Header */}
+            <h2 className="text-2xl font-semibold text-gray-900 text-center mb-6">
+              Profile Picture Options
+            </h2>
+
+            {/* 🪄 Buttons */}
+            <div className="space-y-3">
+              {/* Re-crop */}
+              {avatarUrl && (
+                <button
+                  onClick={() => {
+                    setShowAvatarOptionsModal(false);
+                    setCrop({ x: 0, y: 0 });
+                    setZoom(1);
+                    fetch(avatarUrl)
+                      .then((res) => res.blob())
+                      .then((blob) => {
+                        const file = new File([blob], "recrop.png", { type: "image/png" });
+                        setSelectedImage(file);
+                        setShowCropModal(true);
+                      });
+                  }}
+                  className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl px-6 py-3 text-base font-semibold shadow-md hover:shadow-lg hover:from-blue-700 hover:to-blue-800 transition-all active:scale-95"
+                >
+                  Re-crop Current Picture
+                </button>
+              )}
+
+              {/* Change Picture */}
+              <button
+                onClick={() => {
+                  setShowAvatarOptionsModal(false);
+                  setCrop({ x: 0, y: 0 });
+                  setZoom(1);
+                  document.getElementById("avatar-upload")?.click();
+                }}
+                className="w-full bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800 rounded-xl px-6 py-3 text-base font-semibold border border-gray-300 shadow-sm hover:shadow-md hover:from-gray-200 hover:to-gray-300 transition-all active:scale-95"
+              >
+                Change Profile Picture
+              </button>
+
+              {/* Cancel */}
+              <button
+                onClick={() => setShowAvatarOptionsModal(false)}
+                className="w-full text-gray-600 border border-gray-300 rounded-xl px-6 py-3 text-base font-medium hover:bg-gray-50 hover:shadow-sm transition-all active:scale-95"
+              >
+                Cancel
               </button>
             </div>
           </div>

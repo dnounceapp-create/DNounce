@@ -242,6 +242,27 @@ function FloatingLegend() {
             ))}
           </ul>
         </div>
+
+        {/* 🧩 Roles Section */}
+        <div className="border-t border-gray-200 pt-2 mt-3">
+          <p className="text-xs font-medium text-gray-600 mb-1">Roles</p>
+          <ul className="space-y-1">
+            <li className="text-xs text-gray-800">
+              <span className="font-semibold text-gray-900">Contributor</span> — User who submits a record about another user.
+            </li>
+            <li className="text-xs text-gray-800">
+              <span className="font-semibold text-gray-900">Subject</span> — The individual that the record is about.
+            </li>
+          </ul>
+        </div>
+
+        {/* 📝 Submit a Record Icon */}
+        <div className="border-t border-gray-200 pt-2 mt-3 flex items-center gap-2 text-xs text-gray-700">
+          <span className="flex items-center gap-2 font-semibold text-gray-900">
+            <FileText className="w-3.5 h-3.5 text-blue-600" />
+            Submit a Record
+          </span>
+        </div>
       </div>
     )}
   </div>

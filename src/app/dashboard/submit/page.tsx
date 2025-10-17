@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { AlertTriangle, Upload, MapPin } from "lucide-react";
+import { AlertTriangle, Upload, MapPin, FileText, Search, User, X, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+import Link from "next/link";
 
 /* ——— Page Component ——— */
 export default function SubmitRecordPage() {
@@ -20,6 +21,7 @@ export default function SubmitRecordPage() {
   const [submitOrganization, setSubmitOrganization] = useState("");
   const [submitRelationship, setSubmitRelationship] = useState("");
   const [submitOtherRelationship, setSubmitOtherRelationship] = useState("");
+  const [submitCategory, setSubmitCategory] = useState("");
   const [submitLocation, setSubmitLocation] = useState("");
   const [submitLocationSuggestions, setSubmitLocationSuggestions] = useState<any[]>([]);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
@@ -70,6 +72,18 @@ export default function SubmitRecordPage() {
     fetchRelationshipTypes();
   }, []);
 
+  useEffect(() => {
+    function onDocClick(e: MouseEvent) {
+      const target = e.target as HTMLElement;
+      // Close only if click is not inside any of our dropdown/input wrappers
+      if (!target.closest("[data-subject-search-root]")) {
+        setResultsOpen(false);
+      }
+    }
+    document.addEventListener("click", onDocClick);
+    return () => document.removeEventListener("click", onDocClick);
+  }, []);
+
   /* ——— Location Autocomplete (wired to /api/location) ——— */
   useEffect(() => {
     const q = submitLocation?.trim();
@@ -98,16 +112,258 @@ export default function SubmitRecordPage() {
     return () => clearTimeout(id);
   }, [submitLocation]);
 
+  /** ——— Subject Search (UI only) ——— */
+  type SubjectPreview = {
+    id: string;
+    name: string;
+    nickname?: string | null;
+    organization?: string | null;
+    location?: string | null;
+    avatar_url?: string | null;
+  };
+
+  const [subjectQuery, setSubjectQuery] = useState("");
+  const [subjectResults, setSubjectResults] = useState<SubjectPreview[]>([]);
+  const [subjectLoading, setSubjectLoading] = useState(false);
+  const [resultsOpen, setResultsOpen] = useState(false); // show/hide dropdown
+  const [selectedSubject, setSelectedSubject] = useState<SubjectPreview | null>(null);
+  const isLocked = !!selectedSubject;
+
+  /* ——— Debounced search (UI stub only) ——— */
+  useEffect(() => {
+    const q = subjectQuery.trim();
+
+    // If user cleared input, close list
+    if (!q) {
+      setSubjectResults([]);
+      setResultsOpen(false);
+      return;
+    }
+
+    // Start "loading" state
+    setSubjectLoading(true);
+
+    const t = setTimeout(async () => {
+      // TODO: replace with real search later
+      // For now: return empty array or a tiny mock when query has 3+ chars
+      let mock: SubjectPreview[] = [];
+      if (q.length >= 3) {
+        mock = [
+          {
+            id: "demo-1",
+            name: "John Example",
+            nickname: "Johnny",
+            organization: "AutoFix Garage",
+            location: "San Francisco, CA",
+          },
+          {
+            id: "demo-2",
+            name: "Jane Sample",
+            organization: "Acme Inc.",
+            location: "New York, NY",
+          },
+        ].filter((p) =>
+          [p.name, p.nickname, p.organization, p.location]
+            .filter(Boolean)
+            .some((s) => s!.toLowerCase().includes(q.toLowerCase()))
+        ).slice(0, 10);
+      }
+
+      setSubjectResults(mock);
+      setResultsOpen(true);
+      setSubjectLoading(false);
+    }, 300); // debounce
+
+    return () => clearTimeout(t);
+  }, [subjectQuery]);
+
   /* ——— Terms Scroll ——— */
   const handleTermsScroll = () => {
     /* placeholder for scroll detection if needed later */
   };
 
+  useEffect(() => {
+    if (selectedSubject) {
+      setSubmitLocationSuggestions([]);
+    }
+  }, [selectedSubject]);
+
   /* ——— Page UI ——— */
   return (
     <div className="max-w-4xl mx-auto px-4 py-10">
+      <div className="flex flex-col items-center justify-center text-center mb-10">
+        <div className="flex items-center gap-3 mb-2">
+          <FileText className="w-7 h-7 text-blue-600" />
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">
+            Submit a Record
+          </h1>
+        </div>
+        <p className="text-sm sm:text-base text-gray-500 max-w-md">
+        Share your verified experience or information to help maintain transparency and community accountability.
+        </p>
+      </div>
       <Card className="p-4 sm:p-8 bg-white shadow-lg rounded-xl">
         <CardContent className="p-0">
+          
+          {/* ——— Subject Finder (UI only) ——— */}
+          <div className="mb-8" data-subject-search-root>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-sm font-semibold text-gray-700">Find an Existing Subject</label>
+              {selectedSubject ? (
+                <button
+                  type="button"
+                  onClick={() => setSelectedSubject(null)}
+                  className="text-xs text-blue-600 hover:underline"
+                >
+                  Clear selected
+                </button>
+              ) : null}
+            </div>
+
+            {/* Search input */}
+            <div className="relative">
+              <Input
+                value={selectedSubject ? selectedSubject.name : subjectQuery}
+                onChange={(e) => {
+                  // If a subject was selected, typing again will clear selection and start a new query
+                  if (selectedSubject) setSelectedSubject(null);
+                  setSubjectQuery(e.target.value);
+                }}
+                onFocus={() => {
+                  if (subjectResults.length > 0) setResultsOpen(true);
+                }}
+                placeholder="Type a name, nickname, or organization…"
+                className={`w-full rounded-xl border-gray-300 pr-10 ${selectedSubject ? "bg-green-50" : ""}`}
+              />
+              {/* right icon */}
+              <div className="absolute inset-y-0 right-2 flex items-center">
+                {subjectLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                ) : (
+                  <Search className="w-4 h-4 text-gray-400" />
+                )}
+              </div>
+
+              {/* Dropdown results */}
+              {resultsOpen && subjectResults.length > 0 && !selectedSubject && (
+                <ul
+                  className="absolute mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-80 overflow-auto z-50"
+                  onMouseDown={(e) => e.preventDefault()} // keep focus for input
+                >
+                  {subjectResults.slice(0, 10).map((p) => (
+                    <li
+                      key={p.id}
+                      className="px-3 py-2 hover:bg-gray-50 cursor-pointer flex items-start gap-3"
+                      onClick={() => {
+                        setSelectedSubject(p);
+                        setSubjectQuery(p.name);
+                        setResultsOpen(false);
+                      }}
+                    >
+                      {/* avatar */}
+                      <div className="mt-0.5 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                        <User className="w-4 h-4 text-gray-500" />
+                      </div>
+
+                      {/* text */}
+                      <div className="min-w-0">
+                        <div className="text-sm font-medium text-gray-900 truncate">
+                          {p.name}{p.nickname ? ` (${p.nickname})` : ""}
+                        </div>
+                        <div className="text-xs text-gray-600 truncate">
+                          {p.organization ? p.organization : "—"}
+                          {p.location ? `  •  ${p.location}` : ""}
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            {/* Selected subject preview card (light theme, aligned with global UI) */}
+            {selectedSubject && (
+              <div className="mt-4 p-4 rounded-xl border border-gray-200 bg-white flex items-center justify-between shadow-sm hover:shadow-md transition-all duration-200 animate-fadeIn">
+                <div className="flex items-center gap-4">
+                  {/* Avatar */}
+                  <div className="w-12 h-12 rounded-full bg-gray-100 border-2 border-green-500 flex items-center justify-center">
+                    <User className="w-6 h-6 text-green-600" />
+                  </div>
+
+                  {/* Subject Info */}
+                  <div className="min-w-0">
+                    <h3 className="text-sm sm:text-base font-semibold text-gray-900 flex flex-wrap items-center gap-1">
+                      {selectedSubject.name}
+                      {selectedSubject.nickname && (
+                        <span className="text-gray-500 text-xs sm:text-sm">
+                          ({selectedSubject.nickname})
+                        </span>
+                      )}
+                    </h3>
+
+                    <p className="text-xs text-gray-600 truncate">
+                      {selectedSubject.organization || "Independent"}
+                      {selectedSubject.location ? ` • ${selectedSubject.location}` : ""}
+                    </p>
+
+                    <p className="text-[11px] text-gray-400 font-mono mt-0.5">
+                      ID: {selectedSubject.id}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center gap-3 ml-4 shrink-0">
+                  <Link
+                    href={`/subjects/${selectedSubject.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs font-medium text-green-700 hover:text-green-800 hover:underline flex items-center gap-1"
+                  >
+                    View
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="w-3 h-3"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </Link>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedSubject(null);
+                      setSubjectQuery("");
+                    }}
+                    className="text-gray-400 hover:text-red-600 transition"
+                    title="Clear selection"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+
+            {/* Helper text */}
+            {!selectedSubject && (
+              <p className="text-xs text-gray-500 mt-2">
+                Pick one subject if found. If no match appears, you can still continue — we’ll create a subject profile from your entry.
+              </p>
+            )}
+          </div>
+
+          {/* ——— OR Divider ——— */}
+          <div className="flex items-center justify-center my-8">
+            <div className="h-px bg-gray-200 w-full"></div>
+            <span className="mx-3 text-xs uppercase tracking-wider text-gray-400">or</span>
+            <div className="h-px bg-gray-200 w-full"></div>
+          </div>
+          
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-6">
             {/* Subject Name */}
             <Field
@@ -115,6 +371,7 @@ export default function SubmitRecordPage() {
               placeholder="e.g. John Doe"
               value={submitName}
               onChange={setSubmitName}
+              disabled={!!selectedSubject}
             />
 
             {/* Nickname */}
@@ -123,6 +380,7 @@ export default function SubmitRecordPage() {
               placeholder="e.g. Johnny"
               value={submitNickname}
               onChange={setSubmitNickname}
+              disabled={!!selectedSubject}
             />
 
             {/* Organization */}
@@ -131,16 +389,26 @@ export default function SubmitRecordPage() {
               placeholder="e.g. Acme Inc."
               value={submitOrganization}
               onChange={setSubmitOrganization}
+              disabled={!!selectedSubject}
             />
 
             {/* Relationship */}
             <div className="flex flex-col">
               <label className="mb-1 text-sm font-semibold text-gray-700">Relationship</label>
+
               {relLoading ? (
                 <p className="text-sm text-gray-400">Loading relationships...</p>
               ) : (
-                <Select value={submitRelationship} onValueChange={setSubmitRelationship}>
-                  <SelectTrigger className="w-full rounded-lg border-gray-300">
+                <Select
+                  disabled={isLocked}
+                  value={submitRelationship}
+                  onValueChange={setSubmitRelationship}
+                >
+                  <SelectTrigger
+                    className={`w-full rounded-lg border-gray-300 ${
+                      isLocked ? "bg-gray-100 text-gray-500 cursor-not-allowed" : ""
+                    }`}
+                  >
                     <SelectValue placeholder="Select relationship" />
                   </SelectTrigger>
                   <SelectContent className="z-50 bg-white shadow-lg rounded-lg border border-gray-200">
@@ -153,16 +421,16 @@ export default function SubmitRecordPage() {
                 </Select>
               )}
 
-              {/* Show input if "Other" selected */}
-              {relationshipTypes.find((rel) => rel.id === submitRelationship)?.value ===
-                "other" && (
-                <Input
-                  placeholder="Please specify..."
-                  value={submitOtherRelationship}
-                  onChange={(e) => setSubmitOtherRelationship(capitalizeWords(e.target.value))}
-                  className="mt-3 w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500"
-                />
-              )}
+              {/* Only show the "Other" input if NOT locked and "other" is selected */}
+              {!isLocked &&
+                relationshipTypes.find((rel) => rel.id === submitRelationship)?.value === "other" && (
+                  <Input
+                    placeholder="Please specify..."
+                    value={submitOtherRelationship}
+                    onChange={(e) => setSubmitOtherRelationship(capitalizeWords(e.target.value))}
+                    className="mt-3 w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500"
+                  />
+                )}
             </div>
 
             {/* Category */}
@@ -170,14 +438,19 @@ export default function SubmitRecordPage() {
               <label className="mb-1 text-sm font-semibold text-gray-700">Category</label>
               <Input
                 placeholder="e.g. Barber, Waitress, Doctor..."
-                className="w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500"
+                value={submitCategory}
+                onChange={(e) => setSubmitCategory(e.target.value)}
+                disabled={isLocked}
+                className={`w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500 ${
+                  isLocked ? "bg-gray-100 text-gray-500 cursor-not-allowed" : ""
+                }`}
               />
               <p className="text-xs text-gray-500 mt-1">
                 Use a label that best fits how you may find this person.
               </p>
             </div>
 
-            {/* Location (wired to /api/location) */}
+            {/* Location */}
             <div className="flex flex-col">
               <label className="mb-1 text-sm font-semibold text-gray-700">Location</label>
               <div className="relative">
@@ -186,9 +459,14 @@ export default function SubmitRecordPage() {
                   type="text"
                   value={submitLocation}
                   onChange={(e) => setSubmitLocation(e.target.value)}
-                  className="w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500"
+                  disabled={isLocked}
+                  className={`w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500 ${
+                    isLocked ? "bg-gray-100 text-gray-500 cursor-not-allowed" : ""
+                  }`}
                 />
-                {submitLocationSuggestions.length > 0 && (
+
+                {/* Only show suggestions if NOT locked */}
+                {!isLocked && submitLocationSuggestions.length > 0 && (
                   <ul className="absolute z-50 bg-white border rounded-md w-full shadow-md mt-1 max-h-60 sm:max-h-80 overflow-y-auto">
                     {submitLocationSuggestions.map((s: any, idx: number) => (
                       <li
@@ -333,11 +611,13 @@ function Field({
   placeholder,
   value,
   onChange,
+  disabled = false,
 }: {
   label: string;
   placeholder: string;
   value: string;
   onChange: (val: string) => void;
+  disabled?: boolean;
 }) {
   return (
     <div className="flex flex-col">
@@ -347,7 +627,10 @@ function Field({
         type="text"
         value={value}
         onChange={(e) => onChange(capitalizeWords(e.target.value))}
-        className="w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500"
+        disabled={disabled}
+        className={`w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500 ${
+          disabled ? "bg-gray-100 text-gray-500 cursor-not-allowed" : ""
+        }`}
       />
     </div>
   );
