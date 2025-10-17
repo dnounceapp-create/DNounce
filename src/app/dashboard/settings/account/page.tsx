@@ -683,11 +683,15 @@ export default function AccountSecurityPage() {
                 onClick={() => {
                   setCrop({ x: 0, y: 0 });
                   setZoom(1);
-                  if (avatarUrl) setShowAvatarOptionsModal(true);
-                    setShowAvatarOptionsModal(true); // show modal only if user already has a picture
-                  else document.getElementById("avatar-upload")?.click();
+                
+                  if (avatarUrl) {
+                    // If the user already has a profile picture, open the recrop/change modal
+                    setShowAvatarOptionsModal(true);
+                  } else {
+                    // Otherwise, go straight to file picker (open gallery)
+                    document.getElementById("avatar-upload")?.click();
                   }
-                }}
+                }}                
                 className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 bg-white rounded-full p-2 shadow-md 
                           opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-200 hover:scale-110"
               >
@@ -1558,7 +1562,6 @@ export default function AccountSecurityPage() {
               >
                 Remove Picture
               </button>
-
 
               {/* Cancel */}
               <button
