@@ -616,9 +616,10 @@ export default function AccountSecurityPage() {
                 onClick={() => {
                   setCrop({ x: 0, y: 0 });
                   setZoom(1);
-                  setShowAvatarOptionsModal(true); // open the modal instead of dropdown
+                  setShowAvatarOptionsModal(true);
                 }}
-                className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 bg-white rounded-full p-2 shadow-md opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110"
+                className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 bg-white rounded-full p-2 shadow-md 
+                          opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-200 hover:scale-110"
               >
                 <Pencil className="w-4 h-4 text-gray-600" />
               </button>
