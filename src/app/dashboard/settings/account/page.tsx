@@ -223,11 +223,19 @@ export default function AccountSecurityPage() {
       if (error) console.error(error);
 
       if (accountdetailsData) {
-        // Apply formatted phone for UI display
+        // ✅ Apply formatted phone for UI display
         if (accountdetailsData.phone) {
           accountdetailsData.phone = formatPhoneNumber(accountdetailsData.phone);
         }
+      
+        // ✅ Update main profile info
         setaccountDetails(accountdetailsData);
+      
+        // ✅ Load avatar if exists
+        if (accountdetailsData.avatar_url) {
+          setAvatarUrl(accountdetailsData.avatar_url);
+          setCroppedImage(accountdetailsData.avatar_url);
+        }
       }
       setLoading(false);
     };
@@ -678,7 +686,6 @@ export default function AccountSecurityPage() {
                   if (avatarUrl) setShowAvatarOptionsModal(true);
                     setShowAvatarOptionsModal(true); // show modal only if user already has a picture
                   else document.getElementById("avatar-upload")?.click();
-                    document.getElementById("avatar-upload")?.click(); // open gallery directly if no avatar yet
                   }
                 }}
                 className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 bg-white rounded-full p-2 shadow-md 
@@ -1531,6 +1538,27 @@ export default function AccountSecurityPage() {
               >
                 Change Profile Picture
               </button>
+
+              <button
+                onClick={async () => {
+                  const { data: sessionData } = await supabase.auth.getSession();
+                  const userId = sessionData?.session?.user?.id;
+                  if (!userId) return;
+
+                  await supabase
+                    .from("user_accountdetails")
+                    .update({ avatar_url: null })
+                    .eq("user_id", userId);
+
+                  setAvatarUrl(null);
+                  setCroppedImage(null);
+                  setShowAvatarOptionsModal(false);
+                }}
+                className="w-full text-red-600 border border-red-300 rounded-xl px-6 py-3 text-base font-medium hover:bg-red-50 transition-all"
+              >
+                Remove Picture
+              </button>
+
 
               {/* Cancel */}
               <button
