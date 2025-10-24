@@ -252,7 +252,7 @@ export default function AccountSecurityPage() {
         .eq("user_id", currentUser.id)
         .single();
   
-      if (error) console.error(error);
+      if (error?.message) console.error("Supabase error:", error.message);
   
       if (accountdetailsData) {
         if (accountdetailsData.phone) {

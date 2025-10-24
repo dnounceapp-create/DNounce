@@ -5,9 +5,10 @@ import { stageConfig, STAGE_ORDER, outcomeLabels } from "@/config/stageConfig";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Search } from "lucide-react";
 import { Dialog } from "@headlessui/react";
 import {
+  Search,
+  Hash,
   User,
   FileText,
   Layers,
@@ -20,8 +21,6 @@ import {
   X, 
   ChevronDown, 
   ChevronUp,
-} from "lucide-react";
-import {
   User as UserIcon,
   UserCircle2,
   Bell,
@@ -49,7 +48,7 @@ const MAIN_NAV: NavItem[] = [
   { name: "My Records", href: "/dashboard/myrecords", icon: FileText },
   { name: "Records I've Voted", href: "/dashboard/voted", icon: Vote },
   { name: "Pinned Records", href: "/dashboard/pinned", icon: Pin },
-  { name: "Following Cases", href: "/dashboard/following", icon: Eye },
+  { name: "Following Records", href: "/dashboard/following", icon: Eye },
 ];
 
 const SETTINGS_NAV: NavItem[] = [
@@ -164,7 +163,54 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const currentNav = inSettings ? SETTINGS_NAV : MAIN_NAV;
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [results, setResults] = useState<any[]>([]);
+  const [userLocation, setUserLocation] = useState<string>("");
 
+  useEffect(() => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          const { latitude, longitude } = pos.coords;
+          // Reverse geocode to get a readable city/state
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
+          );
+          const data = await res.json();
+          const city =
+            data.address.city ||
+            data.address.town ||
+            data.address.village ||
+            data.address.state ||
+            "";
+          setUserLocation(city);
+        },
+        (err) => console.warn("Geolocation error:", err),
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    }
+  }, []);
+
+  useEffect(() => {
+    const fetchResults = async () => {
+      if (!query.trim()) {
+        setResults([]);
+        return;
+      }
+  
+      try {
+        const res = await fetch(
+          `/api/search?q=${encodeURIComponent(query)}&location=${encodeURIComponent(userLocation || "")}`
+        );        
+        const data = await res.json();
+        setResults(data.results || []);
+      } catch (err) {
+        console.error("Search error:", err);
+      }
+    };
+  
+    const delay = setTimeout(fetchResults, 300); // debounce typing
+    return () => clearTimeout(delay);
+  }, [query]);  
 
   useEffect(() => {
     if (menuOpen) setMenuOpen(false);
@@ -202,23 +248,68 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search profiles, cases, hashtags..."
+              placeholder="Search profiles, records, hashtags..."
               className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-full shadow-sm text-sm focus:ring-2 focus:ring-blue-600 focus:border-blue-600 outline-none transition"
             />
-            {query && (
-              <div className="absolute mt-2 bg-white border border-gray-200 rounded-xl shadow-lg w-full max-h-64 overflow-y-auto text-sm z-50">
-                <div className="p-3 border-b text-gray-500 text-xs uppercase tracking-wide">
-                  Search Results
-                </div>
-                <div className="p-3 hover:bg-gray-50 cursor-pointer">
-                  <span className="font-medium">John Doe</span> — Profile ID #1245
-                </div>
-                <div className="p-3 hover:bg-gray-50 cursor-pointer">
-                  <span className="font-medium">#Barber</span> — Hashtag Record
-                </div>
-                <div className="p-3 hover:bg-gray-50 cursor-pointer">
-                  <span className="font-medium">Case 2025-A24</span> — Subject Dispute
-                </div>
+            {results.length > 0 && (
+              <div className="absolute mt-2 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-80 overflow-y-auto z-50">
+                {["profile", "record", "hashtag"].map((groupType) => {
+                  const groupItems = results.filter((r) => r.type === groupType);
+                  if (groupItems.length === 0) return null;
+
+                  const label =
+                    groupType === "profile"
+                      ? "Profiles"
+                      : groupType === "record"
+                      ? "Records"
+                      : "Hashtags";
+
+                  return (
+                    <div key={groupType} className="border-b border-gray-100 last:border-0">
+                      {/* Section Label */}
+                      <div className="px-4 py-2 text-xs font-semibold text-gray-500 bg-gray-50">
+                        {label}
+                      </div>
+
+                      <ul className="divide-y divide-gray-100">
+                        {groupItems.map((item) => (
+                          <li
+                            key={`${item.type}-${item.id}`}
+                            className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer"
+                          >
+                            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100">
+                              {item.type === "profile" && <User className="w-4 h-4 text-gray-500" />}
+                              {item.type === "record" && <FileText className="w-4 h-4 text-gray-500" />}
+                              {item.type === "hashtag" && <Hash className="w-4 h-4 text-gray-500" />}
+                            </div>
+                            <div>
+                              {item.type === "profile" && (
+                                <>
+                                  <p className="text-sm font-medium text-gray-900">{item.name}</p>
+                                  <p className="text-xs text-gray-500">
+                                    {item.organization} • {item.location}
+                                  </p>
+                                </>
+                              )}
+                              {item.type === "record" && (
+                                <>
+                                  <p className="text-sm font-medium text-gray-900">{item.title}</p>
+                                  <p className="text-xs text-gray-500">{item.status}</p>
+                                </>
+                              )}
+                              {item.type === "hashtag" && (
+                                <>
+                                  <p className="text-sm font-medium text-gray-900">#{item.tag}</p>
+                                  <p className="text-xs text-gray-500">{item.usage_count} uses</p>
+                                </>
+                              )}
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -294,7 +385,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search profiles, cases, hashtags..."
+                placeholder="Search profiles, records, hashtags..."
                 className="w-full pl-10 pr-4 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-blue-600 focus:border-blue-600 outline-none"
                 autoFocus
               />
@@ -303,20 +394,39 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {/* Placeholder for search results */}
             <div className="mt-4 max-h-72 overflow-y-auto text-sm text-gray-700">
               {query && (
-                <div className="space-y-2">
-                  <p className="text-gray-500 text-xs uppercase tracking-wide">Recent Matches</p>
-                  {/* These would be dynamically loaded from backend */}
-                  <div className="border rounded-md p-3 hover:bg-gray-50 transition cursor-pointer">
-                    <span className="font-medium">John Doe</span> — Profile ID #1245
-                  </div>
-                  <div className="border rounded-md p-3 hover:bg-gray-50 transition cursor-pointer">
-                    <span className="font-medium">#Barber</span> — Hashtag Record
-                  </div>
-                  <div className="border rounded-md p-3 hover:bg-gray-50 transition cursor-pointer">
-                    <span className="font-medium">Case 2025-A24</span> — Subject Dispute
-                  </div>
+                <div className="absolute mt-2 w-full bg-white border border-gray-200 rounded-xl shadow-md z-50">
+                  <ul className="max-h-72 overflow-y-auto divide-y divide-gray-100">
+                    <li className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer">
+                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100">
+                        <User className="w-4 h-4 text-gray-500" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">John Example (Johnny)</p>
+                        <p className="text-xs text-gray-500">AutoFix Garage • San Francisco, CA</p>
+                      </div>
+                    </li>
+                    <li className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer">
+                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100">
+                        <Hash className="w-4 h-4 text-gray-500" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">#Barber</p>
+                        <p className="text-xs text-gray-500">Hashtag Record</p>
+                      </div>
+                    </li>
+                    <li className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer">
+                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100">
+                        <FileText className="w-4 h-4 text-gray-500" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">Case 2025-A24</p>
+                        <p className="text-xs text-gray-500">Subject Dispute</p>
+                      </div>
+                    </li>
+                  </ul>
                 </div>
               )}
+
             </div>
 
             {/* Buttons */}
