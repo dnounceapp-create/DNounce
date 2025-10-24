@@ -227,6 +227,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Right-side Controls */}
         <div className="flex items-center gap-2 md:gap-3">
 
+          {/* 🔍 Mobile Search Button */}
+          <button
+            onClick={() => setSearchOpen(true)}
+            className="md:hidden p-2 rounded-md hover:bg-gray-100 transition"
+            title="Search DNounce"
+          >
+            <Search className="w-5 h-5 text-gray-700" />
+          </button>
+
           {/* 🧾 Submit a Record Button */}
           <Link
             href="/dashboard/submit"
