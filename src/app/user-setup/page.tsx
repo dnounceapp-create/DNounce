@@ -327,8 +327,9 @@ export default function UserSetupPage() {
       setPopup({
         type: "error",
         message: err?.message || "❌ Failed to upload avatar.",
+        visible: true,
       });
-      setTimeout(() => setPopup({ type: null, message: "" }), 3000);
+      setTimeout(() => setPopup({ type: null, message: "", visible: false }), 3000);      
     }
   };
   
