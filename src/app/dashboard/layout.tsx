@@ -5,6 +5,8 @@ import { stageConfig, STAGE_ORDER, outcomeLabels } from "@/config/stageConfig";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { Search } from "lucide-react";
+import { Dialog } from "@headlessui/react";
 import {
   User,
   FileText,
@@ -54,119 +56,20 @@ const SETTINGS_NAV = [
   { name: "Contact Support", href: "/dashboard/settings/support", icon: MessageSquare },
   { name: "IT Support", href: "/dashboard/settings/it-support", icon: MonitorUp },
   { name: "Terms & Conditions", href: "/dashboard/settings/terms", icon: Info },
+  { name: "Log Out", href: "/logout", icon: LogOut, special: true },
 ];
 
 // 🪄 Floating legend component
-function FloatingLegend() {
+function Legend() {
   const [collapsed, setCollapsed] = useState(false);
-  const [pos, setPos] = useState({ x: 20, y: 20 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
-  const legendRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    const saved = localStorage.getItem("floatingLegendState");
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      setPos(parsed.pos || { x: 20, y: 20 });
-      setCollapsed(parsed.collapsed || false);
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem("floatingLegendState", JSON.stringify({ pos, collapsed }));
-  }, [pos, collapsed]);
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isDragging) return;
-      setPos({
-        x: Math.max(10, Math.min(window.innerWidth - 220, e.clientX - offset.x)),
-        y: Math.max(10, Math.min(window.innerHeight - 100, e.clientY - offset.y)),
-      });
-    };
-    const handleMouseUp = () => setIsDragging(false);
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
-    };
-  }, [isDragging, offset]);
-
-  useEffect(() => {
-    const handleTouchMove = (e: TouchEvent) => {
-      if (!isDragging || !e.touches[0]) return;
-      e.preventDefault(); // 🩵 stops page scrolling while dragging
-      const touch = e.touches[0];
-      setPos({
-        x: Math.max(10, Math.min(window.innerWidth - 220, touch.clientX - offset.x)),
-        y: Math.max(10, Math.min(window.innerHeight - 100, touch.clientY - offset.y)),
-      });
-    };
-  
-    const handleTouchEnd = () => {
-      setIsDragging(false);
-      document.body.style.overflow = ""; // 🩵 restores normal scroll
-    };
-  
-    window.addEventListener("touchmove", handleTouchMove, { passive: false });
-    window.addEventListener("touchend", handleTouchEnd);
-  
-    return () => {
-      window.removeEventListener("touchmove", handleTouchMove);
-      window.removeEventListener("touchend", handleTouchEnd);
-    };
-  }, [isDragging, offset]);
-
-  // mobile-safe default: bottom-right
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth < 768) {
-        setPos({
-          x: Math.max(10, Math.min(window.innerWidth - 220, 16)),
-          y: Math.max(10, Math.min(window.innerHeight - 150, 100)),
-        });
-      }
-    };
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
 
   return (
-    <div
-      ref={legendRef}
-      className="fixed z-[90] select-none cursor-move rounded-xl shadow-lg backdrop-blur-lg border border-white/20 bg-white/80 p-3 sm:p-4 w-56 sm:w-64 text-xs sm:text-sm"
-      style={{
-        left: pos.x,
-        top: pos.y,
-        transform: "translate(0, 0)",
-        transition: isDragging ? "none" : "transform 0.1s ease-out",
-      }}
-      onMouseDown={(e) => {
-        if (!legendRef.current) return;
-        const rect = legendRef.current.getBoundingClientRect();
-        setIsDragging(true);
-        setOffset({ x: e.clientX - rect.left, y: e.clientY - rect.top });
-      }}
-      onTouchStart={(e) => {
-        if (!legendRef.current || !e.touches[0]) return;
-        const touch = e.touches[0];
-        const rect = legendRef.current.getBoundingClientRect();
-        setIsDragging(true);
-        setOffset({ x: touch.clientX - rect.left, y: touch.clientY - rect.top });
-        document.body.style.overflow = "hidden"; // 🩵 stops background scrolling
-      }}
-    >
+    <div className="rounded-xl border border-gray-200 bg-white p-4 text-sm">
       <div className="flex items-center justify-between mb-2">
         <h3 className="font-semibold text-gray-800">Legend</h3>
         <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setCollapsed((prev) => !prev);
-          }}
-          className="p-2 sm:p-1 rounded-md hover:bg-gray-100 active:scale-95 transition"
+          onClick={() => setCollapsed((p) => !p)}
+          className="p-2 rounded-md hover:bg-gray-100 active:scale-95 transition"
           aria-label={collapsed ? "Expand legend" : "Collapse legend"}
         >
           {collapsed ? (
@@ -178,95 +81,69 @@ function FloatingLegend() {
       </div>
 
       {!collapsed && (
-      <div className="space-y-3">
-        <div>
-          <p className="text-xs font-medium text-gray-600 mb-1">Stages</p>
-          <ul className="space-y-1">
-            {STAGE_ORDER.map((id) => {
-              const s = stageConfig[id];
-              return (
-                <li
-                  key={s.label}
-                  className="flex items-center gap-2 sm:gap-3 relative group"
-                >
-                  {/* Stage number */}
-                  <span className="text-gray-700 text-[11px] font-semibold w-4 text-right">
-                    {id}.
-                  </span>
-              
-                  {/* Color dot */}
-                  <span
-                    className={`w-3 h-3 rounded-full flex-shrink-0 border border-black/40 ${s.ui.chipClass}`}
-                  />
-              
-                  {/* Label */}
-                  <span
-                    tabIndex={0}
-                    className="text-xs text-gray-800 outline-none"
+        <div className="space-y-3">
+          {/* Stages */}
+          <div>
+            <p className="text-xs font-medium text-gray-600 mb-1">Stages</p>
+            <ul className="space-y-1">
+              {STAGE_ORDER.map((id) => {
+                const s = stageConfig[id];
+                return (
+                  <li
+                    key={s.label}
+                    className="grid grid-cols-[18px_16px_1fr] items-center gap-2 py-0.5"
                   >
-                    {s.label}
-                  </span>
-              
-                  {/* Tooltip */}
-                  <div
-                    className="
-                      absolute left-5 top-full mt-1
-                      max-w-[260px] rounded-md bg-gray-900 text-gray-100
-                      text-[10px] sm:text-xs p-2 shadow-lg z-[999]
-                      opacity-0 scale-95
-                      group-hover:opacity-100 group-hover:scale-100
-                      group-focus-within:opacity-100 group-focus-within:scale-100
-                      transition-all duration-150
-                      pointer-events-none group-hover:pointer-events-auto
-                    "
-                  >
-                    <p className="font-semibold text-gray-50">{s.timeline.summary}</p>
-                    <p className="text-gray-300 leading-snug mt-0.5">{s.happens}</p>
-                  </div>
+                    <span className="justify-self-end text-[11px] font-semibold text-gray-700">
+                      {id}.
+                    </span>
+
+                    <span className="justify-self-center h-4 w-4 grid place-items-center">
+                      <span className={`w-3 h-3 rounded-full border border-black/40 ${s.ui.chipClass}`} />
+                    </span>
+
+                    <span className="text-xs text-gray-800">{s.label}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+
+          {/* Outcomes */}
+          <div>
+            <p className="text-xs font-medium text-gray-600 mb-1">Outcomes</p>
+            <ul className="space-y-1">
+              {outcomeLabels.map((s) => (
+                <li key={s.label} className="flex items-center gap-2">
+                  <span className={`w-3 h-3 rounded-full ${s.color}`} />
+                  <span className="text-xs text-gray-800">{s.label}</span>
                 </li>
-              );              
-            })}
-          </ul>
-        </div>
+              ))}
+            </ul>
+          </div>
 
-        <div>
-          <p className="text-xs font-medium text-gray-600 mb-1">Outcomes</p>
-          <ul className="space-y-1">
-            {outcomeLabels.map((s) => (
-              <li key={s.label} className="flex items-center gap-2">
-                <span
-                  className={`w-3 h-3 rounded-full ${s.color} flex-shrink-0`}
-                ></span>
-                <span className="text-xs text-gray-800">{s.label}</span>
+          {/* Roles */}
+          <div className="border-t border-gray-200 pt-2 mt-2">
+            <p className="text-xs font-medium text-gray-600 mb-1">Roles</p>
+            <ul className="space-y-1">
+              <li className="text-xs text-gray-800">
+                <span className="font-semibold text-gray-900">Contributor</span> — User who submits a record about another user.
               </li>
-            ))}
-          </ul>
-        </div>
+              <li className="text-xs text-gray-800">
+                <span className="font-semibold text-gray-900">Subject</span> — The individual that the record is about.
+              </li>
+            </ul>
+          </div>
 
-        {/* 🧩 Roles Section */}
-        <div className="border-t border-gray-200 pt-2 mt-3">
-          <p className="text-xs font-medium text-gray-600 mb-1">Roles</p>
-          <ul className="space-y-1">
-            <li className="text-xs text-gray-800">
-              <span className="font-semibold text-gray-900">Contributor</span> — User who submits a record about another user.
-            </li>
-            <li className="text-xs text-gray-800">
-              <span className="font-semibold text-gray-900">Subject</span> — The individual that the record is about.
-            </li>
-          </ul>
-        </div>
-
-        {/* 📝 Submit a Record Icon */}
-        <div className="border-t border-gray-200 pt-2 mt-3 flex items-center gap-2 text-xs text-gray-700">
-          <span className="flex items-center gap-2 font-semibold text-gray-900">
+          {/* Submit a Record */}
+          <div className="border-t border-gray-200 pt-2 mt-2 flex items-center gap-2 text-xs text-gray-700">
             <FileText className="w-3.5 h-3.5 text-blue-600" />
-            Submit a Record
-          </span>
+            <span className="font-semibold text-gray-900">Submit a Record</span>
+          </div>
         </div>
-      </div>
-    )}
-  </div>
-);}
+      )}
+    </div>
+  );
+}
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -279,6 +156,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const inSettings = pathname.startsWith("/dashboard/settings");
   const inSubmit = pathname.startsWith("/dashboard/submit");
   const currentNav = inSettings ? SETTINGS_NAV : MAIN_NAV;
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [query, setQuery] = useState("");
+
 
   useEffect(() => {
     if (menuOpen) setMenuOpen(false);
@@ -308,8 +188,39 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </span>
         </Link>
 
+        {/* --- CENTER: Universal Search (Desktop) --- */}
+        <div className="hidden md:flex flex-1 justify-center px-8">
+          <div className="relative w-full max-w-xl">
+            <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search profiles, cases, hashtags..."
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-full shadow-sm text-sm focus:ring-2 focus:ring-blue-600 focus:border-blue-600 outline-none transition"
+            />
+            {query && (
+              <div className="absolute mt-2 bg-white border border-gray-200 rounded-xl shadow-lg w-full max-h-64 overflow-y-auto text-sm z-50">
+                <div className="p-3 border-b text-gray-500 text-xs uppercase tracking-wide">
+                  Search Results
+                </div>
+                <div className="p-3 hover:bg-gray-50 cursor-pointer">
+                  <span className="font-medium">John Doe</span> — Profile ID #1245
+                </div>
+                <div className="p-3 hover:bg-gray-50 cursor-pointer">
+                  <span className="font-medium">#Barber</span> — Hashtag Record
+                </div>
+                <div className="p-3 hover:bg-gray-50 cursor-pointer">
+                  <span className="font-medium">Case 2025-A24</span> — Subject Dispute
+                </div>
+              </div>
+            )}
+          </div>
+        </div>        
+
         {/* Right-side Controls */}
         <div className="flex items-center gap-2 md:gap-3">
+
           {/* 🧾 Submit a Record Button */}
           <Link
             href="/dashboard/submit"
@@ -352,6 +263,65 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </header>
 
+      {/* 🔍 Universal Search Modal */}
+      <Dialog open={searchOpen} onClose={() => setSearchOpen(false)} className="relative z-50">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" aria-hidden="true" />
+        <div className="fixed inset-0 flex items-start justify-center p-4 sm:p-8">
+          <Dialog.Panel className="w-full max-w-2xl rounded-xl bg-white p-6 shadow-lg mt-20">
+            <Dialog.Title className="text-lg font-semibold text-gray-900 mb-4">
+              Search DNounce
+            </Dialog.Title>
+
+            {/* Input */}
+            <div className="relative">
+              <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search profiles, cases, hashtags..."
+                className="w-full pl-10 pr-4 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-blue-600 focus:border-blue-600 outline-none"
+                autoFocus
+              />
+            </div>
+
+            {/* Placeholder for search results */}
+            <div className="mt-4 max-h-72 overflow-y-auto text-sm text-gray-700">
+              {!query && (
+                <p className="text-gray-500 text-center py-10">
+                  Start typing to search across DNounce…
+                </p>
+              )}
+              {query && (
+                <div className="space-y-2">
+                  <p className="text-gray-500 text-xs uppercase tracking-wide">Recent Matches</p>
+                  {/* These would be dynamically loaded from backend */}
+                  <div className="border rounded-md p-3 hover:bg-gray-50 transition cursor-pointer">
+                    <span className="font-medium">John Doe</span> — Profile ID #1245
+                  </div>
+                  <div className="border rounded-md p-3 hover:bg-gray-50 transition cursor-pointer">
+                    <span className="font-medium">#Barber</span> — Hashtag Record
+                  </div>
+                  <div className="border rounded-md p-3 hover:bg-gray-50 transition cursor-pointer">
+                    <span className="font-medium">Case 2025-A24</span> — Subject Dispute
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Buttons */}
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                onClick={() => setSearchOpen(false)}
+                className="px-4 py-2 text-sm rounded-md border hover:bg-gray-50 transition"
+              >
+                Close
+              </button>
+            </div>
+          </Dialog.Panel>
+        </div>
+      </Dialog>
+
       {/* Mobile Sidebar */}
       {menuOpen && (
         <div
@@ -381,61 +351,47 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </Link>
             );
           })}
-
-          {inSettings && (
-            <div className="mt-auto pt-4 border-t">
-              <Link
-                href="/logout"
-                className="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-red-600 hover:bg-red-50"
-              >
-                <LogOut className="w-4 h-4" />
-                Log Out
-              </Link>
-            </div>
-          )}
         </div>
       )}
 
       {/* Main Section */}
       <div className="flex flex-1">
-        <aside className="hidden md:block w-64 bg-white border-r shadow-sm p-6 space-y-2 h-auto">
-          {currentNav.map((item) => {
-            const active = pathname === item.href;
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition ${
-                  active
-                    ? "bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-sm"
-                    : "text-gray-700 hover:bg-gray-100"
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                {item.name}
-              </Link>
-            );
-          })}
+        <aside className="hidden md:flex flex-col w-64 bg-white border-r shadow-sm p-6 h-auto">
+          {/* Nav Links */}
+          <div className="space-y-2">
+            {currentNav.map((item) => {
+              const active = pathname === item.href;
+              const Icon = item.icon;
 
-          {inSettings && (
-            <div className="mt-auto pt-4 border-t">
-              <Link
-                href="/logout"
-                className="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-red-600 hover:bg-red-50"
-              >
-                <LogOut className="w-4 h-4" />
-                Log Out
-              </Link>
+              const baseClasses =
+                "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition";
+              const activeClasses =
+                "bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-sm";
+              const normalClasses = "text-gray-700 hover:bg-gray-100";
+              const logoutClasses = "text-red-600 hover:bg-red-50";
+
+              const classes = item.special
+                ? `${baseClasses} ${logoutClasses}`
+                : `${baseClasses} ${active ? activeClasses : normalClasses}`;
+
+              return (
+                <Link key={item.name} href={item.href} className={classes}>
+                  <Icon className="w-4 h-4" />
+                  {item.name}
+                </Link>
+              );
+            })}
+          </div>
+
+          {!inSettings && !inSubmit && (
+            <div className="mt-6">
+              <Legend />
             </div>
           )}
         </aside>
 
-
         <main className="flex-1 p-4 sm:p-8 overflow-y-auto relative">
           {children}
-          {/* 🪄 Global Legend */}
-          {!inSettings && !inSubmit && <FloatingLegend />}
         </main>
       </div>
 

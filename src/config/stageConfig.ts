@@ -146,9 +146,9 @@ export const stageConfig: Record<number, StageConfig> = {
   },
 
   4: {
-    label: "Deletion Request (Intake)",
+    label: "Record in Dispute",
     happens:
-      "Subject requests deletion; system locks down for debate setup and notifies contributor.",
+      "Subject disputes record; system locks down for debate setup and notifies contributor.",
     timeline: {
       summary: "Immediate transition when subject disputes",
       start: "onSubjectDispute",
