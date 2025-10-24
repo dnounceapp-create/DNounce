@@ -293,8 +293,8 @@ export default function UserSetupPage() {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
     if (!userId) {
-      setPopup({ type: "error", message: "❌ Not signed in." });
-      setTimeout(() => setPopup({ type: null, message: "" }), 3000);
+      setPopup({ type: "error", message: "❌ Not signed in.", visible: true });
+      setTimeout(() => setPopup({ type: null, message: "", visible: false }), 3000);
       return;
     }
   
