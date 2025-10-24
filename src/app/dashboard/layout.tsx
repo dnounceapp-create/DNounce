@@ -42,8 +42,7 @@ interface NavItem {
   special?: boolean;
 }
 
-// Main dashboard nav
-const MAIN_NAV = [
+const MAIN_NAV: NavItem[] = [
   { name: "My Reputation", href: "/dashboard/reputation", icon: Star },
   { name: "My Profile", href: "/dashboard/profile", icon: User },
   { name: "Records Submitted", href: "/dashboard/records-submitted", icon: Layers },
@@ -53,8 +52,7 @@ const MAIN_NAV = [
   { name: "Following Cases", href: "/dashboard/following", icon: Eye },
 ];
 
-// Settings nav (shown on /dashboard/settings/*)
-const SETTINGS_NAV = [
+const SETTINGS_NAV: NavItem[] = [
   { name: "Account", href: "/dashboard/settings/account", icon: UserIcon },
   { name: "Notifications", href: "/dashboard/settings/notifications", icon: Bell },
   { name: "Language", href: "/dashboard/settings/language", icon: Globe },
@@ -65,6 +63,7 @@ const SETTINGS_NAV = [
   { name: "Terms & Conditions", href: "/dashboard/settings/terms", icon: Info },
   { name: "Log Out", href: "/logout", icon: LogOut, special: true },
 ];
+
 
 // 🪄 Floating legend component
 function Legend() {
