@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { supabase } from "@/lib/supabaseClient";
-import { Loader2, CheckCircle2, ChevronLeft, Pencil, X, MapPin } from "lucide-react";
+import { Loader2, CheckCircle2, ChevronLeft, Pencil, X, MapPin, User, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import NextImage from "next/image";
 import Cropper from "react-easy-crop";
@@ -28,12 +28,17 @@ export default function UserSetupPage() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [showAvatarOptionsModal, setShowAvatarOptionsModal] = useState(false);
   const [showCropModal, setShowCropModal] = useState(false);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
   const [croppedImage, setCroppedImage] = useState<string | null>(null);
-
+  const [popup, setPopup] = useState({
+    type: null as "success" | "error" | "warning" | null,
+    message: "",
+    visible: false,
+  });
 
   const [form, setForm] = useState({
     first_name: "",
@@ -51,7 +56,7 @@ export default function UserSetupPage() {
     const ext = file.name.split(".").pop()?.toLowerCase() || "png";
     const path = `${userId}/avatar.${ext}`; // stable path per user
   
-    // 1) upload (overwrite allowed)
+    // 1️⃣ Upload (overwrite allowed)
     const { error: uploadErr } = await supabase
       .storage
       .from("avatars")
@@ -59,23 +64,33 @@ export default function UserSetupPage() {
   
     if (uploadErr) throw uploadErr;
   
-    // 2) get public URL
+    // 2️⃣ Get public URL
     const { data } = supabase.storage.from("avatars").getPublicUrl(path);
     const publicUrl = data.publicUrl;
   
-    // 3) save to DB
-    const { error: dbErr } = await supabase
+    // 3️⃣ Ensure user_accountdetails row exists
+    await supabase
       .from("user_accountdetails")
-      .update({ avatar_url: publicUrl })
-      .eq("user_id", userId);
+      .upsert({ user_id: userId }, { onConflict: "user_id" });
   
-    // If using the RPC instead, use:
-    // const { error: dbErr } = await supabase.rpc("update_user_accountdetails", { ...otherFields, p_avatar_url: publicUrl });
+    // 4️⃣ Save avatar via RPC (with p_user_id passed in)
+    const { error: dbErr } = await supabase.rpc("update_user_accountdetails", {
+      p_user_id: userId,
+      p_first_name: null,
+      p_last_name: null,
+      p_nickname: null,
+      p_job_title: null,
+      p_organization: null,
+      p_phone: null,
+      p_location: null,
+      p_avatar_url: publicUrl,
+    });
   
     if (dbErr) throw dbErr;
   
     return publicUrl;
   }
+  
   
   // ✅ Fetch location suggestions from /api/location
   useEffect(() => {
@@ -169,7 +184,11 @@ export default function UserSetupPage() {
     try {
       const cleanPhone = form.phone.replace(/\D/g, "");
 
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData?.session?.user?.id;
+
       const { error: rpcError } = await supabase.rpc("update_user_accountdetails", {
+        p_user_id: userId,
         p_first_name: form.first_name.trim(),
         p_last_name: form.last_name.trim(),
         p_nickname: form.nickname.trim() || null,
@@ -177,21 +196,22 @@ export default function UserSetupPage() {
         p_organization: form.organization.trim() || null,
         p_phone: cleanPhone,
         p_location: form.location.trim(),
+        p_avatar_url: avatarUrl || null,
       });
+
 
       if (rpcError) throw rpcError;
 
-      const { data: sessionData } = await supabase.auth.getSession();
-      const userId = sessionData?.session?.user?.id;
-
       if (userId) {
-        const { error: updateError } = await supabase
-          .from("users")
-          .update({ onboarding_complete: true })
-          .eq("id", userId);
-
+        console.log("👤 Current user ID before mark_onboarding_complete:", userId);
+      
+        const { error: updateError } = await supabase.rpc("mark_onboarding_complete", {
+          p_user_id: userId,
+        });
+      
+        console.log("✅ mark_onboarding_complete result:", updateError);
         if (updateError) throw updateError;
-      }
+      }      
 
       setSuccess(true);
       setTimeout(() => router.push("/dashboard/myrecords"), 1200);
@@ -269,40 +289,48 @@ export default function UserSetupPage() {
   const handleCropSave = async () => {
     if (!selectedImage || !croppedAreaPixels) return;
   
-    // 1) Get a circular PNG data URL from the cropper
-    const imageDataUrl = await getCroppedImg(
-      URL.createObjectURL(selectedImage),
-      croppedAreaPixels
-    );
-  
-    // 2) Convert data URL → Blob → File
-    const res = await fetch(imageDataUrl);
-    const blob = await res.blob();
-    const file = new File([blob], "avatar.png", { type: "image/png" });
-  
-    // 3) Upload + save URL to DB
+    // 1️⃣ Get user session
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
     if (!userId) {
-      alert("❌ Not signed in.");
+      setPopup({ type: "error", message: "❌ Not signed in." });
+      setTimeout(() => setPopup({ type: null, message: "" }), 3000);
       return;
     }
   
     try {
+      // 2️⃣ Crop the image
+      const imageDataUrl = await getCroppedImg(
+        URL.createObjectURL(selectedImage),
+        croppedAreaPixels
+      );
+  
+      // 3️⃣ Convert to File
+      const res = await fetch(imageDataUrl);
+      const blob = await res.blob();
+      const file = new File([blob], "avatar.png", { type: "image/png" });
+  
+      // 4️⃣ Upload and save
       const publicUrl = await uploadAvatarAndSaveUrl(file, userId);
   
-      // 4) Update local UI
+      // 5️⃣ Update UI
       setCroppedImage(publicUrl);
       setAvatarUrl(publicUrl);
       setShowCropModal(false);
   
-      alert("✅ Profile picture updated!");
+      setPopup({ type: "success", message: "✅ Profile picture updated!", visible: true });
+      setTimeout(() => setPopup((p) => ({ ...p, visible: false })), 2200);
+      setTimeout(() => setPopup({ type: null, message: "", visible: false }), 2600);
+
     } catch (err: any) {
-      console.error(err);
-      alert("❌ " + (err?.message || "Failed to upload avatar."));
+      console.error("Avatar save error:", err);
+      setPopup({
+        type: "error",
+        message: err?.message || "❌ Failed to upload avatar.",
+      });
+      setTimeout(() => setPopup({ type: null, message: "" }), 3000);
     }
   };
-  
   
   return (
     <div className="min-h-[100dvh] pb-[env(safe-area-inset-bottom)] bg-gray-50 flex flex-col">
@@ -350,42 +378,38 @@ export default function UserSetupPage() {
               <div className="relative group">
                 {avatarUrl ? (
                   <NextImage
-                    src={croppedImage || avatarUrl || "/default-avatar.png"}
+                    src={
+                      avatarUrl
+                        ? avatarUrl.replace("/render/image/", "/object/public/")
+                        : "/default-avatar.png"
+                    }
                     alt="User Avatar"
                     width={120}
                     height={120}
                     className="rounded-full object-cover border border-gray-300 shadow-sm group-hover:scale-105 transition-transform duration-200"
+                    unoptimized
                   />
                 ) : (
                   <div className="relative w-28 h-28 rounded-full overflow-hidden bg-transparent flex items-center justify-center border border-gray-200 shadow-sm">
-                    {/* fallback user glyph */}
-                    <svg className="w-12 h-12 text-gray-400" viewBox="0 0 24 24" fill="none">
-                      <path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Z" stroke="currentColor" strokeWidth="1.5"/>
-                      <path d="M3 22a9 9 0 0 1 18 0" stroke="currentColor" strokeWidth="1.5"/>
-                    </svg>
+                    <User className="w-12 h-12 text-gray-400" />
                   </div>
                 )}
 
-                {/* Pencil – always visible on mobile; hover reveal on sm+ */}
+                {/* ✏️ Pencil Button */}
                 <button
                   onClick={() => {
                     setCrop({ x: 0, y: 0 });
                     setZoom(1);
-                    if (avatarUrl) {
-                      setShowAvatarOptionsModal(true); // show the modal only if avatar exists
-                    } else document.getElementById("avatar-upload-setup")?.click();
+                    if (avatarUrl) setShowAvatarOptionsModal(true);
+                    else document.getElementById("avatar-upload")?.click();
                   }}
-                  className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 bg-white rounded-full p-2 shadow-md
-                            opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-200 hover:scale-110"
-                  aria-label="Edit profile picture"
-                  type="button"
+                  className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 bg-white rounded-full p-2 shadow-md opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-200 hover:scale-110"
                 >
                   <Pencil className="w-4 h-4 text-gray-600" />
                 </button>
 
-                {/* hidden file input */}
                 <input
-                  id="avatar-upload-setup"
+                  id="avatar-upload"
                   type="file"
                   accept="image/*"
                   onChange={handleFileChange}
@@ -523,12 +547,6 @@ export default function UserSetupPage() {
                 Type city name to see neighborhoods, or neighborhood to see full location.
               </p>
             </div>
-
-            {error && (
-              <div className="text-red-600 text-sm bg-red-50 p-2 rounded-md">
-                {error}
-              </div>
-            )}
 
             <button
               type="submit"
@@ -674,6 +692,31 @@ export default function UserSetupPage() {
           )}
 
         </div>
+
+        {popup.type && (
+          <div
+            className={`fixed top-6 left-1/2 -translate-x-1/2 rounded-xl shadow-lg border px-6 py-3 flex items-center gap-3 z-[1000]
+              ${
+                popup.visible
+                  ? "animate-fade-in-down"
+                  : "animate-fade-out-up"
+              }
+              ${
+                popup.type === "success"
+                  ? "bg-white border-green-200 text-green-700"
+                  : popup.type === "error"
+                  ? "bg-white border-red-200 text-red-700"
+                  : "bg-white border-yellow-200 text-yellow-700"
+              }`}
+          >
+            {popup.type === "success" && <CheckCircle2 className="w-5 h-5 text-green-500" />}
+            {popup.type === "error" && <X className="w-5 h-5 text-red-500" />}
+            {popup.type === "warning" && <AlertTriangle className="w-5 h-5 text-yellow-500" />}
+            <span className="font-medium">{popup.message}</span>
+          </div>
+        )}
+
+
       </main>
     </div>
   );

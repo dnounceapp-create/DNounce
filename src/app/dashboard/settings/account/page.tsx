@@ -3,10 +3,26 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ShieldCheck, Mail, X, User, Pencil, MapPin } from "lucide-react";
+import { ShieldCheck, Mail, X, XCircle, User, Pencil, MapPin, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import NextImage from "next/image";
 import Cropper from "react-easy-crop";
+
+interface PopupState {
+  type: "success" | "error" | "warning" | null;
+  message: string;
+  visible: boolean;
+}
+
+function triggerPopup(
+  setPopup: React.Dispatch<React.SetStateAction<PopupState>>,
+  type: "success" | "error" | "warning",
+  message: string
+) {
+  setPopup({ type, message, visible: true });
+  setTimeout(() => setPopup((p) => ({ ...p, visible: false })), 2200);
+  setTimeout(() => setPopup({ type: null, message: "", visible: false }), 2600);
+}
 
 export default function AccountSecurityPage() {
   const router = useRouter();
@@ -14,10 +30,11 @@ export default function AccountSecurityPage() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [email, setEmail] = useState("");
-  const [message, setMessage] = useState<string | null>(null);
-  const [messageType, setMessageType] = useState<"success" | "error" | null>(
-    null
-  );
+  const [popup, setPopup] = useState<PopupState>({
+    type: null,
+    message: "",
+    visible: false,
+  });  
   const [isEditing, setIsEditing] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showChangeEmailModal, setShowChangeEmailModal] = useState(false);
@@ -105,8 +122,7 @@ export default function AccountSecurityPage() {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
     if (!userId) {
-      setMessage?.("❌ Not signed in.");
-      setMessageType?.("error");
+      triggerPopup(setPopup, "error", "❌ Not signed in.");
       return;
     }
   
@@ -114,16 +130,15 @@ export default function AccountSecurityPage() {
       const publicUrl = await uploadAvatarAndSaveUrl(file, userId);
   
       // 4) Update local UI
-      setCroppedImage(publicUrl);
-      setAvatarUrl(publicUrl);
+      setCroppedImage(`${publicUrl}?v=${Date.now()}`);
+      setAvatarUrl(`${publicUrl}?v=${Date.now()}`);
       setShowCropModal(false);
   
       // If you have toast/message state on this page:
-      setMessage?.("✅ Profile picture updated!");
-      setMessageType?.("success");
+      triggerPopup(setPopup, "success", "✅ Profile picture updated!");
+
     } catch (err: any) {
-      setMessage?.("❌ " + (err?.message || "Failed to upload avatar."));
-      setMessageType?.("error");
+      triggerPopup(setPopup, "error", "❌ " + (err?.message || "Failed to upload avatar."));
     }
   };
   
@@ -140,9 +155,12 @@ export default function AccountSecurityPage() {
   
     if (uploadErr) throw uploadErr;
   
-    // 2) get public URL
-    const { data } = supabase.storage.from("avatars").getPublicUrl(path);
-    const publicUrl = data.publicUrl;
+    const { data: publicData } = supabase
+      .storage
+      .from("avatars")
+      .getPublicUrl(path); 
+
+    const publicUrl = publicData?.publicUrl; 
   
     // 3) save to DB
     const { error: dbErr } = await supabase
@@ -205,43 +223,54 @@ export default function AccountSecurityPage() {
   useEffect(() => {
     const loadData = async () => {
       const { data } = await supabase.auth.getSession();
-      if (!data.session) {
+  
+      // ⚠️ Don’t redirect instantly — wait for the session check
+      if (!data?.session) {
+        // Try to recover session silently
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+  
+        if (!user) {
+          router.replace("/loginsignup");
+          return;
+        }
+      }
+  
+      const currentUser = data.session?.user || (await supabase.auth.getUser()).data.user;
+      if (!currentUser) {
         router.replace("/loginsignup");
         return;
       }
-
-      const currentUser = data.session.user;
+  
       setUser(currentUser);
       setEmail(currentUser.email || "");
-
+  
       const { data: accountdetailsData, error } = await supabase
         .from("user_accountdetails")
         .select("*")
         .eq("user_id", currentUser.id)
         .single();
-
+  
       if (error) console.error(error);
-
+  
       if (accountdetailsData) {
-        // ✅ Apply formatted phone for UI display
         if (accountdetailsData.phone) {
           accountdetailsData.phone = formatPhoneNumber(accountdetailsData.phone);
         }
-      
-        // ✅ Update main profile info
         setaccountDetails(accountdetailsData);
-      
-        // ✅ Load avatar if exists
         if (accountdetailsData.avatar_url) {
           setAvatarUrl(accountdetailsData.avatar_url);
           setCroppedImage(accountdetailsData.avatar_url);
         }
       }
+  
       setLoading(false);
     };
-
+  
     loadData();
   }, [router]);
+  
 
   // ✅ Location autocomplete (wired to /api/location)
   useEffect(() => {
@@ -272,17 +301,6 @@ export default function AccountSecurityPage() {
     return () => clearTimeout(id);
   }, [accountdetails.location]);
 
-  // ✅ Hide success messages automatically
-  useEffect(() => {
-    if (message) {
-      const timer = setTimeout(() => {
-        setMessage(null);
-        setMessageType(null);
-      }, 4000);
-      return () => clearTimeout(timer);
-    }
-  }, [message]);
-
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (!(e.target as HTMLElement).closest(".avatar-menu-container")) {
@@ -300,8 +318,7 @@ export default function AccountSecurityPage() {
   // ✅ Allow editing after user verifies email link
   const enableEditing = () => {
     setIsEditing(true);
-    setMessage("✅ Editing enabled — you can now modify your details.");
-    setMessageType("success");
+    triggerPopup(setPopup, "success", "✅ Editing enabled — you can now modify your details.");
   };
 
   // ✅ Save Account Details
@@ -324,18 +341,15 @@ export default function AccountSecurityPage() {
       if (rpcError) throw rpcError;
 
       setIsEditing(false);
-      setMessage("✅ Account Details updated successfully!");
-      setMessageType("success");
+      triggerPopup(setPopup, "success", "✅ Account Details updated successfully!");
     } catch (err: any) {
-      setMessage("❌ " + err.message);
-      setMessageType("error");
+      triggerPopup(setPopup, "error", "❌ " + err.message);
     }
   };
 
   const handleEditAuth = async () => {
     if (!email) {
-      setMessage("❌ No email found for this account.");
-      setMessageType("error");
+      triggerPopup(setPopup, "error", "❌ No email found for this account.");
       return;
     }
   
@@ -349,8 +363,7 @@ export default function AccountSecurityPage() {
       setIsCodeSent(true);
       setShowAuthModal(true);
   
-      setMessage("📧 Verification code sent. Check your email.");
-      setMessageType("success");
+      triggerPopup(setPopup, "success", "📧 Verification code sent. Check your email.");
   
       // Reset resend timer
       setCanResend(false);
@@ -366,8 +379,7 @@ export default function AccountSecurityPage() {
         });
       }, 1000);
     } catch (err: any) {
-      setMessage("❌ " + err.message);
-      setMessageType("error");
+      triggerPopup(setPopup, "error", "❌ " + err.message);
     } finally {
       setVerifying(false);
     }
@@ -390,14 +402,12 @@ export default function AccountSecurityPage() {
       setVerificationCode("");
   
       // ✅ Notify user
-      setMessage("✅ Verified successfully! You can now edit your account details.");
-      setMessageType("success");
+      triggerPopup(setPopup, "success", "✅ Verified successfully! You can now edit your account details.");
   
       // ✅ UNLOCK INPUTS — this is the key part
       setIsEditing(true);
     } catch (err: any) {
-      setMessage("❌ Invalid or expired code.");
-      setMessageType("error");
+      triggerPopup(setPopup, "error", "❌ Invalid or expired code.");
     } finally {
       setVerifying(false);
     }
@@ -410,11 +420,9 @@ export default function AccountSecurityPage() {
       if (error) throw error;
   
       setShowChangeEmailModal(false);
-      setMessage("📧 Verification link sent to your new email. Please verify to complete the change.");
-      setMessageType("success");
+      triggerPopup(setPopup, "success", "📧 Verification link sent to your new email. Please verify to complete the change.");
     } catch (err: any) {
-      setMessage("❌ " + err.message);
-      setMessageType("error");
+      triggerPopup(setPopup, "error", "❌ " + err.message);
     } finally {
       setVerifying(false);
     }
@@ -424,8 +432,7 @@ export default function AccountSecurityPage() {
   const handleResetPassword = async () => {
     try {
       if (!email) {
-        setMessage("❌ Please enter a valid email address.");
-        setMessageType("error");
+        triggerPopup(setPopup, "error", "❌ Please enter a valid email address.");
         return;
       }
   
@@ -435,8 +442,7 @@ export default function AccountSecurityPage() {
       // ✅ show confirmation modal instead of inline message
       setShowResetModal(true);
     } catch (err: any) {
-      setMessage("❌ " + err.message);
-      setMessageType("error");
+      triggerPopup(setPopup, "error", "❌ " + err.message);
     }
   };
 
@@ -456,8 +462,7 @@ export default function AccountSecurityPage() {
       if (error) throw error;
 
       setIsChangeCodeSent(true);
-      setMessage("📧 Code sent to your current email.");
-      setMessageType("success");
+      triggerPopup(setPopup, "success", "📧 Code sent to your current email.");
 
       // resend timer
       setCanResend(false);
@@ -473,8 +478,7 @@ export default function AccountSecurityPage() {
         });
       }, 1000);
     } catch (err: any) {
-      setMessage("❌ " + err.message);
-      setMessageType("error");
+      triggerPopup(setPopup, "error", "❌ " + err.message);
     } finally {
       setVerifying(false);
     }
@@ -494,11 +498,9 @@ export default function AccountSecurityPage() {
       setIsIdentityVerified(true);
       setIsChangeCodeSent(false);
       setVerificationCode("");
-      setMessage("✅ Identity verified. You can now enter your new email.");
-      setMessageType("success");
+      triggerPopup(setPopup, "success", "✅ Identity verified. You can now enter your new email.");
     } catch (err: any) {
-      setMessage("❌ Invalid or expired verification code.");
-      setMessageType("error");
+      triggerPopup(setPopup, "error", "❌ Invalid or expired verification code.");
     } finally {
       setVerifying(false);
     }
@@ -512,11 +514,9 @@ export default function AccountSecurityPage() {
       if (error) throw error;
 
       setIsChangeCodeSent(true);
-      setMessage("📧 Code sent to new email.");
-      setMessageType("success");
+      triggerPopup(setPopup, "success", "📧 Code sent to new email.");
     } catch (err: any) {
-      setMessage("❌ " + err.message);
-      setMessageType("error");
+      triggerPopup(setPopup, "error", "❌ " + err.message);
     } finally {
       setVerifying(false);
     }
@@ -544,12 +544,9 @@ export default function AccountSecurityPage() {
       setIsChangeCodeSent(false);
       setVerificationCode("");
       setChangeEmailCode("");
-
-      setMessage("✅ Your email address has been changed successfully!");
-      setMessageType("success");
+      triggerPopup(setPopup, "success", "✅ Your email address has been changed successfully!");
     } catch (err: any) {
-      setMessage("❌ Invalid or expired code. Please try again.");
-      setMessageType("error");
+      triggerPopup(setPopup, "error", "❌ Invalid or expired code. Please try again.");
     } finally {
       setVerifying(false);
     }
@@ -560,8 +557,7 @@ export default function AccountSecurityPage() {
     setIsPhoneVerified(true);
     setIsPhoneCodeSent(false);
     setPhoneCode("");
-    setMessage("ℹ️ Phone verification is temporarily disabled. Enter your new number.");
-    setMessageType("success");
+    triggerPopup(setPopup, "success", "ℹ️ Phone verification is temporarily disabled. Enter your new number.");
   };
 
   // Step 2: Verify current phone code
@@ -569,8 +565,7 @@ export default function AccountSecurityPage() {
     setIsPhoneVerified(true);
     setIsPhoneCodeSent(false);
     setPhoneCode("");
-    setMessage("ℹ️ Phone verification is temporarily disabled. Enter your new number.");
-    setMessageType("success");
+    triggerPopup(setPopup, "success", "ℹ️ Phone verification is temporarily disabled. Enter your new number.");
   };
 
   // Step 3: Send code to new phone
@@ -578,8 +573,7 @@ export default function AccountSecurityPage() {
     try {
       setVerifying(true);
       if (!newPhone) {
-        setMessage("❌ Please enter a new phone number.");
-        setMessageType("error");
+        triggerPopup(setPopup, "error", "❌ Please enter a new phone number.");
         return;
       }
   
@@ -593,11 +587,9 @@ export default function AccountSecurityPage() {
       setaccountDetails((prev) => ({ ...prev, phone: newPhone }));
       setShowChangePhoneModal(false);
       setNewPhone("");
-      setMessage("✅ Phone number updated (verification disabled).");
-      setMessageType("success");
+      triggerPopup(setPopup, "success", "✅ Phone number updated (verification disabled).");
     } catch (err: any) {
-      setMessage("❌ " + (err?.message || "Failed to update phone."));
-      setMessageType("error");
+      triggerPopup(setPopup, "error", "❌ " + (err?.message || "Failed to update phone."));
     } finally {
       setVerifying(false);
     }
@@ -608,8 +600,7 @@ export default function AccountSecurityPage() {
     try {
       setVerifying(true);
       if (!newPhone) {
-        setMessage("❌ Please enter a new phone number.");
-        setMessageType("error");
+        triggerPopup(setPopup, "error", "❌ Please enter a new phone number.");
         return;
       }
   
@@ -629,11 +620,9 @@ export default function AccountSecurityPage() {
       setaccountDetails((prev) => ({ ...prev, phone: formatted }));
       setShowChangePhoneModal(false);
       setNewPhone("");
-      setMessage("✅ Phone number updated (verification disabled).");
-      setMessageType("success");
+      triggerPopup(setPopup, "success", "✅ Phone number updated (verification disabled).");
     } catch (err: any) {
-      setMessage("❌ " + (err?.message || "Failed to update phone."));
-      setMessageType("error");
+      triggerPopup(setPopup, "error", "❌ " + (err?.message || "Failed to update phone."));
     } finally {
       setVerifying(false);
     }
@@ -647,18 +636,6 @@ export default function AccountSecurityPage() {
           Manage your login credentials, security settings, and account details.
         </p>
 
-        {message && (
-          <div
-            className={`mb-4 px-4 py-3 rounded-lg text-sm font-medium ${
-              messageType === "success"
-                ? "bg-green-100 text-green-800 border border-green-300"
-                : "bg-red-100 text-red-800 border border-red-300"
-            }`}
-          >
-            {message}
-          </div>
-        )}
-
         <div className="bg-white border border-gray-200 shadow-sm rounded-2xl p-6 space-y-8 transition-all">
           
           {/* 🖼️ Avatar Display */}
@@ -666,12 +643,18 @@ export default function AccountSecurityPage() {
             <div className="relative group">
               {avatarUrl ? (
                 <NextImage
-                src={croppedImage || avatarUrl || "/default-avatar.png"}
-                alt="User Avatar"
-                width={120}
-                height={120}
-                className="rounded-full object-cover border border-gray-300 shadow-sm group-hover:scale-105 transition-transform duration-200"
-              />              
+                  src={
+                    avatarUrl
+                      ? avatarUrl.replace("/render/image/", "/object/public/")
+                      : "/default-avatar.png"
+                  }
+                  alt="User Avatar"
+                  width={120}
+                  height={120}
+                  className="rounded-full object-cover border border-gray-300 shadow-sm group-hover:scale-105 transition-transform duration-200"
+                  unoptimized
+                />
+                         
               ) : (
                 <div className="relative w-28 h-28 rounded-full overflow-hidden bg-transparent flex items-center justify-center border border-gray-200 shadow-sm">
                   <User className="w-12 h-12 text-gray-400" />
@@ -1574,6 +1557,26 @@ export default function AccountSecurityPage() {
           </div>
         </div>
       )}
+
+      {popup.type && (
+        <div
+          className={`fixed top-6 left-1/2 -translate-x-1/2 rounded-xl shadow-lg border px-6 py-3 flex items-center gap-3 z-[1000]
+            ${popup.visible ? "animate-fade-in-down" : "animate-fade-out-up"}
+            ${
+              popup.type === "success"
+                ? "bg-white border-green-200 text-green-700"
+                : popup.type === "error"
+                ? "bg-white border-red-200 text-red-700"
+                : "bg-white border-yellow-200 text-yellow-700"
+            }`}
+        >
+          {popup.type === "success" && <CheckCircle2 className="w-5 h-5 text-green-500" />}
+          {popup.type === "error" && <XCircle className="w-5 h-5 text-red-500" />}
+          {popup.type === "warning" && <AlertTriangle className="w-5 h-5 text-yellow-500" />}
+          <span className="font-medium">{popup.message}</span>
+        </div>
+      )}
+
     </div>
   );
 }
