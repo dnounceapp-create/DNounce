@@ -302,11 +302,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             {/* Placeholder for search results */}
             <div className="mt-4 max-h-72 overflow-y-auto text-sm text-gray-700">
-              {!query && (
-                <p className="text-gray-500 text-center py-10">
-                  Start typing to search across DNounce…
-                </p>
-              )}
               {query && (
                 <div className="space-y-2">
                   <p className="text-gray-500 text-xs uppercase tracking-wide">Recent Matches</p>
