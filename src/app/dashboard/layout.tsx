@@ -35,6 +35,13 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
+interface NavItem {
+  name: string;
+  href: string;
+  icon: any;
+  special?: boolean;
+}
+
 // Main dashboard nav
 const MAIN_NAV = [
   { name: "My Reputation", href: "/dashboard/reputation", icon: Star },
