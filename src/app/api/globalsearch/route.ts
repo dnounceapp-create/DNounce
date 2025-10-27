@@ -4,69 +4,54 @@ import { NextResponse } from "next/server";
 export async function GET(req: Request) {
   const supabase = await createClient();
   const { searchParams } = new URL(req.url);
-  const query = searchParams.get("q")?.trim() || "";
-  const userLocation = searchParams.get("location")?.trim() || "";
-
-  if (query.length < 2) {
-    return NextResponse.json({ results: [] });
-  }
+  const query = searchParams.get("q") || "";
+  const category = searchParams.get("category") || "all";
+  const location = searchParams.get("location") || "";
 
   const twoWeeksAgo = new Date();
   twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
 
-  const isHashtag = query.startsWith("#");
-  const baseQuery = query.replace("#", "").trim();
+  // Helper: run search for each type
+  const runSearch = async (table: string, field: string) => {
+    let q = supabase.from(table).select("*").ilike(field, `%${query}%`);
+    if (table === "records") q = q.gte("created_at", twoWeeksAgo.toISOString());
+    if (location) q = q.ilike("location", `%${location}%`);
+    return q.limit(5);
+  };
 
-  // 🟦 If searching hashtags only
-  if (isHashtag) {
-    const { data, error } = await supabase
-      .from("hashtags")
-      .select("id, tag, usage_count, updated_at")
-      .ilike("tag", `%${baseQuery}%`)
-      .gte("updated_at", twoWeeksAgo.toISOString())
-      .order("usage_count", { ascending: false })
-      .limit(10);
+  const searches: Record<string, any> = {
+    profile: () => runSearch("profiles", "name"),
+    organization: () => runSearch("profiles", "organization"),
+    record: () => runSearch("records", "title"),
+    hashtag: () =>
+      supabase
+        .from("hashtags")
+        .select("id, tag, usage_count, updated_at")
+        .ilike("tag", `%${query}%`)
+        .gte("updated_at", twoWeeksAgo.toISOString())
+        .order("usage_count", { ascending: false })
+        .limit(10),
+  };
 
-    if (error) console.error(error);
-    return NextResponse.json({
-      results: data?.map((h) => ({ type: "hashtag", ...h })) || [],
-    });
+  let results: any[] = [];
+
+  if (category === "all") {
+    const [profiles, organizations, records, hashtags] = await Promise.all([
+      searches.profile(),
+      searches.organization(),
+      searches.record(),
+      searches.hashtag(),
+    ]);
+    results = [
+      ...(profiles.data?.map((x: any) => ({ type: "profile", ...x })) || []),
+      ...(organizations.data?.map((x: any) => ({ type: "organization", ...x })) || []),
+      ...(records.data?.map((x: any) => ({ type: "record", ...x })) || []),
+      ...(hashtags.data?.map((x: any) => ({ type: "hashtag", ...x })) || []),
+    ];    
+  } else {
+    const res = await searches[category]();
+    results = res.data?.map((x: any) => ({ type: category, ...x })) || [];
   }
-
-  // 🧠 Regular search: match only if query is in name/title
-  const profileQuery = supabase
-    .from("profiles")
-    .select("id, name, alias, organization, location")
-    .ilike("name", `%${baseQuery}%`)
-    .limit(5);
-
-  const recordQuery = supabase
-    .from("records")
-    .select("id, title, status, created_at, location")
-    .ilike("title", `%${baseQuery}%`)
-    .gte("created_at", twoWeeksAgo.toISOString())
-    .limit(5);
-
-  if (userLocation) {
-    profileQuery.ilike("location", `%${userLocation}%`);
-    recordQuery.ilike("location", `%${userLocation}%`);
-  }
-
-  const [profiles, records] = await Promise.all([
-    profileQuery,
-    recordQuery,
-  ]);
-
-  // ✅ Combine results and make sure all contain the search text
-  const results = [
-    ...(profiles.data?.filter((p) =>
-      p.name.toLowerCase().includes(baseQuery.toLowerCase())
-    ).map((p) => ({ type: "profile", ...p })) || []),
-
-    ...(records.data?.filter((r) =>
-      r.title.toLowerCase().includes(baseQuery.toLowerCase())
-    ).map((r) => ({ type: "record", ...r })) || []),
-  ];
 
   return NextResponse.json({ results });
 }

@@ -163,8 +163,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const currentNav = inSettings ? SETTINGS_NAV : MAIN_NAV;
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [category, setCategory] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("searchCategory") || "all";
+    }
+    return "all";
+  });  
   const [results, setResults] = useState<any[]>([]);
   const [userLocation, setUserLocation] = useState<string>("");
+  
+  // Save selected category persistently
+  useEffect(() => {
+    localStorage.setItem("searchCategory", category);
+  }, [category]);
 
   useEffect(() => {
     if ("geolocation" in navigator) {
@@ -182,7 +193,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             data.address.village ||
             data.address.state ||
             "";
-          setUserLocation(city);
+          setUserLocation(city);          
         },
         (err) => console.warn("Geolocation error:", err),
         { enableHighAccuracy: true, timeout: 10000 }
@@ -196,11 +207,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         setResults([]);
         return;
       }
-  
+    
       try {
         const res = await fetch(
-          `/api/search?q=${encodeURIComponent(query)}&location=${encodeURIComponent(userLocation || "")}`
-        );        
+          `/api/search?q=${encodeURIComponent(query)}&category=${encodeURIComponent(category)}&location=${encodeURIComponent(userLocation || "")}`
+        );
         const data = await res.json();
         setResults(data.results || []);
       } catch (err) {
@@ -210,7 +221,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   
     const delay = setTimeout(fetchResults, 300); // debounce typing
     return () => clearTimeout(delay);
-  }, [query]);  
+  }, [query, category, userLocation]); 
 
   useEffect(() => {
     if (menuOpen) setMenuOpen(false);
@@ -242,79 +253,64 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* --- CENTER: Universal Search (Desktop) --- */}
         <div className="hidden md:flex flex-1 justify-center px-8">
-          <div className="relative w-full max-w-xl">
-            <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search profiles, records, hashtags..."
-              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-full shadow-sm text-sm focus:ring-2 focus:ring-blue-600 focus:border-blue-600 outline-none transition"
-            />
-            {results.length > 0 && (
-              <div className="absolute mt-2 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-80 overflow-y-auto z-50">
-                {["profile", "record", "hashtag"].map((groupType) => {
-                  const groupItems = results.filter((r) => r.type === groupType);
-                  if (groupItems.length === 0) return null;
+          <div className="relative w-full max-w-xl flex items-center gap-0">
+            {/* Category Dropdown */}
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="h-11 px-3 text-sm border border-gray-300 rounded-l-full bg-gray-50 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            >
+              <option value="all">All</option>
+              <option value="profile">Subjects</option>
+              <option value="organization">Companies</option>
+              <option value="record">Records</option>
+              <option value="hashtag">Hashtags</option>
+            </select>
 
-                  const label =
-                    groupType === "profile"
-                      ? "Profiles"
-                      : groupType === "record"
-                      ? "Records"
-                      : "Hashtags";
+            {/* Search Input */}
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={`Search ${
+                  category === "all" ? "everything" : category + "s"
+                }...`}
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-r-full shadow-sm text-sm focus:ring-2 focus:ring-blue-600 focus:border-blue-600 outline-none transition"
+              />
 
-                  return (
-                    <div key={groupType} className="border-b border-gray-100 last:border-0">
-                      {/* Section Label */}
-                      <div className="px-4 py-2 text-xs font-semibold text-gray-500 bg-gray-50">
-                        {label}
+              {results.length > 0 && (
+                <div className="absolute mt-2 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-80 overflow-y-auto z-50">
+                  {results.map((item) => (
+                    <div
+                      key={`${item.type}-${item.id}`}
+                      className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer"
+                    >
+                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100">
+                        {item.type === "profile" && <User className="w-4 h-4 text-gray-500" />}
+                        {item.type === "record" && <FileText className="w-4 h-4 text-gray-500" />}
+                        {item.type === "hashtag" && <Hash className="w-4 h-4 text-gray-500" />}
+                        {item.type === "organization" && <Layers className="w-4 h-4 text-gray-500" />}
                       </div>
-
-                      <ul className="divide-y divide-gray-100">
-                        {groupItems.map((item) => (
-                          <li
-                            key={`${item.type}-${item.id}`}
-                            className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer"
-                          >
-                            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100">
-                              {item.type === "profile" && <User className="w-4 h-4 text-gray-500" />}
-                              {item.type === "record" && <FileText className="w-4 h-4 text-gray-500" />}
-                              {item.type === "hashtag" && <Hash className="w-4 h-4 text-gray-500" />}
-                            </div>
-                            <div>
-                              {item.type === "profile" && (
-                                <>
-                                  <p className="text-sm font-medium text-gray-900">{item.name}</p>
-                                  <p className="text-xs text-gray-500">
-                                    {item.organization} • {item.location}
-                                  </p>
-                                </>
-                              )}
-                              {item.type === "record" && (
-                                <>
-                                  <p className="text-sm font-medium text-gray-900">{item.title}</p>
-                                  <p className="text-xs text-gray-500">{item.status}</p>
-                                </>
-                              )}
-                              {item.type === "hashtag" && (
-                                <>
-                                  <p className="text-sm font-medium text-gray-900">#{item.tag}</p>
-                                  <p className="text-xs text-gray-500">{item.usage_count} uses</p>
-                                </>
-                              )}
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">
+                          {item.type === "hashtag"
+                            ? `#${item.tag}`
+                            : item.name || item.title || item.organization}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {item.location || item.status || `${item.usage_count || 0} uses`}
+                        </p>
+                      </div>
                     </div>
-                  );
-                })}
-              </div>
-            )}
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-        </div>        
-
+        </div>
+       
         {/* Right-side Controls */}
         <div className="flex items-center gap-2 md:gap-3">
 
@@ -378,55 +374,141 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               Search DNounce
             </Dialog.Title>
 
-            {/* Input */}
-            <div className="relative">
-              <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-              <input
-                type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search profiles, records, hashtags..."
-                className="w-full pl-10 pr-4 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-blue-600 focus:border-blue-600 outline-none"
-                autoFocus
-              />
-            </div>
+            {/* --- Mobile Search Controls --- */}
+            <div className="space-y-3">
 
-            {/* Placeholder for search results */}
-            <div className="mt-4 max-h-72 overflow-y-auto text-sm text-gray-700">
-              {query && (
-                <div className="absolute mt-2 w-full bg-white border border-gray-200 rounded-xl shadow-md z-50">
-                  <ul className="max-h-72 overflow-y-auto divide-y divide-gray-100">
-                    <li className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer">
-                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100">
-                        <User className="w-4 h-4 text-gray-500" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">John Example (Johnny)</p>
-                        <p className="text-xs text-gray-500">AutoFix Garage • San Francisco, CA</p>
-                      </div>
-                    </li>
-                    <li className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer">
-                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100">
-                        <Hash className="w-4 h-4 text-gray-500" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">#Barber</p>
-                        <p className="text-xs text-gray-500">Hashtag Record</p>
-                      </div>
-                    </li>
-                    <li className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer">
-                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100">
-                        <FileText className="w-4 h-4 text-gray-500" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">Case 2025-A24</p>
-                        <p className="text-xs text-gray-500">Subject Dispute</p>
-                      </div>
-                    </li>
-                  </ul>
-                </div>
+            {/* Category chips */}
+              <div className="flex gap-2 overflow-x-auto no-scrollbar">
+                {[
+                  { v: "all", label: "All" },
+                  { v: "profile", label: "Subjects" },
+                  { v: "organization", label: "Companies" },
+                  { v: "record", label: "Records" },
+                  { v: "hashtag", label: "Hashtags" },
+                ].map((opt) => {
+                  const active = category === opt.v;
+                  return (
+                    <button
+                      key={opt.v}
+                      onClick={() => setCategory(opt.v)}
+                      className={`px-3 py-2 rounded-full text-sm border transition ${
+                        active
+                          ? "bg-blue-600 text-white border-blue-600"
+                          : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                      }`}
+                      aria-pressed={active}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Search input */}
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                <input
+                  type="text"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder={`Search ${category === "all" ? "everything" : category + "s"}...`}
+                  className="w-full pl-10 pr-4 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-blue-600 focus:border-blue-600 outline-none"
+                  autoFocus
+                />
+              </div>
+              </div>
+
+              {/* --- Mobile Results --- */}
+              <div className="mt-4 max-h-80 overflow-y-auto text-sm text-gray-700 border border-gray-200 rounded-xl">
+              {query.trim().length === 0 ? (
+                <p className="text-center text-gray-400 py-6 text-sm">Start typing to search…</p>
+              ) : results.length === 0 ? (
+                <p className="text-center text-gray-500 py-6">No results found.</p>
+              ) : (
+                <>
+                  {["profile", "organization", "record", "hashtag"]
+                    .filter((t) => category === "all" || category === t)
+                    .map((groupType) => {
+                      const groupItems = results.filter((r) => r.type === groupType);
+                      if (groupItems.length === 0) return null;
+
+                      const label =
+                        groupType === "profile"
+                          ? "Subjects"
+                          : groupType === "organization"
+                          ? "Companies"
+                          : groupType === "record"
+                          ? "Records"
+                          : "Hashtags";
+
+                      return (
+                        <div key={groupType} className="border-b last:border-b-0 border-gray-200">
+                          {/* Section label */}
+                          <div className="px-4 py-2 text-xs font-semibold text-gray-500 bg-gray-50 rounded-t-xl">
+                            {label}
+                          </div>
+
+                          <ul className="divide-y divide-gray-100">
+                            {groupItems.map((item: any) => (
+                              <li
+                                key={`${item.type}-${item.id}`}
+                                className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer"
+                              >
+                                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100">
+                                  {item.type === "profile" && <User className="w-4 h-4 text-gray-500" />}
+                                  {item.type === "record" && <FileText className="w-4 h-4 text-gray-500" />}
+                                  {item.type === "hashtag" && <Hash className="w-4 h-4 text-gray-500" />}
+                                  {item.type === "organization" && <Layers className="w-4 h-4 text-gray-500" />}
+                                </div>
+                                <div className="min-w-0">
+                                  {item.type === "profile" && (
+                                    <>
+                                      <p className="text-sm font-medium text-gray-900 truncate">
+                                        {item.name}
+                                      </p>
+                                      <p className="text-xs text-gray-500 truncate">
+                                        {item.organization} • {item.location}
+                                      </p>
+                                    </>
+                                  )}
+
+                                  {item.type === "organization" && (
+                                    <>
+                                      <p className="text-sm font-medium text-gray-900 truncate">
+                                        {item.organization}
+                                      </p>
+                                      <p className="text-xs text-gray-500 truncate">{item.location}</p>
+                                    </>
+                                  )}
+
+                                  {item.type === "record" && (
+                                    <>
+                                      <p className="text-sm font-medium text-gray-900 truncate">
+                                        {item.title}
+                                      </p>
+                                      <p className="text-xs text-gray-500 truncate">{item.status}</p>
+                                    </>
+                                  )}
+
+                                  {item.type === "hashtag" && (
+                                    <>
+                                      <p className="text-sm font-medium text-gray-900 truncate">
+                                        #{item.tag}
+                                      </p>
+                                      <p className="text-xs text-gray-500 truncate">
+                                        {item.usage_count || 0} uses
+                                      </p>
+                                    </>
+                                  )}
+                                </div>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      );
+                    })}
+                </>
               )}
-
             </div>
 
             {/* Buttons */}

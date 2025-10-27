@@ -53,3 +53,12 @@
 .animate-fade-out-up {
   animation: fade-out-up 0.3s ease-in forwards;
 }
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
