@@ -3,10 +3,10 @@ import { cookies } from "next/headers";
 
 /**
  * Creates a secure Supabase client for server-side requests.
- * Automatically attaches Next.js cookies for session handling.
+ * Compatible with Next.js 15 (cookies() is async).
  */
-export function createClient() {
-  const cookieStore = cookies();
+export async function createClient() {
+  const cookieStore = await cookies(); // ✅ cookies() returns a Promise now
 
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
