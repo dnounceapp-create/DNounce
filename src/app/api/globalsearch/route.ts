@@ -4,10 +4,12 @@ import { NextResponse } from "next/server";
 export async function GET(req: Request) {
   const supabase = await createClient();
   const { searchParams } = new URL(req.url);
-  const query = searchParams.get("q") || "";
-  const userLocation = searchParams.get("location") || "";
+  const query = searchParams.get("q")?.trim() || "";
+  const userLocation = searchParams.get("location")?.trim() || "";
 
-  if (query.trim().length < 2) return NextResponse.json({ results: [] });
+  if (query.length < 2) {
+    return NextResponse.json({ results: [] });
+  }
 
   const twoWeeksAgo = new Date();
   twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
@@ -15,7 +17,7 @@ export async function GET(req: Request) {
   const isHashtag = query.startsWith("#");
   const baseQuery = query.replace("#", "").trim();
 
-  // 🧠 If searching hashtags, skip location filters
+  // 🟦 If searching hashtags only
   if (isHashtag) {
     const { data, error } = await supabase
       .from("hashtags")
@@ -31,7 +33,7 @@ export async function GET(req: Request) {
     });
   }
 
-  // 🌍 For profiles and records — apply location filters
+  // 🧠 Regular search: match only if query is in name/title
   const profileQuery = supabase
     .from("profiles")
     .select("id, name, alias, organization, location")
@@ -55,9 +57,15 @@ export async function GET(req: Request) {
     recordQuery,
   ]);
 
+  // ✅ Combine results and make sure all contain the search text
   const results = [
-    ...(profiles.data?.map((p) => ({ type: "profile", ...p })) || []),
-    ...(records.data?.map((r) => ({ type: "record", ...r })) || []),
+    ...(profiles.data?.filter((p) =>
+      p.name.toLowerCase().includes(baseQuery.toLowerCase())
+    ).map((p) => ({ type: "profile", ...p })) || []),
+
+    ...(records.data?.filter((r) =>
+      r.title.toLowerCase().includes(baseQuery.toLowerCase())
+    ).map((r) => ({ type: "record", ...r })) || []),
   ];
 
   return NextResponse.json({ results });
