@@ -171,6 +171,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   });  
   const [results, setResults] = useState<any[]>([]);
   const [userLocation, setUserLocation] = useState<string>("");
+  const [selectedProfileId, setSelectedProfileId] = useState<string>("");
+
   
   // Save selected category persistently
   useEffect(() => {
@@ -184,8 +186,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           const { latitude, longitude } = pos.coords;
           // Reverse geocode to get a readable city/state
           const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
-          );
+            `/api/globalsearch?q=${encodeURIComponent(query)}&category=${encodeURIComponent(category)}&location=${encodeURIComponent(userLocation || "")}`
+          );          
           const data = await res.json();
           const city =
             data.address.city ||
@@ -210,7 +212,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     
       try {
         const res = await fetch(
-          `/api/search?q=${encodeURIComponent(query)}&category=${encodeURIComponent(category)}&location=${encodeURIComponent(userLocation || "")}`
+          `/api/search?${new URLSearchParams({
+          q: query,
+          category: category || "",
+          profile_id: selectedProfileId || "",
+          location: userLocation || ""
+        })}`
         );
         const data = await res.json();
         setResults(data.results || []);
@@ -262,7 +269,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             >
               <option value="all">All</option>
               <option value="profile">Subjects</option>
-              <option value="organization">Companies</option>
+              <option value="category">Category</option>
+              <option value="organization">Company / Organization</option>
               <option value="record">Records</option>
               <option value="hashtag">Hashtags</option>
             </select>
@@ -280,32 +288,102 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-r-full shadow-sm text-sm focus:ring-2 focus:ring-blue-600 focus:border-blue-600 outline-none transition"
               />
 
-              {results.length > 0 && (
-                <div className="absolute mt-2 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-80 overflow-y-auto z-50">
-                  {results.map((item) => (
-                    <div
-                      key={`${item.type}-${item.id}`}
-                      className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer"
-                    >
-                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100">
-                        {item.type === "profile" && <User className="w-4 h-4 text-gray-500" />}
-                        {item.type === "record" && <FileText className="w-4 h-4 text-gray-500" />}
-                        {item.type === "hashtag" && <Hash className="w-4 h-4 text-gray-500" />}
-                        {item.type === "organization" && <Layers className="w-4 h-4 text-gray-500" />}
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">
-                          {item.type === "hashtag"
-                            ? `#${item.tag}`
-                            : item.name || item.title || item.organization}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {item.location || item.status || `${item.usage_count || 0} uses`}
-                        </p>
-                      </div>
+              {/* 🧭 Search Results */}
+              {results.length > 0 ? (
+                <div className="space-y-6 mt-4">
+                  {/* Subjects */}
+                  {results.some(r => r.type === "profile") && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">Subjects</h3>
+                      <ul className="space-y-2">
+                        {results
+                          .filter(r => r.type === "profile")
+                          .map(profile => (
+                            <Link
+                              key={`profile-${profile.id}`}
+                              href={`/dashboard/profile/${profile.id}`}
+                              className="block p-3 rounded-lg hover:bg-gray-50 transition"
+                            >
+                              <p className="font-medium text-gray-900">{profile.name || "Unnamed Subject"}</p>
+                              {profile.nickname && (
+                                <p className="text-xs text-gray-500">Nickname: {profile.nickname}</p>
+                              )}
+                            </Link>
+                          ))}
+                      </ul>
                     </div>
-                  ))}
+                  )}
+
+                  {/* Companies / Organizations */}
+                  {results.some(r => r.type === "organization") && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">Companies / Organizations</h3>
+                      <ul className="space-y-2">
+                        {results
+                          .filter(r => r.type === "organization")
+                          .map(org => (
+                            <Link
+                              key={`org-${org.id}`}
+                              href={`/dashboard/organization/${org.id}`}
+                              className="block p-3 rounded-lg hover:bg-gray-50 transition"
+                            >
+                              <p className="font-medium text-gray-900">{org.company || org.organization}</p>
+                              {org.category && (
+                                <p className="text-xs text-gray-500">Category: {org.category}</p>
+                              )}
+                            </Link>
+                          ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Records */}
+                  {results.some(r => r.type === "record") && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">Records</h3>
+                      <ul className="space-y-2">
+                        {results
+                          .filter(r => r.type === "record")
+                          .map(record => (
+                            <Link
+                              key={`record-${record.id}`}
+                              href={`/dashboard/records/${record.id}`}
+                              className="block p-3 rounded-lg hover:bg-gray-50 transition"
+                            >
+                              <p className="font-medium text-gray-900">{record.title}</p>
+                              <p className="text-xs text-gray-500">#{record.record_id}</p>
+                            </Link>
+                          ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Hashtags */}
+                  {results.some(r => r.type === "hashtag") && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">Hashtags</h3>
+                      <ul className="flex flex-wrap gap-2">
+                        {results
+                          .filter(r => r.type === "hashtag")
+                          .map(tag => (
+                            <Link
+                              key={`tag-${tag.id}`}
+                              href={`/dashboard/hashtags/${tag.tag}`}
+                              className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm hover:bg-gray-200"
+                            >
+                              #{tag.tag}
+                            </Link>
+                          ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
+              ) : (
+                query && (
+                  <p className="text-sm text-gray-500 mt-4 text-center">
+                    No results found for “{query}”.
+                  </p>
+                )
               )}
             </div>
           </div>
@@ -452,44 +530,64 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                             {groupItems.map((item: any) => (
                               <li
                                 key={`${item.type}-${item.id}`}
-                                className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer"
+                                onClick={() => {
+                                  setSearchOpen(false);
+                              
+                                  if (item.type === "profile") {
+                                    window.location.href = `/dashboard/profile/${item.id}`;
+                                  } else if (item.type === "organization") {
+                                    window.location.href = `/dashboard/organization/${item.id}`;
+                                  } else if (item.type === "record") {
+                                    window.location.href = `/dashboard/record/${item.id}`;
+                                  } else if (item.type === "hashtag") {
+                                    window.location.href = `/dashboard/search?q=%23${item.tag}`;
+                                  } else if (item.type === "category") {
+                                    window.location.href = `/dashboard/search?category=${encodeURIComponent(item.category)}`;
+                                  }
+                                }}
+                                className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer transition"
                               >
                                 <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100">
                                   {item.type === "profile" && <User className="w-4 h-4 text-gray-500" />}
                                   {item.type === "record" && <FileText className="w-4 h-4 text-gray-500" />}
                                   {item.type === "hashtag" && <Hash className="w-4 h-4 text-gray-500" />}
                                   {item.type === "organization" && <Layers className="w-4 h-4 text-gray-500" />}
+                                  {item.type === "category" && <Star className="w-4 h-4 text-gray-500" />}
                                 </div>
+                              
                                 <div className="min-w-0">
                                   {item.type === "profile" && (
                                     <>
-                                      <p className="text-sm font-medium text-gray-900 truncate">
-                                        {item.name}
-                                      </p>
+                                      <p className="text-sm font-medium text-gray-900 truncate">{item.name}</p>
                                       <p className="text-xs text-gray-500 truncate">
-                                        {item.organization} • {item.location}
+                                        {item.nickname ? `@${item.nickname}` : ""}
+                                        {item.organization ? ` • ${item.organization}` : ""}
                                       </p>
                                     </>
                                   )}
-
+                              
                                   {item.type === "organization" && (
                                     <>
                                       <p className="text-sm font-medium text-gray-900 truncate">
-                                        {item.organization}
+                                        {item.organization || item.company}
                                       </p>
-                                      <p className="text-xs text-gray-500 truncate">{item.location}</p>
+                                      {item.category && (
+                                        <p className="text-xs text-gray-500 truncate">{item.category}</p>
+                                      )}
                                     </>
                                   )}
-
+                              
                                   {item.type === "record" && (
                                     <>
                                       <p className="text-sm font-medium text-gray-900 truncate">
                                         {item.title}
                                       </p>
-                                      <p className="text-xs text-gray-500 truncate">{item.status}</p>
+                                      <p className="text-xs text-gray-500 truncate">
+                                        #{item.record_id || item.id}
+                                      </p>
                                     </>
                                   )}
-
+                              
                                   {item.type === "hashtag" && (
                                     <>
                                       <p className="text-sm font-medium text-gray-900 truncate">
@@ -500,8 +598,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                       </p>
                                     </>
                                   )}
+                              
+                                  {item.type === "category" && (
+                                    <>
+                                      <p className="text-sm font-medium text-gray-900 truncate">
+                                        {item.category}
+                                      </p>
+                                      <p className="text-xs text-gray-500 truncate text-blue-600">
+                                        Browse related topics
+                                      </p>
+                                    </>
+                                  )}
                                 </div>
-                              </li>
+                              </li>                            
                             ))}
                           </ul>
                         </div>
