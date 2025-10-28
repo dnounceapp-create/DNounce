@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
+// 🚀 Unified Intelligent Global Search Endpoint
 export async function GET(req: Request) {
-  const supabase = await createClient(); // ✅ FIXED: Added await
+  const supabase = createClient();
   const { searchParams } = new URL(req.url);
 
   const query = (searchParams.get("q") || "").trim();
@@ -11,18 +12,16 @@ export async function GET(req: Request) {
 
   if (!query) return NextResponse.json({ results: [] });
 
-  // Freshness window — last 14 days
+  // Freshness: last 14 days for records
   const twoWeeksAgo = new Date();
   twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
 
-  const results: any[] = [];
-
-  // Helper: clean query and detect intent
+  // Detect query type
   const isHashtag = query.startsWith("#");
-  const isId = /^[A-Za-z0-9_-]{6,}$/.test(query);
-  const baseQuery = query.replace("#", "").trim();
+  const isId = /^[A-Za-z0-9_-]{5,}$/.test(query);
+  const baseQuery = query.replace(/^#/, "").trim();
 
-  // Helper: run queries safely
+  // Utility: safely run supabase queries
   const safeQuery = async (table: string, builder: (q: any) => any) => {
     try {
       let q = supabase.from(table).select("*");
@@ -36,12 +35,17 @@ export async function GET(req: Request) {
     }
   };
 
-  // 🧩 Build sub-queries
+  // 🧠 Subqueries for each data type
   const profileQuery = () =>
     safeQuery("profiles", (q) =>
       q.or(
         `name.ilike.%${baseQuery}%,nickname.ilike.%${baseQuery}%,subject_id.ilike.%${baseQuery}%`
       )
+    );
+
+  const categoryQuery = () =>
+    safeQuery("categories", (q) =>
+      q.ilike("name", `%${baseQuery}%`)
     );
 
   const orgQuery = () =>
@@ -60,78 +64,78 @@ export async function GET(req: Request) {
     );
 
   const hashtagQuery = () =>
-    safeQuery("hashtags", (q) => q.ilike("tag", `%${baseQuery}%`));
+    safeQuery("hashtags", (q) =>
+      q.ilike("tag", `%${baseQuery}%`)
+    );
 
-  const categoryQuery = () =>
-    safeQuery("categories", (q) => q.ilike("name", `%${baseQuery}%`));
-
-  // 🧠 Query logic
+  // 🧩 Determine which to run
+  let results: any[] = [];
   if (isHashtag) {
-    const hashtags = await hashtagQuery();
+    results = await hashtagQuery();
     return NextResponse.json({
-      results: hashtags.map((x) => ({ type: "hashtag", ...x })),
+      results: results.map((x) => ({ type: "hashtag", ...x })),
     });
   }
 
-  let allResults: any[] = [];
-
-  if (category === "profile") {
-    allResults = await profileQuery();
-  } else if (category === "organization") {
-    allResults = await orgQuery();
-  } else if (category === "record") {
-    allResults = await recordQuery();
-  } else if (category === "hashtag") {
-    allResults = await hashtagQuery();
-  } else if (category === "category") {
-    allResults = await categoryQuery();
-  } else {
-    // 🧩 “All” mode — grouped results
-    const [profiles, orgs, records, hashtags] = await Promise.all([
+  if (category === "profile") results = await profileQuery();
+  else if (category === "category") results = await categoryQuery();
+  else if (category === "organization") results = await orgQuery();
+  else if (category === "record") results = await recordQuery();
+  else if (category === "hashtag") results = await hashtagQuery();
+  else {
+    // “All” → gather everything
+    const [profiles, categories, orgs, records, hashtags] = await Promise.all([
       profileQuery(),
+      categoryQuery(),
       orgQuery(),
       recordQuery(),
       hashtagQuery(),
     ]);
 
-    allResults = [
-      ...profiles.slice(0, 3).map((x) => ({ type: "profile", ...x })),
-      ...orgs.slice(0, 3).map((x) => ({ type: "organization", ...x })),
-      ...records.slice(0, 3).map((x) => ({ type: "record", ...x })),
-      ...hashtags.slice(0, 3).map((x) => ({ type: "hashtag", ...x })),
+    results = [
+      ...profiles.map((x) => ({ type: "profile", ...x })),
+      ...categories.map((x) => ({ type: "category", ...x })),
+      ...orgs.map((x) => ({ type: "organization", ...x })),
+      ...records.map((x) => ({ type: "record", ...x })),
+      ...hashtags.map((x) => ({ type: "hashtag", ...x })),
     ];
   }
 
   // 🌍 Optional location filter
   if (location) {
-    allResults = allResults.filter((r) =>
+    results = results.filter((r) =>
       r.location?.toLowerCase().includes(location.toLowerCase())
     );
   }
 
-  // 🧠 Fuzzy rank boost — prioritize more relevant ones
-  const scoredResults = allResults
+  // 🧮 Scoring & ranking
+  const scored = results
     .map((r) => ({
       ...r,
       _score: computeScore(r, baseQuery),
     }))
     .sort((a, b) => b._score - a._score);
 
-  return NextResponse.json({ results: scoredResults });
+  return NextResponse.json({ results: scored });
 }
 
-// 🧮 Mini fuzzy scoring engine
+// 🎯 Simple fuzzy scoring
 function computeScore(item: any, query: string) {
   const str = JSON.stringify(item).toLowerCase();
   const q = query.toLowerCase();
   let score = 0;
+
   if (str.includes(q)) score += 10;
   if (str.startsWith(q)) score += 5;
   if (item.name?.toLowerCase().includes(q)) score += 5;
   if (item.nickname?.toLowerCase().includes(q)) score += 4;
-  if (item.company?.toLowerCase().includes(q)) score += 3;
+  if (item.subject_id?.toLowerCase().includes(q)) score += 4;
   if (item.organization?.toLowerCase().includes(q)) score += 3;
+  if (item.company?.toLowerCase().includes(q)) score += 3;
+  if (item.category?.toLowerCase().includes(q)) score += 2;
+  if (item.record_id?.toLowerCase().includes(q)) score += 2;
   if (item.tag?.toLowerCase().includes(q)) score += 2;
   if (item.title?.toLowerCase().includes(q)) score += 2;
+
   return score;
 }

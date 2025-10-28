@@ -212,7 +212,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     
       try {
         const res = await fetch(
-          `/api/search?${new URLSearchParams({
+          `/api/globalsearch?${new URLSearchParams({
           q: query,
           category: category || "",
           profile_id: selectedProfileId || "",
@@ -308,6 +308,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                               {profile.nickname && (
                                 <p className="text-xs text-gray-500">Nickname: {profile.nickname}</p>
                               )}
+                            </Link>
+                          ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Categories */}
+                  {results.some(r => r.type === "category") && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">Categories</h3>
+                      <ul className="space-y-2">
+                        {results
+                          .filter(r => r.type === "category")
+                          .map(cat => (
+                            <Link
+                              key={`category-${cat.id}`}
+                              href={`/dashboard/search?category=${encodeURIComponent(cat.name)}`}
+                              className="block p-3 rounded-lg hover:bg-gray-50 transition"
+                            >
+                              <p className="font-medium text-gray-900">{cat.name}</p>
                             </Link>
                           ))}
                       </ul>
@@ -460,6 +480,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 {[
                   { v: "all", label: "All" },
                   { v: "profile", label: "Subjects" },
+                  { v: "category", label: "Category" },
                   { v: "organization", label: "Companies" },
                   { v: "record", label: "Records" },
                   { v: "hashtag", label: "Hashtags" },
@@ -504,7 +525,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <p className="text-center text-gray-500 py-6">No results found.</p>
               ) : (
                 <>
-                  {["profile", "organization", "record", "hashtag"]
+                  {["profile", "category", "organization", "record", "hashtag"]
                     .filter((t) => category === "all" || category === t)
                     .map((groupType) => {
                       const groupItems = results.filter((r) => r.type === groupType);
@@ -542,8 +563,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                   } else if (item.type === "hashtag") {
                                     window.location.href = `/dashboard/search?q=%23${item.tag}`;
                                   } else if (item.type === "category") {
-                                    window.location.href = `/dashboard/search?category=${encodeURIComponent(item.category)}`;
-                                  }
+                                    window.location.href = `/dashboard/search?category=${encodeURIComponent(item.name)}`;
+                                  }                                  
                                 }}
                                 className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer transition"
                               >
