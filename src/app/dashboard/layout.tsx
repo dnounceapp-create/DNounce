@@ -283,8 +283,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder={`Search ${
-                  category === "all" ? "everything" : category + "s"
-                }...`}
+                  category === "all"
+                    ? "all"
+                    : category === "organization"
+                    ? "company/organization"
+                    : category === "category"
+                    ? "category"
+                    : category
+                }...`}                
                 className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-r-full shadow-sm text-sm focus:ring-2 focus:ring-blue-600 focus:border-blue-600 outline-none transition"
               />
 
@@ -481,7 +487,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   { v: "all", label: "All" },
                   { v: "profile", label: "Subjects" },
                   { v: "category", label: "Category" },
-                  { v: "organization", label: "Companies" },
+                  { v: "organization", label: "Company / Organization" },
                   { v: "record", label: "Records" },
                   { v: "hashtag", label: "Hashtags" },
                 ].map((opt) => {
@@ -510,7 +516,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder={`Search ${category === "all" ? "everything" : category + "s"}...`}
+                  placeholder={`Search ${
+                    category === "all"
+                      ? "all"
+                      : category === "organization"
+                      ? "company/organization"
+                      : category === "category"
+                      ? "category"
+                      : category
+                  }...`}                                   
                   className="w-full pl-10 pr-4 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-blue-600 focus:border-blue-600 outline-none"
                   autoFocus
                 />
@@ -535,9 +549,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         groupType === "profile"
                           ? "Subjects"
                           : groupType === "organization"
-                          ? "Companies"
+                          ? "Company / Organization"
                           : groupType === "record"
                           ? "Records"
+                          : groupType === "category"
+                          ? "Category"
                           : "Hashtags";
 
                       return (
@@ -553,19 +569,37 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                 key={`${item.type}-${item.id}`}
                                 onClick={() => {
                                   setSearchOpen(false);
-                              
-                                  if (item.type === "profile") {
-                                    window.location.href = `/dashboard/profile/${item.id}`;
-                                  } else if (item.type === "organization") {
-                                    window.location.href = `/dashboard/organization/${item.id}`;
-                                  } else if (item.type === "record") {
-                                    window.location.href = `/dashboard/record/${item.id}`;
-                                  } else if (item.type === "hashtag") {
-                                    window.location.href = `/dashboard/search?q=%23${item.tag}`;
-                                  } else if (item.type === "category") {
-                                    window.location.href = `/dashboard/search?category=${encodeURIComponent(item.name)}`;
-                                  }                                  
-                                }}
+                                
+                                  switch (item.type) {
+                                    case "profile":
+                                      window.location.href = `/profile/${item.id}`;
+                                      break;
+                                
+                                    case "organization":
+                                      window.location.href = `/organization/${item.id}`;
+                                      break;
+                                
+                                    case "record":
+                                      window.location.href = `/records/${item.id}`;
+                                      break;
+                                
+                                    case "hashtag":
+                                      window.location.href = `/#${item.tag}`;
+                                      break;
+                                
+                                    case "category":
+                                      if (item.id) {
+                                        window.location.href = `/category/${item.id}`;
+                                      } else {
+                                        window.location.href = `/search?category=${encodeURIComponent(item.name)}`;
+                                      }
+                                      break;
+                                
+                                    default:
+                                      console.warn("Unknown result type:", item.type);
+                                      break;
+                                  }
+                                }}                                
                                 className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer transition"
                               >
                                 <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100">
