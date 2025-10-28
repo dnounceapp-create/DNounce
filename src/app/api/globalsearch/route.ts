@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 
 // 🚀 Unified Intelligent Global Search Endpoint
 export async function GET(req: Request) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { searchParams } = new URL(req.url);
 
   const query = (searchParams.get("q") || "").trim();
