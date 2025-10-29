@@ -6,6 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Dialog } from "@headlessui/react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
   Hash,
@@ -260,161 +261,144 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* --- CENTER: Universal Search (Desktop) --- */}
         <div className="hidden md:flex flex-1 justify-center px-8">
-          <div className="relative w-full max-w-xl flex items-center gap-0">
-            {/* Category Dropdown */}
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="h-11 px-3 text-sm border border-gray-300 rounded-l-full bg-gray-50 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-600"
-            >
-              <option value="all">All</option>
-              <option value="profile">Subjects</option>
-              <option value="category">Category</option>
-              <option value="organization">Company / Organization</option>
-              <option value="record">Records</option>
-              <option value="hashtag">Hashtags</option>
-            </select>
+          <div className="relative w-full max-w-xl">
+            {/* Unified pill-style input */}
+            <div className="flex items-center bg-white border border-gray-300 rounded-full shadow-sm overflow-hidden focus-within:ring-2 focus-within:ring-blue-600 transition-all">
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="h-11 pl-4 pr-2 bg-transparent text-sm text-gray-700 outline-none border-none cursor-pointer hover:bg-gray-50"
+              >
+                <option value="all">All</option>
+                <option value="profile">Subjects</option>
+                <option value="category">Category</option>
+                <option value="organization">Company / Organization</option>
+                <option value="record">Records</option>
+                <option value="hashtag">Hashtags</option>
+              </select>
 
-            {/* Search Input */}
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-              <input
-                type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder={`Search ${
-                  category === "all"
-                    ? "all"
-                    : category === "organization"
-                    ? "company/organization"
-                    : category === "category"
-                    ? "category"
-                    : category
-                }...`}                
-                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-r-full shadow-sm text-sm focus:ring-2 focus:ring-blue-600 focus:border-blue-600 outline-none transition"
-              />
-
-              {/* 🧭 Search Results */}
-              {results.length > 0 ? (
-                <div className="space-y-6 mt-4">
-                  {/* Subjects */}
-                  {results.some(r => r.type === "profile") && (
-                    <div>
-                      <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">Subjects</h3>
-                      <ul className="space-y-2">
-                        {results
-                          .filter(r => r.type === "profile")
-                          .map(profile => (
-                            <Link
-                              key={`profile-${profile.id}`}
-                              href={`/dashboard/profile/${profile.id}`}
-                              className="block p-3 rounded-lg hover:bg-gray-50 transition"
-                            >
-                              <p className="font-medium text-gray-900">{profile.name || "Unnamed Subject"}</p>
-                              {profile.nickname && (
-                                <p className="text-xs text-gray-500">Nickname: {profile.nickname}</p>
-                              )}
-                            </Link>
-                          ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {/* Categories */}
-                  {results.some(r => r.type === "category") && (
-                    <div>
-                      <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">Categories</h3>
-                      <ul className="space-y-2">
-                        {results
-                          .filter(r => r.type === "category")
-                          .map(cat => (
-                            <Link
-                              key={`category-${cat.id}`}
-                              href={`/dashboard/search?category=${encodeURIComponent(cat.name)}`}
-                              className="block p-3 rounded-lg hover:bg-gray-50 transition"
-                            >
-                              <p className="font-medium text-gray-900">{cat.name}</p>
-                            </Link>
-                          ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {/* Companies / Organizations */}
-                  {results.some(r => r.type === "organization") && (
-                    <div>
-                      <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">Companies / Organizations</h3>
-                      <ul className="space-y-2">
-                        {results
-                          .filter(r => r.type === "organization")
-                          .map(org => (
-                            <Link
-                              key={`org-${org.id}`}
-                              href={`/dashboard/organization/${org.id}`}
-                              className="block p-3 rounded-lg hover:bg-gray-50 transition"
-                            >
-                              <p className="font-medium text-gray-900">{org.company || org.organization}</p>
-                              {org.category && (
-                                <p className="text-xs text-gray-500">Category: {org.category}</p>
-                              )}
-                            </Link>
-                          ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {/* Records */}
-                  {results.some(r => r.type === "record") && (
-                    <div>
-                      <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">Records</h3>
-                      <ul className="space-y-2">
-                        {results
-                          .filter(r => r.type === "record")
-                          .map(record => (
-                            <Link
-                              key={`record-${record.id}`}
-                              href={`/dashboard/records/${record.id}`}
-                              className="block p-3 rounded-lg hover:bg-gray-50 transition"
-                            >
-                              <p className="font-medium text-gray-900">{record.title}</p>
-                              <p className="text-xs text-gray-500">#{record.record_id}</p>
-                            </Link>
-                          ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {/* Hashtags */}
-                  {results.some(r => r.type === "hashtag") && (
-                    <div>
-                      <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">Hashtags</h3>
-                      <ul className="flex flex-wrap gap-2">
-                        {results
-                          .filter(r => r.type === "hashtag")
-                          .map(tag => (
-                            <Link
-                              key={`tag-${tag.id}`}
-                              href={`/dashboard/hashtags/${tag.tag}`}
-                              className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm hover:bg-gray-200"
-                            >
-                              #{tag.tag}
-                            </Link>
-                          ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                query && (
-                  <p className="text-sm text-gray-500 mt-4 text-center">
-                    No results found for “{query}”.
-                  </p>
-                )
-              )}
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                <input
+                  type="text"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder={`Search ${
+                    category === "all"
+                      ? "all"
+                      : category === "organization"
+                      ? "company/organization"
+                      : category
+                  }...`}
+                  className="w-full pl-10 pr-4 py-2.5 text-sm text-gray-700 bg-transparent focus:outline-none"
+                />
+              </div>
             </div>
+
+            {/* Animated Results Dropdown */}
+            <AnimatePresence>
+              {query && (
+                <motion.div
+                  initial={{ opacity: 0, y: -6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute top-14 left-0 w-full bg-white border border-gray-200 rounded-xl shadow-xl z-50 p-4 max-h-[480px] overflow-y-auto"
+                >
+                  {results.length > 0 ? (
+                    <div className="space-y-6">
+                      {["profile", "organization", "record", "category", "hashtag"].map((groupType) => {
+                        const groupItems = results.filter((r) => r.type === groupType);
+                        if (groupItems.length === 0) return null;
+
+                        const label =
+                          groupType === "profile"
+                            ? "Subjects"
+                            : groupType === "organization"
+                            ? "Company / Organization"
+                            : groupType === "record"
+                            ? "Records"
+                            : groupType === "category"
+                            ? "Categories"
+                            : "Hashtags";
+
+                        return (
+                          <div key={groupType}>
+                            <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">
+                              {label}
+                            </h3>
+                            <ul className="space-y-1">
+                              {groupItems.map((item: any) => {
+                                const href =
+                                  item.type === "profile"
+                                    ? `/profile/${item.id}`
+                                    : item.type === "organization"
+                                    ? `/organization/${item.id}`
+                                    : item.type === "record"
+                                    ? `/records/${item.id}`
+                                    : item.type === "hashtag"
+                                    ? `/#${item.tag}`
+                                    : item.id
+                                    ? `/category/${item.id}`
+                                    : `/search?category=${encodeURIComponent(item.name)}`;
+
+                                return (
+                                  <Link
+                                    key={`${item.type}-${item.id}`}
+                                    href={href}
+                                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-blue-50 transition"
+                                  >
+                                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100">
+                                      {item.type === "profile" && (
+                                        <User className="w-4 h-4 text-gray-600" />
+                                      )}
+                                      {item.type === "organization" && (
+                                        <Layers className="w-4 h-4 text-gray-600" />
+                                      )}
+                                      {item.type === "record" && (
+                                        <FileText className="w-4 h-4 text-gray-600" />
+                                      )}
+                                      {item.type === "category" && (
+                                        <Star className="w-4 h-4 text-gray-600" />
+                                      )}
+                                      {item.type === "hashtag" && (
+                                        <Hash className="w-4 h-4 text-gray-600" />
+                                      )}
+                                    </div>
+
+                                    <div className="min-w-0">
+                                      <p className="font-medium text-gray-900 truncate">
+                                        {item.name ||
+                                          item.title ||
+                                          item.organization ||
+                                          `#${item.tag}`}
+                                      </p>
+                                      {item.nickname && (
+                                        <p className="text-xs text-gray-500 truncate">
+                                          @{item.nickname}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </Link>
+                                );
+                              })}
+                            </ul>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-center text-gray-500 py-6">
+                      <Search className="w-6 h-6 mx-auto mb-2 text-gray-400" />
+                      No results found for “{query}”
+                    </div>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
-       
+
         {/* Right-side Controls */}
         <div className="flex items-center gap-2 md:gap-3">
 
