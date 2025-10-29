@@ -263,11 +263,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="hidden md:flex flex-1 justify-center px-8">
           <div className="relative w-full max-w-xl">
             {/* Unified pill-style input */}
-            <div className="flex items-center bg-white border border-gray-300 rounded-full shadow-sm overflow-hidden focus-within:ring-2 focus-within:ring-blue-600 transition-all">
+            <div className="text-sm text-gray-700 bg-transparent border-none outline-none cursor-pointer appearance-none px-2 pr-5 h-10 flex items-center truncate">
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="h-11 pl-4 pr-2 bg-transparent text-sm text-gray-700 outline-none border-none cursor-pointer hover:bg-gray-50"
+                className="h-10 min-w-[160px] flex items-center bg-transparent text-sm text-gray-700 border-none outline-none cursor-pointer appearance-none px-3 truncate"
               >
                 <option value="all">All</option>
                 <option value="profile">Subjects</option>
@@ -481,12 +481,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="fixed inset-0 flex items-start justify-center p-4 sm:p-8">
           <Dialog.Panel className="w-full sm:max-w-lg bg-white p-4 rounded-2xl shadow-xl">
             {/* 🔍 Search Bar */}
-            <div className="relative flex items-center gap-2 mb-4 border border-gray-200 rounded-full px-3 py-2 shadow-sm focus-within:ring-2 focus-within:ring-blue-600 transition-all">
+            <div className="relative flex items-center gap-2 mb-4 border border-gray-200 rounded-full px-3 py-[6px] shadow-sm focus-within:ring-2 focus-within:ring-blue-600 transition-all">
               <Search className="text-gray-400 w-5 h-5" />
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="text-sm text-gray-600 bg-transparent border-none outline-none cursor-pointer"
+                className="text-sm text-gray-700 bg-transparent border-none outline-none cursor-pointer appearance-none h-10 flex items-center truncate px-2 pr-6"
               >
                 <option value="all">All</option>
                 <option value="profile">Subjects</option>
@@ -495,6 +495,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <option value="record">Records</option>
                 <option value="hashtag">Hashtags</option>
               </select>
+              <span className="absolute right-[calc(100%-2.5rem)] pointer-events-none text-gray-400">⌄</span>
+
               <input
                 ref={mobileInputRef}
                 type="text"
