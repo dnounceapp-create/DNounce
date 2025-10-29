@@ -7,6 +7,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Dialog } from "@headlessui/react";
 import { motion, AnimatePresence } from "framer-motion";
+import SearchResultCard from "@/components/SearchResultCard";
 import {
   Search,
   Hash,
@@ -362,43 +363,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                     : `/search?category=${encodeURIComponent(item.name)}`;
 
                                 return (
-                                  <Link
+                                  <SearchResultCard
                                     key={`${item.type}-${item.id}`}
+                                    type={item.type}
+                                    title={item.name || item.title || item.organization || `#${item.tag}`}
+                                    subtitle={item.organization || item.category || item.role}
+                                    location={item.location || item.city}
+                                    id={item.id}
                                     href={href}
-                                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-blue-50 transition"
-                                  >
-                                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100">
-                                      {item.type === "profile" && (
-                                        <User className="w-4 h-4 text-gray-600" />
-                                      )}
-                                      {item.type === "organization" && (
-                                        <Layers className="w-4 h-4 text-gray-600" />
-                                      )}
-                                      {item.type === "record" && (
-                                        <FileText className="w-4 h-4 text-gray-600" />
-                                      )}
-                                      {item.type === "category" && (
-                                        <Star className="w-4 h-4 text-gray-600" />
-                                      )}
-                                      {item.type === "hashtag" && (
-                                        <Hash className="w-4 h-4 text-gray-600" />
-                                      )}
-                                    </div>
-
-                                    <div className="min-w-0">
-                                      <p className="font-medium text-gray-900 truncate">
-                                        {item.name ||
-                                          item.title ||
-                                          item.organization ||
-                                          `#${item.tag}`}
-                                      </p>
-                                      {item.nickname && (
-                                        <p className="text-xs text-gray-500 truncate">
-                                          @{item.nickname}
-                                        </p>
-                                      )}
-                                    </div>
-                                  </Link>
+                                    onRemove={() => console.log("Remove", item.id)}
+                                  />
                                 );
                               })}
                             </ul>
@@ -580,30 +554,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                     : `/search?category=${encodeURIComponent(item.name)}`;
 
                                 return (
-                                  <Link
+                                  <SearchResultCard
                                     key={`${type}-${item.id}`}
+                                    type={item.type}
+                                    title={item.name || item.title || item.organization || `#${item.tag}`}
+                                    subtitle={item.organization || item.category || item.role}
+                                    location={item.location || item.city}
+                                    id={item.id}
                                     href={href}
-                                    onClick={() => setMobileSearchOpen(false)}
-                                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-blue-50 transition"
-                                  >
-                                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100">
-                                      {item.type === "profile" && <User className="w-4 h-4 text-gray-600" />}
-                                      {item.type === "organization" && <Layers className="w-4 h-4 text-gray-600" />}
-                                      {item.type === "record" && <FileText className="w-4 h-4 text-gray-600" />}
-                                      {item.type === "category" && <Star className="w-4 h-4 text-gray-600" />}
-                                      {item.type === "hashtag" && <Hash className="w-4 h-4 text-gray-600" />}
-                                    </div>
-
-                                    <div className="min-w-0">
-                                      <p className="font-medium text-gray-900 truncate">
-                                        {item.name || item.title || item.organization || `#${item.tag}`}
-                                      </p>
-                                      {item.nickname && (
-                                        <p className="text-xs text-gray-500 truncate">@{item.nickname}</p>
-                                      )}
-                                    </div>
-                                  </Link>
+                                    onRemove={() => console.log("Remove", item.id)}
+                                  />
                                 );
+                                    
                               })}
                             </ul>
                           </div>
