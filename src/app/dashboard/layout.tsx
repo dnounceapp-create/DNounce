@@ -481,21 +481,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="fixed inset-0 flex items-start justify-center p-4 sm:p-8">
           <Dialog.Panel className="w-full sm:max-w-lg bg-white p-4 rounded-2xl shadow-xl">
             {/* 🔍 Search Bar */}
-            <div className="relative flex items-center gap-2 mb-4 border border-gray-200 rounded-full px-3 py-[6px] shadow-sm focus-within:ring-2 focus-within:ring-blue-600 transition-all">
-              <Search className="text-gray-400 w-5 h-5" />
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="text-sm text-gray-700 bg-transparent border-none outline-none cursor-pointer appearance-none h-10 flex items-center truncate px-2 pr-6"
-              >
-                <option value="all">All</option>
-                <option value="profile">Subjects</option>
-                <option value="category">Category</option>
-                <option value="organization">Company / Organization</option>
-                <option value="record">Records</option>
-                <option value="hashtag">Hashtags</option>
-              </select>
-              <span className="absolute right-[calc(100%-2.5rem)] pointer-events-none text-gray-400">⌄</span>
+            <div className="relative flex items-center gap-2 mb-4 border border-gray-200 rounded-full px-3 py-[5px] shadow-sm focus-within:ring-2 focus-within:ring-blue-600 transition-all">
+              <Search className="text-gray-400 w-5 h-5 flex-shrink-0" />
+              
+              <div className="relative flex items-center flex-shrink-0">
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="text-[13px] text-gray-700 bg-transparent border-none outline-none cursor-pointer appearance-none h-9 pl-1 pr-5 truncate max-w-[130px]"
+                >
+                  <option value="all">All</option>
+                  <option value="profile">Subjects</option>
+                  <option value="category">Category</option>
+                  <option value="organization">Company / Organization</option>
+                  <option value="record">Records</option>
+                  <option value="hashtag">Hashtags</option>
+                </select>
+                <span className="absolute right-1 pointer-events-none text-gray-400 text-xs">⌄</span>
+              </div>
 
               <input
                 ref={mobileInputRef}
@@ -509,7 +512,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     ? "company/organization"
                     : category
                 }...`}
-                className="flex-1 text-sm bg-transparent outline-none text-gray-700 pr-10"
+                className="flex-1 text-sm bg-transparent outline-none text-gray-700 min-w-0"
               />
 
               {query && (
