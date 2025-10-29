@@ -173,7 +173,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [results, setResults] = useState<any[]>([]);
   const [userLocation, setUserLocation] = useState<string>("");
   const [selectedProfileId, setSelectedProfileId] = useState<string>("");
-
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const desktopInputRef = useRef<HTMLInputElement>(null);
+  const mobileInputRef = useRef<HTMLInputElement>(null);
   
   // Save selected category persistently
   useEffect(() => {
@@ -185,7 +187,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       navigator.geolocation.getCurrentPosition(
         async (pos) => {
           const { latitude, longitude } = pos.coords;
-          // Reverse geocode to get a readable city/state
           const res = await fetch(
             `/api/globalsearch?q=${encodeURIComponent(query)}&category=${encodeURIComponent(category)}&location=${encodeURIComponent(userLocation || "")}`
           );          
@@ -202,7 +203,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         { enableHighAccuracy: true, timeout: 10000 }
       );
     }
-  }, []);
+  }, []);  
 
   useEffect(() => {
     const fetchResults = async () => {
@@ -280,6 +281,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                 <input
+                  ref={desktopInputRef}
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
@@ -290,8 +292,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       ? "company/organization"
                       : category
                   }...`}
-                  className="w-full pl-10 pr-4 py-2.5 text-sm text-gray-700 bg-transparent focus:outline-none"
+                  className="w-full pl-10 pr-12 py-2.5 text-sm text-gray-700 bg-transparent focus:outline-none"
                 />
+
+                {query && (
+                  <button
+                    type="button"
+                    className="absolute right-3 top-2.5 p-1 rounded-full hover:bg-gray-100 active:scale-95 transition"
+                    aria-label="Clear search"
+                    title="Clear"
+                    // prevent input blur on mousedown, so the dropdown doesn’t close before we clear
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
+                      setQuery("");
+                      // re-focus the input for fast re-typing
+                      desktopInputRef.current?.focus();
+                    }}
+                  >
+                    <X className="w-4 h-4 text-gray-500" />
+                  </button>
+                )}
               </div>
             </div>
 
@@ -454,222 +474,148 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </header>
 
       {/* 🔍 Universal Search Modal */}
-      <Dialog open={searchOpen} onClose={() => setSearchOpen(false)} className="relative z-50">
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" aria-hidden="true" />
-        <div className="fixed inset-0 flex items-start justify-center p-4 sm:p-8">
-          <Dialog.Panel className="w-full max-w-2xl rounded-xl bg-white p-6 shadow-lg mt-20">
-            <Dialog.Title className="text-lg font-semibold text-gray-900 mb-4">
-              Search DNounce
-            </Dialog.Title>
+      <Dialog open={mobileSearchOpen} onOpenChange={setMobileSearchOpen}>
+      <Dialog.Panel className="sm:max-w-lg bg-white p-4 rounded-2xl shadow-xl mx-auto mt-24 w-full">
+          {/* 🔍 Search Bar */}
+          <div className="relative flex items-center gap-2 mb-4 border border-gray-200 rounded-full px-3 py-2 shadow-sm focus-within:ring-2 focus-within:ring-blue-600 transition-all">
+            <Search className="text-gray-400 w-5 h-5" />
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="text-sm text-gray-600 bg-transparent border-none outline-none cursor-pointer"
+            >
+              <option value="all">All</option>
+              <option value="profile">Subjects</option>
+              <option value="category">Category</option>
+              <option value="organization">Company / Organization</option>
+              <option value="record">Records</option>
+              <option value="hashtag">Hashtags</option>
+            </select>
+            <input
+              ref={mobileInputRef}
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={`Search ${
+                category === "all"
+                  ? "all"
+                  : category === "organization"
+                  ? "company/organization"
+                  : category
+              }...`}
+              className="flex-1 text-sm bg-transparent outline-none text-gray-700 pr-10"
+            />
 
-            {/* --- Mobile Search Controls --- */}
-            <div className="space-y-3">
+            {query && (
+              <button
+                type="button"
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-gray-100 active:scale-95 transition"
+                aria-label="Clear search"
+                title="Clear"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  setQuery("");
+                  mobileInputRef.current?.focus();
+                }}
+              >
+                <X className="w-4 h-4 text-gray-500" />
+              </button>
+            )}
+          </div>
 
-            {/* Category chips */}
-              <div className="flex gap-2 overflow-x-auto no-scrollbar">
-                {[
-                  { v: "all", label: "All" },
-                  { v: "profile", label: "Subjects" },
-                  { v: "category", label: "Category" },
-                  { v: "organization", label: "Company / Organization" },
-                  { v: "record", label: "Records" },
-                  { v: "hashtag", label: "Hashtags" },
-                ].map((opt) => {
-                  const active = category === opt.v;
-                  return (
-                    <button
-                      key={opt.v}
-                      onClick={() => setCategory(opt.v)}
-                      className={`px-3 py-2 rounded-full text-sm border transition ${
-                        active
-                          ? "bg-blue-600 text-white border-blue-600"
-                          : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                      }`}
-                      aria-pressed={active}
-                    >
-                      {opt.label}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Search input */}
-              <div className="relative">
-                <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                <input
-                  type="text"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder={`Search ${
-                    category === "all"
-                      ? "all"
-                      : category === "organization"
-                      ? "company/organization"
-                      : category === "category"
-                      ? "category"
-                      : category
-                  }...`}                                   
-                  className="w-full pl-10 pr-4 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-blue-600 focus:border-blue-600 outline-none"
-                  autoFocus
-                />
-              </div>
-              </div>
-
-              {/* --- Mobile Results --- */}
-              <div className="mt-4 max-h-80 overflow-y-auto text-sm text-gray-700 border border-gray-200 rounded-xl">
-              {query.trim().length === 0 ? (
-                <p className="text-center text-gray-400 py-6 text-sm">Start typing to search…</p>
-              ) : results.length === 0 ? (
-                <p className="text-center text-gray-500 py-6">No results found.</p>
-              ) : (
-                <>
-                  {["profile", "category", "organization", "record", "hashtag"]
-                    .filter((t) => category === "all" || category === t)
-                    .map((groupType) => {
-                      const groupItems = results.filter((r) => r.type === groupType);
+          {/* 🧭 Results List */}
+          <AnimatePresence>
+            {query && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.15 }}
+                className="space-y-6 max-h-[70vh] overflow-y-auto"
+              >
+                {results.length > 0 ? (
+                  <>
+                    {["profile", "organization", "record", "category", "hashtag"].map((type) => {
+                      const groupItems = results.filter((r) => r.type === type);
                       if (groupItems.length === 0) return null;
 
-                      const label =
-                        groupType === "profile"
+                      const title =
+                        type === "profile"
                           ? "Subjects"
-                          : groupType === "organization"
-                          ? "Company / Organization"
-                          : groupType === "record"
+                          : type === "organization"
+                          ? "Companies / Organizations"
+                          : type === "record"
                           ? "Records"
-                          : groupType === "category"
-                          ? "Category"
+                          : type === "category"
+                          ? "Categories"
                           : "Hashtags";
 
                       return (
-                        <div key={groupType} className="border-b last:border-b-0 border-gray-200">
-                          {/* Section label */}
-                          <div className="px-4 py-2 text-xs font-semibold text-gray-500 bg-gray-50 rounded-t-xl">
-                            {label}
-                          </div>
+                        <div key={type}>
+                          <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2 px-1">
+                            {title}
+                          </h3>
+                          <ul className="space-y-1">
+                            {groupItems.map((item: any) => {
+                              const href =
+                                item.type === "profile"
+                                  ? `/profile/${item.id}`
+                                  : item.type === "organization"
+                                  ? `/organization/${item.id}`
+                                  : item.type === "record"
+                                  ? `/records/${item.id}`
+                                  : item.type === "hashtag"
+                                  ? `/#${item.tag}`
+                                  : item.id
+                                  ? `/category/${item.id}`
+                                  : `/search?category=${encodeURIComponent(item.name)}`;
 
-                          <ul className="divide-y divide-gray-100">
-                            {groupItems.map((item: any) => (
-                              <li
-                                key={`${item.type}-${item.id}`}
-                                onClick={() => {
-                                  setSearchOpen(false);
-                                
-                                  switch (item.type) {
-                                    case "profile":
-                                      window.location.href = `/profile/${item.id}`;
-                                      break;
-                                
-                                    case "organization":
-                                      window.location.href = `/organization/${item.id}`;
-                                      break;
-                                
-                                    case "record":
-                                      window.location.href = `/records/${item.id}`;
-                                      break;
-                                
-                                    case "hashtag":
-                                      window.location.href = `/#${item.tag}`;
-                                      break;
-                                
-                                    case "category":
-                                      if (item.id) {
-                                        window.location.href = `/category/${item.id}`;
-                                      } else {
-                                        window.location.href = `/search?category=${encodeURIComponent(item.name)}`;
-                                      }
-                                      break;
-                                
-                                    default:
-                                      console.warn("Unknown result type:", item.type);
-                                      break;
-                                  }
-                                }}                                
-                                className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer transition"
-                              >
-                                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100">
-                                  {item.type === "profile" && <User className="w-4 h-4 text-gray-500" />}
-                                  {item.type === "record" && <FileText className="w-4 h-4 text-gray-500" />}
-                                  {item.type === "hashtag" && <Hash className="w-4 h-4 text-gray-500" />}
-                                  {item.type === "organization" && <Layers className="w-4 h-4 text-gray-500" />}
-                                  {item.type === "category" && <Star className="w-4 h-4 text-gray-500" />}
-                                </div>
-                              
-                                <div className="min-w-0">
-                                  {item.type === "profile" && (
-                                    <>
-                                      <p className="text-sm font-medium text-gray-900 truncate">{item.name}</p>
+                              return (
+                                <Link
+                                  key={`${type}-${item.id}`}
+                                  href={href}
+                                  onClick={() => setMobileSearchOpen(false)}
+                                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-blue-50 transition"
+                                >
+                                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100">
+                                    {item.type === "profile" && <User className="w-4 h-4 text-gray-600" />}
+                                    {item.type === "organization" && <Layers className="w-4 h-4 text-gray-600" />}
+                                    {item.type === "record" && <FileText className="w-4 h-4 text-gray-600" />}
+                                    {item.type === "category" && <Star className="w-4 h-4 text-gray-600" />}
+                                    {item.type === "hashtag" && <Hash className="w-4 h-4 text-gray-600" />}
+                                  </div>
+
+                                  <div className="min-w-0">
+                                    <p className="font-medium text-gray-900 truncate">
+                                      {item.name ||
+                                        item.title ||
+                                        item.organization ||
+                                        `#${item.tag}`}
+                                    </p>
+                                    {item.nickname && (
                                       <p className="text-xs text-gray-500 truncate">
-                                        {item.nickname ? `@${item.nickname}` : ""}
-                                        {item.organization ? ` • ${item.organization}` : ""}
+                                        @{item.nickname}
                                       </p>
-                                    </>
-                                  )}
-                              
-                                  {item.type === "organization" && (
-                                    <>
-                                      <p className="text-sm font-medium text-gray-900 truncate">
-                                        {item.organization || item.company}
-                                      </p>
-                                      {item.category && (
-                                        <p className="text-xs text-gray-500 truncate">{item.category}</p>
-                                      )}
-                                    </>
-                                  )}
-                              
-                                  {item.type === "record" && (
-                                    <>
-                                      <p className="text-sm font-medium text-gray-900 truncate">
-                                        {item.title}
-                                      </p>
-                                      <p className="text-xs text-gray-500 truncate">
-                                        #{item.record_id || item.id}
-                                      </p>
-                                    </>
-                                  )}
-                              
-                                  {item.type === "hashtag" && (
-                                    <>
-                                      <p className="text-sm font-medium text-gray-900 truncate">
-                                        #{item.tag}
-                                      </p>
-                                      <p className="text-xs text-gray-500 truncate">
-                                        {item.usage_count || 0} uses
-                                      </p>
-                                    </>
-                                  )}
-                              
-                                  {item.type === "category" && (
-                                    <>
-                                      <p className="text-sm font-medium text-gray-900 truncate">
-                                        {item.category}
-                                      </p>
-                                      <p className="text-xs text-gray-500 truncate text-blue-600">
-                                        Browse related topics
-                                      </p>
-                                    </>
-                                  )}
-                                </div>
-                              </li>                            
-                            ))}
+                                    )}
+                                  </div>
+                                </Link>
+                              );
+                            })}
                           </ul>
                         </div>
                       );
                     })}
-                </>
-              )}
-            </div>
-
-            {/* Buttons */}
-            <div className="mt-6 flex justify-end gap-3">
-              <button
-                onClick={() => setSearchOpen(false)}
-                className="px-4 py-2 text-sm rounded-md border hover:bg-gray-50 transition"
-              >
-                Close
-              </button>
-            </div>
-          </Dialog.Panel>
-        </div>
+                  </>
+                ) : (
+                  <div className="text-center text-gray-500 py-10">
+                    <Search className="w-6 h-6 mx-auto mb-2 text-gray-400" />
+                    No results found for “{query}”
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </DialogContent>
       </Dialog>
 
       {/* Mobile Sidebar */}
