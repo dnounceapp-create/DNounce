@@ -31,20 +31,13 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Missing params" }, { status: 400 });
   }
 
-  // 1) Identify the current user (from your auth cookie/session)
-  const cookieStore = cookies();
-  const currentUserId = cookieStore.get("sb-user")?.value; // <-- replace with your auth helper
+  const cookieStore = await cookies();
+  const currentUserId = cookieStore.get("sb-user")?.value;
 
   if (!currentUserId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // 2) Authorization: check that currentUserId is allowed to view this attachment
-  // Implement your own checks here (examples):
-  // - currentUserId is the contributor of recordId
-  // - OR currentUserId is the subject of recordId
-  // - OR currentUserId is an approved voter on recordId during voting window
-  // - OR currentUserId has admin/mod role
   const allowed = await isUserAllowedToPreview({ currentUserId, recordId, role, userId });
   if (!allowed) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
