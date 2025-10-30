@@ -5,6 +5,7 @@ import { AlertTriangle, Upload, MapPin, FileText, Search, User, X, Loader2 } fro
 import { supabase } from "@/lib/supabaseClient";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { useRouter } from "next/navigation";
 import {
   Select,
   SelectTrigger,
@@ -27,8 +28,10 @@ export default function SubmitRecordPage() {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [relLoading, setRelLoading] = useState(false);
   const [relationshipTypes, setRelationshipTypes] = useState<any[]>([]);
-
+  const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const termsRef = useRef<HTMLDivElement>(null);
+  const [files, setFiles] = useState<File[]>([]); 
 
   /* ——— Fetch Relationship Types (Supabase) ——— */
   useEffect(() => {
@@ -188,9 +191,56 @@ export default function SubmitRecordPage() {
     }
   }, [selectedSubject]);
 
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!agreedToTerms) {
+      alert("You must agree to the Terms of Service.");
+      return;
+    }
+  
+    setIsSubmitting(true);
+  
+    try {
+      // Get the logged-in user
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError || !userData?.user) throw userError || new Error("No user logged in.");
+  
+      const user = userData.user;
+  
+      // Insert into records table
+      const { data, error } = await supabase
+        .from("records")
+        .insert({
+          created_by: user.id,
+          subject_user_id: selectedSubject?.id || null,
+          name: submitName || selectedSubject?.name || "Anonymous",
+          nickname: submitNickname,
+          organization: submitOrganization,
+          relationship_id: submitRelationship || null,
+          category: submitCategory,
+          location: submitLocation,
+          description: document.querySelector("textarea")?.value || "",
+        })
+        .select()
+        .single();
+  
+      if (error) throw error;
+  
+      // Redirect to "My Records"
+      router.push("/dashboard/myrecords");
+    } catch (err) {
+      console.error("Error submitting record:", err);
+      alert("There was an error submitting your record.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+  
   /* ——— Page UI ——— */
   return (
-    <div className="max-w-4xl mx-auto px-4 py-10">
+    <form
+      onSubmit={handleSubmit}
+      className="max-w-4xl mx-auto px-4 py-10">
       <div className="flex flex-col items-center justify-center text-center mb-10">
         <div className="flex items-center gap-3 mb-2">
           <FileText className="w-7 h-7 text-blue-600" />
@@ -495,7 +545,10 @@ export default function SubmitRecordPage() {
           {/* Evidence Upload */}
           <div className="mb-8">
             <label className="mb-1 text-sm font-semibold text-gray-700">Evidence Upload</label>
-            <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center cursor-pointer hover:border-blue-400 transition">
+            <div
+              className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center cursor-pointer hover:border-blue-400 transition"
+              onClick={() => document.getElementById("fileInput")?.click()}
+            >
               <Upload className="h-12 w-12 text-gray-400 mx-auto mb-3" />
               <p className="text-sm text-gray-600 mb-2">
                 Drag and drop files here or click to browse
@@ -503,7 +556,22 @@ export default function SubmitRecordPage() {
               <p className="text-xs text-gray-500">
                 Supported formats: PDF, JPG, PNG, MP4, DOCX (Max 100MB each)
               </p>
+              {files.length > 0 && (
+                <ul className="mt-3 text-sm text-gray-600">
+                  {files.map((f, i) => (
+                    <li key={i} className="truncate">{f.name}</li>
+                  ))}
+                </ul>
+              )}
             </div>
+            <input
+              id="fileInput"
+              type="file"
+              accept=".pdf,.jpg,.jpeg,.png,.mp4,.docx"
+              multiple
+              className="hidden"
+              onChange={(e) => setFiles(Array.from(e.target.files || []))}
+            />
           </div>
 
           {/* Description */}
@@ -577,23 +645,17 @@ export default function SubmitRecordPage() {
               </p>
             </div>
 
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mt-4 mb-6 w-full text-center">
-              <div className="flex flex-col items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-yellow-600" />
-                <div>
-                  <p className="text-sm font-medium text-yellow-800">
-                    EXAMPLE ONLY - NOT REAL DATA
-                  </p>
-                  <p className="text-sm text-yellow-700">
-                    This is a demonstration of how profiles appear on DNounce
-                  </p>
-                </div>
-              </div>
-            </div>
+            <button
+              type="submit"
+              className="mt-6 w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg transition disabled:opacity-50"
+              disabled={!agreedToTerms || isSubmitting}
+            >
+              {isSubmitting ? "Submitting..." : "Submit Record"}
+            </button>
           </div>
         </CardContent>
       </Card>
-    </div>
+    </form>
   );
 }
 

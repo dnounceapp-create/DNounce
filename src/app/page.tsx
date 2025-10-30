@@ -520,13 +520,19 @@ export default function HomePage() {
 
       <section className="bg-gray-50 py-16">
         <div className="max-w-4xl mx-auto px-4 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 text-center mb-5 leading-tight">
             Trusted, Transparent, 
             <br />
             Community-Powered Platform
           </h1>
-          <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
-          DNounce is an authentic, fair, and transparent review platform where people share real experiences, supported by AI credibility recommendations and community insight.
+
+          <p className="text-xl text-center text-gray-800 font-semibold mb-7 tracking-tight">
+            “Truth isn’t owned. It’s earned — together.”
+          </p>
+
+          <p className="text-lg text-center text-gray-600 max-w-2xl mx-auto leading-relaxed mb-10">
+            DNounce is an authentic, fair, and transparent review platform where people share real experiences, 
+            supported by AI credibility recommendations and community insight.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
             <Button

@@ -13,6 +13,7 @@ import {
   Hash,
   User,
   FileText,
+  FilePlus,
   Layers,
   Vote,
   Pin,
@@ -262,13 +263,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* --- CENTER: Universal Search (Desktop) --- */}
         <div className="hidden md:flex flex-1 justify-center px-8">
-          <div className="relative w-full max-w-xl">
-            {/* Unified pill-style input */}
-            <div className="text-sm text-gray-700 bg-transparent border-none outline-none cursor-pointer appearance-none px-2 pr-5 h-10 flex items-center truncate">
+          <div className="relative w-full max-w-2xl">
+            {/* Search Container */}
+            <div className="flex items-center bg-white border border-gray-300 rounded-full shadow-sm focus-within:ring-2 focus-within:ring-blue-500 transition-all">
+              {/* Category Selector */}
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="h-10 min-w-[160px] flex items-center bg-transparent text-sm text-gray-700 border-none outline-none cursor-pointer appearance-none px-3 truncate"
+                className="h-11 min-w-[170px] px-4 bg-gray-50 text-sm text-gray-700 font-medium border-r border-gray-200 rounded-l-full focus:outline-none hover:bg-gray-100"
               >
                 <option value="all">All</option>
                 <option value="profile">Subjects</option>
@@ -278,8 +280,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <option value="hashtag">Hashtags</option>
               </select>
 
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+              {/* Input Field */}
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
                 <input
                   ref={desktopInputRef}
                   type="text"
@@ -287,12 +290,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder={`Search ${
                     category === "all"
-                      ? "all"
+                      ? "across DNounce..."
                       : category === "organization"
-                      ? "company/organization"
-                      : category
-                  }...`}
-                  className="w-full pl-10 pr-12 py-2.5 text-sm text-gray-700 bg-transparent focus:outline-none"
+                      ? "companies & organizations..."
+                      : `${category}...`
+                  }`}
+                  className="w-full pl-10 pr-12 h-11 text-sm text-gray-700 bg-transparent focus:outline-none"
                 />
 
                 {query && (
@@ -301,11 +304,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     className="absolute right-3 top-2.5 p-1 rounded-full hover:bg-gray-100 active:scale-95 transition"
                     aria-label="Clear search"
                     title="Clear"
-                    // prevent input blur on mousedown, so the dropdown doesn’t close before we clear
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => {
                       setQuery("");
-                      // re-focus the input for fast re-typing
                       desktopInputRef.current?.focus();
                     }}
                   >
@@ -314,81 +315,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 )}
               </div>
             </div>
-
-            {/* Animated Results Dropdown */}
-            <AnimatePresence>
-              {query && (
-                <motion.div
-                  initial={{ opacity: 0, y: -6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -6 }}
-                  transition={{ duration: 0.15 }}
-                  className="absolute top-14 left-0 w-full bg-white border border-gray-200 rounded-xl shadow-xl z-50 p-4 max-h-[480px] overflow-y-auto"
-                >
-                  {results.length > 0 ? (
-                    <div className="space-y-6">
-                      {["profile", "organization", "record", "category", "hashtag"].map((groupType) => {
-                        const groupItems = results.filter((r) => r.type === groupType);
-                        if (groupItems.length === 0) return null;
-
-                        const label =
-                          groupType === "profile"
-                            ? "Subjects"
-                            : groupType === "organization"
-                            ? "Company / Organization"
-                            : groupType === "record"
-                            ? "Records"
-                            : groupType === "category"
-                            ? "Categories"
-                            : "Hashtags";
-
-                        return (
-                          <div key={groupType}>
-                            <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">
-                              {label}
-                            </h3>
-                            <ul className="space-y-1">
-                              {groupItems.map((item: any) => {
-                                const href =
-                                  item.type === "profile"
-                                    ? `/profile/${item.id}`
-                                    : item.type === "organization"
-                                    ? `/organization/${item.id}`
-                                    : item.type === "record"
-                                    ? `/records/${item.id}`
-                                    : item.type === "hashtag"
-                                    ? `/#${item.tag}`
-                                    : item.id
-                                    ? `/category/${item.id}`
-                                    : `/search?category=${encodeURIComponent(item.name)}`;
-
-                                return (
-                                  <SearchResultCard
-                                    key={`${item.type}-${item.id}`}
-                                    type={item.type}
-                                    title={item.name || item.title || item.organization || `#${item.tag}`}
-                                    subtitle={item.organization || item.category || item.role}
-                                    location={item.location || item.city}
-                                    id={item.id}
-                                    href={href}
-                                    onRemove={() => console.log("Remove", item.id)}
-                                  />
-                                );
-                              })}
-                            </ul>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <div className="text-center text-gray-500 py-6">
-                      <Search className="w-6 h-6 mx-auto mb-2 text-gray-400" />
-                      No results found for “{query}”
-                    </div>
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
           </div>
         </div>
 
@@ -405,20 +331,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </button>
 
           {/* 🧾 Submit a Record Button */}
-          <Link
-            href="/dashboard/submit"
-            className="hidden md:inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 active:scale-95 transition-all"
-            title="Submit a new record"
-          >
-            <FileText className="w-4 h-4" />
-            Submit a Record
-          </Link>
+          {pathname !== "/dashboard/submit" && (
+            <Link
+              href="/dashboard/submit"
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition"
+            >
+              <FilePlus className="h-4 w-4" />
+              Submit A Record
+            </Link>
+          )}
+
+
 
           {/* 🧾 Mobile Submit Button (icon only) */}
           <Link
             href="/dashboard/submit"
             className="md:hidden p-2 rounded-md hover:bg-blue-100 text-blue-700 transition"
-            title="Submit a new record"
+            title="Submit A Record"
           >
             <FileText className="w-5 h-5" />
           </Link>
@@ -538,7 +467,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                             <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2 px-1">
                               {title}
                             </h3>
-                            <ul className="space-y-1">
+                            <ul className="space-y-2">
                               {groupItems.map((item: any) => {
                                 const href =
                                   item.type === "profile"
@@ -564,8 +493,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                     href={href}
                                     onRemove={() => console.log("Remove", item.id)}
                                   />
-                                );
-                                    
+                                );    
                               })}
                             </ul>
                           </div>
