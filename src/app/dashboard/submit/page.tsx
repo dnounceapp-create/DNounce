@@ -153,35 +153,30 @@ export default function SubmitRecordPage() {
     setSubjectLoading(true);
 
     const t = setTimeout(async () => {
-      // TODO: replace with real search later
-      // For now: return empty array or a tiny mock when query has 3+ chars
-      let mock: SubjectPreview[] = [];
-      if (q.length >= 3) {
-        mock = [
-          {
-            id: "demo-1",
-            name: "John Example",
-            nickname: "Johnny",
-            organization: "AutoFix Garage",
-            location: "San Francisco, CA",
-          },
-          {
-            id: "demo-2",
-            name: "Jane Sample",
-            organization: "Acme Inc.",
-            location: "New York, NY",
-          },
-        ].filter((p) =>
-          [p.name, p.nickname, p.organization, p.location]
-            .filter(Boolean)
-            .some((s) => s!.toLowerCase().includes(q.toLowerCase()))
-        ).slice(0, 10);
+      if (q.length < 2) {
+        setSubjectResults([]);
+        setResultsOpen(false);
+        setSubjectLoading(false);
+        return;
       }
-
-      setSubjectResults(mock);
-      setResultsOpen(true);
-      setSubjectLoading(false);
-    }, 300); // debounce
+    
+      try {
+        const { data: subjects, error } = await supabase
+          .from("subjects")
+          .select("id, name, nickname, organization, location, avatar_url")
+          .ilike("name", `%${q}%`) // case-insensitive partial match
+          .limit(10);
+    
+        if (error) throw error;
+        setSubjectResults(subjects || []);
+      } catch (err) {
+        console.error("Error fetching subjects:", err);
+        setSubjectResults([]);
+      } finally {
+        setResultsOpen(true);
+        setSubjectLoading(false);
+      }
+    }, 300);    
 
     return () => clearTimeout(t);
   }, [subjectQuery]);
