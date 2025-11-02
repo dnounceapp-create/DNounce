@@ -14,6 +14,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import Link from "next/link";
+import { supabaseBrowser as supabase } from "@/lib/supabaseClient";
 
 /* ——— Page Component ——— */
 export default function SubmitRecordPage() {
