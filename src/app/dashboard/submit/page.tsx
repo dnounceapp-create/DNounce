@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { AlertTriangle, Upload, MapPin, FileText, Search, User, X, Loader2 } from "lucide-react";
-import { supabase } from "@/lib/supabaseClient";
+import { supabaseBrowser as supabase } from "@/lib/supabaseClient";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
@@ -14,7 +14,6 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import Link from "next/link";
-import { supabaseBrowser as supabase } from "@/lib/supabaseClient";
 
 /* ——— Page Component ——— */
 export default function SubmitRecordPage() {
