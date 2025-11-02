@@ -48,14 +48,17 @@ export default function SubmitRecordPage() {
             .order("label", { ascending: true }),
           supabase
             .from("relationship_types_other")
-            .select("id, label, value")
-            .order("label", { ascending: true }),
+            .select("id, custom_value")
+            .order("custom_value", { ascending: true }),
         ]);
 
         if (mainRes.error) console.error("relationship_types error:", mainRes.error);
         if (otherRes.error) console.error("relationship_types_other error:", otherRes.error);
 
-        const combined = [...(mainRes.data || []), ...(otherRes.data || [])];
+        const combined = [
+          ...(mainRes.data?.map((r) => ({ id: r.id, label: r.label, value: r.value })) || []),
+          ...(otherRes.data?.map((r) => ({ id: r.id, label: r.custom_value, value: r.custom_value })) || []),
+        ];        
 
         // Deduplicate by label (case-insensitive)
         const dedup = Array.from(
@@ -214,19 +217,20 @@ export default function SubmitRecordPage() {
       const { data, error } = await supabase
         .from("records")
         .insert({
-          created_by: user.id,
-          subject_user_id: selectedSubject?.id || null,
-          name: submitName || selectedSubject?.name || "Anonymous",
-          nickname: submitNickname,
-          organization: submitOrganization,
-          relationship_id: submitRelationship || null,
-          category: submitCategory,
-          location: submitLocation,
-          description: document.querySelector("textarea")?.value || "",
+          uid: user.id,
+          subject_id: selectedSubject?.id || null,
+          contributor_alias: submitNickname || submitName || "Anonymous",
+          record_type: submitCategory || "General",
+          stage: 1,
+          outcome: document.querySelector("textarea")?.value || null,
+          is_published: false,
+          submitted_at: new Date().toISOString(),
+          votes: 0,
+          views: 0,
+          last_activity_at: new Date().toISOString(),
         })
         .select()
         .single();
-  
       if (error) throw error;
   
       // ✅ Show success popup
