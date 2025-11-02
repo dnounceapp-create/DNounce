@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { AlertTriangle, Upload, MapPin, FileText, Search, User, X, Loader2 } from "lucide-react";
-import { supabaseBrowser as supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/supabaseClient";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";

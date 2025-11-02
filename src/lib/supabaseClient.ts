@@ -9,8 +9,7 @@ if (typeof window !== "undefined") {
   console.log("Supabase Key (partial):", supabaseAnonKey.substring(0, 10));
 }
 
-// ✅ Use the auth helper if available (for components)
-export const supabaseBrowser = createClientComponentClient();
+export const supabase = createClientComponentClient();
 
-// ✅ Use the standard client when needed (server or background)
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+
