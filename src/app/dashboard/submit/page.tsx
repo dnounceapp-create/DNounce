@@ -31,7 +31,10 @@ export default function SubmitRecordPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const termsRef = useRef<HTMLDivElement>(null);
-  const [files, setFiles] = useState<File[]>([]); 
+  const [files, setFiles] = useState<File[]>([]);
+  const [submissionSuccess, setSubmissionSuccess] = useState(false);
+  const [submittedRecordId, setSubmittedRecordId] = useState<string | null>(null);
+ 
 
   /* ——— Fetch Relationship Types (Supabase) ——— */
   useEffect(() => {
@@ -201,7 +204,7 @@ export default function SubmitRecordPage() {
     setIsSubmitting(true);
   
     try {
-      // Get the logged-in user
+      // Get logged-in user
       const { data: userData, error: userError } = await supabase.auth.getUser();
       if (userError || !userData?.user) throw userError || new Error("No user logged in.");
   
@@ -226,15 +229,36 @@ export default function SubmitRecordPage() {
   
       if (error) throw error;
   
-      // Redirect to "My Records"
-      router.push("/dashboard/myrecords");
+      // ✅ Show success popup
+      setSubmittedRecordId(data.id);
+      setSubmissionSuccess(true);
+  
+      // ✅ Reset form fields after submission
+      setSubmitName("");
+      setSubmitNickname("");
+      setSubmitOrganization("");
+      setSubmitRelationship("");
+      setSubmitOtherRelationship("");
+      setSubmitCategory("");
+      setSubmitLocation("");
+      setFiles([]);
+      setAgreedToTerms(false);
+      setSelectedSubject(null);
+      setSubjectQuery("");
+  
+      // ✅ Auto-close popup after 5 seconds
+      setTimeout(() => {
+        setSubmissionSuccess(false);
+        setSubmittedRecordId(null);
+      }, 5000);
+  
     } catch (err) {
       console.error("Error submitting record:", err);
       alert("There was an error submitting your record.");
     } finally {
       setIsSubmitting(false);
     }
-  }
+  }  
   
   /* ——— Page UI ——— */
   return (
@@ -655,6 +679,61 @@ export default function SubmitRecordPage() {
           </div>
         </CardContent>
       </Card>
+
+      {submissionSuccess && submittedRecordId && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn"
+          onClick={() => setSubmissionSuccess(false)} // click outside closes
+          onKeyDown={(e) => { if (e.key === "Escape") setSubmissionSuccess(false); }}
+          tabIndex={-1}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-sm text-center transform transition-all"
+            onClick={(e) => e.stopPropagation()} // prevent closing when clicking inside
+          >
+            <div className="flex flex-col items-center">
+              <div className="bg-green-100 rounded-full p-3 mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+
+              <h2 className="text-xl font-semibold text-gray-800 mb-2">Record Submitted!</h2>
+              <p className="text-sm text-gray-600 mb-6">
+                Your record has been successfully submitted and will appear in your dashboard soon.
+              </p>
+
+              <div className="flex flex-col gap-3 w-full">
+                <button
+                  type="button"
+                  onClick={() => router.push(`/record/${submittedRecordId}`)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg transition"
+                >
+                  View Record
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => router.push("/dashboard/myrecords")}
+                  className="bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-2 rounded-lg transition"
+                >
+                  Go to Dashboard
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSubmissionSuccess(false)}
+                  className="text-sm text-gray-400 hover:text-gray-600 mt-2"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}      
     </form>
   );
 }
