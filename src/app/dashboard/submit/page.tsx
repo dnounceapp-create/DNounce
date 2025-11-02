@@ -194,6 +194,8 @@ export default function SubmitRecordPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+  
+    // Terms check
     if (!agreedToTerms) {
       alert("You must agree to the Terms of Service.");
       return;
@@ -202,17 +204,38 @@ export default function SubmitRecordPage() {
     setIsSubmitting(true);
   
     try {
-      // Get logged-in user
+      // ✅ 1️⃣ Verify logged-in user (fixes AuthSessionMissingError)
       const { data: userData, error: userError } = await supabase.auth.getUser();
-      if (userError || !userData?.user) throw userError || new Error("No user logged in.");
+      if (userError || !userData?.user) {
+        console.warn("Auth check failed:", userError);
+        alert("Please sign in before submitting a record.");
+        setIsSubmitting(false);
+        return;
+      }
   
-      const user = userData.user;
+      const userId = userData.user.id;
   
-      // Insert into records table
+      // ✅ 2️⃣ Try to resolve location (but don’t block if it fails)
+      let resolvedLocation = submitLocation?.trim() || null;
+      if (resolvedLocation) {
+        try {
+          const res = await fetch(`/api/location?input=${encodeURIComponent(resolvedLocation)}`);
+          if (res.ok) {
+            const locData = await res.json();
+            resolvedLocation = locData?.predictions?.[0]?.description || resolvedLocation;
+          } else {
+            console.warn("⚠️ Location API failed, using raw input:", res.status);
+          }
+        } catch (err) {
+          console.error("⚠️ Location API error:", err);
+        }
+      }
+  
+      // ✅ 3️⃣ Insert record into Supabase
       const { data, error } = await supabase
         .from("records")
         .insert({
-          uid: user.id,
+          uid: userId,
           subject_id: selectedSubject?.id || null,
           contributor_alias: submitNickname || submitName || "Anonymous",
           record_type: submitCategory || "General",
@@ -223,16 +246,18 @@ export default function SubmitRecordPage() {
           votes: 0,
           views: 0,
           last_activity_at: new Date().toISOString(),
+          location: resolvedLocation, // ✅ safe fallback for location
         })
         .select()
         .single();
+  
       if (error) throw error;
   
-      // ✅ Show success popup
+      // ✅ 4️⃣ Success popup
       setSubmittedRecordId(data.id);
       setSubmissionSuccess(true);
   
-      // ✅ Reset form fields after submission
+      // ✅ 5️⃣ Reset form
       setSubmitName("");
       setSubmitNickname("");
       setSubmitOrganization("");
@@ -245,19 +270,18 @@ export default function SubmitRecordPage() {
       setSelectedSubject(null);
       setSubjectQuery("");
   
-      // ✅ Auto-close popup after 5 seconds
+      // Auto-close popup after 5 seconds
       setTimeout(() => {
         setSubmissionSuccess(false);
         setSubmittedRecordId(null);
       }, 5000);
-  
     } catch (err) {
       console.error("Error submitting record:", err);
       alert("There was an error submitting your record.");
     } finally {
       setIsSubmitting(false);
     }
-  }  
+  }   
   
   /* ——— Page UI ——— */
   return (
