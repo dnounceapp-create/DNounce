@@ -195,6 +195,7 @@ export default function SubmitRecordPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
   
+    // must agree to terms
     if (!agreedToTerms) {
       alert("You must agree to the Terms of Service.");
       return;
@@ -203,7 +204,7 @@ export default function SubmitRecordPage() {
     setIsSubmitting(true);
   
     try {
-      // ✅ Check auth session
+      // 1) auth check
       const { data: userData, error: userError } = await supabase.auth.getUser();
       if (userError || !userData?.user) {
         alert("Please sign in before submitting a record.");
@@ -212,80 +213,87 @@ export default function SubmitRecordPage() {
       }
       const userId = userData.user.id;
   
-      // ✅ Try to resolve location gracefully
+      // 2) read textarea safely into a variable (NOT outcome)
+      const details = (document.querySelector("textarea") as HTMLTextAreaElement | null)?.value?.trim() || "";
+  
+      // 3) resolve location (best-effort)
       let resolvedLocation = submitLocation?.trim() || null;
       if (resolvedLocation) {
         try {
           const res = await fetch(`/api/location?input=${encodeURIComponent(resolvedLocation)}`);
           if (res.ok) {
-            const locData = await res.json();
-            resolvedLocation = locData?.predictions?.[0]?.description || resolvedLocation;
+            const loc = await res.json();
+            resolvedLocation = loc?.predictions?.[0]?.description || resolvedLocation;
           }
-        } catch (err) {
-          console.warn("⚠️ Location resolution failed:", err);
+        } catch {
+          /* ignore */
         }
       }
   
-      // ✅ If subject is required by schema, auto-create a placeholder subject
+      // 4) ensure we have a subject_id
       let subjectId = selectedSubject?.id || null;
   
       if (!subjectId) {
-        // Try to create a new subject if name provided
-        if (submitName.trim().length > 0) {
-          const { data: subjectData, error: subjectError } = await supabase
-            .from("subjects")
-            .insert({
-              name: submitName.trim(),
-              nickname: submitNickname || null,
-              organization: submitOrganization || null,
-              location: resolvedLocation,
-            })
-            .select("id")
-            .single();
-  
-          if (subjectError) {
-            console.error("Error creating subject:", subjectError);
-            alert("Could not create subject profile.");
-            setIsSubmitting(false);
-            return;
-          }
-  
-          subjectId = subjectData.id;
-        } else {
-          // If name is blank and subject_id can't be null, stop user
+        if (submitName.trim().length === 0) {
           alert("Please provide a subject name or select an existing subject.");
           setIsSubmitting(false);
           return;
         }
+  
+        const { data: subjectRow, error: subjectErr } = await supabase
+          .from("subjects")
+          .insert({
+            name: submitName.trim(),
+            nickname: submitNickname || null,
+            organization: submitOrganization || null,
+            location: resolvedLocation,
+          })
+          .select("id")
+          .single();
+  
+        if (subjectErr) {
+          console.error("Error creating subject:", subjectErr);
+          alert("Could not create subject profile.");
+          setIsSubmitting(false);
+          return;
+        }
+        subjectId = subjectRow.id;
       }
   
-      // ✅ Insert the record
-      const { data, error } = await supabase
+      // 5) INSERT the record
+      const { data: recordRow, error: insertErr } = await supabase
         .from("records")
         .insert({
           uid: userId,
           subject_id: subjectId,
-          contributor_alias:
-            (submitNickname?.trim() || submitName?.trim() || "Anonymous") || "Anonymous",
-          record_type: "pending",
-          stage: 1,
-          outcome: null, // keep it NULL until dispute or AI verdict
-          is_published: false,
+  
+          // shown name
+          contributor_alias: (submitNickname?.trim() || submitName?.trim() || "Anonymous"),
+  
+          // lifecycle at submission:
+          record_type: "pending",  // always pending until AI classifies
+          stage: 1,                // AI verification in progress
+          is_published: false,     // not public yet
+          outcome: null,           // must be NULL until dispute voting ends
+  
+          // extras
+          details,                 // <-- user’s text goes here
+          location: resolvedLocation,
           submitted_at: new Date().toISOString(),
+          last_activity_at: new Date().toISOString(),
           votes: 0,
           views: 0,
-          last_activity_at: new Date().toISOString(),
-          location: resolvedLocation,
         })
-        .select()
+        .select("id")
         .single();
-      if (error) throw error;
   
-      // ✅ Success flow
-      setSubmittedRecordId(data.id);
+      if (insertErr) throw insertErr;
+  
+      // 6) success UI
+      setSubmittedRecordId(recordRow.id);
       setSubmissionSuccess(true);
   
-      // ✅ Reset form fields
+      // 7) reset form
       setSubmitName("");
       setSubmitNickname("");
       setSubmitOrganization("");
@@ -298,7 +306,6 @@ export default function SubmitRecordPage() {
       setSelectedSubject(null);
       setSubjectQuery("");
   
-      // ✅ Auto-close popup after 5s
       setTimeout(() => {
         setSubmissionSuccess(false);
         setSubmittedRecordId(null);
