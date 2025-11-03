@@ -195,7 +195,6 @@ export default function SubmitRecordPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
   
-    // Terms check
     if (!agreedToTerms) {
       alert("You must agree to the Terms of Service.");
       return;
@@ -204,18 +203,16 @@ export default function SubmitRecordPage() {
     setIsSubmitting(true);
   
     try {
-      // ✅ 1️⃣ Verify logged-in user (fixes AuthSessionMissingError)
+      // ✅ Check auth session
       const { data: userData, error: userError } = await supabase.auth.getUser();
       if (userError || !userData?.user) {
-        console.warn("Auth check failed:", userError);
         alert("Please sign in before submitting a record.");
         setIsSubmitting(false);
         return;
       }
-  
       const userId = userData.user.id;
   
-      // ✅ 2️⃣ Try to resolve location (but don’t block if it fails)
+      // ✅ Try to resolve location gracefully
       let resolvedLocation = submitLocation?.trim() || null;
       if (resolvedLocation) {
         try {
@@ -223,20 +220,51 @@ export default function SubmitRecordPage() {
           if (res.ok) {
             const locData = await res.json();
             resolvedLocation = locData?.predictions?.[0]?.description || resolvedLocation;
-          } else {
-            console.warn("⚠️ Location API failed, using raw input:", res.status);
           }
         } catch (err) {
-          console.error("⚠️ Location API error:", err);
+          console.warn("⚠️ Location resolution failed:", err);
         }
       }
   
-      // ✅ 3️⃣ Insert record into Supabase
+      // ✅ If subject is required by schema, auto-create a placeholder subject
+      let subjectId = selectedSubject?.id || null;
+  
+      if (!subjectId) {
+        // Try to create a new subject if name provided
+        if (submitName.trim().length > 0) {
+          const { data: subjectData, error: subjectError } = await supabase
+            .from("subjects")
+            .insert({
+              name: submitName.trim(),
+              nickname: submitNickname || null,
+              organization: submitOrganization || null,
+              location: resolvedLocation,
+            })
+            .select("id")
+            .single();
+  
+          if (subjectError) {
+            console.error("Error creating subject:", subjectError);
+            alert("Could not create subject profile.");
+            setIsSubmitting(false);
+            return;
+          }
+  
+          subjectId = subjectData.id;
+        } else {
+          // If name is blank and subject_id can't be null, stop user
+          alert("Please provide a subject name or select an existing subject.");
+          setIsSubmitting(false);
+          return;
+        }
+      }
+  
+      // ✅ Insert the record
       const { data, error } = await supabase
         .from("records")
         .insert({
           uid: userId,
-          subject_id: selectedSubject?.id || null,
+          subject_id: subjectId,
           contributor_alias: submitNickname || submitName || "Anonymous",
           record_type: submitCategory || "General",
           stage: 1,
@@ -246,18 +274,18 @@ export default function SubmitRecordPage() {
           votes: 0,
           views: 0,
           last_activity_at: new Date().toISOString(),
-          location: resolvedLocation, // ✅ safe fallback for location
+          location: resolvedLocation,
         })
         .select()
         .single();
   
       if (error) throw error;
   
-      // ✅ 4️⃣ Success popup
+      // ✅ Success flow
       setSubmittedRecordId(data.id);
       setSubmissionSuccess(true);
   
-      // ✅ 5️⃣ Reset form
+      // ✅ Reset form fields
       setSubmitName("");
       setSubmitNickname("");
       setSubmitOrganization("");
@@ -270,7 +298,7 @@ export default function SubmitRecordPage() {
       setSelectedSubject(null);
       setSubjectQuery("");
   
-      // Auto-close popup after 5 seconds
+      // ✅ Auto-close popup after 5s
       setTimeout(() => {
         setSubmissionSuccess(false);
         setSubmittedRecordId(null);
@@ -281,7 +309,7 @@ export default function SubmitRecordPage() {
     } finally {
       setIsSubmitting(false);
     }
-  }   
+  }  
   
   /* ——— Page UI ——— */
   return (
