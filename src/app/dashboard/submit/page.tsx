@@ -265,8 +265,9 @@ export default function SubmitRecordPage() {
         .insert({
           uid: userId,
           subject_id: subjectId,
-          contributor_alias: submitNickname || submitName || "Anonymous",
-          record_type: submitCategory || "General",
+          contributor_alias:
+            (submitNickname?.trim() || submitName?.trim() || "Anonymous") || "Anonymous",
+          record_type: "pending", // default, will be updated by AI later
           stage: 1,
           outcome: document.querySelector("textarea")?.value || null,
           is_published: false,
