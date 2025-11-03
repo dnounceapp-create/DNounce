@@ -267,9 +267,9 @@ export default function SubmitRecordPage() {
           subject_id: subjectId,
           contributor_alias:
             (submitNickname?.trim() || submitName?.trim() || "Anonymous") || "Anonymous",
-          record_type: "pending", // default, will be updated by AI later
+          record_type: "pending",
           stage: 1,
-          outcome: document.querySelector("textarea")?.value || null,
+          outcome: null, // keep it NULL until dispute or AI verdict
           is_published: false,
           submitted_at: new Date().toISOString(),
           votes: 0,
@@ -279,7 +279,6 @@ export default function SubmitRecordPage() {
         })
         .select()
         .single();
-  
       if (error) throw error;
   
       // ✅ Success flow
