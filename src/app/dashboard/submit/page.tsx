@@ -260,24 +260,17 @@ export default function SubmitRecordPage() {
         subjectId = subjectRow.id;
       }
   
-      // 5) INSERT the record
       const { data: recordRow, error: insertErr } = await supabase
         .from("records")
         .insert({
           uid: userId,
           subject_id: subjectId,
-        
-          // shown name
-          contributor_alias: (submitNickname?.trim() || submitName?.trim() || "Anonymous"),
-        
-          // lifecycle at submission:
-          record_type: "pending",  // always pending until AI classifies
-          stage: 1,                // AI verification in progress
-          is_published: false,     // not public yet
-          outcome: null,           // must be NULL until dispute voting ends
-        
-          // extras
-          details,                 // <-- user’s text goes here
+          contributor_alias: submitNickname?.trim() || submitName?.trim() || "Anonymous",
+          record_type: "pending",
+          stage: 1,
+          is_published: false,
+          outcome: null,
+          details,
           location: resolvedLocation,
           submitted_at: new Date().toISOString(),
           last_activity_at: new Date().toISOString(),
