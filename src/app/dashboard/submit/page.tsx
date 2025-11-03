@@ -266,16 +266,16 @@ export default function SubmitRecordPage() {
         .insert({
           uid: userId,
           subject_id: subjectId,
-  
+        
           // shown name
           contributor_alias: (submitNickname?.trim() || submitName?.trim() || "Anonymous"),
-  
+        
           // lifecycle at submission:
           record_type: "pending",  // always pending until AI classifies
           stage: 1,                // AI verification in progress
           is_published: false,     // not public yet
           outcome: null,           // must be NULL until dispute voting ends
-  
+        
           // extras
           details,                 // <-- user’s text goes here
           location: resolvedLocation,
@@ -286,7 +286,6 @@ export default function SubmitRecordPage() {
         })
         .select("id")
         .single();
-  
       if (insertErr) throw insertErr;
   
       // 6) success UI
