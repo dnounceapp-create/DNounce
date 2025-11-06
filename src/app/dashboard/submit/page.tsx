@@ -212,7 +212,7 @@ export default function SubmitRecordPage() {
         return;
       }
       
-      const userId = session?.user?.id;
+      const userId = userData?.user?.id;
   
       // 2) read textarea safely into a variable (NOT outcome)
       const details = (document.querySelector("textarea") as HTMLTextAreaElement | null)?.value?.trim() || "";
