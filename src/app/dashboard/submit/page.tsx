@@ -216,6 +216,7 @@ export default function SubmitRecordPage() {
   
       // 2) read textarea safely into a variable (NOT outcome)
       const details = (document.querySelector("textarea") as HTMLTextAreaElement | null)?.value?.trim() || "";
+      const description = `${submitName || "Unknown"} — ${submitCategory || "General record"}`;  
   
       // 3) resolve location (best-effort)
       let resolvedLocation = submitLocation?.trim() || null;
