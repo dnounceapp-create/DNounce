@@ -211,7 +211,8 @@ export default function SubmitRecordPage() {
         setIsSubmitting(false);
         return;
       }
-      const userId = userData.user.id;
+      
+      const userId = session?.user?.id;
   
       // 2) read textarea safely into a variable (NOT outcome)
       const details = (document.querySelector("textarea") as HTMLTextAreaElement | null)?.value?.trim() || "";
@@ -266,21 +267,21 @@ export default function SubmitRecordPage() {
         .insert({
           uid: userId,
           subject_id: subjectId,
-          contributor_alias: submitNickname?.trim() || submitName?.trim() || "Anonymous",
           record_type: "pending",
           stage: 1,
-          is_published: false,
           outcome: null,
+          is_published: false,
+          description,
           details,
           location: resolvedLocation,
-          submitted_at: new Date().toISOString(),
-          last_activity_at: new Date().toISOString(),
-          votes: 0,
-          views: 0,
         })
         .select("id")
         .single();
-      if (insertErr) throw insertErr;
+        if (insertErr) {
+          console.error("Insert error details:", insertErr);
+          alert(`Insert failed: ${insertErr.message}`);
+          throw insertErr;
+        }        
   
       // 6) success UI
       setSubmittedRecordId(recordRow.id);
