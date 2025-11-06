@@ -234,12 +234,12 @@ export default function SubmitRecordPage() {
       let subjectId = selectedSubject?.id || null;
   
       if (!subjectId) {
-        if (submitName.trim().length === 0) {
+        if (!submitName.trim()) {
           alert("Please provide a subject name or select an existing subject.");
           setIsSubmitting(false);
           return;
         }
-  
+      
         const { data: subjectRow, error: subjectErr } = await supabase
           .from("subjects")
           .insert({
@@ -250,15 +250,16 @@ export default function SubmitRecordPage() {
           })
           .select("id")
           .single();
-  
-        if (subjectErr) {
-          console.error("Error creating subject:", subjectErr);
-          alert("Could not create subject profile.");
+      
+        if (subjectErr || !subjectRow?.id) {
+          console.error("❌ Error creating subject:", subjectErr);
+          alert("Could not create or find subject profile.");
           setIsSubmitting(false);
           return;
         }
+      
         subjectId = subjectRow.id;
-      }
+      }      
   
       const { data: recordRow, error: insertErr } = await supabase
         .from("records")
