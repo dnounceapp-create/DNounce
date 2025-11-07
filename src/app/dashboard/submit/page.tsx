@@ -266,7 +266,6 @@ export default function SubmitRecordPage() {
       const { data: recordRow, error: insertErr } = await supabase
         .from("records")
         .insert({
-          uid: userId,
           subject_id: subjectId,
           record_type: "pending",
           stage: 1,
@@ -275,9 +274,10 @@ export default function SubmitRecordPage() {
           description,
           details,
           location: resolvedLocation,
-        })
+        })        
         .select("id")
         .single();
+
         if (insertErr) {
           console.error("Insert error details:", insertErr);
           alert(`Insert failed: ${insertErr.message}`);
@@ -301,10 +301,6 @@ export default function SubmitRecordPage() {
       setSelectedSubject(null);
       setSubjectQuery("");
   
-      setTimeout(() => {
-        setSubmissionSuccess(false);
-        setSubmittedRecordId(null);
-      }, 5000);
     } catch (err) {
       console.error("Error submitting record:", err);
       alert("There was an error submitting your record.");
