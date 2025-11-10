@@ -925,42 +925,56 @@ export default function SubmitRecordPage() {
           </div>
 
           {/* ⭐ Rating Section */}
-          <div className="mb-8">
-            <label className="mb-2 text-sm font-semibold text-gray-700">
-              Rating <span className="text-red-500">*</span>
-            </label>
+          <div className="mt-8 sm:mt-10">
+            <Label className="block text-lg font-medium mb-3 sm:mb-4">
+              Rate Your Experience <span className="text-red-500">*</span>
+            </Label>
 
             <div
-              className="flex justify-center sm:justify-start items-center gap-1 sm:gap-2 flex-wrap"
-              style={{ touchAction: "manipulation" }}
+              className="flex items-center justify-start flex-wrap gap-2 sm:gap-3 select-none"
+              onTouchStart={(e) => e.stopPropagation()}
             >
-              {[...Array(10)].map((_, i) => {
+              {Array.from({ length: 10 }).map((_, i) => {
                 const value = i + 1;
-                const filled = value <= (hoverRating ?? rating);
+                const currentValue = hoverRating ?? rating;
+                const isFilled = currentValue >= value;
+
                 return (
-                  <button
-                    key={value}
-                    type="button"
-                    aria-label={`Rate ${value}`}
-                    onClick={() => setRating(value)}
-                    onMouseEnter={() => setHoverRating(value)}
-                    onMouseLeave={() => setHoverRating(null)}
-                    onTouchStart={() => setRating(value)} // ✅ make taps register instantly on mobile
-                    className="focus:outline-none active:scale-95 transition-transform"
+                  <div
+                    key={i}
+                    className="relative cursor-pointer active:scale-105 transition-transform"
+                    style={{ width: 42, height: 42 }}
+                    onMouseEnter={() => {
+                      if (window.innerWidth > 768) setHoverRating(value);
+                    }}
+                    onMouseLeave={() => {
+                      if (window.innerWidth > 768) setHoverRating(null);
+                    }}
+                    onClick={() => {
+                      if (window.innerWidth > 768) {
+                        setRating(value);
+                        setHoverRating(null);
+                      }
+                    }}
+                    onTouchEnd={() => {
+                      // 📱 Mobile: simpler full-star selection
+                      setRating(value);
+                      setHoverRating(null);
+                    }}
                   >
                     <Star
-                      className={`w-7 h-7 sm:w-8 sm:h-8 ${
-                        filled ? "fill-black text-black" : "text-gray-400"
-                      } transition-colors`}
-                      strokeWidth={1.5}
+                      size={40}
+                      className={`absolute inset-0 transition-all duration-150 ${
+                        isFilled ? "text-black fill-black" : "text-gray-300 fill-none"
+                      }`}
                     />
-                  </button>
+                  </div>
                 );
               })}
             </div>
 
-            <p className="text-xs text-gray-500 mt-2 text-center sm:text-left">
-              Tap or click to rate your overall experience (1 = worst, 10 = best).
+            <p className="mt-3 text-sm sm:text-base text-gray-500">
+              Selected rating: {rating ? rating.toFixed(1) : "—"} / 10
             </p>
           </div>
 
