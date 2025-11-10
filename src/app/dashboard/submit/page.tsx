@@ -856,66 +856,79 @@ export default function SubmitRecordPage() {
           )}
 
           {/* 📋 Results Section */}
-          <div className="space-y-3 mb-8">
-            <h3 className="text-sm font-semibold text-gray-800">Results</h3>
+          <div className="relative mb-10 sm:mb-12">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4">
+              Results
+            </h3>
 
-            {/* 🧩 CASE 1: There is a selected subject (including temp) */}
-            {selectedSubject ? (
-              <div className="space-y-3">
-                <SubjectResultCard
-                  key={selectedSubject.id}
-                  subject={selectedSubject}
-                  selectedSubject={selectedSubject}
-                  onSelect={setSelectedSubject}
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedSubject(null);
-                    setTempSubject(null);
-                    setSubjectResults([]);
-                  }}
-                  className="text-sm text-blue-600 hover:text-blue-800 underline mt-2"
-                >
-                  Change subject selection
-                </button>
-              </div>
-            ) : (
-              <>
-                {/* 🧩 CASE 2: Search Results */}
-                {subjectSearched && (
-                  <>
-                    {subjectResults.length > 0 ? (
-                      subjectResults.slice(0, 10).map((subj) => (
-                        <SubjectResultCard
-                          key={subj.id}
-                          subject={subj}
-                          selectedSubject={selectedSubject}
-                          onSelect={setSelectedSubject}
-                        />
-                      ))
-                    ) : (
-                      <p className="text-sm text-gray-500 italic">
-                        No matching subjects found.
-                      </p>
-                    )}
-                  </>
-                )}
+            {/* Scrollable container */}
+            <div className="relative max-h-[70vh] overflow-y-auto pr-1 sm:pr-2 space-y-3 sm:space-y-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent rounded-2xl bg-white shadow-inner">
+              {/* Gradient fade at top */}
+              <div className="pointer-events-none absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-white via-white/90 to-transparent z-10" />
+              
+              {/* Gradient fade at bottom */}
+              <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white via-white/90 to-transparent z-10" />
 
-                {/* 🧩 CASE 3: Create New Subject Button (only show after search) */}
-                {subjectSearched && (
-                  <div className="flex justify-center mt-4">
-                    <button
-                      type="button"
-                      onClick={handleCreateTempSubject}
-                      className="text-sm text-gray-700 font-medium underline hover:text-black transition"
-                    >
-                      Subject doesn’t exist yet?
-                    </button>
-                  </div>
-                )}
-              </>
-            )}
+              {/* 🧩 CASE 1: Selected subject (including temp) */}
+              {selectedSubject ? (
+                <div className="space-y-3 px-1 sm:px-2">
+                  <SubjectResultCard
+                    key={selectedSubject.id}
+                    subject={selectedSubject}
+                    selectedSubject={selectedSubject}
+                    onSelect={setSelectedSubject}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedSubject(null);
+                      setTempSubject(null);
+                      setSubjectResults([]);
+                    }}
+                    className="text-sm text-blue-600 hover:text-blue-800 underline mt-2 mx-auto sm:mx-0 block text-center sm:text-left"
+                  >
+                    Change subject selection
+                  </button>
+                </div>
+              ) : (
+                <>
+                  {/* 🧩 CASE 2: Search Results */}
+                  {subjectSearched && (
+                    <>
+                      {subjectResults.length > 0 ? (
+                        <div className="px-1 sm:px-2 pb-3 sm:pb-4">
+                          {subjectResults.slice(0, 10).map((subj) => (
+                            <SubjectResultCard
+                              key={subj.id}
+                              subject={subj}
+                              selectedSubject={selectedSubject}
+                              onSelect={setSelectedSubject}
+                            />
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-500 italic text-center sm:text-left px-2 py-4">
+                          No matching subjects found.
+                        </p>
+                      )}
+                    </>
+                  )}
+
+                  {/* 🧩 CASE 3: Create New Subject Button */}
+                  {subjectSearched && (
+                    <div className="flex justify-center mt-4 pb-4 px-2">
+                      <button
+                        type="button"
+                        onClick={handleCreateTempSubject}
+                        className="text-sm text-gray-700 font-medium underline hover:text-black transition"
+                      >
+                        Subject doesn’t exist yet?
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           </div>
 
           {/* ⭐ Rating Section */}
@@ -1328,44 +1341,49 @@ function SubjectResultCard({
 
   return (
     <div
-      className={`w-full rounded-2xl border flex items-center justify-between px-4 py-3 shadow-sm hover:shadow-md transition cursor-pointer ${
+      className={`w-full rounded-2xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-4 py-4 shadow-sm hover:shadow-md transition cursor-pointer ${
         isSelected ? "border-gray-400 bg-gray-50" : "border-gray-200 bg-white"
       }`}
       onClick={() => onSelect(isSelected ? null : subject)}
     >
-      <div className="flex items-center gap-4">
+      {/* Left section: avatar + info */}
+      <div className="flex items-center gap-3 w-full sm:w-auto">
         <div
-          className={`w-12 h-12 rounded-full flex items-center justify-center ${
+          className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center flex-shrink-0 ${
             isSelected ? "bg-gray-100 border-2 border-gray-400" : "bg-gray-100"
           }`}
         >
-          <User className="w-6 h-6 text-gray-500" />
+          <User className="w-6 h-6 sm:w-7 sm:h-7 text-gray-500" />
         </div>
 
-        <div className="min-w-0">
-          <div className="text-sm font-semibold text-gray-900">
+        <div className="min-w-0 flex-1">
+          <div className="text-base sm:text-sm font-semibold text-gray-900 break-words">
             {subject.name}
             {subject.nickname && (
-              <span className="text-gray-500 font-normal"> ({subject.nickname})</span>
+              <span className="text-gray-500 font-normal">
+                {" "}
+                ({subject.nickname})
+              </span>
             )}
           </div>
-          <div className="text-xs text-gray-600 truncate">
+          <div className="text-xs sm:text-sm text-gray-600 break-words">
             {subject.organization || "Independent"}
             {subject.location ? ` • ${subject.location}` : ""}
           </div>
-          <div className="text-[11px] text-gray-400 font-mono mt-0.5">
+          <div className="text-[11px] text-gray-400 font-mono mt-1 truncate">
             ID: {subject.id}
           </div>
         </div>
       </div>
 
-      <div className="flex items-center gap-3 ml-4 shrink-0">
+      {/* Right section: actions */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
         {!subject.id.startsWith("temp-") && (
           <Link
             href={`/subject/${subject.id}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-xs font-medium text-gray-700 hover:text-black hover:underline flex items-center gap-1"
+            className="text-xs font-medium text-gray-700 hover:text-black hover:underline flex items-center justify-center gap-1 border border-gray-300 rounded-full px-3 py-1.5 sm:py-1 bg-white w-full sm:w-auto"
             onClick={(e) => e.stopPropagation()}
           >
             View
@@ -1388,7 +1406,7 @@ function SubjectResultCard({
             e.stopPropagation();
             onSelect(isSelected ? null : subject);
           }}
-          className={`flex items-center gap-1 text-xs font-medium px-3 py-1 rounded-full border transition ${
+          className={`flex items-center justify-center gap-1 text-xs font-medium px-3 py-1.5 sm:py-1 rounded-full border transition w-full sm:w-auto ${
             isSelected
               ? "border-gray-400 text-gray-700 bg-gray-50 hover:bg-gray-100"
               : "border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
@@ -1407,4 +1425,5 @@ function SubjectResultCard({
     </div>
   );
 }
+
 
