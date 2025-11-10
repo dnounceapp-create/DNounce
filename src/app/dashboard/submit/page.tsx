@@ -933,58 +933,73 @@ export default function SubmitRecordPage() {
             </div>
           </div>
 
-          {/* ⭐ Rating Section */}
-          <div className="mt-8 sm:mt-10">
-            <Label className="block text-lg font-medium mb-3 sm:mb-4">
-              Rate Your Experience <span className="text-red-500">*</span>
-            </Label>
+          {/* 📋 Results Section */}
+          <div className="mb-8 sm:mb-10 space-y-3">
+            <h3 className="text-sm sm:text-base font-semibold text-gray-800">
+              Results
+            </h3>
 
-            <div
-              className="flex items-center justify-start flex-wrap gap-2 sm:gap-3 select-none"
-              onTouchStart={(e) => e.stopPropagation()}
-            >
-              {Array.from({ length: 10 }).map((_, i) => {
-                const value = i + 1;
-                const currentValue = hoverRating ?? rating;
-                const isFilled = currentValue >= value;
-
-                return (
-                  <div
-                    key={i}
-                    className="relative cursor-pointer active:scale-105 transition-transform"
-                    style={{ width: 42, height: 42 }}
-                    onMouseEnter={() => {
-                      if (window.innerWidth > 768) setHoverRating(value);
-                    }}
-                    onMouseLeave={() => {
-                      if (window.innerWidth > 768) setHoverRating(null);
-                    }}
+            {/* 🧩 CASE 1: Selected subject (including temp) */}
+            {selectedSubject ? (
+              <div className="space-y-3">
+                <SubjectResultCard
+                  key={selectedSubject.id}
+                  subject={selectedSubject}
+                  selectedSubject={selectedSubject}
+                  onSelect={setSelectedSubject}
+                />
+                <div className="flex justify-center sm:justify-start">
+                  <button
+                    type="button"
                     onClick={() => {
-                      if (window.innerWidth > 768) {
-                        setRating(value);
-                        setHoverRating(null);
-                      }
+                      setSelectedSubject(null);
+                      setTempSubject(null);
+                      setSubjectResults([]);
                     }}
-                    onTouchEnd={() => {
-                      // 📱 Mobile: simpler full-star selection
-                      setRating(value);
-                      setHoverRating(null);
-                    }}
+                    className="text-sm text-blue-600 hover:text-blue-800 underline transition"
                   >
-                    <Star
-                      size={40}
-                      className={`absolute inset-0 transition-all duration-150 ${
-                        isFilled ? "text-black fill-black" : "text-gray-300 fill-none"
-                      }`}
-                    />
-                  </div>
-                );
-              })}
-            </div>
+                    Change subject selection
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* 🧩 CASE 2: Search Results */}
+                {subjectSearched && (
+                  <>
+                    {subjectResults.length > 0 ? (
+                      <div className="space-y-3">
+                        {subjectResults.slice(0, 10).map((subj) => (
+                          <SubjectResultCard
+                            key={subj.id}
+                            subject={subj}
+                            selectedSubject={selectedSubject}
+                            onSelect={setSelectedSubject}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500 italic text-center sm:text-left py-3">
+                        No matching subjects found.
+                      </p>
+                    )}
+                  </>
+                )}
 
-            <p className="mt-3 text-sm sm:text-base text-gray-500">
-              Selected rating: {rating ? rating.toFixed(1) : "—"} / 10
-            </p>
+                {/* 🧩 CASE 3: Create New Subject Button */}
+                {subjectSearched && (
+                  <div className="flex justify-center pt-2">
+                    <button
+                      type="button"
+                      onClick={handleCreateTempSubject}
+                      className="text-sm text-gray-700 font-medium underline hover:text-black transition"
+                    >
+                      Subject doesn’t exist yet?
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
           </div>
 
           {/* Evidence Upload */}
