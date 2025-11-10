@@ -666,32 +666,33 @@ export default function SubmitRecordPage() {
   return (
     <form
       onSubmit={handleSubmit}
-      className="max-w-4xl mx-auto px-4 py-10">
-      <div className="flex flex-col items-center justify-center text-center mb-10">
-        <div className="flex items-center gap-3 mb-2">
-          <FileText className="w-7 h-7 text-blue-600" />
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">
+      className=" w-full max-w-3xl mx-auto px-3 sm:px-5 md:px-8 py-4 sm:py-8 space-y-8 sm:space-y-10"
+    >
+      <div className="flex flex-col items-center text-center mb-8 sm:mb-10">
+        <div className="flex items-center gap-2 sm:gap-3 mb-2">
+          <FileText className="w-6 h-6 sm:w-7 sm:h-7 text-blue-600" />
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 leading-snug">
             Submit a Record
           </h1>
         </div>
-        <p className="text-sm sm:text-base text-gray-500 max-w-md">
-        Share your verified experience or information to help maintain transparency and community accountability.
+        <p className="text-sm sm:text-base text-gray-500 max-w-md leading-relaxed">
+          Share your verified experience or information to help maintain transparency and community accountability.
         </p>
       </div>
-      <Card className="p-4 sm:p-8 bg-white shadow-lg rounded-xl">
-        <CardContent className="p-0">
-          
+
+      <Card className="p-4 sm:p-6 md:p-8 bg-white shadow-md rounded-2xl">
+        <CardContent className="p-0 sm:p-2">
           {/* ——— Subject Contact Information ——— */}
-          <div className="mb-10 bg-gray-50 border border-gray-200 rounded-2xl p-8 shadow-sm">
-            <div className="flex flex-col text-center mb-6">
-              <h2 className="text-lg font-semibold text-gray-800">Contact Information</h2>
-              <p className="text-sm text-gray-500 max-w-lg mx-auto leading-relaxed">
+          <div className="mb-8 sm:mb-10 bg-gray-50 border border-gray-200 rounded-2xl p-5 sm:p-8 shadow-sm">
+            <div className="flex flex-col text-center mb-5 sm:mb-6">
+              <h2 className="text-base sm:text-lg font-semibold text-gray-800">Contact Information</h2>
+              <p className="text-xs sm:text-sm text-gray-500 leading-relaxed max-w-lg mx-auto">
                 To keep things fair and transparent, please include at least one way for us to notify the subject 
                 (either a phone number or an email). We simply send a notice so they have the chance to view and/or respond to the record on their profile.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-4 sm:gap-y-5">
               <Field
                 label="Phone Number"
                 placeholder="e.g. (718) 555-1234"
@@ -724,7 +725,10 @@ export default function SubmitRecordPage() {
           </div>
           
           {/* ——— Subject Info Fields ——— */}
-          <div ref={subjectInfoRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-10 gap-y-12 mb-12 place-items-start">
+          <div
+            ref={subjectInfoRef}
+            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-4 sm:gap-x-6 gap-y-6 sm:gap-y-8 mb-8 sm:mb-12"
+          >
             {/* First Name */}
             <Field
               label="First Name"
@@ -832,12 +836,12 @@ export default function SubmitRecordPage() {
           </div>
 
           {/* 🔍 Search Existing Subjects */}
-          <div className="flex justify-end mb-4">
+          <div className="flex flex-col sm:flex-row gap-3 sm:justify-end mb-4">
             <button
               type="button"
               onClick={handleSubjectSearch}
               disabled={subjectLoading}
-              className="px-4 py-2 rounded-lg text-sm font-medium bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-60"
+              className="w-full sm:w-auto px-4 py-2 rounded-lg text-sm font-medium bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-60"
             >
               {subjectLoading ? "Searching..." : "Search Existing Subjects"}
             </button>
@@ -915,12 +919,12 @@ export default function SubmitRecordPage() {
           </div>
 
           {/* ⭐ Rating Section */}
-          <div className="mt-8 mb-6">
-            <Label className="block text-lg font-medium mb-2">
+          <div className="mt-6 sm:mt-8 mb-6 text-center sm:text-left">
+            <Label className="block text-base sm:text-lg font-medium mb-2">
               Rate Your Experience <span className="text-red-500">*</span>
             </Label>
 
-            <div className="flex items-center space-x-1 select-none">
+            <div className="flex flex-wrap justify-center sm:justify-start items-center space-x-1 select-none">
               {Array.from({ length: 10 }).map((_, i) => {
                 const value = i + 1;
                 const halfValue = value - 0.5;
@@ -1033,7 +1037,7 @@ export default function SubmitRecordPage() {
                 <h4 className="text-sm font-semibold text-gray-700 mb-2">
                   Attached Files 
                 </h4>
-                <div className="flex flex-wrap gap-3">
+                <div className="flex flex-col sm:flex-wrap gap-3 w-full">
                   {files.map((file, index) => {
                     const sizeKB = file.size / 1024;
                     const sizeLabel =sizeKB < 1024
@@ -1118,7 +1122,7 @@ export default function SubmitRecordPage() {
             <div
               ref={termsRef}
               onScroll={handleTermsScroll}
-              className="h-40 overflow-y-auto border border-gray-200 rounded-lg p-4 text-xs text-gray-600 bg-gray-50"
+              className="h-48 sm:h-40 overflow-y-auto border border-gray-200 rounded-lg p-3 sm:p-4 text-xs sm:text-sm text-gray-600 bg-gray-50 leading-relaxed"
             >
               <h4 className="font-semibold mb-2">Important Legal Notice:</h4>
               <p className="mb-2">
@@ -1167,11 +1171,11 @@ export default function SubmitRecordPage() {
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn"
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn px-4"
           tabIndex={-1}
         >
           <div
-            className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-sm text-center transform transition-all"
+            className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-xs sm:max-w-sm text-center"
             onClick={(e) => e.stopPropagation()} // prevent closing when clicking inside
           >
             <div className="flex flex-col items-center">
