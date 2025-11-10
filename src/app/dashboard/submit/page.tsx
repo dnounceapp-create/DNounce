@@ -862,33 +862,35 @@ export default function SubmitRecordPage() {
             </h3>
 
             {/* Scrollable container */}
-            <div className="relative max-h-[70vh] overflow-y-auto pr-1 sm:pr-2 space-y-3 sm:space-y-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent rounded-2xl bg-white shadow-inner">
+            <div className="relative max-h-[70vh] overflow-y-auto px-2 sm:px-3 pb-16 sm:pb-20 space-y-3 sm:space-y-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent rounded-2xl bg-white shadow-inner">
               {/* Gradient fade at top */}
               <div className="pointer-events-none absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-white via-white/90 to-transparent z-10" />
-              
+
               {/* Gradient fade at bottom */}
               <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white via-white/90 to-transparent z-10" />
 
               {/* 🧩 CASE 1: Selected subject (including temp) */}
               {selectedSubject ? (
-                <div className="space-y-3 px-1 sm:px-2">
+                <div className="space-y-3">
                   <SubjectResultCard
                     key={selectedSubject.id}
                     subject={selectedSubject}
                     selectedSubject={selectedSubject}
                     onSelect={setSelectedSubject}
                   />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedSubject(null);
-                      setTempSubject(null);
-                      setSubjectResults([]);
-                    }}
-                    className="text-sm text-blue-600 hover:text-blue-800 underline mt-2 mx-auto sm:mx-0 block text-center sm:text-left"
-                  >
-                    Change subject selection
-                  </button>
+                  <div className="flex justify-center sm:justify-start pb-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedSubject(null);
+                        setTempSubject(null);
+                        setSubjectResults([]);
+                      }}
+                      className="text-sm text-blue-600 hover:text-blue-800 underline transition whitespace-nowrap"
+                    >
+                      Change subject selection
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <>
@@ -896,7 +898,7 @@ export default function SubmitRecordPage() {
                   {subjectSearched && (
                     <>
                       {subjectResults.length > 0 ? (
-                        <div className="px-1 sm:px-2 pb-3 sm:pb-4">
+                        <div className="pb-3 sm:pb-4">
                           {subjectResults.slice(0, 10).map((subj) => (
                             <SubjectResultCard
                               key={subj.id}
@@ -907,7 +909,7 @@ export default function SubmitRecordPage() {
                           ))}
                         </div>
                       ) : (
-                        <p className="text-sm text-gray-500 italic text-center sm:text-left px-2 py-4">
+                        <p className="text-sm text-gray-500 italic text-center sm:text-left py-4">
                           No matching subjects found.
                         </p>
                       )}
@@ -916,11 +918,11 @@ export default function SubmitRecordPage() {
 
                   {/* 🧩 CASE 3: Create New Subject Button */}
                   {subjectSearched && (
-                    <div className="flex justify-center mt-4 pb-4 px-2">
+                    <div className="flex justify-center pb-6">
                       <button
                         type="button"
                         onClick={handleCreateTempSubject}
-                        className="text-sm text-gray-700 font-medium underline hover:text-black transition"
+                        className="text-sm text-gray-700 font-medium underline hover:text-black transition whitespace-nowrap"
                       >
                         Subject doesn’t exist yet?
                       </button>
@@ -932,61 +934,77 @@ export default function SubmitRecordPage() {
           </div>
 
           {/* ⭐ Rating Section */}
-          <div className="mt-6 sm:mt-8 mb-6 text-center sm:text-left">
-            <Label className="block text-base sm:text-lg font-medium mb-2">
+          <div className="mt-8 sm:mt-10">
+            <Label className="block text-lg font-medium mb-3 sm:mb-4">
               Rate Your Experience <span className="text-red-500">*</span>
             </Label>
 
-            <div className="flex flex-wrap justify-center sm:justify-start items-center space-x-1 select-none">
+            <div
+              className="flex items-center justify-start flex-wrap gap-1 sm:gap-2 select-none"
+              onTouchStart={(e) => e.stopPropagation()} // Prevent accidental scrolls while rating
+            >
               {Array.from({ length: 10 }).map((_, i) => {
                 const value = i + 1;
                 const halfValue = value - 0.5;
                 const currentValue = hoverRating ?? rating;
-
-                // ✅ Logic to shade all stars before current one
                 const isFull = currentValue >= value;
                 const isHalf = currentValue >= halfValue && currentValue < value;
 
                 return (
                   <div
                     key={i}
-                    className="relative cursor-pointer"
-                    style={{ width: 36, height: 36 }}
+                    className="relative cursor-pointer touch-manipulation"
+                    style={{ width: 38, height: 38 }}
                     onMouseLeave={() => setHoverRating(null)}
                     onMouseMove={(e) => {
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      const offsetX = e.clientX - rect.left;
-                      const isLeft = offsetX < rect.width / 2;
-                      setHoverRating(isLeft ? halfValue : value);
+                      // Desktop hover logic
+                      if (window.innerWidth > 768) {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const offsetX = e.clientX - rect.left;
+                        const isLeft = offsetX < rect.width / 2;
+                        setHoverRating(isLeft ? halfValue : value);
+                      }
                     }}
                     onClick={(e) => {
                       const rect = e.currentTarget.getBoundingClientRect();
                       const offsetX = e.clientX - rect.left;
                       const isLeft = offsetX < rect.width / 2;
-                      const selectedValue = isLeft ? halfValue : value;
-                      setRating(selectedValue);
+
+                      // 🧠 Mobile fix: Always round to nearest .5 increment
+                      const touchX = e.nativeEvent instanceof TouchEvent
+                        ? e.nativeEvent.touches?.[0]?.clientX
+                        : e.clientX;
+                      const finalOffset = touchX ? touchX - rect.left : offsetX;
+                      const halfSelected = finalOffset < rect.width / 2;
+
+                      setRating(halfSelected ? halfValue : value);
+                      setHoverRating(null);
+                    }}
+                    onTouchEnd={(e) => {
+                      // Touch-friendly tap behavior
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const touchX = e.changedTouches?.[0]?.clientX ?? 0;
+                      const isLeft = touchX - rect.left < rect.width / 2;
+                      setRating(isLeft ? halfValue : value);
+                      setHoverRating(null);
                     }}
                   >
-                    {/* Empty base star */}
+                    {/* Empty star */}
                     <Star
                       size={36}
-                      className="text-gray-300 absolute inset-0 transition-all duration-150 hover:scale-110"
+                      className={`absolute inset-0 ${
+                        isFull || isHalf
+                          ? "text-black fill-black"
+                          : "text-gray-300 fill-none"
+                      } transition-all duration-150`}
                     />
-
-                    {/* Full overlay */}
-                    {isFull && (
-                      <Star
-                        size={36}
-                        className="text-black fill-black absolute inset-0 pointer-events-none"
-                      />
-                    )}
 
                     {/* Half overlay */}
                     {isHalf && (
                       <Star
                         size={36}
-                        className="text-black fill-black absolute inset-0 pointer-events-none"
-                        style={{ clipPath: 'inset(0 50% 0 0)' }}
+                        className="absolute inset-0 text-black fill-black pointer-events-none"
+                        style={{ clipPath: "inset(0 50% 0 0)" }}
                       />
                     )}
                   </div>
@@ -994,12 +1012,8 @@ export default function SubmitRecordPage() {
               })}
             </div>
 
-            <p className="mt-2 text-sm text-gray-500">
-              Selected rating:{" "}
-              {(hoverRating ?? rating)
-                ? (hoverRating ?? rating).toFixed(1)
-                : "—"}{" "}
-              / 10
+            <p className="mt-3 text-sm sm:text-base text-gray-500">
+              Selected rating: {rating ? rating.toFixed(1) : "—"} / 10
             </p>
           </div>
 
