@@ -924,6 +924,46 @@ export default function SubmitRecordPage() {
             )}
           </div>
 
+          {/* ⭐ Rating Section */}
+          <div className="mb-8">
+            <label className="mb-2 text-sm font-semibold text-gray-700">
+              Rating <span className="text-red-500">*</span>
+            </label>
+
+            <div
+              className="flex justify-center sm:justify-start items-center gap-1 sm:gap-2 flex-wrap"
+              style={{ touchAction: "manipulation" }}
+            >
+              {[...Array(10)].map((_, i) => {
+                const value = i + 1;
+                const filled = value <= (hoverRating ?? rating);
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    aria-label={`Rate ${value}`}
+                    onClick={() => setRating(value)}
+                    onMouseEnter={() => setHoverRating(value)}
+                    onMouseLeave={() => setHoverRating(null)}
+                    onTouchStart={() => setRating(value)} // ✅ make taps register instantly on mobile
+                    className="focus:outline-none active:scale-95 transition-transform"
+                  >
+                    <Star
+                      className={`w-7 h-7 sm:w-8 sm:h-8 ${
+                        filled ? "fill-black text-black" : "text-gray-400"
+                      } transition-colors`}
+                      strokeWidth={1.5}
+                    />
+                  </button>
+                );
+              })}
+            </div>
+
+            <p className="text-xs text-gray-500 mt-2 text-center sm:text-left">
+              Tap or click to rate your overall experience (1 = worst, 10 = best).
+            </p>
+          </div>
+
           {/* Evidence Upload */}
           <div ref={evidenceRef} className="mb-8">
             <label className="mb-1 text-sm font-semibold text-gray-700">
