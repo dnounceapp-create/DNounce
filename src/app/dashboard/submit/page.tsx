@@ -940,73 +940,43 @@ export default function SubmitRecordPage() {
             </Label>
 
             <div
-              className="flex items-center justify-start flex-wrap gap-1 sm:gap-2 select-none"
-              onTouchStart={(e) => e.stopPropagation()} // Prevent accidental scrolls while rating
+              className="flex items-center justify-start flex-wrap gap-2 sm:gap-3 select-none"
+              onTouchStart={(e) => e.stopPropagation()}
             >
               {Array.from({ length: 10 }).map((_, i) => {
                 const value = i + 1;
-                const halfValue = value - 0.5;
                 const currentValue = hoverRating ?? rating;
-                const isFull = currentValue >= value;
-                const isHalf = currentValue >= halfValue && currentValue < value;
+                const isFilled = currentValue >= value;
 
                 return (
                   <div
                     key={i}
-                    className="relative cursor-pointer touch-manipulation"
-                    style={{ width: 38, height: 38 }}
-                    onMouseLeave={() => setHoverRating(null)}
-                    onMouseMove={(e) => {
-                      // Desktop hover logic
+                    className="relative cursor-pointer active:scale-105 transition-transform"
+                    style={{ width: 42, height: 42 }}
+                    onMouseEnter={() => {
+                      if (window.innerWidth > 768) setHoverRating(value);
+                    }}
+                    onMouseLeave={() => {
+                      if (window.innerWidth > 768) setHoverRating(null);
+                    }}
+                    onClick={() => {
                       if (window.innerWidth > 768) {
-                        const rect = e.currentTarget.getBoundingClientRect();
-                        const offsetX = e.clientX - rect.left;
-                        const isLeft = offsetX < rect.width / 2;
-                        setHoverRating(isLeft ? halfValue : value);
+                        setRating(value);
+                        setHoverRating(null);
                       }
                     }}
-                    onClick={(e) => {
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      const offsetX = e.clientX - rect.left;
-                      const isLeft = offsetX < rect.width / 2;
-
-                      // 🧠 Mobile fix: Always round to nearest .5 increment
-                      const touchX = e.nativeEvent instanceof TouchEvent
-                        ? e.nativeEvent.touches?.[0]?.clientX
-                        : e.clientX;
-                      const finalOffset = touchX ? touchX - rect.left : offsetX;
-                      const halfSelected = finalOffset < rect.width / 2;
-
-                      setRating(halfSelected ? halfValue : value);
-                      setHoverRating(null);
-                    }}
-                    onTouchEnd={(e) => {
-                      // Touch-friendly tap behavior
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      const touchX = e.changedTouches?.[0]?.clientX ?? 0;
-                      const isLeft = touchX - rect.left < rect.width / 2;
-                      setRating(isLeft ? halfValue : value);
+                    onTouchEnd={() => {
+                      // 📱 Mobile: simpler full-star selection
+                      setRating(value);
                       setHoverRating(null);
                     }}
                   >
-                    {/* Empty star */}
                     <Star
-                      size={36}
-                      className={`absolute inset-0 ${
-                        isFull || isHalf
-                          ? "text-black fill-black"
-                          : "text-gray-300 fill-none"
-                      } transition-all duration-150`}
+                      size={40}
+                      className={`absolute inset-0 transition-all duration-150 ${
+                        isFilled ? "text-black fill-black" : "text-gray-300 fill-none"
+                      }`}
                     />
-
-                    {/* Half overlay */}
-                    {isHalf && (
-                      <Star
-                        size={36}
-                        className="absolute inset-0 text-black fill-black pointer-events-none"
-                        style={{ clipPath: "inset(0 50% 0 0)" }}
-                      />
-                    )}
                   </div>
                 );
               })}
