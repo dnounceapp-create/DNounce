@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { AlertTriangle, Upload, MapPin, FileText, Search, User, X, Loader2 } from "lucide-react";
+import { AlertTriangle, Upload, MapPin, FileText, Search, User, X, Loader2, Image, Video, File as FileIcon, Star } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { useRouter } from "next/navigation";
+import { useToast } from "@/components/ui/use-toast";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectTrigger,
@@ -14,10 +15,47 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import Link from "next/link";
+import { v4 as uuidv4 } from "uuid";
+
+/** ——— Subject Search (UI only) ——— */
+type SubjectPreview = {
+  id: string;
+  name: string;
+  nickname?: string | null;
+  organization?: string | null;
+  location?: string | null;
+  avatar_url?: string | null;
+
+  // 👇 NEW: these match the columns you just added to `subjects`
+  phone?: string | null;
+  email?: string | null;
+};
+
+function getFileIcon(name: string) {
+  const ext = name.split(".").pop()?.toLowerCase();
+
+  if (["jpg", "jpeg", "png", "gif", "webp"].includes(ext || "")) {
+    return <Image className="w-4 h-4 text-gray-500" />;
+  }
+
+  if (["mp4", "mov", "avi", "mkv"].includes(ext || "")) {
+    return <Video className="w-4 h-4 text-gray-500" />;
+  }
+
+  if (["pdf", "doc", "docx"].includes(ext || "")) {
+    return <FileText className="w-4 h-4 text-gray-500" />;
+  }
+
+  return <FileIcon className="w-4 h-4 text-gray-500" />;
+}
 
 /* ——— Page Component ——— */
 export default function SubmitRecordPage() {
-  const [submitName, setSubmitName] = useState("");
+  const [submitPhone, setSubmitPhone] = useState("");
+  const { toast } = useToast();
+  const [submitEmail, setSubmitEmail] = useState("");
+  const [submitFirstName, setSubmitFirstName] = useState("");
+  const [submitLastName, setSubmitLastName] = useState("");
   const [submitNickname, setSubmitNickname] = useState("");
   const [submitOrganization, setSubmitOrganization] = useState("");
   const [submitRelationship, setSubmitRelationship] = useState("");
@@ -25,16 +63,23 @@ export default function SubmitRecordPage() {
   const [submitCategory, setSubmitCategory] = useState("");
   const [submitLocation, setSubmitLocation] = useState("");
   const [submitLocationSuggestions, setSubmitLocationSuggestions] = useState<any[]>([]);
+  const [tempSubject, setTempSubject] = useState<SubjectPreview | null>(null);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [relLoading, setRelLoading] = useState(false);
   const [relationshipTypes, setRelationshipTypes] = useState<any[]>([]);
-  const router = useRouter();
+  const [rating, setRating] = useState<number>(0);
+  const [hoverRating, setHoverRating] = useState<number | null>(null);
+  const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const termsRef = useRef<HTMLDivElement>(null);
+  const evidenceRef = useRef<HTMLDivElement>(null);
+  const subjectInfoRef = useRef<HTMLDivElement>(null);
   const [files, setFiles] = useState<File[]>([]);
   const [submissionSuccess, setSubmissionSuccess] = useState(false);
   const [submittedRecordId, setSubmittedRecordId] = useState<string | null>(null);
+
  
+  const fullName = `${submitFirstName.trim()} ${submitLastName.trim()}`.trim();
 
   /* ——— Fetch Relationship Types (Supabase) ——— */
   useEffect(() => {
@@ -82,16 +127,35 @@ export default function SubmitRecordPage() {
   }, []);
 
   useEffect(() => {
-    function onDocClick(e: MouseEvent) {
-      const target = e.target as HTMLElement;
-      // Close only if click is not inside any of our dropdown/input wrappers
-      if (!target.closest("[data-subject-search-root]")) {
-        setResultsOpen(false);
+    async function fetchFilterOptions() {
+      try {
+        const { data: orgs } = await supabase
+          .from("subjects")
+          .select("organization")
+          .not("organization", "is", null);
+  
+        const { data: locs } = await supabase
+          .from("subjects")
+          .select("location")
+          .not("location", "is", null);
+  
+          const uniqueOrgs = [...new Set((orgs || []).map((o) => o.organization?.trim() || ""))]
+          .filter(Boolean)
+          .sort();
+  
+          const uniqueLocs = [...new Set((locs || []).map((l) => l.location?.trim() || ""))]
+          .filter(Boolean)
+          .sort();
+  
+        setOrgOptions(uniqueOrgs);
+        setLocOptions(uniqueLocs);
+      } catch (err) {
+        console.error("Error loading filter options:", err);
       }
     }
-    document.addEventListener("click", onDocClick);
-    return () => document.removeEventListener("click", onDocClick);
-  }, []);
+  
+    fetchFilterOptions();
+  }, []);  
 
   /* ——— Location Autocomplete (wired to /api/location) ——— */
   useEffect(() => {
@@ -109,8 +173,9 @@ export default function SubmitRecordPage() {
           setSubmitLocationSuggestions([]);
           return;
         }
-        const data = await res.json();
-        setSubmitLocationSuggestions(data.predictions || []);
+        const data = await res.json().catch(() => ({}));
+        setSubmitLocationSuggestions(data?.predictions || []);
+
       } catch (err) {
         console.error("Submit location suggestions error:", err);
         setSubmitLocationSuggestions([]);
@@ -121,65 +186,16 @@ export default function SubmitRecordPage() {
     return () => clearTimeout(id);
   }, [submitLocation]);
 
-  /** ——— Subject Search (UI only) ——— */
-  type SubjectPreview = {
-    id: string;
-    name: string;
-    nickname?: string | null;
-    organization?: string | null;
-    location?: string | null;
-    avatar_url?: string | null;
-  };
-
-  const [subjectQuery, setSubjectQuery] = useState("");
   const [subjectResults, setSubjectResults] = useState<SubjectPreview[]>([]);
   const [subjectLoading, setSubjectLoading] = useState(false);
-  const [resultsOpen, setResultsOpen] = useState(false); // show/hide dropdown
+  const [subjectSearched, setSubjectSearched] = useState(false); // did we run a search yet?
   const [selectedSubject, setSelectedSubject] = useState<SubjectPreview | null>(null);
+  const [subjectQuery, setSubjectQuery] = useState("");
   const isLocked = !!selectedSubject;
-
-  /* ——— Debounced search (UI stub only) ——— */
-  useEffect(() => {
-    const q = subjectQuery.trim();
-
-    // If user cleared input, close list
-    if (!q) {
-      setSubjectResults([]);
-      setResultsOpen(false);
-      return;
-    }
-
-    // Start "loading" state
-    setSubjectLoading(true);
-
-    const t = setTimeout(async () => {
-      if (q.length < 2) {
-        setSubjectResults([]);
-        setResultsOpen(false);
-        setSubjectLoading(false);
-        return;
-      }
-    
-      try {
-        const { data: subjects, error } = await supabase
-          .from("subjects")
-          .select("id, name, nickname, organization, location, avatar_url")
-          .ilike("name", `%${q}%`) // case-insensitive partial match
-          .limit(10);
-    
-        if (error) throw error;
-        setSubjectResults(subjects || []);
-      } catch (err) {
-        console.error("Error fetching subjects:", err);
-        setSubjectResults([]);
-      } finally {
-        setResultsOpen(true);
-        setSubjectLoading(false);
-      }
-    }, 300);    
-
-    return () => clearTimeout(t);
-  }, [subjectQuery]);
+  const [orgFilter, setOrgFilter] = useState("");
+  const [locFilter, setLocFilter] = useState("");
+  const [orgOptions, setOrgOptions] = useState<string[]>([]);
+  const [locOptions, setLocOptions] = useState<string[]>([]);
 
   /* ——— Terms Scroll ——— */
   const handleTermsScroll = () => {
@@ -192,122 +208,459 @@ export default function SubmitRecordPage() {
     }
   }, [selectedSubject]);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-  
-    // must agree to terms
-    if (!agreedToTerms) {
-      alert("You must agree to the Terms of Service.");
+  useEffect(() => {
+    if (tempSubject) {
+      const updated = {
+        ...tempSubject,
+        name: `${submitFirstName} ${submitLastName}`.trim(),
+        nickname: submitNickname || null,
+        organization: submitOrganization || null,
+        location: submitLocation || null,
+      };
+      setTempSubject(updated);
+      setSelectedSubject(updated);
+    }
+  }, [submitFirstName, submitLastName, submitNickname, submitOrganization, submitLocation]);   
+
+  // 🔍 Search for existing subjects based on the form fields
+  async function handleSubjectSearch() {
+    setSubjectSearched(true);
+
+    if (
+      !submitFirstName.trim() &&
+      !submitLastName.trim() &&
+      !submitNickname.trim() &&
+      !submitOrganization.trim() &&
+      !submitLocation.trim() &&
+      !submitPhone.trim() &&
+      !submitEmail.trim()
+    ) {
+      toast({
+        title: "Missing Information",
+        description: "Please enter at least one field before searching — like name, nickname, organization, location, phone, or email.",
+      });
+      setSubjectSearched(false);
       return;
+    }    
+  
+    const fullName = `${submitFirstName.trim()} ${submitLastName.trim()}`.trim();
+    const name = fullName;
+    const nick = submitNickname.trim();
+    const org = submitOrganization.trim();
+    const loc = submitLocation.trim();
+    const phone = submitPhone.replace(/\D/g, ""); // strip to digits
+    const email = submitEmail.trim();
+  
+    // require at least one identifying input
+    if (!name && !nick && !org && !loc && !phone && !email) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in at least one of: name, nickname, organization, location, phone, or email before searching.",
+      });      
     }
   
-    setIsSubmitting(true);
+    setSubjectLoading(true);
   
     try {
-      // 1) auth check
-      const { data: userData, error: userError } = await supabase.auth.getUser();
-      if (userError || !userData?.user) {
-        alert("Please sign in before submitting a record.");
-        setIsSubmitting(false);
+      let primaryMatches: any[] | null = null;
+      let primaryError: any = null;
+  
+      if (phone || email) {
+        const phoneFilter = phone ? `phone.ilike.%${phone}%` : null;
+        const emailFilter = email ? `email.ilike.%${email}%` : null;
+      
+        const filters = [phoneFilter, emailFilter].filter(Boolean).join(",");
+      
+        const query1 = supabase
+          .from("subjects")
+          .select(
+            "id, name, nickname, organization, location, avatar_url, phone, email"
+          ) // 👈 notice phone + email here
+          .or(filters)
+          .limit(10);
+      
+        const { data, error } = await query1;
+        primaryMatches = data;
+        primaryError = error;
+      }      
+  
+      if (primaryError) throw primaryError;
+  
+      if (primaryMatches && primaryMatches.length > 0) {
+        // ✅ Found exact contact matches — show them immediately
+        setSubjectResults(primaryMatches);
         return;
       }
-      
-      const userId = userData?.user?.id;
   
-      // 2) read textarea safely into a variable (NOT outcome)
-      const details = (document.querySelector("textarea") as HTMLTextAreaElement | null)?.value?.trim() || "";
-      const description = `${submitName || "Unknown"} — ${submitCategory || "General record"}`;  
+      // 🧩 2️⃣ Otherwise, fallback to existing fuzzy logic
+      let query2 = supabase
+        .from("subjects")
+        .select("id, name, nickname, organization, location, avatar_url")
+        .limit(10);
   
-      // 3) resolve location (best-effort)
-      let resolvedLocation = submitLocation?.trim() || null;
-      if (resolvedLocation) {
-        try {
-          const res = await fetch(`/api/location?input=${encodeURIComponent(resolvedLocation)}`);
-          if (res.ok) {
-            const loc = await res.json();
-            resolvedLocation = loc?.predictions?.[0]?.description || resolvedLocation;
-          }
-        } catch {
-          /* ignore */
-        }
+      const filters: string[] = [];
+  
+      if (name) filters.push(`name.ilike.%${name}%`);
+      if (nick) filters.push(`nickname.ilike.%${nick}%`);
+      if (org) filters.push(`organization.ilike.%${org}%`);
+      if (loc) filters.push(`location.ilike.%${loc}%`);
+  
+      if (filters.length > 0) {
+        query2 = query2.or(filters.join(","));
       }
   
-      // 4) ensure we have a subject_id
-      let subjectId = selectedSubject?.id || null;
+      const { data: fallbackData, error: fallbackError } = await query2;
+      if (fallbackError) throw fallbackError;
   
-      if (!subjectId) {
-        if (!submitName.trim()) {
-          alert("Please provide a subject name or select an existing subject.");
-          setIsSubmitting(false);
+      setSubjectResults(fallbackData || []);
+    } catch (err) {
+      console.error("Error searching subjects:", err);
+      setSubjectResults([]);
+      toast({
+        title: "Search Failed",
+        description: "There was an error searching for subjects. Please try again.",
+      });      
+    } finally {
+      setSubjectLoading(false);
+    }
+  }  
+
+  async function handleCreateTempSubject() {
+    // 1️⃣ Capture position of Subject Info section
+    const subjectTop = subjectInfoRef.current?.getBoundingClientRect().top ?? 0;
+    const anchorY = window.scrollY + subjectTop - 100; // small offset for header
+  
+    // 2️⃣ Create temporary subject
+    const tempId = "temp-" + crypto.randomUUID();
+    const newTemp = {
+      id: tempId,
+      name: `${submitFirstName} ${submitLastName}`.trim() || "(Unnamed Subject)",
+      nickname: submitNickname || null,
+      organization: submitOrganization || null,
+      location: submitLocation || null,
+      avatar_url: null,
+    };
+  
+    // 3️⃣ Set as selected and reset results
+    setTempSubject(newTemp);
+    setSelectedSubject(newTemp);
+    setSubjectResults([]);
+    setSubjectSearched(true);
+  
+    // 4️⃣ After render, scroll **to subject info area**
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: anchorY, behavior: "smooth" });
+    });
+  
+    // 5️⃣ Toast
+    toast({
+      title: "New Subject Placeholder",
+      description: "A temporary subject card has been created. Fill in all required details before submitting.",
+    });
+  }  
+     
+  async function uploadEvidenceFiles(recordId: string, subjectId: string) {
+    if (files.length === 0) return [];
+  
+    // 1️⃣ Get the logged-in user (aka contributor)
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+  
+    if (userError || !user) {
+      console.error("Could not get current user for uploads:", userError);
+      throw new Error("Not authenticated");
+    }
+  
+    const contributorId = user.id;
+  
+    // 2️⃣ Upload each file into the proper folder structure
+    const uploadPromises = files.map(async (file, index) => {
+      const timestamp = Date.now();
+      const safeName = file.name.replace(/\s+/g, "_"); // avoid spaces
+      const path = `records/${recordId}/contributor_attachments/${contributorId}/${timestamp}-${index}-${safeName}`;
+  
+      const { error: uploadError } = await supabase.storage
+        .from("attachments")
+        .upload(path, file, { upsert: false });
+  
+      if (uploadError) {
+        console.error("Upload failed for", path, uploadError);
+        throw uploadError;
+      }
+  
+      return path;
+    });
+  
+    const paths = await Promise.all(uploadPromises);
+  
+    // 3️⃣ Store uploaded file paths in record_attachments table
+    const { error: insertError } = await supabase
+      .from("record_attachments")
+      .insert(
+        paths.map((p) => ({
+          record_id: recordId,
+          contributor_id: contributorId,
+          file_path: p,
+        }))
+      );
+  
+    if (insertError) {
+      console.error("Error saving attachment metadata:", insertError);
+      throw insertError;
+    }
+  
+    return paths;
+  }   
+
+  async function getOrCreateContributorForCurrentUser() {
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      throw new Error("Not authenticated");
+    }
+
+    const userId = user.id;
+
+    // 1️⃣ Try to find an existing contributor row for this user
+    const { data: existing, error: existingError } = await supabase
+      .from("contributors")
+      .select("id")
+      .eq("user_id", userId)
+      .maybeSingle(); // if your supabase-js version doesn't support maybeSingle, we can adjust
+
+    if (existingError && existingError.code !== "PGRST116") {
+      // PGRST116 = no rows found (not fatal for us)
+      console.error("Error checking existing contributor:", existingError);
+      throw existingError;
+    }
+
+    if (existing && existing.id) {
+      return { contributorId: existing.id, userId };
+    }
+
+    // 2️⃣ No contributor yet → create one
+    const { data: newContributor, error: createError } = await supabase
+      .from("contributors")
+      .insert({
+        user_id: userId,
+        alias: null, // or some default alias if you wish
+      })
+      .select("id")
+      .single();
+
+    if (createError || !newContributor) {
+      console.error("Error creating contributor:", createError);
+      throw createError || new Error("Failed to create contributor");
+    }
+
+    return { contributorId: newContributor.id, userId };
+  }
+
+  /* ——— Handle Form Submit ——— */
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+
+    const isNewSubject =
+    !selectedSubject || selectedSubject.id.startsWith("temp-");
+
+      // 🧩 Collect missing fields for *all* submissions
+      const missingFields: string[] = [];
+
+      // Always check these core fields
+      if (!description.trim()) missingFields.push("Experience details");
+      if (!agreedToTerms) missingFields.push("Agree to Terms of Service");
+      if (!rating || rating <= 0) missingFields.push("Rating (1–10)");
+
+      // Only check these for new subjects
+      if (!selectedSubject || selectedSubject.id.startsWith("temp-")) {
+        if (!submitFirstName.trim()) missingFields.push("First name");
+        if (!submitPhone.trim() && !submitEmail.trim())
+          missingFields.push("Phone number or Email");
+        if (!submitRelationship) missingFields.push("Relationship");
+        if (!submitCategory.trim()) missingFields.push("Category");
+        if (!submitLocation.trim()) missingFields.push("Location");
+      }
+
+      // 🚨 Show popup if anything’s missing
+      if (missingFields.length > 0) {
+        toast({
+          title: "Missing required information",
+          description: `Please fill in: ${missingFields.join(", ")}.`,
+        });
+        return;
+      }
+
+    // ✅ If email is provided, check basic format
+    if (submitEmail.trim()) {
+      const email = submitEmail.trim();
+      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailPattern.test(email)) {
+        toast({
+          title: "Invalid Email",
+          description: "Please enter a valid email address for the subject.",
+        });
+        return;
+      }
+    }
+
+    // ✅ If phone is provided, ensure it has enough digits
+    if (submitPhone.trim()) {
+      const digitsOnly = submitPhone.replace(/\D/g, "");
+      if (digitsOnly.length < 10) {
+        toast({
+          title: "Invalid Phone Number",
+          description: "Please enter a valid phone number with at least 10 digits.",
+        });
+        return;
+      }
+    }
+
+    if (!description.trim()) {
+      toast({
+        title: "Experience Details Required",
+        description: "Please provide a detailed description of your experience before submitting.",
+      });
+      return;
+    }
+
+    if (!agreedToTerms) {
+      toast({
+        title: "Terms Required",
+        description: "You must agree to the Terms of Service before submitting.",
+      });
+      return;
+    }
+
+    // ✅ Make sure there is a selected subject (existing or temp)
+    if (!selectedSubject) {
+      toast({
+        title: "Subject Required",
+        description: "Please choose an existing subject or create a new one before submitting.",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      // 1️⃣ Get contributor for the logged-in user
+      const newRecordId = uuidv4(); // ✅ moved to the top before any inserts
+      const { contributorId } = await getOrCreateContributorForCurrentUser();
+
+      // 2️⃣ Start from the currently selected subject
+      let subjectId = selectedSubject.id;
+
+      // 3️⃣ If it's a temporary subject (id starts with "temp-"), create a real subject in Supabase
+      if (subjectId.startsWith("temp-")) {
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser();
+
+        if (userError || !user) {
+          console.error("Could not get current user:", userError);
+          toast({
+            title: "Authentication Error",
+            description: "Please log in again before submitting a record.",
+          });
           return;
         }
-      
-        const { data: subjectRow, error: subjectErr } = await supabase
+
+        // ✅ Create the new subject in Supabase
+        const { data: newSubject, error: newSubjectError } = await supabase
           .from("subjects")
           .insert({
-            name: submitName.trim(),
+            name: `${submitFirstName} ${submitLastName}`.trim() || "(Unnamed Subject)",
             nickname: submitNickname || null,
             organization: submitOrganization || null,
-            location: resolvedLocation,
+            location: submitLocation || null,
+            phone: submitPhone || null,
+            email: submitEmail || null,
           })
           .select("id")
           .single();
-      
-        if (subjectErr || !subjectRow?.id) {
-          console.error("❌ Error creating subject:", subjectErr);
-          alert("Could not create or find subject profile.");
-          setIsSubmitting(false);
+
+        if (newSubjectError || !newSubject) {
+          console.error("Error creating subject:", newSubjectError);
+          toast({
+            title: "Error",
+            description: "We couldn't save the new subject. Please try again.",
+          });
           return;
         }
-      
-        subjectId = subjectRow.id;
-      }      
-  
-      const { data: recordRow, error: insertErr } = await supabase
+
+        subjectId = newSubject.id; // ✅ update subjectId to the new permanent subject
+      }
+
+      // 4️⃣ Now insert the record (always a single clean insert)
+      const { data: newRecord, error: recordError } = await supabase
         .from("records")
         .insert({
+          id: newRecordId,
           subject_id: subjectId,
+          contributor_id: contributorId,
           record_type: "pending",
-          stage: 1,
-          outcome: null,
-          is_published: false,
-          description,
-          details,
-          location: resolvedLocation,
-        })        
+          contributor_alias: null,
+          relationship_id: submitRelationship || null,
+          location: submitLocation || null,
+          rating: rating || null,
+          description: description.trim() || null,
+          details: description.trim() || null,
+        })
         .select("id")
         .single();
 
-        if (insertErr) {
-          console.error("Insert error details:", insertErr);
-          alert(`Insert failed: ${insertErr.message}`);
-          throw insertErr;
-        }        
-  
-      // 6) success UI
-      setSubmittedRecordId(recordRow.id);
+      if (recordError || !newRecord) {
+        console.error("Error creating record:", recordError);
+        toast({
+          title: "Error",
+          description: "We couldn't submit your record. Please try again.",
+        });
+        return;
+      }
+
+      const recordId = newRecord.id;
+
+      // 6️⃣ Upload evidence files (still using your existing helper)
+      try {
+        await uploadEvidenceFiles(recordId, subjectId);
+      } catch (uploadErr) {
+        console.error("Some evidence files failed to upload:", uploadErr);
+        toast({
+          title: "Record saved, but files failed",
+          description:
+            "Your record was created, but some evidence files could not be uploaded. You can try adding them again.",
+        });
+      }
+
+      // 7️⃣ Success – show modal using the new record id
+      setSubmittedRecordId(newRecord.id);
       setSubmissionSuccess(true);
-  
-      // 7) reset form
-      setSubmitName("");
+      setSubmitPhone("");
+      setSubmitEmail("");
+      setSubmitFirstName("");
+      setSubmitLastName("");
       setSubmitNickname("");
       setSubmitOrganization("");
       setSubmitRelationship("");
       setSubmitOtherRelationship("");
       setSubmitCategory("");
       setSubmitLocation("");
+      setDescription("");
       setFiles([]);
       setAgreedToTerms(false);
       setSelectedSubject(null);
-      setSubjectQuery("");
-  
-    } catch (err) {
-      console.error("Error submitting record:", err);
-      alert("There was an error submitting your record.");
+      setTempSubject(null);
+      setSubjectResults([]);
+      setSubjectSearched(false);
     } finally {
       setIsSubmitting(false);
     }
-  }  
+  }
   
   /* ——— Page UI ——— */
   return (
@@ -328,212 +681,106 @@ export default function SubmitRecordPage() {
       <Card className="p-4 sm:p-8 bg-white shadow-lg rounded-xl">
         <CardContent className="p-0">
           
-          {/* ——— Subject Finder (UI only) ——— */}
-          <div className="mb-8" data-subject-search-root>
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-semibold text-gray-700">Find an Existing Subject</label>
-              {selectedSubject ? (
-                <button
-                  type="button"
-                  onClick={() => setSelectedSubject(null)}
-                  className="text-xs text-blue-600 hover:underline"
-                >
-                  Clear selected
-                </button>
-              ) : null}
-            </div>
-
-            {/* Search input */}
-            <div className="relative">
-              <Input
-                value={selectedSubject ? selectedSubject.name : subjectQuery}
-                onChange={(e) => {
-                  // If a subject was selected, typing again will clear selection and start a new query
-                  if (selectedSubject) setSelectedSubject(null);
-                  setSubjectQuery(e.target.value);
-                }}
-                onFocus={() => {
-                  if (subjectResults.length > 0) setResultsOpen(true);
-                }}
-                placeholder="Type a name, nickname, or organization…"
-                className={`w-full rounded-xl border-gray-300 pr-10 ${selectedSubject ? "bg-green-50" : ""}`}
-              />
-              {/* right icon */}
-              <div className="absolute inset-y-0 right-2 flex items-center">
-                {subjectLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
-                ) : (
-                  <Search className="w-4 h-4 text-gray-400" />
-                )}
-              </div>
-
-              {/* Dropdown results */}
-              {resultsOpen && subjectResults.length > 0 && !selectedSubject && (
-                <ul
-                  className="absolute mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-80 overflow-auto z-50"
-                  onMouseDown={(e) => e.preventDefault()} // keep focus for input
-                >
-                  {subjectResults.slice(0, 10).map((p) => (
-                    <li
-                      key={p.id}
-                      className="px-3 py-2 hover:bg-gray-50 cursor-pointer flex items-start gap-3"
-                      onClick={() => {
-                        setSelectedSubject(p);
-                        setSubjectQuery(p.name);
-                        setResultsOpen(false);
-                      }}
-                    >
-                      {/* avatar */}
-                      <div className="mt-0.5 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
-                        <User className="w-4 h-4 text-gray-500" />
-                      </div>
-
-                      {/* text */}
-                      <div className="min-w-0">
-                        <div className="text-sm font-medium text-gray-900 truncate">
-                          {p.name}{p.nickname ? ` (${p.nickname})` : ""}
-                        </div>
-                        <div className="text-xs text-gray-600 truncate">
-                          {p.organization ? p.organization : "—"}
-                          {p.location ? `  •  ${p.location}` : ""}
-                        </div>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-
-            {/* Selected subject preview card (light theme, aligned with global UI) */}
-            {selectedSubject && (
-              <div className="mt-4 p-4 rounded-xl border border-gray-200 bg-white flex items-center justify-between shadow-sm hover:shadow-md transition-all duration-200 animate-fadeIn">
-                <div className="flex items-center gap-4">
-                  {/* Avatar */}
-                  <div className="w-12 h-12 rounded-full bg-gray-100 border-2 border-green-500 flex items-center justify-center">
-                    <User className="w-6 h-6 text-green-600" />
-                  </div>
-
-                  {/* Subject Info */}
-                  <div className="min-w-0">
-                    <h3 className="text-sm sm:text-base font-semibold text-gray-900 flex flex-wrap items-center gap-1">
-                      {selectedSubject.name}
-                      {selectedSubject.nickname && (
-                        <span className="text-gray-500 text-xs sm:text-sm">
-                          ({selectedSubject.nickname})
-                        </span>
-                      )}
-                    </h3>
-
-                    <p className="text-xs text-gray-600 truncate">
-                      {selectedSubject.organization || "Independent"}
-                      {selectedSubject.location ? ` • ${selectedSubject.location}` : ""}
-                    </p>
-
-                    <p className="text-[11px] text-gray-400 font-mono mt-0.5">
-                      ID: {selectedSubject.id}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex items-center gap-3 ml-4 shrink-0">
-                  <Link
-                    href={`/subjects/${selectedSubject.id}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs font-medium text-green-700 hover:text-green-800 hover:underline flex items-center gap-1"
-                  >
-                    View
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="w-3 h-3"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                    </svg>
-                  </Link>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedSubject(null);
-                      setSubjectQuery("");
-                    }}
-                    className="text-gray-400 hover:text-red-600 transition"
-                    title="Clear selection"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            )}
-
-
-            {/* Helper text */}
-            {!selectedSubject && (
-              <p className="text-xs text-gray-500 mt-2">
-                Pick one subject if found. If no match appears, you can still continue — we’ll create a subject profile from your entry.
+          {/* ——— Subject Contact Information ——— */}
+          <div className="mb-10 bg-gray-50 border border-gray-200 rounded-2xl p-8 shadow-sm">
+            <div className="flex flex-col text-center mb-6">
+              <h2 className="text-lg font-semibold text-gray-800">Contact Information</h2>
+              <p className="text-sm text-gray-500 max-w-lg mx-auto leading-relaxed">
+                To keep things fair and transparent, please include at least one way for us to notify the subject 
+                (either a phone number or an email). We simply send a notice so they have the chance to view and/or respond to the record on their profile.
               </p>
-            )}
-          </div>
+            </div>
 
-          {/* ——— OR Divider ——— */}
-          <div className="flex items-center justify-center my-8">
-            <div className="h-px bg-gray-200 w-full"></div>
-            <span className="mx-3 text-xs uppercase tracking-wider text-gray-400">or</span>
-            <div className="h-px bg-gray-200 w-full"></div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6">
+              <Field
+                label="Phone Number"
+                placeholder="e.g. (718) 555-1234"
+                value={submitPhone}
+                onChange={setSubmitPhone}
+                disabled={!!selectedSubject && !selectedSubject.id.startsWith("temp-")}
+                required
+                mode="phone" 
+              />
+
+              <Field
+                label="Email Address"
+                placeholder="e.g. johndoe@example.com"
+                value={submitEmail}
+                onChange={setSubmitEmail}
+                disabled={!!selectedSubject && !selectedSubject.id.startsWith("temp-")}
+                required
+                mode="email"
+              />
+            </div>
+
+            {/* Friendly compliance reminder */}
+            <div className="mt-6 bg-blue-50 border border-blue-200 text-blue-800 rounded-xl p-4 text-sm flex gap-3 items-start">
+              <AlertTriangle className="w-5 h-5 mt-0.5 flex-shrink-0 text-blue-600" />
+              <p>
+                <strong>Why we ask:</strong> Every submission triggers a quick notification to the subject, letting them know a record was filed. 
+                This ensures fairness and gives them a right to reply or appeal — part of how DNounce stays credible and transparent.
+              </p>
+            </div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-6">
-            {/* Subject Name */}
+          {/* ——— Subject Info Fields ——— */}
+          <div ref={subjectInfoRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-10 gap-y-12 mb-12 place-items-start">
+            {/* First Name */}
             <Field
-              label="Subject's Name"
-              placeholder="e.g. John Doe"
-              value={submitName}
-              onChange={setSubmitName}
-              disabled={!!selectedSubject}
+              label="First Name"
+              placeholder="e.g. John"
+              value={submitFirstName}
+              onChange={setSubmitFirstName}
+              disabled={!!selectedSubject && !selectedSubject.id.startsWith("temp-")}
+              required
             />
 
-            {/* Nickname */}
+            {/* Last Name */}
+            <Field
+              label="Last Name"
+              placeholder="e.g. Doe"
+              value={submitLastName}
+              onChange={setSubmitLastName}
+              disabled={!!selectedSubject && !selectedSubject.id.startsWith("temp-")}
+            />
+
+            {/* Also Known As */}
             <Field
               label="Also Known As"
               placeholder="e.g. Johnny"
               value={submitNickname}
               onChange={setSubmitNickname}
-              disabled={!!selectedSubject}
+              disabled={!!selectedSubject && !selectedSubject.id.startsWith("temp-")}
             />
 
-            {/* Organization */}
+            {/* Organization / Company */}
             <Field
-              label="Organization/Company"
+              label="Organization / Company"
               placeholder="e.g. Acme Inc."
               value={submitOrganization}
               onChange={setSubmitOrganization}
-              disabled={!!selectedSubject}
+              disabled={!!selectedSubject && !selectedSubject.id.startsWith("temp-")}
             />
 
             {/* Relationship */}
-            <div className="flex flex-col">
-              <label className="mb-1 text-sm font-semibold text-gray-700">Relationship</label>
+            <div className="flex flex-col col-span-1 sm:col-span-2 lg:col-span-1">
+              <label className="mb-1 text-sm font-semibold text-gray-700">
+                Relationship <span className="text-red-500">*</span>
+              </label>
 
               {relLoading ? (
                 <p className="text-sm text-gray-400">Loading relationships...</p>
               ) : (
                 <Select
-                  disabled={isLocked}
                   value={submitRelationship}
                   onValueChange={setSubmitRelationship}
+                  disabled={!!selectedSubject && !selectedSubject.id.startsWith("temp-")}
+                  required
                 >
-                  <SelectTrigger
-                    className={`w-full rounded-lg border-gray-300 ${
-                      isLocked ? "bg-gray-100 text-gray-500 cursor-not-allowed" : ""
-                    }`}
-                  >
+                  <SelectTrigger className="w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500">
                     <SelectValue placeholder="Select relationship" />
                   </SelectTrigger>
+
                   <SelectContent className="z-50 bg-white shadow-lg rounded-lg border border-gray-200">
                     {relationshipTypes.map((rel) => (
                       <SelectItem key={rel.id} value={rel.id}>
@@ -544,80 +791,208 @@ export default function SubmitRecordPage() {
                 </Select>
               )}
 
-              {/* Only show the "Other" input if NOT locked and "other" is selected */}
-              {!isLocked &&
-                relationshipTypes.find((rel) => rel.id === submitRelationship)?.value === "other" && (
-                  <Input
-                    placeholder="Please specify..."
-                    value={submitOtherRelationship}
-                    onChange={(e) => setSubmitOtherRelationship(capitalizeWords(e.target.value))}
-                    className="mt-3 w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500"
-                  />
-                )}
-            </div>
-
-            {/* Category */}
-            <div className="flex flex-col">
-              <label className="mb-1 text-sm font-semibold text-gray-700">Category</label>
-              <Input
-                placeholder="e.g. Barber, Waitress, Doctor..."
-                value={submitCategory}
-                onChange={(e) => setSubmitCategory(e.target.value)}
-                disabled={isLocked}
-                className={`w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500 ${
-                  isLocked ? "bg-gray-100 text-gray-500 cursor-not-allowed" : ""
-                }`}
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Use a label that best fits how you may find this person.
-              </p>
-            </div>
-
-            {/* Location */}
-            <div className="flex flex-col">
-              <label className="mb-1 text-sm font-semibold text-gray-700">Location</label>
-              <div className="relative">
+              {/* 👇 Only show if selected relationship's value is "other" */}
+              {relationshipTypes.find((rel) => rel.id === submitRelationship)?.value?.toLowerCase() ===
+                "other" && (
                 <Input
-                  placeholder="City or neighborhood..."
-                  type="text"
-                  value={submitLocation}
-                  onChange={(e) => setSubmitLocation(e.target.value)}
-                  disabled={isLocked}
-                  className={`w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500 ${
-                    isLocked ? "bg-gray-100 text-gray-500 cursor-not-allowed" : ""
-                  }`}
+                  placeholder="Please specify..."
+                  value={submitOtherRelationship}
+                  onChange={(e) => {
+                    const value = e.target.value
+                      .split(" ")
+                      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+                      .join(" ");
+                    setSubmitOtherRelationship(value);
+                  }}
+                  disabled={!!selectedSubject && !selectedSubject.id.startsWith("temp-")}
+                  className="mt-3 w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
-
-                {/* Only show suggestions if NOT locked */}
-                {!isLocked && submitLocationSuggestions.length > 0 && (
-                  <ul className="absolute z-50 bg-white border rounded-md w-full shadow-md mt-1 max-h-60 sm:max-h-80 overflow-y-auto">
-                    {submitLocationSuggestions.map((s: any, idx: number) => (
-                      <li
-                        key={idx}
-                        className="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-2"
-                        onClick={() => {
-                          setSubmitLocation(s.description);
-                          setSubmitLocationSuggestions([]);
-                        }}
-                      >
-                        <MapPin className="w-4 h-4 text-gray-600 shrink-0" />
-                        <span className="font-semibold text-gray-800 text-sm leading-tight">
-                          {s.description}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-              <p className="text-xs text-gray-500 mt-1">
-                Type city name to see neighborhoods, or neighborhood to see full location.
-              </p>
+              )}
             </div>
+
+            <Field
+              label="Category"
+              placeholder="e.g. Barber, Waitress, Nail Tech"
+              value={submitCategory}
+              onChange={setSubmitCategory}
+              disabled={!!selectedSubject && !selectedSubject.id.startsWith("temp-")}
+              helperText="Use a label that best fits how you may find this person."
+              required
+            />
+
+            <Field
+              label="Location"
+              placeholder="City or neighborhood..."
+              value={submitLocation}
+              onChange={setSubmitLocation}
+              disabled={!!selectedSubject && !selectedSubject.id.startsWith("temp-")}
+              required
+              helperText="Type city name to see neighborhoods, or neighborhood to see full location."
+            />
+          </div>
+
+          {/* 🔍 Search Existing Subjects */}
+          <div className="flex justify-end mb-4">
+            <button
+              type="button"
+              onClick={handleSubjectSearch}
+              disabled={subjectLoading}
+              className="px-4 py-2 rounded-lg text-sm font-medium bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-60"
+            >
+              {subjectLoading ? "Searching..." : "Search Existing Subjects"}
+            </button>
+          </div>
+
+          {subjectResults.length > 0 && (
+            <p className="text-xs text-gray-500 mb-1">
+              {submitPhone || submitEmail
+                ? "Showing matches by phone/email first."
+                : "Showing matches by name, nickname, organization, or location."}
+            </p>
+          )}
+
+          {/* 📋 Results Section */}
+          <div className="space-y-3 mb-8">
+            <h3 className="text-sm font-semibold text-gray-800">Results</h3>
+
+            {/* 🧩 CASE 1: There is a selected subject (including temp) */}
+            {selectedSubject ? (
+              <div className="space-y-3">
+                <SubjectResultCard
+                  key={selectedSubject.id}
+                  subject={selectedSubject}
+                  selectedSubject={selectedSubject}
+                  onSelect={setSelectedSubject}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedSubject(null);
+                    setTempSubject(null);
+                    setSubjectResults([]);
+                  }}
+                  className="text-sm text-blue-600 hover:text-blue-800 underline mt-2"
+                >
+                  Change subject selection
+                </button>
+              </div>
+            ) : (
+              <>
+                {/* 🧩 CASE 2: Search Results */}
+                {subjectSearched && (
+                  <>
+                    {subjectResults.length > 0 ? (
+                      subjectResults.slice(0, 10).map((subj) => (
+                        <SubjectResultCard
+                          key={subj.id}
+                          subject={subj}
+                          selectedSubject={selectedSubject}
+                          onSelect={setSelectedSubject}
+                        />
+                      ))
+                    ) : (
+                      <p className="text-sm text-gray-500 italic">
+                        No matching subjects found.
+                      </p>
+                    )}
+                  </>
+                )}
+
+                {/* 🧩 CASE 3: Create New Subject Button (only show after search) */}
+                {subjectSearched && (
+                  <div className="flex justify-center mt-4">
+                    <button
+                      type="button"
+                      onClick={handleCreateTempSubject}
+                      className="text-sm text-gray-700 font-medium underline hover:text-black transition"
+                    >
+                      Subject doesn’t exist yet?
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* ⭐ Rating Section */}
+          <div className="mt-8 mb-6">
+            <Label className="block text-lg font-medium mb-2">
+              Rate Your Experience <span className="text-red-500">*</span>
+            </Label>
+
+            <div className="flex items-center space-x-1 select-none">
+              {Array.from({ length: 10 }).map((_, i) => {
+                const value = i + 1;
+                const halfValue = value - 0.5;
+                const currentValue = hoverRating ?? rating;
+
+                // ✅ Logic to shade all stars before current one
+                const isFull = currentValue >= value;
+                const isHalf = currentValue >= halfValue && currentValue < value;
+
+                return (
+                  <div
+                    key={i}
+                    className="relative cursor-pointer"
+                    style={{ width: 36, height: 36 }}
+                    onMouseLeave={() => setHoverRating(null)}
+                    onMouseMove={(e) => {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const offsetX = e.clientX - rect.left;
+                      const isLeft = offsetX < rect.width / 2;
+                      setHoverRating(isLeft ? halfValue : value);
+                    }}
+                    onClick={(e) => {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const offsetX = e.clientX - rect.left;
+                      const isLeft = offsetX < rect.width / 2;
+                      const selectedValue = isLeft ? halfValue : value;
+                      setRating(selectedValue);
+                    }}
+                  >
+                    {/* Empty base star */}
+                    <Star
+                      size={36}
+                      className="text-gray-300 absolute inset-0 transition-all duration-150 hover:scale-110"
+                    />
+
+                    {/* Full overlay */}
+                    {isFull && (
+                      <Star
+                        size={36}
+                        className="text-black fill-black absolute inset-0 pointer-events-none"
+                      />
+                    )}
+
+                    {/* Half overlay */}
+                    {isHalf && (
+                      <Star
+                        size={36}
+                        className="text-black fill-black absolute inset-0 pointer-events-none"
+                        style={{ clipPath: 'inset(0 50% 0 0)' }}
+                      />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <p className="mt-2 text-sm text-gray-500">
+              Selected rating:{" "}
+              {(hoverRating ?? rating)
+                ? (hoverRating ?? rating).toFixed(1)
+                : "—"}{" "}
+              / 10
+            </p>
           </div>
 
           {/* Evidence Upload */}
-          <div className="mb-8">
-            <label className="mb-1 text-sm font-semibold text-gray-700">Evidence Upload</label>
+          <div ref={evidenceRef} className="mb-8">
+            <label className="mb-1 text-sm font-semibold text-gray-700">
+              Evidence Upload
+            </label>
+
+            {/* Dropzone */}
             <div
               className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center cursor-pointer hover:border-blue-400 transition"
               onClick={() => document.getElementById("fileInput")?.click()}
@@ -627,33 +1002,92 @@ export default function SubmitRecordPage() {
                 Drag and drop files here or click to browse
               </p>
               <p className="text-xs text-gray-500">
-                Supported formats: PDF, JPG, PNG, MP4, DOCX (Max 100MB each)
+                Supported formats: PDF, JPG, PNG, MP4, DOCX (Max 100MB each, up to 10 files)
               </p>
-              {files.length > 0 && (
-                <ul className="mt-3 text-sm text-gray-600">
-                  {files.map((f, i) => (
-                    <li key={i} className="truncate">{f.name}</li>
-                  ))}
-                </ul>
-              )}
             </div>
+
+            {/* Hidden File Input */}
             <input
               id="fileInput"
               type="file"
               accept=".pdf,.jpg,.jpeg,.png,.mp4,.docx"
               multiple
               className="hidden"
-              onChange={(e) => setFiles(Array.from(e.target.files || []))}
+              onChange={(e) => {
+                const newFiles = Array.from(e.target.files || []);
+                setFiles((prev) => {
+                  const combined = [...prev, ...newFiles];
+                  if (combined.length > 10) {
+                    alert("You can only attach up to 10 files.");
+                    return combined.slice(0, 10);
+                  }
+                  return combined;
+                });
+                e.target.value = "";
+              }}
             />
+
+            {/* Attached Files Section (moved below) */}
+            {files.length > 0 && (
+              <div className="mt-5 text-left">
+                <h4 className="text-sm font-semibold text-gray-700 mb-2">
+                  Attached Files 
+                </h4>
+                <div className="flex flex-wrap gap-3">
+                  {files.map((file, index) => {
+                    const sizeKB = file.size / 1024;
+                    const sizeLabel =sizeKB < 1024
+                        ? `${sizeKB} KB`
+                        : `${(file.size / 1048576).toFixed(1)} MB`;
+
+                    return (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between gap-3 border border-gray-200 rounded-lg px-3 py-2 shadow-sm bg-gray-50 hover:bg-gray-100 transition w-full sm:w-auto sm:min-w-[230px]"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          {getFileIcon(file.name)}
+                          <div className="flex flex-col">
+                            <span className="text-sm text-gray-800 truncate max-w-[150px]">
+                              {file.name}
+                            </span>
+                            <span className="text-xs text-gray-500">{sizeLabel}</span>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setFiles(files.filter((_, i) => i !== index))
+                          }
+                          className="p-1 hover:bg-gray-200 rounded-full transition"
+                          title="Remove file"
+                        >
+                          <X className="w-4 h-4 text-gray-600" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Description */}
           <div className="mb-8">
-            <label className="mb-1 text-sm font-semibold text-gray-700">Experience Details</label>
+            <label className="mb-1 text-sm font-semibold text-gray-700">
+              Experience Details
+              <span className="text-red-500 ml-1">*</span>
+            </label>
             <textarea
               placeholder="Share the details of your experience as clearly and accurately as possible."
               className="w-full h-32 p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              required
             />
+            <p className="text-xs text-gray-500 mt-1">
+              Please provide a clear and factual description of your experience.
+            </p>
           </div>
 
           {/* Terms */}
@@ -734,8 +1168,6 @@ export default function SubmitRecordPage() {
           role="dialog"
           aria-modal="true"
           className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn"
-          onClick={() => setSubmissionSuccess(false)} // click outside closes
-          onKeyDown={(e) => { if (e.key === "Escape") setSubmissionSuccess(false); }}
           tabIndex={-1}
         >
           <div
@@ -757,7 +1189,10 @@ export default function SubmitRecordPage() {
               <div className="flex flex-col gap-3 w-full">
                 <button
                   type="button"
-                  onClick={() => router.push(`/record/${submittedRecordId}`)}
+                  onClick={() => {
+                    const url = `https://www.dnounce.com/record/${submittedRecordId}`;
+                    window.location.href = url;
+                  }}
                   className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg transition"
                 >
                   View Record
@@ -765,18 +1200,12 @@ export default function SubmitRecordPage() {
 
                 <button
                   type="button"
-                  onClick={() => router.push("/dashboard/myrecords")}
+                  onClick={() => {
+                    window.location.href = "https://www.dnounce.com/dashboard/records-submitted";
+                  }}
                   className="bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-2 rounded-lg transition"
                 >
-                  Go to Dashboard
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setSubmissionSuccess(false)}
-                  className="text-sm text-gray-400 hover:text-gray-600 mt-2"
-                >
-                  Close
+                  Go to Back to Dashboard
                 </button>
               </div>
             </div>
@@ -795,6 +1224,25 @@ function capitalizeWords(value: string) {
     .join(" ");
 }
 
+function formatPhoneNumber(value: string) {
+  // keep only digits
+  const digits = value.replace(/\D/g, "").slice(0, 10); // max 10 digits
+
+  const len = digits.length;
+  if (len === 0) return "";
+
+  if (len < 4) {
+    // 1–3: "123"
+    return digits;
+  } else if (len < 7) {
+    // 4–6: "(123) 4", "(123) 45", "(123) 456"
+    return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+  }
+
+  // 7–10: "(123) 456-7", "(123) 456-78", "(123) 456-7890"
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+}
+
 /* ——— Field Reusable Component ——— */
 function Field({
   label,
@@ -802,26 +1250,157 @@ function Field({
   value,
   onChange,
   disabled = false,
+  helperText,
+  required = false,
+  mode = "text", 
 }: {
   label: string;
   placeholder: string;
   value: string;
   onChange: (val: string) => void;
   disabled?: boolean;
+  helperText?: string;
+  required?: boolean;
+  mode?: "text" | "phone" | "email";
 }) {
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value;
+    let next = raw;
+
+    if (mode === "phone") {
+      next = formatPhoneNumber(raw);
+    } else if (mode === "email") {
+      // no capitalization, just trim spaces
+      next = raw.trim();
+    } else {
+      // normal text fields
+      next = capitalizeWords(raw);
+    }
+
+    onChange(next);
+  };
+
+  const inputType =
+    mode === "phone" ? "tel" : mode === "email" ? "email" : "text";
+
   return (
     <div className="flex flex-col">
-      <label className="mb-1 text-sm font-semibold text-gray-700">{label}</label>
+      <label className="mb-2 text-[15px] font-medium text-[#1E293B] tracking-tight">
+        {label}
+        {required && <span className="text-red-500 ml-1">*</span>} {/* ✅ Asterisk */}
+      </label>
       <Input
         placeholder={placeholder}
-        type="text"
+        type={inputType}
         value={value}
-        onChange={(e) => onChange(capitalizeWords(e.target.value))}
+        onChange={handleChange}
         disabled={disabled}
-        className={`w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500 ${
-          disabled ? "bg-gray-100 text-gray-500 cursor-not-allowed" : ""
+        className={`w-full rounded-2xl border border-gray-300 px-4 py-2.5 text-[15px] text-gray-800 placeholder:text-gray-400 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition ${
+          disabled
+            ? "bg-gray-100 text-gray-500 cursor-not-allowed"
+            : "bg-white"
         }`}
       />
+      {helperText && (
+        <p className="text-xs text-gray-500 mt-1 leading-tight">{helperText}</p>
+      )}
     </div>
   );
 }
+
+type SubjectResultCardProps = {
+  subject: SubjectPreview;
+  selectedSubject: SubjectPreview | null;
+  onSelect: (s: SubjectPreview | null) => void;
+};
+
+function SubjectResultCard({
+  subject,
+  selectedSubject,
+  onSelect,
+}: SubjectResultCardProps) {
+  const isSelected = selectedSubject?.id === subject.id;
+
+  return (
+    <div
+      className={`w-full rounded-2xl border flex items-center justify-between px-4 py-3 shadow-sm hover:shadow-md transition cursor-pointer ${
+        isSelected ? "border-gray-400 bg-gray-50" : "border-gray-200 bg-white"
+      }`}
+      onClick={() => onSelect(isSelected ? null : subject)}
+    >
+      <div className="flex items-center gap-4">
+        <div
+          className={`w-12 h-12 rounded-full flex items-center justify-center ${
+            isSelected ? "bg-gray-100 border-2 border-gray-400" : "bg-gray-100"
+          }`}
+        >
+          <User className="w-6 h-6 text-gray-500" />
+        </div>
+
+        <div className="min-w-0">
+          <div className="text-sm font-semibold text-gray-900">
+            {subject.name}
+            {subject.nickname && (
+              <span className="text-gray-500 font-normal"> ({subject.nickname})</span>
+            )}
+          </div>
+          <div className="text-xs text-gray-600 truncate">
+            {subject.organization || "Independent"}
+            {subject.location ? ` • ${subject.location}` : ""}
+          </div>
+          <div className="text-[11px] text-gray-400 font-mono mt-0.5">
+            ID: {subject.id}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3 ml-4 shrink-0">
+        {!subject.id.startsWith("temp-") && (
+          <Link
+            href={`/subject/${subject.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs font-medium text-gray-700 hover:text-black hover:underline flex items-center gap-1"
+            onClick={(e) => e.stopPropagation()}
+          >
+            View
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="w-3 h-3"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </Link>
+        )}
+
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onSelect(isSelected ? null : subject);
+          }}
+          className={`flex items-center gap-1 text-xs font-medium px-3 py-1 rounded-full border transition ${
+            isSelected
+              ? "border-gray-400 text-gray-700 bg-gray-50 hover:bg-gray-100"
+              : "border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
+          }`}
+        >
+          {isSelected ? (
+            <>
+              Selected
+              <X className="w-3.5 h-3.5 ml-1 text-gray-500" strokeWidth={2} />
+            </>
+          ) : (
+            "Choose"
+          )}
+        </button>
+      </div>
+    </div>
+  );
+}
+

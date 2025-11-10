@@ -95,4 +95,11 @@
   animation: fadeOut 0.3s ease-in forwards;
 }
 
+input:focus, textarea:focus, select:focus {
+  outline: none !important;
+  box-shadow: 0 0 0 2px #3B82F6 !important; /* blue-500 */
+  border-color: #3B82F6 !important;
+}
+
+
 

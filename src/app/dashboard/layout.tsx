@@ -184,27 +184,48 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [category]);
 
   useEffect(() => {
-    if ("geolocation" in navigator) {
+    async function fetchUserLocation() {
+      if (!navigator.geolocation) {
+        console.warn("Geolocation not supported.");
+        // setUserCity("Unknown Location");
+        return;
+      }
+  
       navigator.geolocation.getCurrentPosition(
         async (pos) => {
           const { latitude, longitude } = pos.coords;
-          const res = await fetch(
-            `/api/globalsearch?q=${encodeURIComponent(query)}&category=${encodeURIComponent(category)}&location=${encodeURIComponent(userLocation || "")}`
-          );          
-          const data = await res.json();
-          const city =
-            data.address.city ||
-            data.address.town ||
-            data.address.village ||
-            data.address.state ||
-            "";
-          setUserLocation(city);          
+  
+          try {
+            const res = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`
+            );
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  
+            const data = await res.json().catch(() => ({}));
+  
+            const city =
+              data?.address?.city ||
+              data?.address?.town ||
+              data?.address?.village ||
+              data?.address?.state ||
+              "Unknown Location";
+  
+            console.log("Detected city:", city);
+            // setUserCity(city);
+          } catch (err) {
+            console.warn("Reverse geocoding failed:", err);
+            // setUserCity("Unknown Location");
+          }
         },
-        (err) => console.warn("Geolocation error:", err),
-        { enableHighAccuracy: true, timeout: 10000 }
+        (err) => {
+          console.warn("User denied geolocation:", err);
+          // setUserCity("Unknown Location");
+        }
       );
     }
-  }, []);  
+  
+    fetchUserLocation();
+  }, []);     
 
   useEffect(() => {
     const fetchResults = async () => {

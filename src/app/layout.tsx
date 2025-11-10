@@ -1,3 +1,5 @@
+import { ToastProvider } from "@/components/ui/use-toast";
+import { Toaster } from "@/components/ui/toaster";
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -45,8 +47,11 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        {children}
-        <ServiceWorkerRegister /> {/* 👈 injects SW registration */}
+        <ToastProvider>
+          {children}
+          <ServiceWorkerRegister /> {/* 👈 injects SW registration */}
+          <Toaster /> {/* ✅ mount the toast system globally */}
+        </ToastProvider>
       </body>
     </html>
   );
