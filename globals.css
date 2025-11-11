@@ -101,5 +101,22 @@ input:focus, textarea:focus, select:focus {
   border-color: #3B82F6 !important;
 }
 
+/* Smooth fade on the right edge of the filled star overlay */
+.star-fill-mask {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    #000 0%,
+    #000 85%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    #000 0%,
+    #000 85%,
+    transparent 100%
+  );
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
 
 

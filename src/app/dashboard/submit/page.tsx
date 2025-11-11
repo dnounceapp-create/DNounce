@@ -924,50 +924,79 @@ export default function SubmitRecordPage() {
             )}
           </div>
 
-          {/* ⭐ Rating Section */}
-          <div className="mt-8 sm:mt-10">
+          {/* ⭐ Rating Section (with 0.5 steps & correct click order) */}
+          <div className="mt-8 sm:mt-10 select-none">
             <Label className="block text-lg font-medium mb-3 sm:mb-4">
               Rate Your Experience <span className="text-red-500">*</span>
             </Label>
 
             <div
-              className="flex items-center justify-start flex-wrap gap-2 sm:gap-3 select-none"
+              className="flex items-center justify-start flex-wrap gap-2 sm:gap-3"
               onTouchStart={(e) => e.stopPropagation()}
             >
               {Array.from({ length: 10 }).map((_, i) => {
-                const value = i + 1;
-                const currentValue = hoverRating ?? rating;
-                const isFilled = currentValue >= value;
+                const starValue = i + 1;
+                const currentValue = rating;
+
+                // 0, 0.5, or 1 fill for this star
+                const fillLevel =
+                  currentValue >= starValue
+                    ? 1
+                    : currentValue >= starValue - 0.5
+                    ? 0.5
+                    : 0;
+
+                const applyClick = (prev: number) => {
+                  const half = starValue - 0.5;
+                    
+                  // 1️⃣ If current rating is below this star’s half → go to half
+                  if (prev < half) return half;
+                    
+                  // 2️⃣ If we’re exactly on this star’s half → go full
+                  if (prev === half) return starValue;
+                    
+                  // 3️⃣ If we’re exactly on this star’s full → go back to half
+                  if (prev === starValue) return half;
+                    
+                  // 4️⃣ If rating is some other higher star → jump to this half
+                  return half;
+                };                    
 
                 return (
                   <div
-                    key={i}
+                    key={starValue}
                     className="relative cursor-pointer active:scale-105 transition-transform"
                     style={{ width: 42, height: 42 }}
-                    onMouseEnter={() => {
-                      if (window.innerWidth > 768) setHoverRating(value);
-                    }}
-                    onMouseLeave={() => {
-                      if (window.innerWidth > 768) setHoverRating(null);
-                    }}
                     onClick={() => {
-                      if (window.innerWidth > 768) {
-                        setRating(value);
-                        setHoverRating(null);
-                      }
+                      setRating((prev) => {
+                        const next = applyClick(prev);
+                        return next === prev ? prev : next;
+                      });
+                      setHoverRating(null);
                     }}
                     onTouchEnd={() => {
-                      // 📱 Mobile: simpler full-star selection
-                      setRating(value);
+                      setRating((prev) => applyClick(prev));
                       setHoverRating(null);
                     }}
                   >
+                    {/* Empty base star */}
                     <Star
                       size={40}
-                      className={`absolute inset-0 transition-all duration-150 ${
-                        isFilled ? "text-black fill-black" : "text-gray-300 fill-none"
-                      }`}
+                      className="absolute inset-0 text-gray-300"
+                      strokeWidth={1.5}
                     />
+
+                    {/* Filled portion (0%, 50%, or 100%) */}
+                    <div
+                      className="absolute inset-0 overflow-hidden star-fill-mask"
+                      style={{ width: `${fillLevel * 100}%` }}
+                    >
+                      <Star
+                        size={40}
+                        className="text-black fill-black transition-all duration-200 ease-in-out"
+                        strokeWidth={1.5}
+                      />
+                    </div>
                   </div>
                 );
               })}
