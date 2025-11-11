@@ -160,6 +160,35 @@ export default function SubmitRecordPage() {
 
   /* ——— Location Autocomplete (wired to /api/location) ——— */
   useEffect(() => {
+    const q = submitLocation.trim();
+    if (!q) {
+      setSubmitLocationSuggestions([]);
+      return;
+    }
+  
+    const fetchSuggestions = async () => {
+      try {
+        const res = await fetch(`/api/location?input=${encodeURIComponent(q)}`);
+        if (!res.ok) {
+          console.warn("⚠️ Location API failed for submit:", res.status);
+          setSubmitLocationSuggestions([]);
+          return;
+        }
+
+        const data = await res.json().catch(() => ({}));
+        setSubmitLocationSuggestions(data?.predictions || []);
+      } catch (err) {
+        console.error("Submit location suggestions error:", err);
+        setSubmitLocationSuggestions([]);
+      }
+    };
+  
+    const id = setTimeout(fetchSuggestions, 300); // debounce typing
+    return () => clearTimeout(id);
+  }, [submitLocation]);  
+
+  /* ——— Location Autocomplete (wired to /api/location) ——— */
+  useEffect(() => {
     const q = submitLocation?.trim();
     if (!q) {
       setSubmitLocationSuggestions([]);
@@ -825,15 +854,50 @@ export default function SubmitRecordPage() {
               required
             />
 
-            <Field
-              label="Location"
-              placeholder="City or neighborhood..."
-              value={submitLocation}
-              onChange={setSubmitLocation}
-              disabled={!!selectedSubject && !selectedSubject.id.startsWith("temp-")}
-              required
-              helperText="Type city name to see neighborhoods, or neighborhood to see full location."
-            />
+            {/* Location (with autocomplete like setup page) */}
+            <div className="flex flex-col">
+              <label className="mb-2 text-[15px] font-medium text-[#1E293B] tracking-tight">
+                Location <span className="text-red-500">*</span>
+              </label>
+
+              <div className="relative">
+                <Input
+                  placeholder="City or neighborhood..."
+                  value={submitLocation}
+                  onChange={(e) => setSubmitLocation(e.target.value)}
+                  disabled={!!selectedSubject && !selectedSubject.id.startsWith("temp-")}
+                  className={`w-full rounded-2xl border border-gray-300 px-4 py-2.5 text-[15px] text-gray-800 placeholder:text-gray-400 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition ${
+                    !!selectedSubject && !selectedSubject.id.startsWith("temp-")
+                      ? "bg-gray-100 text-gray-500 cursor-not-allowed"
+                      : "bg-white"
+                  }`}
+                />
+
+                {submitLocationSuggestions.length > 0 && (
+                  <ul className="absolute top-full z-50 bg-white border rounded-md w-full shadow-md mt-1 max-h-60 overflow-y-auto">
+                    {submitLocationSuggestions.map((s: any, idx: number) => (
+                      <li
+                        key={idx}
+                        className="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-2"
+                        onClick={() => {
+                          setSubmitLocation(s.description);
+                          setSubmitLocationSuggestions([]);
+                        }}
+                      >
+                        <MapPin className="w-4 h-4 text-gray-600 shrink-0" />
+                        <span className="font-semibold text-gray-800 text-sm leading-tight">
+                          {s.description}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              <p className="text-xs text-gray-500 mt-1 leading-tight">
+                Type city name to see neighborhoods, or neighborhood to see full location.
+              </p>
+            </div>
           </div>
 
           {/* 🔍 Search Existing Subjects */}
