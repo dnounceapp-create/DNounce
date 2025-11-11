@@ -68,6 +68,7 @@ export default function SubmitRecordPage() {
   const [relLoading, setRelLoading] = useState(false);
   const [relationshipTypes, setRelationshipTypes] = useState<any[]>([]);
   const [rating, setRating] = useState<number>(0);
+  const [lastTappedStar, setLastTappedStar] = useState<number | null>(null);
   const [hoverRating, setHoverRating] = useState<number | null>(null);
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -960,24 +961,49 @@ export default function SubmitRecordPage() {
                     
                   // 4️⃣ If rating is some other higher star → jump to this half
                   return half;
-                };                    
+                };    
+                
+                useEffect(() => {
+                  const handleTouchStart = () => {
+                    // This flag tells us the device supports touch
+                    document.body.classList.add("is-touch");
+                  };
+                
+                  window.addEventListener("touchstart", handleTouchStart, { once: true });
+                  return () => window.removeEventListener("touchstart", handleTouchStart);
+                }, []);                
 
                 return (
                   <div
                     key={starValue}
                     className="relative cursor-pointer active:scale-105 transition-transform"
                     style={{ width: 42, height: 42 }}
-                    onClick={() => {
+                    onClick={(e) => {
+                      // Skip desktop click if it’s a touch device
+                      if (document.body.classList.contains("is-touch")) return;
+                    
                       setRating((prev) => {
                         const next = applyClick(prev);
                         return next === prev ? prev : next;
                       });
                       setHoverRating(null);
-                    }}
+                    }}                    
                     onTouchEnd={() => {
-                      setRating((prev) => applyClick(prev));
+                      setRating((prev) => {
+                        const half = starValue - 0.5;
+                    
+                        // 👇 If same star tapped again, toggle half/full
+                        if (lastTappedStar === starValue) {
+                          if (prev === half) return starValue;
+                          if (prev === starValue) return half;
+                        }
+                    
+                        // 👇 If tapping new star, start at half
+                        setLastTappedStar(starValue);
+                        return half;
+                      });
                       setHoverRating(null);
-                    }}
+                    }}                    
                   >
                     {/* Empty base star */}
                     <Star
