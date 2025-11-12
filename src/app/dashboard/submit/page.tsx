@@ -63,6 +63,7 @@ export default function SubmitRecordPage() {
   const [submitCategory, setSubmitCategory] = useState("");
   const [submitLocation, setSubmitLocation] = useState("");
   const [submitLocationSuggestions, setSubmitLocationSuggestions] = useState<any[]>([]);
+  const escapeLike = (s: string) => s.replace(/[%_]/g, ch => `\\${ch}`);
   const [tempSubject, setTempSubject] = useState<SubjectPreview | null>(null);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [relLoading, setRelLoading] = useState(false);
@@ -256,104 +257,66 @@ export default function SubmitRecordPage() {
   async function handleSubjectSearch() {
     setSubjectSearched(true);
 
-    if (
-      !submitFirstName.trim() &&
-      !submitLastName.trim() &&
-      !submitNickname.trim() &&
-      !submitOrganization.trim() &&
-      !submitLocation.trim() &&
-      !submitPhone.trim() &&
-      !submitEmail.trim()
-    ) {
+    const name = `${submitFirstName.trim()} ${submitLastName.trim()}`.trim();
+    const nick = submitNickname.trim();
+    const org  = submitOrganization.trim();
+    const loc  = submitLocation.trim();
+    const emailRaw = submitEmail.trim();
+    const phoneRaw = submitPhone.trim();
+    const phoneDigits = phoneRaw.replace(/\D/g, "");
+
+    if (!name && !nick && !org && !loc && !phoneDigits && !emailRaw) {
       toast({
         title: "Missing Information",
-        description: "Please enter at least one field before searching — like name, nickname, organization, location, phone, or email.",
+        description: "Please enter at least one field before searching.",
       });
       setSubjectSearched(false);
       return;
-    }    
-  
-    const fullName = `${submitFirstName.trim()} ${submitLastName.trim()}`.trim();
-    const name = fullName;
-    const nick = submitNickname.trim();
-    const org = submitOrganization.trim();
-    const loc = submitLocation.trim();
-    const phone = submitPhone.replace(/\D/g, ""); // strip to digits
-    const email = submitEmail.trim();
-  
-    // require at least one identifying input
-    if (!name && !nick && !org && !loc && !phone && !email) {
-      toast({
-        title: "Missing Information",
-        description: "Please fill in at least one of: name, nickname, organization, location, phone, or email before searching.",
-      });      
     }
-  
+
     setSubjectLoading(true);
-  
     try {
-      let primaryMatches: any[] | null = null;
-      let primaryError: any = null;
-  
-      if (phone || email) {
-        const phoneFilter = phone ? `phone.ilike.%${phone}%` : null;
-        const emailFilter = email ? `email.ilike.%${email}%` : null;
-      
-        const filters = [phoneFilter, emailFilter].filter(Boolean).join(",");
-      
-        const query1 = supabase
-          .from("subjects")
-          .select(
-            "id, name, nickname, organization, location, avatar_url, phone, email"
-          ) // 👈 notice phone + email here
-          .or(filters)
-          .limit(10);
-      
-        const { data, error } = await query1;
-        primaryMatches = data;
-        primaryError = error;
-      }      
-  
-      if (primaryError) throw primaryError;
-  
-      if (primaryMatches && primaryMatches.length > 0) {
-        // ✅ Found exact contact matches — show them immediately
-        setSubjectResults(primaryMatches);
-        return;
-      }
-  
-      // 🧩 2️⃣ Otherwise, fallback to existing fuzzy logic
-      let query2 = supabase
+      let q = supabase
         .from("subjects")
-        .select("id, name, nickname, organization, location, avatar_url")
+        .select("id:subject_uuid, name, nickname, organization, location, avatar_url, phone, email")
         .limit(10);
-  
-      const filters: string[] = [];
-  
-      if (name) filters.push(`name.ilike.%${name}%`);
-      if (nick) filters.push(`nickname.ilike.%${nick}%`);
-      if (org) filters.push(`organization.ilike.%${org}%`);
-      if (loc) filters.push(`location.ilike.%${loc}%`);
-  
-      if (filters.length > 0) {
-        query2 = query2.or(filters.join(","));
+
+      // 1) EXACT filters (AND)
+      if (phoneDigits) {
+        // try exact on multiple common representations
+        const phoneCandidates: string[] = [phoneRaw, phoneDigits];
+        if (phoneDigits.length === 10) phoneCandidates.push(`+1${phoneDigits}`);
+        if (phoneDigits.length === 11 && phoneDigits.startsWith("1")) phoneCandidates.push(`+${phoneDigits}`);
+
+        q = q.in("phone", Array.from(new Set(phoneCandidates)));
       }
-  
-      const { data: fallbackData, error: fallbackError } = await query2;
-      if (fallbackError) throw fallbackError;
-  
-      setSubjectResults(fallbackData || []);
+
+      if (emailRaw) {
+        // case-insensitive exact (no wildcards)
+        q = q.ilike("email", emailRaw); // ILIKE 'value' acts like exact, but case-insensitive
+      }
+
+      // 2) BEGINS-WITH filters (AND)
+      if (name) q = q.ilike("name", `${escapeLike(name)}%`);
+      if (nick) q = q.ilike("nickname", `${escapeLike(nick)}%`);
+      if (org)  q = q.ilike("organization", `${escapeLike(org)}%`);
+      if (loc)  q = q.ilike("location", `${escapeLike(loc)}%`);
+
+      const { data, error } = await q;
+      if (error) throw error;
+
+      setSubjectResults(data || []);
     } catch (err) {
       console.error("Error searching subjects:", err);
       setSubjectResults([]);
       toast({
         title: "Search Failed",
         description: "There was an error searching for subjects. Please try again.",
-      });      
+      });
     } finally {
       setSubjectLoading(false);
     }
-  }  
+  }
 
   async function handleCreateTempSubject() {
     // 1️⃣ Capture position of Subject Info section
@@ -389,21 +352,8 @@ export default function SubmitRecordPage() {
     });
   }  
      
-  async function uploadEvidenceFiles(recordId: string, subjectId: string) {
+  async function uploadEvidenceFiles(recordId: string, contributorId: string) {
     if (files.length === 0) return [];
-  
-    // 1️⃣ Get the logged-in user (aka contributor)
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-  
-    if (userError || !user) {
-      console.error("Could not get current user for uploads:", userError);
-      throw new Error("Not authenticated");
-    }
-  
-    const contributorId = user.id;
   
     // 2️⃣ Upload each file into the proper folder structure
     const uploadPromises = files.map(async (file, index) => {
@@ -432,7 +382,7 @@ export default function SubmitRecordPage() {
         paths.map((p) => ({
           record_id: recordId,
           contributor_id: contributorId,
-          file_path: p,
+          path: p,
         }))
       );
   
@@ -442,54 +392,66 @@ export default function SubmitRecordPage() {
     }
   
     return paths;
-  }   
+  }    
+
+  async function createContributorAlias(contributorId: string) {
+    const { data: alias, error } = await supabase
+      .from("contributor_aliases")
+      .insert({ contributor_id: contributorId })
+      .select("alias_uuid")
+      .single();
+  
+    if (error || !alias) {
+      console.error("Error creating contributor alias:", error);
+      throw error || new Error("Failed to create contributor alias");
+    }
+  
+    return alias.alias_uuid as string;
+  }  
 
   async function getOrCreateContributorForCurrentUser() {
     const {
       data: { user },
       error: userError,
     } = await supabase.auth.getUser();
-
+  
     if (userError || !user) {
-      throw new Error("Not authenticated");
+      throw new Error("User not authenticated");
     }
-
+  
     const userId = user.id;
-
-    // 1️⃣ Try to find an existing contributor row for this user
-    const { data: existing, error: existingError } = await supabase
+  
+    // 1️⃣ Try to find existing contributor
+    const { data: existing, error: fetchError } = await supabase
       .from("contributors")
       .select("id")
       .eq("user_id", userId)
-      .maybeSingle(); // if your supabase-js version doesn't support maybeSingle, we can adjust
-
-    if (existingError && existingError.code !== "PGRST116") {
-      // PGRST116 = no rows found (not fatal for us)
-      console.error("Error checking existing contributor:", existingError);
-      throw existingError;
+      .single();
+  
+    if (fetchError && fetchError.code !== "PGRST116") {
+      // PGRST116 = "no rows found"
+      console.error("Error fetching contributor:", fetchError);
+      throw fetchError;
     }
-
-    if (existing && existing.id) {
-      return { contributorId: existing.id, userId };
+  
+    if (existing) {
+      return { contributorId: existing.id };
     }
-
-    // 2️⃣ No contributor yet → create one
-    const { data: newContributor, error: createError } = await supabase
+  
+    // 2️⃣ If not found, create a new one
+    const { data: newContributor, error: insertError } = await supabase
       .from("contributors")
-      .insert({
-        user_id: userId,
-        alias: null, // or some default alias if you wish
-      })
+      .insert({ user_id: userId })
       .select("id")
       .single();
-
-    if (createError || !newContributor) {
-      console.error("Error creating contributor:", createError);
-      throw createError || new Error("Failed to create contributor");
+  
+    if (insertError || !newContributor) {
+      console.error("Error creating contributor:", insertError);
+      throw insertError || new Error("Contributor creation failed");
     }
-
-    return { contributorId: newContributor.id, userId };
-  }
+  
+    return { contributorId: newContributor.id };
+  }  
 
   /* ——— Handle Form Submit ——— */
   async function handleSubmit(e: React.FormEvent) {
@@ -577,9 +539,18 @@ export default function SubmitRecordPage() {
 
     setIsSubmitting(true);
     try {
-      // 1️⃣ Get contributor for the logged-in user
-      const newRecordId = uuidv4(); // ✅ moved to the top before any inserts
+      const newRecordId = uuidv4(); 
       const { contributorId } = await getOrCreateContributorForCurrentUser();
+      const emailOrPhone =
+      submitPhone.trim() !== ""
+        ? submitPhone.trim()
+        : submitEmail.trim() !== ""
+        ? submitEmail.trim()
+        : null;
+
+
+      const contributorAliasId = await createContributorAlias(contributorId);
+
 
       // 2️⃣ Start from the currently selected subject
       let subjectId = selectedSubject.id;
@@ -611,7 +582,7 @@ export default function SubmitRecordPage() {
             phone: submitPhone || null,
             email: submitEmail || null,
           })
-          .select("id")
+          .select("subject_uuid")
           .single();
 
         if (newSubjectError || !newSubject) {
@@ -622,24 +593,27 @@ export default function SubmitRecordPage() {
           });
           return;
         }
-
-        subjectId = newSubject.id; // ✅ update subjectId to the new permanent subject
+        subjectId = newSubject.subject_uuid;
       }
 
-      // 4️⃣ Now insert the record (always a single clean insert)
       const { data: newRecord, error: recordError } = await supabase
         .from("records")
         .insert({
           id: newRecordId,
-          subject_id: subjectId,
-          contributor_id: contributorId,
+          subject_id: subjectId,                // ✅ references subjects.subject_uuid
+          contributor_id: contributorId,        // ✅ references contributors.id
           record_type: "pending",
-          contributor_alias: null,
-          relationship_id: submitRelationship || null,
+          email_or_phone: emailOrPhone,
+          first_name: submitFirstName.trim() || null,
+          last_name: submitLastName.trim() || null,
+          also_known_as: submitNickname || null,
+          organization: submitOrganization || null,
+          relationship: submitRelationship || null,
+          category: submitCategory || null,
           location: submitLocation || null,
           rating: rating || null,
           description: description.trim() || null,
-          details: description.trim() || null,
+          agree_terms: agreedToTerms,
         })
         .select("id")
         .single();
@@ -657,7 +631,7 @@ export default function SubmitRecordPage() {
 
       // 6️⃣ Upload evidence files (still using your existing helper)
       try {
-        await uploadEvidenceFiles(recordId, subjectId);
+        await uploadEvidenceFiles(newRecordId, contributorId);
       } catch (uploadErr) {
         console.error("Some evidence files failed to upload:", uploadErr);
         toast({
