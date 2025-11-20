@@ -11,9 +11,9 @@ export async function POST(req: Request) {
       );
     }
 
-    // Call the Python spaCy classifier
+    // Call Python classifier function (correct path)
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_SITE_URL}/api/classify-record`,
+      `${process.env.NEXT_PUBLIC_SITE_URL}/api/python/classify-record`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -23,11 +23,7 @@ export async function POST(req: Request) {
 
     const data = await response.json();
 
-    return NextResponse.json({
-      spaCy_classification: data.classification,
-      spaCy_credibility_score: data.credibility_score,
-      spaCy_word_count: data.word_count,
-    });
+    return NextResponse.json(data);
   } catch (error: any) {
     return NextResponse.json(
       { error: error.message || "Internal server error" },
