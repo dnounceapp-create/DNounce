@@ -44,7 +44,7 @@ matcher.add("OPINION", [nlp.make_doc(p) for p in OPINION_PHRASES])
 URL_RE = re.compile(r"https?://\\S+|www\\.\\S+", re.IGNORECASE)
 
 def fetch_record(record_id: str) -> Dict[str, Any]:
-    res = sb.table("records").select("id,description,classification").eq("id", record_id).single().execute()
+    res = sb.table("records").select("id,description,record_type").eq("id", record_id).single().execute()
     if not res.data:
         raise HTTPException(status_code=404, detail="Record not found")
     return res.data
@@ -53,8 +53,38 @@ def fetch_evidence(record_id: str) -> List[Dict[str, Any]]:
     res = sb.table("record_evidence").select("id,file_url,file_type,description").eq("record_id", record_id).execute()
     return res.data or []
 
-def update_record_classification(record_id: str, classification: str) -> None:
-    sb.table("records").update({"classification": classification}).eq("id", record_id).execute()
+from datetime import datetime, timezone
+
+def update_record_classification(
+    record_id: str,
+    label: str,
+    score: float,
+    features: Dict[str, Any],
+) -> None:
+    # Map your 3-class label -> DB enum-ish record_type
+    if label == "Evidence-Based":
+        record_type = "evidence"
+    elif label == "Opinion-Based":
+        record_type = "opinion"
+    else:
+        record_type = "pending"  # Unclear goes to pending
+
+    credibility_summary = (
+        f"spaCy vendor1 score={score:.2f} | "
+        f"evidence_hits={features.get('evidence_hits')} opinion_hits={features.get('opinion_hits')} "
+        f"evidence_files={features.get('evidence_count')} strong_types={features.get('strong_evidence_types')} "
+        f"dates={features.get('has_dates')} money={features.get('has_money')} url={features.get('has_url')} "
+        f"accusations={features.get('accusation_count')} words={features.get('word_count')}"
+    )
+
+    sb.table("records").update({
+        "record_type": record_type,
+        "ai_vendor_1_result": label,
+        "ai_vendor_1_score": score,
+        "credibility": credibility_summary,
+        "ai_completed_at": datetime.now(timezone.utc).isoformat(),
+    }).eq("id", record_id).execute()
+
 
 def compute_features(text: str, evidence_rows: List[Dict[str, Any]]) -> Dict[str, Any]:
     doc = nlp(text)
@@ -161,12 +191,13 @@ async def webhook(req: Request, authorization: Optional[str] = Header(default=No
     text = (r.get("description") or "").strip()
 
     if not text:
-        update_record_classification(record_id, "Unclear")
-        return {"ok": True, "record_id": record_id, "classification": "Unclear", "reason": "missing description"}
+    # no text → we mark as Unclear/pending with 0 score and empty features
+    update_record_classification(record_id, "Unclear", 0.0, {})
+    return {"ok": True, "record_id": record_id, "classification": "Unclear", "reason": "missing description"}
 
     features = compute_features(text, evidence_rows)
     result = classify(features)
-    update_record_classification(record_id, result["label"])
+    update_record_classification(record_id, result["label"], result["score"], features)
 
     return {
         "ok": True,
