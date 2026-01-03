@@ -1,5 +1,6 @@
 import os
 import re
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from fastapi import FastAPI, Request, Header, HTTPException
@@ -18,42 +19,59 @@ sb: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
 app = FastAPI(title="DNounce spaCy Classifier")
 
+# Load spaCy model
 nlp = spacy.load("en_core_web_sm", exclude=["lemmatizer"])
 if "sentencizer" not in nlp.pipe_names:
     nlp.add_pipe("sentencizer")
 
 EVIDENCE_PHRASES = [
-    "screenshot","screenshots","photo","photos","video","recording",
-    "invoice","receipt","contract","agreement","email","text message",
-    "bank statement","police report","case number","report number",
-    "evidence","proof","documentation","documents"
+    "screenshot", "screenshots", "photo", "photos", "video", "recording",
+    "invoice", "receipt", "contract", "agreement", "email", "text message",
+    "bank statement", "police report", "case number", "report number",
+    "evidence", "proof", "documentation", "documents",
 ]
 OPINION_PHRASES = [
-    "i think","i feel","i believe","in my opinion","seems like",
-    "probably","maybe","kind of","sort of","i guess"
+    "i think", "i feel", "i believe", "in my opinion", "seems like",
+    "probably", "maybe", "kind of", "sort of", "i guess",
 ]
 ACCUSATION_VERBS = {
-    "scam","scammed","steal","stole","stolen","abuse","abused",
-    "cheat","cheated","lie","lied","gaslight","gaslit","harass","harassed"
+    "scam", "scammed", "steal", "stole", "stolen", "abuse", "abused",
+    "cheat", "cheated", "lie", "lied", "gaslight", "gaslit", "harass", "harassed",
 }
 
 matcher = PhraseMatcher(nlp.vocab, attr="LOWER")
 matcher.add("EVIDENCE", [nlp.make_doc(p) for p in EVIDENCE_PHRASES])
 matcher.add("OPINION", [nlp.make_doc(p) for p in OPINION_PHRASES])
 
-URL_RE = re.compile(r"https?://\\S+|www\\.\\S+", re.IGNORECASE)
+URL_RE = re.compile(r"https?://\S+|www\.\S+", re.IGNORECASE)
+
 
 def fetch_record(record_id: str) -> Dict[str, Any]:
-    res = sb.table("records").select("id,description,record_type").eq("id", record_id).single().execute()
+    res = (
+        sb.table("records")
+        .select("id,description,record_type")
+        .eq("id", record_id)
+        .single()
+        .execute()
+    )
     if not res.data:
         raise HTTPException(status_code=404, detail="Record not found")
     return res.data
 
+
 def fetch_evidence(record_id: str) -> List[Dict[str, Any]]:
-    res = sb.table("record_evidence").select("id,file_url,file_type,description").eq("record_id", record_id).execute()
+    """
+    Your schema has record_attachments (not record_evidence).
+    We'll treat attachments as evidence signals.
+    """
+    res = (
+        sb.table("record_attachments")
+        .select("id,path,mime_type,label,created_at")
+        .eq("record_id", record_id)
+        .execute()
+    )
     return res.data or []
 
-from datetime import datetime, timezone
 
 def update_record_classification(
     record_id: str,
@@ -61,13 +79,13 @@ def update_record_classification(
     score: float,
     features: Dict[str, Any],
 ) -> None:
-    # Map your 3-class label -> DB enum-ish record_type
+    # Map label -> DB record_type values (must match your CHECK constraint)
     if label == "Evidence-Based":
         record_type = "evidence"
     elif label == "Opinion-Based":
         record_type = "opinion"
     else:
-        record_type = "pending"  # Unclear goes to pending
+        record_type = "pending"
 
     credibility_summary = (
         f"spaCy vendor1 score={score:.2f} | "
@@ -93,10 +111,10 @@ def compute_features(text: str, evidence_rows: List[Dict[str, Any]]) -> Dict[str
     evidence_hits = 0
     opinion_hits = 0
     for match_id, start, end in matches:
-        label = nlp.vocab.strings[match_id]
-        if label == "EVIDENCE":
+        mlabel = nlp.vocab.strings[match_id]
+        if mlabel == "EVIDENCE":
             evidence_hits += 1
-        elif label == "OPINION":
+        elif mlabel == "OPINION":
             opinion_hits += 1
 
     ents = list(doc.ents)
@@ -107,12 +125,32 @@ def compute_features(text: str, evidence_rows: List[Dict[str, Any]]) -> Dict[str
 
     word_count = len([t for t in doc if t.is_alpha])
     has_url = bool(URL_RE.search(text)) or any(t.like_url for t in doc)
-    accusation_count = sum(1 for t in doc if t.lemma_.lower() in ACCUSATION_VERBS)
+
+    # Accusation-ish verbs (spaCy lemma can be blank sometimes, so guard)
+    accusation_count = 0
+    for t in doc:
+        lemma = (t.lemma_ or t.text).lower()
+        if lemma in ACCUSATION_VERBS:
+            accusation_count += 1
 
     evidence_count = len(evidence_rows)
-    evidence_types = { (r.get("file_type") or "").lower() for r in evidence_rows }
+
+    # Derive "types" from mime_type if present; else from file extension in `path`
+    evidence_types: set[str] = set()
+    for r in evidence_rows:
+        mt = (r.get("mime_type") or "").lower()
+        path = (r.get("path") or "").lower()
+
+        if mt:
+            evidence_types.add(mt)
+        elif "." in path:
+            evidence_types.add(path.rsplit(".", 1)[-1])
+
     has_evidence_files = evidence_count > 0
-    strong_evidence_types = any(t in evidence_types for t in ["pdf","image","jpg","png","video","mp4"])
+    strong_evidence_types = any(
+        t in evidence_types
+        for t in ["application/pdf", "pdf", "image/jpeg", "image/png", "jpg", "jpeg", "png", "video/mp4", "mp4"]
+    )
 
     return {
         "evidence_hits": evidence_hits,
@@ -129,6 +167,7 @@ def compute_features(text: str, evidence_rows: List[Dict[str, Any]]) -> Dict[str
         "has_evidence_files": has_evidence_files,
         "strong_evidence_types": strong_evidence_types,
     }
+
 
 def classify(features: Dict[str, Any]) -> Dict[str, Any]:
     score = 0.5
@@ -169,12 +208,15 @@ def classify(features: Dict[str, Any]) -> Dict[str, Any]:
 
     return {"label": label, "score": score}
 
+
 @app.get("/health")
 def health():
     return {"ok": True}
 
+
 @app.post("/webhook/classify-record")
 async def webhook(req: Request, authorization: Optional[str] = Header(default=None)):
+    # Optional auth
     if WEBHOOK_SECRET:
         if not authorization or authorization.strip() != f"Bearer {WEBHOOK_SECRET}":
             raise HTTPException(status_code=401, detail="Unauthorized")
@@ -191,12 +233,17 @@ async def webhook(req: Request, authorization: Optional[str] = Header(default=No
     text = (r.get("description") or "").strip()
 
     if not text:
-    # no text → we mark as Unclear/pending with 0 score and empty features
-    update_record_classification(record_id, "Unclear", 0.0, {})
-    return {"ok": True, "record_id": record_id, "classification": "Unclear", "reason": "missing description"}
+        update_record_classification(record_id, "Unclear", 0.0, {})
+        return {
+            "ok": True,
+            "record_id": record_id,
+            "classification": "Unclear",
+            "reason": "missing description",
+        }
 
     features = compute_features(text, evidence_rows)
     result = classify(features)
+
     update_record_classification(record_id, result["label"], result["score"], features)
 
     return {
