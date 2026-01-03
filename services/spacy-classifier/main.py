@@ -1,13 +1,16 @@
 import os
 import re
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from fastapi import FastAPI, Request, Header, HTTPException
 from supabase import create_client, Client
 import spacy
 from spacy.matcher import PhraseMatcher
 
+# ----------------------------
+# Env
+# ----------------------------
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET")
@@ -17,9 +20,11 @@ if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
 
 sb: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
-app = FastAPI(title="DNounce spaCy Classifier")
+app = FastAPI(title="DNounce spaCy Classifier", version="1.0.0")
 
-# Load spaCy model
+# ----------------------------
+# spaCy setup
+# ----------------------------
 nlp = spacy.load("en_core_web_sm", exclude=["lemmatizer"])
 if "sentencizer" not in nlp.pipe_names:
     nlp.add_pipe("sentencizer")
@@ -45,33 +50,53 @@ matcher.add("OPINION", [nlp.make_doc(p) for p in OPINION_PHRASES])
 
 URL_RE = re.compile(r"https?://\S+|www\.\S+", re.IGNORECASE)
 
-
-def fetch_record(record_id: str) -> Dict[str, Any]:
-    res = (
-        sb.table("records")
-        .select("id,description,record_type")
-        .eq("id", record_id)
-        .single()
-        .execute()
-    )
-    if not res.data:
-        raise HTTPException(status_code=404, detail="Record not found")
-    return res.data
-
+# ----------------------------
+# Supabase helpers
+# ----------------------------
+def fetch_record(record_id: str) -> Optional[Dict[str, Any]]:
+    """
+    Return record dict if exists, else None.
+    IMPORTANT: .single() can throw when 0 rows, so we handle safely.
+    """
+    try:
+        # maybe_single() is supported in supabase/postgrest v2+
+        res = (
+            sb.table("records")
+            .select("id,description,record_type")
+            .eq("id", record_id)
+            .maybe_single()
+            .execute()
+        )
+        return res.data  # dict or None
+    except Exception:
+        # Fallback: if maybe_single isn't available or another error happens
+        try:
+            res = (
+                sb.table("records")
+                .select("id,description,record_type")
+                .eq("id", record_id)
+                .limit(1)
+                .execute()
+            )
+            rows = res.data or []
+            return rows[0] if rows else None
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Supabase fetch_record failed: {str(e)}")
 
 def fetch_evidence(record_id: str) -> List[Dict[str, Any]]:
     """
-    Your schema has record_attachments (not record_evidence).
-    We'll treat attachments as evidence signals.
+    DNounce schema uses record_attachments for evidence-ish files.
     """
-    res = (
-        sb.table("record_attachments")
-        .select("id,path,mime_type,label,created_at")
-        .eq("record_id", record_id)
-        .execute()
-    )
-    return res.data or []
-
+    try:
+        res = (
+            sb.table("record_attachments")
+            .select("id,path,mime_type,label,size_bytes,created_at")
+            .eq("record_id", record_id)
+            .execute()
+        )
+        return res.data or []
+    except Exception:
+        return []
 
 def update_record_classification(
     record_id: str,
@@ -95,15 +120,22 @@ def update_record_classification(
         f"accusations={features.get('accusation_count')} words={features.get('word_count')}"
     )
 
-    sb.table("records").update({
-        "record_type": record_type,
-        "ai_vendor_1_result": label,
-        "ai_vendor_1_score": score,
-        "credibility": credibility_summary,
-        "ai_completed_at": datetime.now(timezone.utc).isoformat(),
-    }).eq("id", record_id).execute()
+    try:
+        sb.table("records").update(
+            {
+                "record_type": record_type,
+                "ai_vendor_1_result": label,
+                "ai_vendor_1_score": score,
+                "credibility": credibility_summary,
+                "ai_completed_at": datetime.now(timezone.utc).isoformat(),
+            }
+        ).eq("id", record_id).execute()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Supabase update failed: {str(e)}")
 
-
+# ----------------------------
+# Classifier core
+# ----------------------------
 def compute_features(text: str, evidence_rows: List[Dict[str, Any]]) -> Dict[str, Any]:
     doc = nlp(text)
     matches = matcher(doc)
@@ -126,7 +158,6 @@ def compute_features(text: str, evidence_rows: List[Dict[str, Any]]) -> Dict[str
     word_count = len([t for t in doc if t.is_alpha])
     has_url = bool(URL_RE.search(text)) or any(t.like_url for t in doc)
 
-    # Accusation-ish verbs (spaCy lemma can be blank sometimes, so guard)
     accusation_count = 0
     for t in doc:
         lemma = (t.lemma_ or t.text).lower()
@@ -135,12 +166,10 @@ def compute_features(text: str, evidence_rows: List[Dict[str, Any]]) -> Dict[str
 
     evidence_count = len(evidence_rows)
 
-    # Derive "types" from mime_type if present; else from file extension in `path`
     evidence_types: set[str] = set()
     for r in evidence_rows:
         mt = (r.get("mime_type") or "").lower()
         path = (r.get("path") or "").lower()
-
         if mt:
             evidence_types.add(mt)
         elif "." in path:
@@ -149,7 +178,11 @@ def compute_features(text: str, evidence_rows: List[Dict[str, Any]]) -> Dict[str
     has_evidence_files = evidence_count > 0
     strong_evidence_types = any(
         t in evidence_types
-        for t in ["application/pdf", "pdf", "image/jpeg", "image/png", "jpg", "jpeg", "png", "video/mp4", "mp4"]
+        for t in [
+            "application/pdf", "pdf",
+            "image/jpeg", "image/png", "jpg", "jpeg", "png",
+            "video/mp4", "mp4",
+        ]
     )
 
     return {
@@ -167,7 +200,6 @@ def compute_features(text: str, evidence_rows: List[Dict[str, Any]]) -> Dict[str
         "has_evidence_files": has_evidence_files,
         "strong_evidence_types": strong_evidence_types,
     }
-
 
 def classify(features: Dict[str, Any]) -> Dict[str, Any]:
     score = 0.5
@@ -208,29 +240,79 @@ def classify(features: Dict[str, Any]) -> Dict[str, Any]:
 
     return {"label": label, "score": score}
 
-
+# ----------------------------
+# Routes
+# ----------------------------
 @app.get("/health")
 def health():
     return {"ok": True}
 
+@app.post("/classify")
+async def classify_text(req: Request):
+    """
+    Simple endpoint for testing without Supabase or webhooks.
+    Body: { "text": "..." }
+    """
+    payload = await req.json()
+    text = (payload.get("text") or "").strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="Missing text")
+
+    features = compute_features(text, [])
+    result = classify(features)
+    return {"classification": result["label"], "score": result["score"], "features": features}
 
 @app.post("/webhook/classify-record")
 async def webhook(req: Request, authorization: Optional[str] = Header(default=None)):
-    # Optional auth
+    # Auth (optional)
     if WEBHOOK_SECRET:
         if not authorization or authorization.strip() != f"Bearer {WEBHOOK_SECRET}":
             raise HTTPException(status_code=401, detail="Unauthorized")
 
     payload = await req.json()
     record = payload.get("record") or {}
-    record_id = record.get("id") or payload.get("record_id")
 
+    record_id = record.get("id") or payload.get("record_id")
+    incoming_description = (record.get("description") or payload.get("description") or "").strip()
+
+    if not record_id and not incoming_description:
+        raise HTTPException(status_code=400, detail="Missing record.id (or provide description for test mode)")
+
+    # ---- TEST MODE (no DB) ----
+    # If caller includes description but record doesn't exist, we classify WITHOUT Supabase update.
+    if incoming_description:
+        # try to get evidence only if record_id exists and record exists
+        db_record = fetch_record(record_id) if record_id else None
+        evidence_rows = fetch_evidence(record_id) if (record_id and db_record) else []
+        text = incoming_description
+
+        features = compute_features(text, evidence_rows)
+        result = classify(features)
+
+        # Update only if record exists in DB
+        if db_record and record_id:
+            update_record_classification(record_id, result["label"], result["score"], features)
+
+        return {
+            "ok": True,
+            "record_id": record_id,
+            "classification": result["label"],
+            "score": result["score"],
+            "updated_db": bool(db_record),
+            "features": features,
+            "evidence_count": len(evidence_rows),
+        }
+
+    # ---- NORMAL MODE (DB required) ----
     if not record_id:
         raise HTTPException(status_code=400, detail="Missing record.id")
 
-    r = fetch_record(record_id)
+    db_record = fetch_record(record_id)
+    if not db_record:
+        raise HTTPException(status_code=404, detail="Record not found")
+
     evidence_rows = fetch_evidence(record_id)
-    text = (r.get("description") or "").strip()
+    text = (db_record.get("description") or "").strip()
 
     if not text:
         update_record_classification(record_id, "Unclear", 0.0, {})
@@ -238,6 +320,7 @@ async def webhook(req: Request, authorization: Optional[str] = Header(default=No
             "ok": True,
             "record_id": record_id,
             "classification": "Unclear",
+            "updated_db": True,
             "reason": "missing description",
         }
 
@@ -251,6 +334,7 @@ async def webhook(req: Request, authorization: Optional[str] = Header(default=No
         "record_id": record_id,
         "classification": result["label"],
         "score": result["score"],
+        "updated_db": True,
         "features": features,
         "evidence_count": len(evidence_rows),
     }
