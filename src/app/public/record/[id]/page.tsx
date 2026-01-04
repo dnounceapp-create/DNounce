@@ -1,4 +1,3 @@
-cat > src/app/public/record/[id]/page.tsx << 'EOF'
 "use client";
 
 import { useEffect, useState } from "react";
@@ -211,4 +210,3 @@ export default function RecordPage() {
     </div>
   );
 }
-EOF

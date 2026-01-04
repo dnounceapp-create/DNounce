@@ -1,11 +1,12 @@
 import Link from "next/link";
 
 type PageProps = {
-  searchParams?: { [key: string]: string | string[] | undefined };
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-export default function PublicRecordConfirmationPage({ searchParams }: PageProps) {
-  const rawId = searchParams?.id;
+export default async function PublicRecordConfirmationPage({ searchParams }: PageProps) {
+  const sp = searchParams ? await searchParams : {};
+  const rawId = sp.id;
   const recordId = Array.isArray(rawId) ? rawId[0] : rawId;
 
   return (
@@ -33,10 +34,7 @@ export default function PublicRecordConfirmationPage({ searchParams }: PageProps
         )}
 
         <div className="pt-4">
-          <Link
-            href="/"
-            className="text-blue-600 hover:underline"
-          >
+          <Link href="/" className="text-blue-600 hover:underline">
             ← Back to home
           </Link>
         </div>
