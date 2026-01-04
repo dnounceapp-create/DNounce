@@ -5,8 +5,10 @@ import { supabase } from "@/lib/supabaseClient";
 import { Loader2, User, MapPin, FileText, Star } from "lucide-react";
 import Link from "next/link";
 
-export default function RecordPage({ params }: { params: { id: string } }) {
-  const recordId = params.id;
+export default async function RecordPage(
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id: recordId } = await params;
 
   const [record, setRecord] = useState<any>(null);
   const [loading, setLoading] = useState(true);
