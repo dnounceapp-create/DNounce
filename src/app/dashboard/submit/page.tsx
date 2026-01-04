@@ -596,6 +596,12 @@ export default function SubmitRecordPage() {
         subjectId = newSubject.subject_uuid;
       }
 
+      const selectedRel = relationshipTypes.find((r) => r.id === submitRelationship);
+      const relationshipValue =
+        selectedRel?.value?.toLowerCase() === "other"
+          ? (submitOtherRelationship.trim() || null)
+          : (selectedRel?.label || null);
+
       const { data: newRecord, error: recordError } = await supabase
         .from("records")
         .insert({
@@ -608,7 +614,7 @@ export default function SubmitRecordPage() {
           last_name: submitLastName.trim() || null,
           also_known_as: submitNickname || null,
           organization: submitOrganization || null,
-          relationship: submitRelationship || null,
+          relationship: relationshipValue,
           category: submitCategory || null,
           location: submitLocation || null,
           rating: rating || null,
@@ -782,7 +788,6 @@ export default function SubmitRecordPage() {
                 <Select
                   value={submitRelationship}
                   onValueChange={setSubmitRelationship}
-                  disabled={!!selectedSubject && !selectedSubject.id.startsWith("temp-")}
                   required
                 >
                   <SelectTrigger className="w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500">
@@ -812,7 +817,6 @@ export default function SubmitRecordPage() {
                       .join(" ");
                     setSubmitOtherRelationship(value);
                   }}
-                  disabled={!!selectedSubject && !selectedSubject.id.startsWith("temp-")}
                   className="mt-3 w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               )}
@@ -823,7 +827,6 @@ export default function SubmitRecordPage() {
               placeholder="e.g. Barber, Waitress, Nail Tech"
               value={submitCategory}
               onChange={setSubmitCategory}
-              disabled={!!selectedSubject && !selectedSubject.id.startsWith("temp-")}
               helperText="Use a label that best fits how you may find this person."
               required
             />
@@ -835,17 +838,12 @@ export default function SubmitRecordPage() {
               </label>
 
               <div className="relative">
-                <Input
-                  placeholder="City or neighborhood..."
-                  value={submitLocation}
-                  onChange={(e) => setSubmitLocation(e.target.value)}
-                  disabled={!!selectedSubject && !selectedSubject.id.startsWith("temp-")}
-                  className={`w-full rounded-2xl border border-gray-300 px-4 py-2.5 text-[15px] text-gray-800 placeholder:text-gray-400 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition ${
-                    !!selectedSubject && !selectedSubject.id.startsWith("temp-")
-                      ? "bg-gray-100 text-gray-500 cursor-not-allowed"
-                      : "bg-white"
-                  }`}
-                />
+              <Input
+                placeholder="City or neighborhood..."
+                value={submitLocation}
+                onChange={(e) => setSubmitLocation(e.target.value)}
+                className="w-full rounded-2xl border border-gray-300 px-4 py-2.5 text-[15px] text-gray-800 placeholder:text-gray-400 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition bg-white"
+              />
 
                 {submitLocationSuggestions.length > 0 && (
                   <ul className="absolute top-full z-50 bg-white border rounded-md w-full shadow-md mt-1 max-h-60 overflow-y-auto">

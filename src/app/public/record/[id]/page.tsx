@@ -156,8 +156,9 @@ export default function RecordPage() {
         </div>
 
         <div className="text-sm text-gray-600">
-          <strong>Category:</strong> {record.category}
+          <strong>Category:</strong> {record.category || "Not provided"}
         </div>
+
 
         <div className="text-sm text-gray-600 flex gap-2 items-center">
           <MapPin className="w-4 h-4" />
