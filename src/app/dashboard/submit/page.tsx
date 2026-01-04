@@ -468,14 +468,16 @@ export default function SubmitRecordPage() {
       if (!agreedToTerms) missingFields.push("Agree to Terms of Service");
       if (!rating || rating <= 0) missingFields.push("Rating (1–10)");
 
-      // Only check these for new subjects
+      // ✅ Always require these for ALL submissions (existing OR new subject)
+      if (!submitRelationship) missingFields.push("Relationship");
+      if (!submitCategory.trim()) missingFields.push("Category");
+      if (!submitLocation.trim()) missingFields.push("Location");
+
+      // ✅ Only require identity/contact fields when creating a NEW subject
       if (!selectedSubject || selectedSubject.id.startsWith("temp-")) {
         if (!submitFirstName.trim()) missingFields.push("First name");
         if (!submitPhone.trim() && !submitEmail.trim())
           missingFields.push("Phone number or Email");
-        if (!submitRelationship) missingFields.push("Relationship");
-        if (!submitCategory.trim()) missingFields.push("Category");
-        if (!submitLocation.trim()) missingFields.push("Location");
       }
 
       // 🚨 Show popup if anything’s missing
