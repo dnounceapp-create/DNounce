@@ -34,6 +34,7 @@ export default function RecordPage() {
             description,
             category,
             location,
+            credibility,
             relationship,
             first_name,
             last_name,
@@ -140,6 +141,56 @@ export default function RecordPage() {
       <div className="border rounded-2xl p-5 shadow-md bg-white space-y-5">
         <h2 className="text-lg font-semibold text-gray-800">Submitted Record</h2>
 
+        {/* Credibility */}
+        {(() => {
+          const raw =
+            (record.credibility || record.ai_vendor_1_result || "").toString().trim();
+
+          const label = raw || "Pending AI Review";
+
+          const score =
+            typeof record.ai_vendor_1_score === "number"
+              ? Math.round(record.ai_vendor_1_score * 100)
+              : null;
+
+          const badgeStyle =
+            label === "Evidence-Based"
+              ? "bg-green-50 text-green-800 border-green-200"
+              : label === "Opinion-Based"
+              ? "bg-blue-50 text-blue-800 border-blue-200"
+              : label === "Unclear"
+              ? "bg-yellow-50 text-yellow-900 border-yellow-200"
+              : "bg-gray-50 text-gray-700 border-gray-200";
+
+          return (
+            <div className="flex items-center justify-between gap-3 border rounded-xl px-4 py-3">
+              <div className="flex items-center gap-3">
+                <span
+                  className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${badgeStyle}`}
+                >
+                  Credibility: {label}
+                </span>
+
+                {score !== null && (
+                  <span className="text-xs text-gray-600">
+                    Confidence: {score}%
+                  </span>
+                )}
+              </div>
+
+              {record.ai_completed_at ? (
+                <span className="text-xs text-gray-500">
+                  AI verified
+                </span>
+              ) : (
+                <span className="text-xs text-gray-500">
+                  Processing…
+                </span>
+              )}
+            </div>
+          );
+        })()}
+
         {/* Rating */}
         <div className="flex items-center gap-2 text-yellow-500">
           {Array.from({ length: 10 }).map((_, i) => (
@@ -156,9 +207,8 @@ export default function RecordPage() {
         </div>
 
         <div className="text-sm text-gray-600">
-          <strong>Category:</strong> {record.category || "Not provided"}
+          <strong>Category:</strong> {record.category}
         </div>
-
 
         <div className="text-sm text-gray-600 flex gap-2 items-center">
           <MapPin className="w-4 h-4" />
