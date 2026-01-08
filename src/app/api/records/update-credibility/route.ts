@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+export async function GET() {
+  return NextResponse.json({ ok: true, route: "update-credibility" });
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json().catch(() => ({}));
