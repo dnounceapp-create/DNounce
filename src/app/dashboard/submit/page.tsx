@@ -16,6 +16,8 @@ import {
 } from "@/components/ui/select";
 import Link from "next/link";
 import { v4 as uuidv4 } from "uuid";
+import { classifyRecord } from "@/lib/ai/classifyRecord";
+
 
 /** ——— Subject Search (UI only) ——— */
 type SubjectPreview = {
@@ -635,7 +637,47 @@ export default function SubmitRecordPage() {
         return;
       }
 
+      console.log("✅ INSERT OK newRecord:", newRecord);
+
+      // ✅ STEP 3A: Classify immediately (NO AI, NO WEBHOOK)
+      const credibility = classifyRecord({
+        description: description.trim(),
+        rating,
+        hasAttachments: files.length > 0,
+      });
+
+      // ✅ STEP 3B: Persist credibility to DB (SERVER route)
+      const res = await fetch("/api/records/update-credibility", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          recordId: newRecord.id,
+          credibility,
+        }),
+      });
+
+      const json = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        console.error("❌ SERVER UPDATE ERROR:", json);
+        toast({
+          title: "Server update failed",
+          description: json?.error || "Unknown error",
+        });
+      } else {
+        console.log("✅ SERVER UPDATE OK:", json);
+      }
+
       const recordId = newRecord.id;
+
+      //fetch("/api/ai/process-record", {
+        //method: "POST",
+          //headers: { "Content-Type": "application/json" },
+          //body: JSON.stringify({ recordId: newRecord.id }),
+          //}).catch((err) => {
+          //console.error("AI process-record failed:", err);
+          //});
+      
 
       // 6️⃣ Upload evidence files (still using your existing helper)
       try {

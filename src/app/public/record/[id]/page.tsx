@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { Loader2, User, MapPin, FileText, Star } from "lucide-react";
+import { Loader2, User, MapPin, FileText, Star, CheckCircle, AlertTriangle, CircleAlert } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
@@ -95,6 +95,21 @@ export default function RecordPage() {
   }
 
   const subject = record.subject;
+  const credibility = record.credibility ?? "Pending AI Review";
+
+  let CredibilityIcon = null;
+  let credibilityIconColor = "";
+
+  if (credibility === "Evidence-Based") {
+    CredibilityIcon = CheckCircle;
+    credibilityIconColor = "text-green-600";
+  } else if (credibility === "Opinion-Based") {
+    CredibilityIcon = AlertTriangle;
+    credibilityIconColor = "text-red-600";
+  } else if (credibility === "Unable to Verify") {
+    CredibilityIcon = CircleAlert;
+    credibilityIconColor = "text-yellow-600";
+  }
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-10 space-y-8">
@@ -138,20 +153,14 @@ export default function RecordPage() {
       </div>
 
       {/* Record Info */}
-      <div className="border rounded-2xl p-5 shadow-md bg-white space-y-5">
+      <div className="relative border rounded-2xl p-5 shadow-md bg-white space-y-5">
         <h2 className="text-lg font-semibold text-gray-800">Submitted Record</h2>
 
-        {/* Credibility */}
+        {/* Credibility (top-right) */}
         {(() => {
-          const raw =
-            (record.credibility || record.ai_vendor_1_result || "").toString().trim();
+          const raw = (record.credibility || "").toString().trim();
 
           const label = raw || "Pending AI Review";
-
-          const score =
-            typeof record.ai_vendor_1_score === "number"
-              ? Math.round(record.ai_vendor_1_score * 100)
-              : null;
 
           const badgeStyle =
             label === "Evidence-Based"
@@ -163,32 +172,17 @@ export default function RecordPage() {
               : "bg-gray-50 text-gray-700 border-gray-200";
 
           return (
-            <div className="flex items-center justify-between gap-3 border rounded-xl px-4 py-3">
-              <div className="flex items-center gap-3">
-                <span
-                  className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${badgeStyle}`}
-                >
-                  Credibility: {label}
-                </span>
-
-                {score !== null && (
-                  <span className="text-xs text-gray-600">
-                    Confidence: {score}%
-                  </span>
-                )}
-              </div>
-
-              {record.ai_completed_at ? (
-                <span className="text-xs text-gray-500">
-                  AI verified
-                </span>
-              ) : (
-                <span className="text-xs text-gray-500">
-                  Processing…
-                </span>
+            <div className="absolute top-5 right-5 flex items-center gap-2">
+              {CredibilityIcon && (
+                <CredibilityIcon className={`w-4 h-4 ${credibilityIconColor}`} />
               )}
+              <span
+                className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold whitespace-nowrap ${badgeStyle}`}
+              >
+                Credibility: {label}
+              </span>
             </div>
-          );
+              );
         })()}
 
         {/* Rating */}
