@@ -320,9 +320,15 @@ def score_and_explain(features: Dict[str, Any]) -> Dict[str, Any]:
     confidence = clamp01(0.55 * separation + 0.35 * attach + 0.10 * clamp01(ent / 5.0))
 
     # Decision thresholds: dynamic
-    # If there are attachments, be more willing to call Evidence-Based.
-    evidence_threshold = 0.62 if attach > 0.25 else 0.68
-    opinion_threshold = 0.62 if wc >= 20 else 0.68  # short text => more conservative
+    # If there are attachments OR evidence signals (ids / evidence phrases),
+    # we should be more willing to label Evidence-Based.
+    has_strong_evidence_signals = (attach > 0.25) or (ev >= 1) or (id_hits >= 1)
+
+    # Lower threshold when we have strong evidence signals.
+    evidence_threshold = 0.58 if has_strong_evidence_signals else 0.68
+
+    # Opinion threshold stays stricter, especially for very short text.
+    opinion_threshold = 0.62 if wc >= 20 else 0.70
 
     if evidence_score >= evidence_threshold and confidence >= 0.45:
         label = "Evidence-Based"
@@ -333,6 +339,7 @@ def score_and_explain(features: Dict[str, Any]) -> Dict[str, Any]:
     else:
         label = "Unclear"
         final_score = 0.5
+
 
     positives = []
     negatives = []
