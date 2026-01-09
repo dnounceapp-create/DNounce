@@ -95,21 +95,6 @@ export default function RecordPage() {
   }
 
   const subject = record.subject;
-  const credibility = record.credibility ?? "Pending AI Review";
-
-  let CredibilityIcon = null;
-  let credibilityIconColor = "";
-
-  if (credibility === "Evidence-Based") {
-    CredibilityIcon = CheckCircle;
-    credibilityIconColor = "text-green-600";
-  } else if (credibility === "Opinion-Based") {
-    CredibilityIcon = AlertTriangle;
-    credibilityIconColor = "text-red-600";
-  } else if (credibility === "Unable to Verify") {
-    CredibilityIcon = CircleAlert;
-    credibilityIconColor = "text-yellow-600";
-  }
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-10 space-y-8">
@@ -160,7 +145,13 @@ export default function RecordPage() {
         {(() => {
           const raw = (record.credibility || "").toString().trim();
 
-          const label = raw || "Pending AI Review";
+          // ✅ Normalize label no matter what junk is in the column
+          const label =
+            raw.includes("Evidence-Based") ? "Evidence-Based" :
+            raw.includes("Opinion-Based") ? "Opinion-Based" :
+            raw.includes("Unclear") ? "Unclear" :
+            raw ? raw :
+            "Pending AI Review";
 
           const badgeStyle =
             label === "Evidence-Based"
@@ -170,6 +161,24 @@ export default function RecordPage() {
               : label === "Unclear"
               ? "bg-yellow-50 text-yellow-900 border-yellow-200"
               : "bg-gray-50 text-gray-700 border-gray-200";
+
+          const CredibilityIcon =
+            label === "Evidence-Based"
+              ? CheckCircle
+              : label === "Opinion-Based"
+              ? AlertTriangle
+              : label === "Unclear"
+              ? CircleAlert
+              : null;
+
+          const credibilityIconColor =
+            label === "Evidence-Based"
+              ? "text-green-600"
+              : label === "Opinion-Based"
+              ? "text-blue-600"
+              : label === "Unclear"
+              ? "text-yellow-600"
+              : "";
 
           return (
             <div className="absolute top-5 right-5 flex items-center gap-2">
@@ -182,7 +191,7 @@ export default function RecordPage() {
                 Credibility: {label}
               </span>
             </div>
-              );
+          );
         })()}
 
         {/* Rating */}

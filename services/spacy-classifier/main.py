@@ -186,16 +186,25 @@ def update_record_ai(
     elif label == "Opinion-Based":
         record_type = "opinion"
     else:
-        record_type = "pending"
+        record_type = "unclear"
+
 
     summary = explanation.get("summary", "")
     payload = {
-        "record_type": record_type,
-        "ai_vendor_1_result": f"{label} ({CLASSIFIER_VERSION})",
-        "ai_vendor_1_score": score,
-        "credibility": summary,
-        "ai_completed_at": now_iso(),
-    }
+    "record_type": record_type,
+
+    # Human-readable label + version
+    "ai_vendor_1_result": f"{label} ({CLASSIFIER_VERSION})",
+    "ai_vendor_1_score": score,
+
+    # ✅ IMPORTANT: credibility must be ONLY the label
+    "credibility": label,
+
+    # ✅ Store the long explanation elsewhere
+    "ai_vendor_2_result": summary,
+
+    "ai_completed_at": now_iso(),
+}
 
     try:
         sb.table("records").update(payload).eq("id", record_id).execute()
