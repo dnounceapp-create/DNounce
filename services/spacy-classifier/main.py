@@ -12,7 +12,7 @@ from spacy.matcher import PhraseMatcher
 # -------------------------
 # Config
 # -------------------------
-CLASSIFIER_VERSION = "dnounce_spacy_v2.0"
+CLASSIFIER_VERSION = "dnounce_spacy_v3_text_only"
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
@@ -34,35 +34,37 @@ if "sentencizer" not in nlp.pipe_names:
 
 matcher = PhraseMatcher(nlp.vocab, attr="LOWER")
 
-# Strong indicators the user is referencing concrete artifacts
+# Evidence-ish words/phrases (verifiable artifacts)
 EVIDENCE_PHRASES = [
     "receipt", "receipts", "invoice", "invoices", "contract", "agreement",
-    "email thread", "email", "text message", "screenshots", "screenshot",
-    "bank statement", "wire transfer", "zelle", "cash app", "paypal",
+    "email thread", "email", "emails", "text message", "text messages",
+    "screenshots", "screenshot", "bank statement", "statement",
+    "wire transfer", "zelle", "cash app", "paypal",
     "police report", "case number", "report number", "ticket number",
     "order number", "tracking number", "reference number",
     "attached", "attachment", "see attached", "uploaded", "upload",
     "documentation", "proof", "evidence", "recording", "video", "photo", "photos",
+    "written worksheet", "worksheet", "quote", "quoted", "estimate", "bill",
 ]
 
-# Hedging / opinion cues
+# Opinion/hedging words (but should NOT override strong facts)
 OPINION_PHRASES = [
     "i think", "i feel", "i believe", "in my opinion", "seems like",
     "probably", "maybe", "kind of", "sort of", "i guess", "i assume",
     "it felt", "it seems", "i suspect",
 ]
 
-# “Accusation” verbs — used as a penalty *if unsubstantiated*
+# Accusation / strong claims (penalize only when there are no facts)
 ACCUSATION_TERMS = {
     "scam", "scammed", "steal", "stole", "stolen", "fraud", "fraudulent",
     "abuse", "abused", "cheat", "cheated", "lie", "lied", "gaslight", "gaslit",
     "harass", "harassed", "threaten", "threatened",
 }
 
-# Patterns for verifiable IDs (case #, order #, invoice #, etc.)
+# Verifiable ID patterns
 ID_PATTERNS = [
     re.compile(r"\b(case|report|ticket|order|invoice|ref|reference)\s*#?\s*[A-Z0-9\-]{4,}\b", re.I),
-    re.compile(r"\b[A-Z]{2,5}\-[0-9]{3,}\b", re.I),  # e.g., ABC-1234
+    re.compile(r"\b[A-Z]{2,5}\-[0-9]{3,}\b", re.I),
 ]
 
 URL_RE = re.compile(r"https?://\S+|www\.\S+", re.IGNORECASE)
@@ -76,9 +78,6 @@ matcher.add("OPINION", [nlp.make_doc(p) for p in OPINION_PHRASES])
 def clamp01(x: float) -> float:
     return max(0.0, min(1.0, x))
 
-def sigmoid(x: float) -> float:
-    return 1 / (1 + math.exp(-x))
-
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
@@ -89,10 +88,9 @@ def safe_str(x: Any) -> str:
 # Supabase
 # -------------------------
 def fetch_record(record_id: str) -> Optional[Dict[str, Any]]:
-    # Pull the fields we actually need + fields we write back to
     res = (
         sb.table("records")
-        .select("id,description,record_type")
+        .select("id,description")
         .eq("id", record_id)
         .single()
         .execute()
@@ -100,10 +98,6 @@ def fetch_record(record_id: str) -> Optional[Dict[str, Any]]:
     return res.data
 
 def fetch_attachments(record_id: str) -> List[Dict[str, Any]]:
-    """
-    DNounce schema uses record_attachments.
-    We treat attachments as evidence.
-    """
     try:
         res = (
             sb.table("record_attachments")
@@ -115,96 +109,29 @@ def fetch_attachments(record_id: str) -> List[Dict[str, Any]]:
     except Exception:
         return []
 
-def attachment_strength(attachments: List[Dict[str, Any]]) -> Tuple[float, Dict[str, Any]]:
+def update_record_ai(record_id: str, label: str, score: float, explanation: Dict[str, Any]) -> bool:
     """
-    Score attachment evidence 0..1 based on:
-    - count
-    - file types (pdf/image/video stronger)
-    - size (tiny files less convincing)
+    Prototype rule:
+    - credibility = ONLY label (Evidence-Based / Opinion-Based / Unclear)
+    - ai_vendor_1_result = label + version
+    - ai_vendor_1_score = score
+    - ai_vendor_2_result = summary/explanation (optional)
     """
-    if not attachments:
-        return 0.0, {"count": 0, "strong_count": 0, "types": []}
+    # map record_type
+    record_type = (
+        "evidence" if label == "Evidence-Based"
+        else "opinion" if label == "Opinion-Based"
+        else "unclear"
+    )
 
-    strong_mimes = {
-        "application/pdf",
-        "image/png", "image/jpeg",
-        "video/mp4",
-    }
-
-    count = len(attachments)
-    strong_count = 0
-    types = set()
-
-    size_bonus = 0.0
-    for a in attachments:
-        mt = safe_str(a.get("mime_type")).lower()
-        path = safe_str(a.get("path")).lower()
-        if mt:
-            types.add(mt)
-        elif "." in path:
-            types.add(path.rsplit(".", 1)[-1])
-
-        if mt in strong_mimes or any(ext in path for ext in [".pdf", ".png", ".jpg", ".jpeg", ".mp4"]):
-            strong_count += 1
-
-        # size heuristic: >50kb adds credibility a bit, huge files don’t keep adding forever
-        try:
-            size = int(a.get("size_bytes") or 0)
-            if size > 50_000:
-                size_bonus += 0.02
-        except Exception:
-            pass
-
-    # base from count
-    base = 1 - math.exp(-count / 2.0)  # saturating curve
-    strong_bonus = 0.15 * (strong_count / max(1, count))
-    score = clamp01(0.10 + 0.65 * base + strong_bonus + clamp01(size_bonus))
-
-    return score, {"count": count, "strong_count": strong_count, "types": sorted(types)}
-
-def update_record_ai(
-    record_id: str,
-    label: str,
-    score: float,
-    explanation: Dict[str, Any],
-    db_update: bool = True,
-) -> bool:
-    """
-    Writes to existing columns in your schema:
-    - record_type: pending/opinion/evidence
-    - ai_vendor_1_result: label string
-    - ai_vendor_1_score: numeric
-    - credibility: text (we'll store a short summary)
-    - ai_completed_at: timestamp
-    """
-    if not db_update:
-        return False
-
-    # Map label -> allowed record_type enum-ish
-    if label == "Evidence-Based":
-        record_type = "evidence"
-    elif label == "Opinion-Based":
-        record_type = "opinion"
-    else:
-        record_type = "unclear"
-
-
-    summary = explanation.get("summary", "")
     payload = {
-    "record_type": record_type,
-
-    # Human-readable label + version
-    "ai_vendor_1_result": f"{label} ({CLASSIFIER_VERSION})",
-    "ai_vendor_1_score": score,
-
-    # ✅ IMPORTANT: credibility must be ONLY the label
-    "credibility": label,
-
-    # ✅ Store the long explanation elsewhere
-    "ai_vendor_2_result": summary,
-
-    "ai_completed_at": now_iso(),
-}
+        "record_type": record_type,
+        "credibility": label,  # IMPORTANT: keep clean for UI
+        "ai_vendor_1_result": f"{label} ({CLASSIFIER_VERSION})",
+        "ai_vendor_1_score": score,
+        "ai_vendor_2_result": explanation.get("summary", ""),
+        "ai_completed_at": now_iso(),
+    }
 
     try:
         sb.table("records").update(payload).eq("id", record_id).execute()
@@ -213,7 +140,7 @@ def update_record_ai(
         return False
 
 # -------------------------
-# Feature extraction
+# Feature extraction (TEXT ONLY)
 # -------------------------
 def compute_features(text: str, attachments: List[Dict[str, Any]]) -> Dict[str, Any]:
     doc = nlp(text)
@@ -231,12 +158,13 @@ def compute_features(text: str, attachments: List[Dict[str, Any]]) -> Dict[str, 
     ents = list(doc.ents)
     has_dates = any(e.label_ in ("DATE", "TIME") for e in ents)
     has_money = any(e.label_ == "MONEY" for e in ents)
-    has_org_or_gpe = any(e.label_ in ("ORG", "GPE") for e in ents)
-    has_person = any(e.label_ == "PERSON" for e in ents)
-
-    word_count = len([t for t in doc if t.is_alpha])
     has_url = bool(URL_RE.search(text)) or any(t.like_url for t in doc)
 
+    # “facts density”: counts that imply a concrete narrative
+    has_named_entities = len(ents) >= 2
+    word_count = len([t for t in doc if t.is_alpha])
+
+    # accusations: only matter when facts are weak
     accusation_count = 0
     for t in doc:
         lemma = (t.lemma_ or t.text).lower()
@@ -248,156 +176,107 @@ def compute_features(text: str, attachments: List[Dict[str, Any]]) -> Dict[str, 
         if pat.search(text):
             id_hits += 1
 
-    attach_score, attach_meta = attachment_strength(attachments)
+    # attachments exist, but for prototype we treat them as a small bonus only
+    attachment_count = len(attachments or [])
 
     return {
         "word_count": word_count,
-        "entity_count": len(ents),
-        "has_dates": has_dates,
-        "has_money": has_money,
-        "has_org_or_gpe": has_org_or_gpe,
-        "has_person": has_person,
-        "has_url": has_url,
         "evidence_hits": evidence_hits,
         "opinion_hits": opinion_hits,
-        "accusation_count": accusation_count,
+        "has_dates": has_dates,
+        "has_money": has_money,
+        "has_url": has_url,
+        "has_named_entities": has_named_entities,
+        "entity_count": len(ents),
         "id_hits": id_hits,
-        "attachment_score": attach_score,
-        "attachment_meta": attach_meta,
+        "accusation_count": accusation_count,
+        "attachment_count": attachment_count,
     }
 
 # -------------------------
-# Scoring model (tech-giant style heuristics)
+# Scoring model (TEXT ONLY, “tone-aware”)
 # -------------------------
-def score_and_explain(features: Dict[str, Any]) -> Dict[str, Any]:
+def score_and_explain(f: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Produces:
-    - evidence_score 0..1
-    - opinion_score 0..1
-    - confidence 0..1
-    - label
-    - explanation (signals)
+    Goal:
+    - “I think” shouldn't tank a factual story.
+    - Evidence-Based if there are multiple factual anchors (dates/money/entities/ids/evidence words).
+    - Opinion-Based only when it's mostly feelings/claims without anchors.
     """
 
-    wc = features["word_count"]
-    ev = features["evidence_hits"]
-    op = features["opinion_hits"]
-    acc = features["accusation_count"]
-    attach = features["attachment_score"]
-    ent = features["entity_count"]
-    id_hits = features["id_hits"]
+    wc = f["word_count"]
+    ev = f["evidence_hits"]
+    op = f["opinion_hits"]
+    dates = 1.0 if f["has_dates"] else 0.0
+    money = 1.0 if f["has_money"] else 0.0
+    url = 1.0 if f["has_url"] else 0.0
+    ents = 1.0 if f["has_named_entities"] else 0.0
+    ids = clamp01(f["id_hits"] / 2.0)
+    acc = clamp01(f["accusation_count"] / 3.0)
+    attach = clamp01(f["attachment_count"] / 2.0)
 
-    # Verifiability: what a reviewer could check
-    verifiability_raw = (
-        0.70 * attach
-        + 0.10 * clamp01(ev / 4.0)
-        + 0.08 * (1.0 if features["has_dates"] else 0.0)
-        + 0.06 * (1.0 if features["has_money"] else 0.0)
-        + 0.06 * (1.0 if features["has_url"] else 0.0)
-        + 0.05 * clamp01(ent / 4.0)
-        + 0.05 * clamp01(id_hits / 2.0)
+    # factual anchors (strong evidence signals)
+    anchors = (
+        0.24 * clamp01(ev / 4.0) +
+        0.18 * dates +
+        0.18 * money +
+        0.12 * ents +
+        0.10 * ids +
+        0.06 * url +
+        0.12 * attach
     )
-    verifiability = clamp01(verifiability_raw)
+    anchors = clamp01(anchors)
 
-    # Subjectivity: feelings/hedging/vagueness
-    subjectivity_raw = (
-        0.55 * clamp01(op / 3.0)
-        + 0.12 * (1.0 if wc < 20 else 0.0)
-        + 0.18 * clamp01(acc / 3.0)
-    )
-    # Penalize accusations less if attachments exist
-    if attach > 0.35:
-        subjectivity_raw -= 0.10
-    subjectivity = clamp01(subjectivity_raw)
+    # opinion/hedging exists, but is downweighted if anchors are strong
+    hedging = clamp01(op / 3.0)
+    # if you have anchors, hedging matters less
+    effective_hedging = clamp01(hedging * (1.0 - 0.75 * anchors))
 
-    # Substantiation: do they *say* they have evidence (even if not attached)
-    substantiation_raw = (
-        0.60 * clamp01(ev / 4.0)
-        + 0.20 * (1.0 if features["has_url"] else 0.0)
-        + 0.20 * clamp01(id_hits / 2.0)
-    )
-    substantiation = clamp01(substantiation_raw)
+    # accusations penalize only when anchors are weak
+    effective_accusation = clamp01(acc * (1.0 - 0.60 * anchors))
 
-    # Combine into evidence vs opinion probability-like scores
-    # evidence_score increases with verifiability + substantiation
-    # opinion_score increases with subjectivity and lack of verifiability
-    evidence_score = clamp01(0.65 * verifiability + 0.35 * substantiation)
-    opinion_score = clamp01(0.70 * subjectivity + 0.30 * (1.0 - verifiability))
+    # “story completeness” bonus: longer text tends to include more detail
+    length_bonus = 0.0
+    if wc >= 60:
+        length_bonus = 0.08
+    elif wc >= 30:
+        length_bonus = 0.04
 
-    # confidence: how separated the scores are + stronger if attachments exist
-    separation = abs(evidence_score - opinion_score)
-    confidence = clamp01(0.55 * separation + 0.35 * attach + 0.10 * clamp01(ent / 5.0))
+    evidence_score = clamp01(0.78 * anchors + length_bonus)
+    opinion_score = clamp01(0.65 * effective_hedging + 0.35 * effective_accusation + (0.20 * (1.0 - anchors)))
 
-    # Decision thresholds: dynamic
-    # If there are attachments OR evidence signals (ids / evidence phrases),
-    # we should be more willing to label Evidence-Based.
-    has_strong_evidence_signals = (attach > 0.25) or (ev >= 1) or (id_hits >= 1)
-
-    # Lower threshold when we have strong evidence signals.
-    evidence_threshold = 0.58 if has_strong_evidence_signals else 0.68
-
-    # Opinion threshold stays stricter, especially for very short text.
-    opinion_threshold = 0.62 if wc >= 20 else 0.70
-
-    if evidence_score >= evidence_threshold and confidence >= 0.45:
+    # decision:
+    # Evidence-Based if anchors are reasonably strong.
+    # Opinion-Based only if anchors are weak AND hedging/accusations dominate.
+    if evidence_score >= 0.42:
         label = "Evidence-Based"
-        final_score = evidence_score
-    elif opinion_score >= opinion_threshold and confidence >= 0.45:
+        final = evidence_score
+    elif opinion_score >= 0.52 and anchors <= 0.25:
         label = "Opinion-Based"
-        final_score = opinion_score
+        final = opinion_score
     else:
         label = "Unclear"
-        final_score = 0.5
-
-
-    positives = []
-    negatives = []
-
-    if attach > 0:
-        positives.append(f"attachments_score={attach:.2f} (count={features['attachment_meta']['count']})")
-    if ev > 0:
-        positives.append(f"evidence_phrase_hits={ev}")
-    if id_hits > 0:
-        positives.append(f"id_patterns={id_hits}")
-    if features["has_dates"]:
-        positives.append("has_date_or_time")
-    if features["has_money"]:
-        positives.append("has_money")
-    if features["has_url"]:
-        positives.append("has_url")
-    if ent >= 2:
-        positives.append(f"named_entities={ent}")
-
-    if op > 0:
-        negatives.append(f"opinion_phrase_hits={op}")
-    if wc < 20:
-        negatives.append(f"short_text_words={wc}")
-    if acc > 0 and attach < 0.25:
-        negatives.append(f"accusation_terms={acc} (without attachments)")
+        final = 0.5
 
     summary = (
-        f"{CLASSIFIER_VERSION}: label={label} score={final_score:.2f} "
-        f"(evidence={evidence_score:.2f} opinion={opinion_score:.2f} conf={confidence:.2f}) "
-        f"| +{', '.join(positives[:5])} | -{', '.join(negatives[:5])}"
+        f"{CLASSIFIER_VERSION}: label={label} score={final:.2f} "
+        f"(anchors={anchors:.2f} evidence={evidence_score:.2f} opinion={opinion_score:.2f}) "
+        f"| ev_hits={ev} op_hits={op} dates={int(dates)} money={int(money)} ents={int(ents)} ids={f['id_hits']} attach={f['attachment_count']}"
     )
-
-    explanation = {
-        "classifier_version": CLASSIFIER_VERSION,
-        "label": label,
-        "final_score": final_score,
-        "evidence_score": evidence_score,
-        "opinion_score": opinion_score,
-        "confidence": confidence,
-        "signals_positive": positives,
-        "signals_negative": negatives,
-        "summary": summary,
-        "features": features,
-    }
 
     return {
         "label": label,
-        "score": final_score,
-        "explanation": explanation,
+        "score": final,
+        "explanation": {
+            "classifier_version": CLASSIFIER_VERSION,
+            "label": label,
+            "final_score": final,
+            "anchors": anchors,
+            "evidence_score": evidence_score,
+            "opinion_score": opinion_score,
+            "summary": summary,
+            "features": f,
+        }
     }
 
 # -------------------------
@@ -412,8 +291,8 @@ async def classify_endpoint(req: Request):
     payload = await req.json()
     text = safe_str(payload.get("text"))
     attachments = payload.get("attachments") or []
-    features = compute_features(text, attachments)
-    out = score_and_explain(features)
+    feats = compute_features(text, attachments)
+    out = score_and_explain(feats)
     return {
         "classification": out["label"],
         "score": out["score"],
@@ -442,12 +321,12 @@ async def webhook(req: Request, authorization: Optional[str] = Header(default=No
 
     if not text:
         out = {"label": "Unclear", "score": 0.5, "explanation": {"summary": f"{CLASSIFIER_VERSION}: missing description"}}
-        updated = update_record_ai(record_id, "Unclear", 0.0, out["explanation"], db_update=True)
+        updated = update_record_ai(record_id, "Unclear", 0.0, out["explanation"])
         return {"ok": True, "record_id": record_id, "classification": "Unclear", "score": 0.5, "updated_db": updated}
 
-    features = compute_features(text, attachments)
-    out = score_and_explain(features)
-    updated = update_record_ai(record_id, out["label"], out["score"], out["explanation"], db_update=True)
+    feats = compute_features(text, attachments)
+    out = score_and_explain(feats)
+    updated = update_record_ai(record_id, out["label"], out["score"], out["explanation"])
 
     return {
         "ok": True,
@@ -456,5 +335,5 @@ async def webhook(req: Request, authorization: Optional[str] = Header(default=No
         "score": out["score"],
         "updated_db": updated,
         "explanation": out["explanation"],
-        "evidence_count": features["attachment_meta"]["count"],
+        "attachment_count": len(attachments or []),
     }
