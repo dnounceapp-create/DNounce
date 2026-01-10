@@ -1,5 +1,16 @@
 export type RoleType = "subject" | "contributor" | "voter" | "citizen";
 
+export const stageShortLabel: Record<number, string> = {
+  1: "AI Review",
+  2: "Subject Notified",
+  3: "Published",
+  4: "In Dispute",
+  5: "Debate",
+  6: "Voting",
+  7: "Anonymity",
+};
+
+
 export interface StageTimeline {
   summary: string;
   start:
