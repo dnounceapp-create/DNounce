@@ -97,15 +97,15 @@ function normalizeCredibility(raw: any) {
 
 function getContributorDisplayName(record: any): string {
   const rawCred = (record?.credibility || "").toString();
-  const pref = (record?.contributor_identity_preference || "").toString().trim().toLowerCase();
+  const isOverrideName = record?.contributor_identity_preference === true;
 
   const fullName = `${record?.first_name ?? ""} ${record?.last_name ?? ""}`.trim();
 
   // ✅ OVERRIDE: contributor chose to display their name
   // Adjust "display_name" if your DB stores a different value
-  if (pref === "display_name") {
+  if (isOverrideName) {
     return fullName || "Individual Contributor";
-  }
+  }  
 
   // Otherwise: follow your credibility table
   if (rawCred.includes("Evidence-Based")) return "SuperHero123";
@@ -159,6 +159,7 @@ export default function RecordPage() {
             is_published,
             ai_completed_at,
             published_at,
+            contributor_identity_preference,
             first_name,
             last_name,
             also_known_as,
@@ -289,22 +290,21 @@ export default function RecordPage() {
                 {getContributorDisplayName(record)}
               </p>
 
-              {record.also_known_as && normalizeCredibility(record?.credibility) === "Opinion-Based" && (
-                <p className="text-sm text-gray-500 truncate">
-                  ({record.also_known_as})
-                </p>
+              {record.also_known_as &&
+                (normalizeCredibility(record?.credibility) === "Opinion-Based" ||
+                record?.contributor_identity_preference === true) && (
+                  <p className="text-sm text-gray-500 truncate">
+                    ({record.also_known_as})
+                  </p>
               )}
 
               {(() => {
-                const pref = (record?.contributor_identity_preference || "")
-                  .toString()
-                  .trim()
-                  .toLowerCase();
+                const isOverrideName = record?.contributor_identity_preference === true;
 
                 const cred = normalizeCredibility(record?.credibility);
 
                 // If contributor explicitly chose to show their name → never say anonymous
-                if (pref === "display_name") return null;
+                if (isOverrideName) return null;
 
                 // Otherwise: Evidence-Based, Unclear, Pending → anonymous
                 if (cred !== "Opinion-Based") {

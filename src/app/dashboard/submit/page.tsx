@@ -81,7 +81,8 @@ export default function SubmitRecordPage() {
   const [files, setFiles] = useState<File[]>([]);
   const [submissionSuccess, setSubmissionSuccess] = useState(false);
   const [submittedRecordId, setSubmittedRecordId] = useState<string | null>(null);
-
+  const [displayRealName, setDisplayRealName] = useState(false); // default OFF
+  const [showRealNameConfirm, setShowRealNameConfirm] = useState(false);
  
   const fullName = `${submitFirstName.trim()} ${submitLastName.trim()}`.trim();
 
@@ -624,6 +625,7 @@ export default function SubmitRecordPage() {
           rating: rating || null,
           description: description.trim() || null,
           agree_terms: agreedToTerms,
+          contributor_identity_preference: displayRealName,
         })
         .select("id")
         .single();
@@ -707,6 +709,8 @@ export default function SubmitRecordPage() {
       setDescription("");
       setFiles([]);
       setAgreedToTerms(false);
+      setDisplayRealName(false);
+      setShowRealNameConfirm(false);
       setSelectedSubject(null);
       setTempSubject(null);
       setSubjectResults([]);
@@ -715,6 +719,17 @@ export default function SubmitRecordPage() {
       setIsSubmitting(false);
     }
   }
+
+  function requestToggleDisplayRealName(next: boolean) {
+    // Turning OFF: no confirmation needed
+    if (!next) {
+      setDisplayRealName(false);
+      return;
+    }
+  
+    // Turning ON: require confirm
+    setShowRealNameConfirm(true);
+  }  
   
   /* ——— Page UI ——— */
   return (
@@ -1217,6 +1232,54 @@ export default function SubmitRecordPage() {
             </p>
           </div>
 
+          {/* Contributor Identity Preference */}
+          <div className="mb-6 rounded-2xl border border-gray-200 bg-gray-50 p-4 sm:p-5">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <div className="text-sm font-semibold text-gray-900">
+                  Display real name <span className="text-red-500">*</span>
+                </div>
+                <div className="mt-1 text-xs text-gray-600 leading-relaxed">
+                  If you turn this ON, your full name will be shown publicly on this record — even if the AI credibility label would normally anonymize contributors.
+                </div>
+
+                <div className="mt-3 flex items-start gap-2 text-xs text-amber-800">
+                  <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-amber-600" />
+                  <p className="leading-relaxed">
+                    <span className="font-semibold">Warning:</span> This is permanent for this submission. Anyone with the record link can see your name.
+                  </p>
+                </div>
+              </div>
+
+              {/* Toggle (mobile-friendly) */}
+              <button
+                type="button"
+                role="switch"
+                aria-checked={displayRealName}
+                onClick={() => requestToggleDisplayRealName(!displayRealName)}
+                className={[
+                  "relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border transition",
+                  displayRealName ? "bg-black border-black" : "bg-white border-gray-300",
+                ].join(" ")}
+                title={displayRealName ? "On" : "Off"}
+              >
+                <span
+                  className={[
+                    "inline-block h-5 w-5 transform rounded-full bg-white shadow transition",
+                    displayRealName ? "translate-x-6" : "translate-x-1",
+                  ].join(" ")}
+                />
+              </button>
+            </div>
+
+            <div className="mt-3 text-[11px] text-gray-500">
+              Current setting:{" "}
+              <span className="font-semibold text-gray-800">
+                {displayRealName ? "Yes (show my name)" : "No (keep me anonymous)"}
+              </span>
+            </div>
+          </div>
+
           {/* Terms */}
           <div className="mb-8">
             <div className="flex items-start gap-3 mb-4">
@@ -1338,7 +1401,59 @@ export default function SubmitRecordPage() {
             </div>
           </div>
         </div>
-      )}      
+      )} 
+
+      {showRealNameConfirm && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4"
+          onClick={() => setShowRealNameConfirm(false)}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 rounded-full bg-amber-100 p-2">
+                <AlertTriangle className="h-5 w-5 text-amber-700" />
+              </div>
+
+              <div className="min-w-0">
+                <div className="text-base font-semibold text-gray-900">
+                  Display your real name publicly?
+                </div>
+                <div className="mt-1 text-sm text-gray-600 leading-relaxed">
+                  Turning this on will show your full name on the public record page.
+                  This cannot be undone for this submission.
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setShowRealNameConfirm(false)}
+                className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-800 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setDisplayRealName(true);
+                  setShowRealNameConfirm(false);
+                }}
+                className="rounded-lg bg-black px-4 py-2 text-sm font-medium text-white hover:bg-gray-900"
+              >
+                Yes, show my name
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </form>
   );
 }
