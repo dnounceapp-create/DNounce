@@ -328,8 +328,58 @@ export default function RecordPage() {
       </div>
 
       {/* Record Info */}
-      <div className="relative border rounded-2xl p-5 shadow-md bg-white space-y-5">
-        <h2 className="text-lg font-semibold text-gray-800">Submitted Record</h2>
+      <div className="border rounded-2xl p-5 shadow-md bg-white space-y-5">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+          <h2 className="text-lg font-semibold text-gray-800">Submitted Record</h2>
+
+          {/* Credibility badge (mobile-safe) */}
+          {(() => {
+            const raw = (record.credibility || "").toString().trim();
+
+            const label =
+              raw.includes("Evidence-Based") ? "Evidence-Based" :
+              raw.includes("Opinion-Based") ? "Opinion-Based" :
+              raw.includes("Unclear") ? "Unclear" :
+              raw ? raw :
+              "Pending AI Review";
+
+            const badgeStyle =
+              label === "Evidence-Based"
+                ? "bg-green-50 text-green-800 border-green-200"
+                : label === "Opinion-Based"
+                ? "bg-blue-50 text-blue-800 border-blue-200"
+                : label === "Unclear"
+                ? "bg-yellow-50 text-yellow-900 border-yellow-200"
+                : "bg-gray-50 text-gray-700 border-gray-200";
+
+            const CredibilityIcon =
+              label === "Evidence-Based"
+                ? CheckCircle
+                : label === "Opinion-Based"
+                ? AlertTriangle
+                : label === "Unclear"
+                ? CircleAlert
+                : null;
+
+            const iconColor =
+              label === "Evidence-Based"
+                ? "text-green-600"
+                : label === "Opinion-Based"
+                ? "text-blue-600"
+                : label === "Unclear"
+                ? "text-yellow-600"
+                : "";
+
+            return (
+              <div className="flex items-center gap-2 self-start sm:self-auto">
+                {CredibilityIcon && <CredibilityIcon className={`w-4 h-4 ${iconColor}`} />}
+                <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold whitespace-nowrap ${badgeStyle}`}>
+                  Credibility: {label}
+                </span>
+              </div>
+            );
+          })()}
+        </div>
 
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-x-6 text-xs text-gray-600">
           <div>
@@ -359,59 +409,6 @@ export default function RecordPage() {
           return (
             <div className="pt-1">
               <DominoStageRow stage={stage} />
-            </div>
-          );
-        })()}
-      
-        {/* Credibility (top-right) */}
-        {(() => {
-          const raw = (record.credibility || "").toString().trim();
-
-          // ✅ Normalize label no matter what junk is in the column
-          const label =
-            raw.includes("Evidence-Based") ? "Evidence-Based" :
-            raw.includes("Opinion-Based") ? "Opinion-Based" :
-            raw.includes("Unclear") ? "Unclear" :
-            raw ? raw :
-            "Pending AI Review";
-
-          const badgeStyle =
-            label === "Evidence-Based"
-              ? "bg-green-50 text-green-800 border-green-200"
-              : label === "Opinion-Based"
-              ? "bg-blue-50 text-blue-800 border-blue-200"
-              : label === "Unclear"
-              ? "bg-yellow-50 text-yellow-900 border-yellow-200"
-              : "bg-gray-50 text-gray-700 border-gray-200";
-
-          const CredibilityIcon =
-            label === "Evidence-Based"
-              ? CheckCircle
-              : label === "Opinion-Based"
-              ? AlertTriangle
-              : label === "Unclear"
-              ? CircleAlert
-              : null;
-
-          const credibilityIconColor =
-            label === "Evidence-Based"
-              ? "text-green-600"
-              : label === "Opinion-Based"
-              ? "text-blue-600"
-              : label === "Unclear"
-              ? "text-yellow-600"
-              : "";
-
-          return (
-            <div className="absolute top-5 right-5 flex items-center gap-2">
-              {CredibilityIcon && (
-                <CredibilityIcon className={`w-4 h-4 ${credibilityIconColor}`} />
-              )}
-              <span
-                className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold whitespace-nowrap ${badgeStyle}`}
-              >
-                Credibility: {label}
-              </span>
             </div>
           );
         })()}
