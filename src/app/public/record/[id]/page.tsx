@@ -57,6 +57,20 @@ function DominoStageRow({ stage }: { stage: number }) {
   );
 }
 
+function shouldRevealContributorIdentity(record: any): boolean {
+  const cred = normalizeCredibility(record?.credibility);
+  const choseName = record?.contributor_identity_preference === true;
+
+  // If user chose to display their name → reveal identity
+  if (choseName) return true;
+
+  // Opinion-Based → show real identity
+  if (cred === "Opinion-Based") return true;
+
+  // Evidence-Based / Unclear / Pending → anonymous
+  return false;
+}
+
 function shortId(id: string) {
   if (!id) return "";
   if (id.length <= 12) return id;
@@ -88,30 +102,31 @@ function getRecordStage(record: any): number {
 }
 
 function normalizeCredibility(raw: any) {
-  const s = (raw || "").toString().trim();
-  if (s.includes("Evidence-Based")) return "Evidence-Based";
-  if (s.includes("Opinion-Based")) return "Opinion-Based";
-  if (s.includes("Unclear")) return "Unclear";
+  const s = (raw || "")
+    .toString()
+    .trim()
+    .toLowerCase()
+    .replace(/[‐-‒–—−]/g, "-"); // normalize weird dashes
+
+  if (s.includes("evidence-based") || s.includes("evidence based")) return "Evidence-Based";
+  if (s.includes("opinion-based") || s.includes("opinion based")) return "Opinion-Based";
+  if (s.includes("unclear")) return "Unclear";
   return "Pending AI Review";
 }
 
 function getContributorDisplayName(record: any): string {
-  const rawCred = (record?.credibility || "").toString();
-  const isOverrideName = record?.contributor_identity_preference === true;
+  const reveal = shouldRevealContributorIdentity(record);
 
-  const fullName = `${record?.first_name ?? ""} ${record?.last_name ?? ""}`.trim();
+  const fullName =
+    `${record?.contributor?.account?.first_name ?? ""} ${record?.contributor?.account?.last_name ?? ""}`.trim();
 
-  // ✅ OVERRIDE: contributor chose to display their name
-  // Adjust "display_name" if your DB stores a different value
-  if (isOverrideName) {
+  if (reveal) {
     return fullName || "Individual Contributor";
-  }  
+  }
 
-  // Otherwise: follow your credibility table
-  if (rawCred.includes("Evidence-Based")) return "SuperHero123";
-  if (rawCred.includes("Opinion-Based")) return fullName || "Individual Contributor";
-  if (rawCred.includes("Unclear")) return "BeWary123";
-
+  const cred = normalizeCredibility(record?.credibility);
+  if (cred === "Evidence-Based") return "SuperHero123";
+  if (cred === "Unclear") return "BeWary123";
   return "Individual Contributor";
 }
 
@@ -132,21 +147,20 @@ export default function RecordPage() {
   const [record, setRecord] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    // If the URL doesn't include an id, we can't fetch anything.
-    if (!recordId) {
-      setError("Missing record id");
-      setLoading(false);
-      return;
-    }
-
+    if (!recordId) return;
+  
+    let channel: any;
+  
     async function fetchRecord() {
       try {
+        setLoading(true);
+    
         const { data, error } = await supabase
           .from("records")
-          .select(
-            `
+          .select(`
             id,
             created_at,
             rating,
@@ -159,11 +173,8 @@ export default function RecordPage() {
             is_published,
             ai_completed_at,
             published_at,
+            contributor_id,
             contributor_identity_preference,
-            first_name,
-            last_name,
-            also_known_as,
-            organization,
             subject:subjects (
               subject_uuid,
               name,
@@ -171,31 +182,66 @@ export default function RecordPage() {
               organization,
               location
             ),
-            attachments:record_attachments(
-              path
+            attachments:record_attachments(path),
+
+            contributor:contributors!records_contributor_id_fkey (
+              id,
+              user_id,
+              account:user_accountdetails (
+                user_id,
+                first_name,
+                last_name,
+                avatar_url
+              )
             )
-          `
-          )
+
+          `)
           .eq("id", recordId)
           .single();
-
-        if (error || !data) {
-          setError("Record not found");
-        } else {
-          setRecord(data);
-          const st = getRecordStage(data);
-          setCurrentStage(st);
+    
+        if (error) {
+          setError(error.message);
+          setRecord(null);
+          return;
         }
-      } catch (err) {
-        console.error(err);
-        setError("Failed to load record.");
+    
+        setRecord(data);
+        setCurrentStage(getRecordStage(data));
+      } catch (e: any) {
+        setError(e?.message || "Failed to load record");
+        setRecord(null);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
-    }
-
+    } 
+  
     fetchRecord();
-  }, [recordId]);
+  
+    // 🔥 REALTIME SUBSCRIPTION
+    channel = supabase
+      .channel(`public-record-${recordId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "records",
+          filter: `id=eq.${recordId}`,
+        },
+        (payload) => {
+          console.log("🔁 Record updated", payload.new);
+          setRecord((prev: any) => ({ ...prev, ...payload.new }));
 
+          fetchRecord();
+        }
+      )
+      .subscribe();
+  
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, [recordId]);
+  
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -281,14 +327,31 @@ export default function RecordPage() {
           </div>
 
           <div className="flex items-start gap-4">
-            <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center">
-              <User className="w-7 h-7 text-gray-600" />
+            <div className="w-14 h-14 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
+              {shouldRevealContributorIdentity(record) && record?.contributor?.account?.avatar_url ? (
+                <img
+                  src={record.contributor.account.avatar_url}
+                  alt="Contributor avatar"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <User className="w-7 h-7 text-gray-600" />
+              )}
             </div>
 
             <div className="min-w-0">
               <p className="text-lg font-semibold text-gray-900 truncate">
                 {getContributorDisplayName(record)}
               </p>
+
+              {shouldRevealContributorIdentity(record) && record?.contributor?.id && (
+                <Link
+                  href={`/contributor/${record.contributor.id}`}
+                  className="text-blue-600 hover:underline text-sm"
+                >
+                  View Contributor Profile →
+                </Link>
+              )}
 
               {record.also_known_as &&
                 (normalizeCredibility(record?.credibility) === "Opinion-Based" ||
@@ -394,12 +457,28 @@ export default function RecordPage() {
 
             <button
               type="button"
-              onClick={() => navigator.clipboard.writeText(record.id)}
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(record.id);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 1200);
+                } catch (e) {
+                  console.error("Copy failed", e);
+                }
+              }}              
               title="Copy record ID"
               className="inline-flex items-center justify-center rounded-full border p-1.5 text-gray-600 hover:bg-gray-100 active:bg-gray-200"
             >
               <Copy className="h-3.5 w-3.5" />
             </button>
+
+            <div className="min-w-[64px]">
+              {copied && (
+                <span className="text-[11px] text-green-700 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full">
+                  Copied!
+                </span>
+              )}
+            </div>
           </div>
         </div>
 

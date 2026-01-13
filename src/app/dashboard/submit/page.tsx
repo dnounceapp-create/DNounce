@@ -191,35 +191,6 @@ export default function SubmitRecordPage() {
     return () => clearTimeout(id);
   }, [submitLocation]);  
 
-  /* ——— Location Autocomplete (wired to /api/location) ——— */
-  useEffect(() => {
-    const q = submitLocation?.trim();
-    if (!q) {
-      setSubmitLocationSuggestions([]);
-      return;
-    }
-
-    const fetchSuggestions = async () => {
-      try {
-        const res = await fetch(`/api/location?input=${encodeURIComponent(q)}`);
-        if (!res.ok) {
-          console.warn("⚠️ Location API failed for submit:", res.status);
-          setSubmitLocationSuggestions([]);
-          return;
-        }
-        const data = await res.json().catch(() => ({}));
-        setSubmitLocationSuggestions(data?.predictions || []);
-
-      } catch (err) {
-        console.error("Submit location suggestions error:", err);
-        setSubmitLocationSuggestions([]);
-      }
-    };
-
-    const id = setTimeout(fetchSuggestions, 300); // debounce
-    return () => clearTimeout(id);
-  }, [submitLocation]);
-
   const [subjectResults, setSubjectResults] = useState<SubjectPreview[]>([]);
   const [subjectLoading, setSubjectLoading] = useState(false);
   const [subjectSearched, setSubjectSearched] = useState(false); // did we run a search yet?
@@ -460,6 +431,27 @@ export default function SubmitRecordPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
+    const { data: who, error: whoErr } = await supabase.rpc("whoami");
+    console.log("🧠 WHOAMI:", who, whoErr);
+
+    const { data: userData, error: userErr } = await supabase.auth.getUser();
+    console.log("👤 USER:", userData?.user, userErr);
+
+    const { data: c, error: cErr } = await supabase
+      .from("contributors")
+      .select("id,user_id")
+      .eq("user_id", userData?.user?.id ?? "")
+      .single();
+
+    console.log("🧩 CONTRIBUTOR:", c, cErr);
+
+    if (c?.id) {
+      const { data: check, error: checkErr } = await supabase.rpc("can_insert_record", {
+        _contributor_id: c.id,
+      });
+      console.log("✅ CAN INSERT:", check, checkErr);
+    }
+
     const isNewSubject =
     !selectedSubject || selectedSubject.id.startsWith("temp-");
 
@@ -553,10 +545,6 @@ export default function SubmitRecordPage() {
         ? submitEmail.trim()
         : null;
 
-
-      const contributorAliasId = await createContributorAlias(contributorId);
-
-
       // 2️⃣ Start from the currently selected subject
       let subjectId = selectedSubject.id;
 
@@ -607,6 +595,18 @@ export default function SubmitRecordPage() {
           ? (submitOtherRelationship.trim() || null)
           : (selectedRel?.label || null);
 
+      const { data: account, error: accErr } = await supabase
+        .from("user_accountdetails")
+        .select("first_name,last_name,avatar_url")
+        .eq("user_id", userData?.user?.id ?? "")
+        .single();
+        
+      if (accErr) console.warn("Could not load account details:", accErr);
+        
+      const contributorFullName =
+        `${account?.first_name ?? ""} ${account?.last_name ?? ""}`.trim() || null;
+        
+
       const { data: newRecord, error: recordError } = await supabase
         .from("records")
         .insert({
@@ -626,6 +626,8 @@ export default function SubmitRecordPage() {
           description: description.trim() || null,
           agree_terms: agreedToTerms,
           contributor_identity_preference: displayRealName,
+          contributor_display_name: displayRealName ? contributorFullName : null,
+          contributor_avatar_url: displayRealName ? (account?.avatar_url ?? null) : null,
         })
         .select("id")
         .single();
@@ -1060,13 +1062,12 @@ export default function SubmitRecordPage() {
                 
                 useEffect(() => {
                   const handleTouchStart = () => {
-                    // This flag tells us the device supports touch
                     document.body.classList.add("is-touch");
                   };
                 
                   window.addEventListener("touchstart", handleTouchStart, { once: true });
                   return () => window.removeEventListener("touchstart", handleTouchStart);
-                }, []);                
+                }, []);                               
 
                 return (
                   <div
@@ -1237,16 +1238,16 @@ export default function SubmitRecordPage() {
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
                 <div className="text-sm font-semibold text-gray-900">
-                  Display real name <span className="text-red-500">*</span>
+                  Display Your Name & Profile <span className="text-red-500">*</span>
                 </div>
                 <div className="mt-1 text-xs text-gray-600 leading-relaxed">
-                  If you turn this ON, your full name will be shown publicly on this record — even if the AI credibility label would normally anonymize contributors.
+                  If you turn this ON, your name, profile & profile picture will be shown publicly on this record — even if the AI credibility recommendation label would normally anonymize you.
                 </div>
 
                 <div className="mt-3 flex items-start gap-2 text-xs text-amber-800">
                   <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-amber-600" />
                   <p className="leading-relaxed">
-                    <span className="font-semibold">Warning:</span> This is permanent for this submission. Anyone with the record link can see your name.
+                    <span className="font-semibold">Warning:</span> This is permanent for this submission. Anyone can see your information.
                   </p>
                 </div>
               </div>
@@ -1270,13 +1271,6 @@ export default function SubmitRecordPage() {
                   ].join(" ")}
                 />
               </button>
-            </div>
-
-            <div className="mt-3 text-[11px] text-gray-500">
-              Current setting:{" "}
-              <span className="font-semibold text-gray-800">
-                {displayRealName ? "Yes (show my name)" : "No (keep me anonymous)"}
-              </span>
             </div>
           </div>
 

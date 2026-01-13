@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ShieldCheck, Mail, X, XCircle, User, Pencil, MapPin, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Copy, ShieldCheck, Mail, X, XCircle, User, Pencil, MapPin, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import NextImage from "next/image";
 import Cropper from "react-easy-crop";
@@ -63,6 +63,10 @@ export default function AccountSecurityPage() {
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
   const [croppedImage, setCroppedImage] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string>("");
+  const [userIdCopied, setUserIdCopied] = useState(false);
+
+
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -71,6 +75,19 @@ export default function AccountSecurityPage() {
     setSelectedImage(file);
     setShowCropModal(true);
   };
+
+  const handleCopyUserId = async () => {
+    if (!userId) return;
+  
+    try {
+      await navigator.clipboard.writeText(userId);
+      setUserIdCopied(true);
+      setTimeout(() => setUserIdCopied(false), 1200);
+    } catch {
+      // optional: if you still want the big popup on failure
+      triggerPopup(setPopup, "error", "❌ Failed to copy User ID.");
+    }
+  };   
 
   // 🖼️ Utility: Create cropped image from react-easy-crop data
   const getCroppedImg = async (imageSrc: string, pixelCrop: any): Promise<string> => {
@@ -142,12 +159,10 @@ export default function AccountSecurityPage() {
     }
   };
   
-
   async function uploadAvatarAndSaveUrl(file: File, userId: string) {
     const ext = file.name.split(".").pop()?.toLowerCase() || "png";
-    const path = `${userId}/avatar.${ext}`; // stable path per user
+    const path = `${userId}/avatar.${ext}`;
   
-    // 1) upload (overwrite allowed)
     const { error: uploadErr } = await supabase
       .storage
       .from("avatars")
@@ -158,24 +173,20 @@ export default function AccountSecurityPage() {
     const { data: publicData } = supabase
       .storage
       .from("avatars")
-      .getPublicUrl(path); 
-
-    const publicUrl = publicData?.publicUrl; 
+      .getPublicUrl(path);
   
-    // 3) save to DB
-    const { error: dbErr } = await supabase
-      .from("user_accountdetails")
-      .update({ avatar_url: publicUrl })
-      .eq("user_id", userId);
+    const publicUrl = publicData?.publicUrl;
+    if (!publicUrl) throw new Error("Could not generate public URL.");
   
-    // If using the RPC instead, use:
-    // const { error: dbErr } = await supabase.rpc("update_user_accountdetails", { ...otherFields, p_avatar_url: publicUrl });
+    // ✅ Save via RPC (uses auth.uid() internally)
+    const { error: dbErr } = await supabase.rpc("update_user_accountdetails", {
+      p_avatar_url: publicUrl,
+    });
   
     if (dbErr) throw dbErr;
   
     return publicUrl;
   }
-  
   
   // helper for creating image object
   const createImage = (url: string): Promise<HTMLImageElement> =>
@@ -245,6 +256,7 @@ export default function AccountSecurityPage() {
   
       setUser(currentUser);
       setEmail(currentUser.email || "");
+      setUserId(currentUser.id);
   
       const { data: accountdetailsData, error } = await supabase
         .from("user_accountdetails")
@@ -727,7 +739,47 @@ export default function AccountSecurityPage() {
               />
             </div>
           </div>
-          
+
+          {/* 🆔 User ID (compact pill with copy icon) */}
+          <div className="flex justify-center -mt-2 mb-6">
+            {/* wrapper that lets us position the badge OUTSIDE the pill */}
+            <div className="relative inline-flex items-center">
+              {/* ✅ your pill stays EXACTLY the same */}
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100 text-sm text-gray-700">
+                <span className="text-gray-600">User ID:</span>
+
+                <span className="font-mono text-gray-900">
+                  {userId ? `${userId.slice(0, 6)}…${userId.slice(-4)}` : "—"}
+                </span>
+
+                <button
+                  type="button"
+                  onClick={handleCopyUserId}
+                  disabled={!userId}
+                  className="flex items-center justify-center w-7 h-7 rounded-full bg-white border border-gray-200 hover:bg-gray-50 active:scale-95 transition disabled:opacity-50"
+                  aria-label="Copy User ID"
+                  title="Copy User ID"
+                >
+                  <Copy className="w-3.5 h-3.5 text-gray-600" />
+                </button>
+              </div>
+
+              {/* ✅ outside-of-pill badge */}
+              <div className="absolute left-full ml-2">
+                <span
+                  className={[
+                    "text-[11px] px-2 py-0.5 rounded-full border whitespace-nowrap",
+                    "bg-green-50 border-green-200 text-green-700",
+                    "transition-opacity duration-200",
+                    userIdCopied ? "opacity-100" : "opacity-0 pointer-events-none",
+                  ].join(" ")}
+                >
+                  Copied!
+                </span>
+              </div>
+            </div>
+          </div>
+ 
           {/* Account Details Section */}
           <section>
             <h2 className="text-lg font-semibold mb-3 text-gray-900">
