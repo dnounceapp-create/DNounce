@@ -17,10 +17,12 @@ function normalizeCredibility(raw: any) {
 }
 
 export async function GET(
-  _req: Request,
-  { params }: { params: { id: string } }
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const recordId = params.id;
+  const { id } = await params;
+
+}
 
   const { data, error } = await supabaseAdmin
     .from("records")
