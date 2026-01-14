@@ -7,10 +7,34 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { STAGE_ORDER, stageConfig } from "@/config/stageConfig";
 
-const PUBLIC_STAGE_ORDER = [3, 4, 6, 7] as const;
+const PUBLIC_STAGE_ORDER = [3, 6, 7] as const;
 
-function DominoStageRow({ stage }: { stage: number }) {
-  const visibleStages = PUBLIC_STAGE_ORDER;
+function isSubjectDisputeFlow(record: any): boolean {
+  const status = normalizeStatus(record?.status);
+
+  // These are YOUR dispute statuses (from getRecordStage)
+  return [
+    "deletion_request",
+    "deletion_requested",
+    "intake",
+    "dispute_intake",
+    "debate",
+    "subject_dispute",
+    "dispute_debate",
+    "active_dispute",
+    "voting",
+    "voting_in_progress",
+    "final",
+    "resolved",
+    "closed",
+    "anonymity_active",
+  ].includes(status);
+}
+
+function DominoStageRow({ stage, record }: { stage: number; record: any }) {
+  const visibleStages = isSubjectDisputeFlow(record)
+    ? PUBLIC_STAGE_ORDER
+    : ([3] as const);
 
   function getStageForUI(realStage: number) {
     const prev = [...visibleStages].reverse().find((s) => s <= realStage);
@@ -311,7 +335,7 @@ export default function RecordPage() {
                 href={`/subject/${subject?.subject_uuid}`}
                 className="text-blue-600 hover:underline text-sm"
               >
-                View Subject Profile →
+                View Profile →
               </Link>
             </div>
           </div>
@@ -349,7 +373,7 @@ export default function RecordPage() {
                   href={`/contributor/${record.contributor.id}`}
                   className="text-blue-600 hover:underline text-sm"
                 >
-                  View Contributor Profile →
+                  View Profile →
                 </Link>
               )}
 
@@ -482,12 +506,12 @@ export default function RecordPage() {
           </div>
         </div>
 
-        {/* 🧩 Stage Domino Tracker */}
-        {(() => {
+        {/* 🧩 Stage Domino Tracker (only if disputed) */}
+        {isSubjectDisputeFlow(record) && (() => {
           const stage = getRecordStage(record);
           return (
             <div className="pt-1">
-              <DominoStageRow stage={stage} />
+              <DominoStageRow stage={stage} record={record} />
             </div>
           );
         })()}

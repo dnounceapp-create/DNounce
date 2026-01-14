@@ -355,7 +355,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {pathname !== "/dashboard/submit" && (
             <Link
               href="/dashboard/submit"
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition"
+              className="hidden md:flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition"
             >
               <FilePlus className="h-4 w-4" />
               Submit A Record

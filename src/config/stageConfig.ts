@@ -7,7 +7,7 @@ export const stageShortLabel: Record<number, string> = {
   4: "In Dispute",
   5: "Debate",
   6: "Voting",
-  7: "Anonymity",
+  7: "Settled",
 };
 
 
