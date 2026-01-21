@@ -196,20 +196,14 @@ export default function RecordPage() {
             published_at,
             contributor_id,
             contributor_identity_preference,
-
-            subject:subjects!records_subject_id_fkey (
+            subject:subjects (
               subject_uuid,
               name,
               nickname,
               organization,
-              location,
-              avatar_url
+              location
             ),
-
-            attachments:record_attachments!record_attachments_record_id_fkey (
-              id
-            ),
-
+            attachments:record_attachments(id),
             contributor:contributors!records_contributor_id_fkey (
               id
             )
@@ -225,14 +219,16 @@ export default function RecordPage() {
 
         const row = data?.[0] ?? null;
 
-        if (!row) {
+        if (!data || data.length === 0) {
           setError("Record not available publicly. Please sign in.");
           setRecord(null);
           return;
         }
-
-        setRecord(row);
-        setCurrentStage(getRecordStage(row));
+        
+        const record = data[0];
+        
+        setRecord(record);
+        setCurrentStage(getRecordStage(record));        
 
       } catch (e: any) {
         setError(e?.message || "Failed to load record");
