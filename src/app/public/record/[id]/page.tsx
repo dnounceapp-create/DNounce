@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { Loader2, User, MapPin, FileText, Star, CheckCircle, AlertTriangle, CircleAlert, Copy, } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { STAGE_ORDER, stageConfig } from "@/config/stageConfig";
+import { stageConfig } from "@/config/stageConfig";
 
 const PUBLIC_STAGE_ORDER = [3, 6, 7] as const;
 
@@ -141,8 +141,7 @@ function normalizeCredibility(raw: any) {
 function getContributorDisplayName(record: any): string {
   const reveal = shouldRevealContributorIdentity(record);
 
-  const fullName =
-    `${record?.contributor?.account?.first_name ?? ""} ${record?.contributor?.account?.last_name ?? ""}`.trim();
+  const fullName = ""; // public anon view does not fetch real name
 
   if (reveal) {
     return fullName || "Individual Contributor";
@@ -176,8 +175,6 @@ export default function RecordPage() {
   useEffect(() => {
     if (!recordId) return;
   
-    let channel: any;
-  
     async function fetchRecord() {
       try {
         setLoading(true);
@@ -199,38 +196,44 @@ export default function RecordPage() {
             published_at,
             contributor_id,
             contributor_identity_preference,
-            subject:subjects (
+
+            subject:subjects!records_subject_id_fkey (
               subject_uuid,
               name,
               nickname,
               organization,
-              location
+              location,
+              avatar_url
             ),
-            attachments:record_attachments(path),
+
+            attachments:record_attachments!record_attachments_record_id_fkey (
+              id
+            ),
 
             contributor:contributors!records_contributor_id_fkey (
-              id,
-              user_id,
-              account:user_accountdetails (
-                user_id,
-                first_name,
-                last_name,
-                avatar_url
-              )
+              id
             )
-
           `)
           .eq("id", recordId)
-          .single();
-    
+          .limit(1);
+
         if (error) {
           setError(error.message);
           setRecord(null);
           return;
         }
-    
-        setRecord(data);
-        setCurrentStage(getRecordStage(data));
+
+        const row = data?.[0] ?? null;
+
+        if (!row) {
+          setError("Record not available publicly. Please sign in.");
+          setRecord(null);
+          return;
+        }
+
+        setRecord(row);
+        setCurrentStage(getRecordStage(row));
+
       } catch (e: any) {
         setError(e?.message || "Failed to load record");
         setRecord(null);
@@ -241,29 +244,6 @@ export default function RecordPage() {
   
     fetchRecord();
   
-    // 🔥 REALTIME SUBSCRIPTION
-    channel = supabase
-      .channel(`public-record-${recordId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "records",
-          filter: `id=eq.${recordId}`,
-        },
-        (payload) => {
-          console.log("🔁 Record updated", payload.new);
-          setRecord((prev: any) => ({ ...prev, ...payload.new }));
-
-          fetchRecord();
-        }
-      )
-      .subscribe();
-  
-    return () => {
-      if (channel) supabase.removeChannel(channel);
-    };
   }, [recordId]);
   
   if (loading) {
@@ -280,7 +260,7 @@ export default function RecordPage() {
         <div>
           <h1 className="text-xl font-semibold mb-3">{error}</h1>
           <Link
-            href="/dashboard/records-submitted"
+            href="/"
             className="text-blue-600 hover:underline"
           >
             Go Back
@@ -352,15 +332,7 @@ export default function RecordPage() {
 
           <div className="flex items-start gap-4">
             <div className="w-14 h-14 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
-              {shouldRevealContributorIdentity(record) && record?.contributor?.account?.avatar_url ? (
-                <img
-                  src={record.contributor.account.avatar_url}
-                  alt="Contributor avatar"
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <User className="w-7 h-7 text-gray-600" />
-              )}
+              <User className="w-7 h-7 text-gray-600" />
             </div>
 
             <div className="min-w-0">
@@ -368,14 +340,21 @@ export default function RecordPage() {
                 {getContributorDisplayName(record)}
               </p>
 
-              {shouldRevealContributorIdentity(record) && record?.contributor?.id && (
-                <Link
-                  href={`/contributor/${record.contributor.id}`}
-                  className="text-blue-600 hover:underline text-sm"
-                >
-                  View Profile →
-                </Link>
-              )}
+              {(() => {
+                const contributorId =
+                  record?.contributor?.id ??
+                  record?.contributor?.[0]?.id ??
+                  null;
+
+                return contributorId ? (
+                  <Link
+                    href={`/contributor/${contributorId}`}
+                    className="text-blue-600 hover:underline text-sm"
+                  >
+                    View Profile →
+                  </Link>
+                ) : null;
+              })()}
 
               {record.also_known_as &&
                 (normalizeCredibility(record?.credibility) === "Opinion-Based" ||
@@ -554,9 +533,10 @@ export default function RecordPage() {
         </div>
 
         {/* Attachments */}
-        {record.attachments?.length > 0 && (
-          <div className="pt-4 border-t text-sm text-gray-700">
-            <span className="font-semibold">Attachments:</span> {record.attachments.length} file(s)
+        {(record.attachments?.length ?? 0) > 0 && (
+        <div className="pt-4 border-t text-sm text-gray-700">
+          <span className="font-semibold">Attachments:</span>{" "}
+          {record.attachments.length} file(s)
             <div className="text-xs text-gray-500 mt-1">
               Sign in to view attachments.
             </div>
