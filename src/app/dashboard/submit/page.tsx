@@ -17,7 +17,7 @@ import {
 import Link from "next/link";
 import { v4 as uuidv4 } from "uuid";
 import { classifyRecord } from "@/lib/ai/classifyRecord";
-
+import { useSearchParams } from "next/navigation";
 
 /** ——— Subject Search (UI only) ——— */
 type SubjectPreview = {
@@ -83,7 +83,8 @@ export default function SubmitRecordPage() {
   const [submittedRecordId, setSubmittedRecordId] = useState<string | null>(null);
   const [displayRealName, setDisplayRealName] = useState(false); // default OFF
   const [showRealNameConfirm, setShowRealNameConfirm] = useState(false);
- 
+  const searchParams = useSearchParams();
+  const subjectIdFromUrl = searchParams.get("subject_id");
   const fullName = `${submitFirstName.trim()} ${submitLastName.trim()}`.trim();
 
   /* ——— Fetch Relationship Types (Supabase) ——— */
@@ -212,6 +213,41 @@ export default function SubmitRecordPage() {
       setSubmitLocationSuggestions([]);
     }
   }, [selectedSubject]);
+
+  useEffect(() => {
+    if (!subjectIdFromUrl) return;
+    if (selectedSubject) return; // don't override if user already chose
+
+    (async () => {
+      const { data, error } = await supabase
+        .from("subjects")
+        .select("id:subject_uuid, name, nickname, organization, location, avatar_url, phone, email")
+        .eq("subject_uuid", subjectIdFromUrl)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Failed to preselect subject:", error);
+        return;
+      }
+      if (!data) return;
+
+      // ✅ set selected subject (this will show the "Selected" card UI)
+      setSelectedSubject(data);
+
+      // ✅ also populate the form fields so they appear pre-filled + locked
+      setSubmitFirstName((data.name || "").split(" ")[0] || "");
+      setSubmitLastName((data.name || "").split(" ").slice(1).join(" ") || "");
+      setSubmitNickname(data.nickname || "");
+      setSubmitOrganization(data.organization || "");
+      setSubmitLocation(data.location || "");
+      setSubmitPhone(data.phone || "");
+      setSubmitEmail(data.email || "");
+
+      // optional: clear search results section noise
+      setSubjectResults([]);
+      setSubjectSearched(true);
+    })();
+  }, [subjectIdFromUrl, selectedSubject]);
 
   useEffect(() => {
     if (tempSubject) {

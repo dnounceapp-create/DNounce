@@ -1,12 +1,27 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import Link from "next/link";
+import { useEffect, useState, ReactNode } from "react";
 import { Copy, ShieldCheck, Mail, X, XCircle, User, Pencil, MapPin, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import NextImage from "next/image";
 import Cropper from "react-easy-crop";
+import {
+  FaInstagram,
+  FaTiktok,
+  FaFacebook,
+  FaGoogle,
+  FaX,
+  FaLink,
+} from "react-icons/fa6";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
 
 interface PopupState {
   type: "success" | "error" | "warning" | null;
@@ -17,12 +32,32 @@ interface PopupState {
 function triggerPopup(
   setPopup: React.Dispatch<React.SetStateAction<PopupState>>,
   type: "success" | "error" | "warning",
-  message: string
+  message: string,
+  clearTimers?: () => void
 ) {
+  clearTimers?.(); // ✅ clear previous popup timers
+
   setPopup({ type, message, visible: true });
-  setTimeout(() => setPopup((p) => ({ ...p, visible: false })), 2200);
-  setTimeout(() => setPopup({ type: null, message: "", visible: false }), 2600);
+
+  const t1 = window.setTimeout(() => {
+    setPopup((p) => ({ ...p, visible: false }));
+  }, 2400);
+
+  const t2 = window.setTimeout(() => {
+    setPopup({ type: null, message: "", visible: false });
+  }, 2800);
+
+  // NOTE: caller stores timers if they want; optional
 }
+
+type SocialPlatform = "instagram" | "tiktok" | "google" | "facebook" | "x" | "custom";
+
+type SocialLink = {
+  id?: string; // comes from DB
+  platform: SocialPlatform;
+  label: string;
+  url: string;
+};
 
 export default function AccountSecurityPage() {
   const router = useRouter();
@@ -65,9 +100,29 @@ export default function AccountSecurityPage() {
   const [croppedImage, setCroppedImage] = useState<string | null>(null);
   const [userId, setUserId] = useState<string>("");
   const [userIdCopied, setUserIdCopied] = useState(false);
+  const [isEditingSocial, setIsEditingSocial] = useState(false);
+  const [savingSocial, setSavingSocial] = useState(false);
+  const [socialPlatform, setSocialPlatform] = useState<SocialPlatform>("instagram");
+  const [socialUrl, setSocialUrl] = useState("");
+  const [customWebsiteName, setCustomWebsiteName] = useState("");
+  const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
+  const [socialLinksDraft, setSocialLinksDraft] = useState<SocialLink[] | null>(null);
+  const [popupTimers, setPopupTimers] = useState<number[]>([]);
+  const btnBase =
+  "inline-flex items-center justify-center rounded-2xl px-5 py-2.5 text-sm font-semibold transition-all duration-200 active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";
 
+  const btnPrimary =
+    `${btnBase} text-white bg-gradient-to-r from-blue-600 to-indigo-600 shadow-sm hover:shadow-md hover:brightness-110 focus:ring-blue-500`;
 
+  const btnSuccess =
+    `${btnBase} text-white bg-gradient-to-r from-emerald-600 to-teal-600 shadow-sm hover:shadow-md hover:brightness-110 focus:ring-emerald-500`;
 
+  const btnGhost =
+    `${btnBase} bg-white/80 backdrop-blur border border-gray-200 text-gray-800 hover:bg-white hover:border-gray-300 focus:ring-gray-300 shadow-sm`;
+
+  const btnDangerGhost =
+    `${btnBase} bg-white/80 backdrop-blur border border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 focus:ring-red-300 shadow-sm`;
+    
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -75,6 +130,33 @@ export default function AccountSecurityPage() {
     setSelectedImage(file);
     setShowCropModal(true);
   };
+  const clearPopupTimers = () => {
+    popupTimers.forEach((t) => clearTimeout(t));
+    setPopupTimers([]);
+  };  
+  const cancelChangeEmailFlow = () => {
+    setShowChangeEmailModal(false);
+    setIsIdentityVerified(false);
+    setIsChangeCodeSent(false);
+    setVerificationCode("");
+    setChangeEmailCode("");
+    setNewEmail("");
+  };  
+
+  const SOCIAL_ICONS: Record<SocialPlatform, ReactNode> = {
+    instagram: <FaInstagram className="h-4 w-4 text-pink-500" />,
+    tiktok: <FaTiktok className="h-4 w-4 text-black" />,
+    facebook: <FaFacebook className="h-4 w-4 text-blue-600" />,
+    google: <FaGoogle className="h-4 w-4 text-red-500" />,
+    x: <FaX className="h-4 w-4 text-black" />,
+    custom: <FaLink className="h-4 w-4 text-gray-500" />,
+  };
+
+  const handleCancelSocialEdits = () => {
+    if (socialLinksDraft) setSocialLinks(socialLinksDraft);
+    setIsEditingSocial(false);
+    triggerPopup(setPopup, "warning", "Canceled social link changes.");
+  };  
 
   const handleCopyUserId = async () => {
     if (!userId) return;
@@ -222,6 +304,7 @@ export default function AccountSecurityPage() {
     phone: "",
     location: "",
   });
+  const [accountDetailsDraft, setAccountDetailsDraft] = useState<any>(null);
 
   const [locationSuggestions, setLocationSuggestions] = useState<any[]>([]);
 
@@ -257,6 +340,27 @@ export default function AccountSecurityPage() {
       setUser(currentUser);
       setEmail(currentUser.email || "");
       setUserId(currentUser.id);
+
+      // ✅ Load social links
+      const { data: socialData, error: socialErr } = await supabase
+        .from("user_social_links")
+        .select("id, platform, label, url")
+        .eq("user_id", currentUser.id)
+        .order("created_at", { ascending: true });
+
+      if (socialErr?.message) console.error("Social links load error:", socialErr.message);
+
+      if (socialData) {
+      // store IDs too (we'll update the type in the next step)
+      setSocialLinks(
+        (socialData || []).map((r: any) => ({
+          id: r.id,
+          platform: r.platform as SocialPlatform,
+          label: r.label,
+          url: r.url,
+        }))
+      );      
+      }
   
       const { data: accountdetailsData, error } = await supabase
         .from("user_accountdetails")
@@ -324,39 +428,23 @@ export default function AccountSecurityPage() {
   }, []);  
 
   const handleEditClick = () => {
+    // snapshot current values before editing starts
+    setAccountDetailsDraft(accountdetails);
     setShowAuthModal(true);
-  };
+  };  
+
+  const handleCancelAccountEdits = () => {
+    if (accountDetailsDraft) {
+      setaccountDetails(accountDetailsDraft);
+    }
+    setIsEditing(false);
+    triggerPopup(setPopup, "warning", "Canceled changes.");
+  };  
 
   // ✅ Allow editing after user verifies email link
   const enableEditing = () => {
     setIsEditing(true);
     triggerPopup(setPopup, "success", "✅ Editing enabled — you can now modify your details.");
-  };
-
-  // ✅ Save Account Details
-  const handleSave = async () => {
-    if (!isEditing) return;
-  
-    try {
-      const cleanPhone = accountdetails.phone.replace(/\D/g, "");
-
-      const { error: rpcError } = await supabase.rpc("update_user_accountdetails", {
-        p_first_name: accountdetails.first_name.trim(),
-        p_last_name: accountdetails.last_name.trim(),
-        p_nickname: accountdetails.nickname.trim() || null,
-        p_job_title: accountdetails.job_title.trim(),
-        p_organization: accountdetails.organization.trim() || null,
-        p_phone: cleanPhone, // ✅ digits only
-        p_location: accountdetails.location.trim(),
-      });
-
-      if (rpcError) throw rpcError;
-
-      setIsEditing(false);
-      triggerPopup(setPopup, "success", "✅ Account Details updated successfully!");
-    } catch (err: any) {
-      triggerPopup(setPopup, "error", "❌ " + err.message);
-    }
   };
 
   const handleEditAuth = async () => {
@@ -367,6 +455,7 @@ export default function AccountSecurityPage() {
   
     try {
       setVerifying(true);
+      if (!user?.id) throw new Error("Not signed in.");
   
       const { error } = await supabase.auth.signInWithOtp({ email });
       if (error) throw error;
@@ -457,6 +546,42 @@ export default function AccountSecurityPage() {
       triggerPopup(setPopup, "error", "❌ " + err.message);
     }
   };
+
+  const handleSave = async () => {
+    try {
+      setVerifying(true);
+      if (!user?.id) throw new Error("Not signed in.");
+  
+      // ✅ Save account details to DB (user_accountdetails)
+      const payload = {
+        first_name: accountdetails.first_name,
+        last_name: accountdetails.last_name,
+        nickname: accountdetails.nickname,
+        job_title: accountdetails.job_title,
+        organization: accountdetails.organization,
+        location: accountdetails.location,
+      };
+  
+      const { error } = await supabase
+        .from("user_accountdetails")
+        .update(payload)
+        .eq("user_id", user.id);
+  
+      if (error) throw error;
+  
+      setIsEditing(false);
+      clearPopupTimers();
+      triggerPopup(setPopup, "success", "✅ Account details saved!");
+    } catch (err: any) {
+      triggerPopup(
+        setPopup,
+        "error",
+        "❌ " + (err?.message || "Failed to save account details.")
+      );
+    } finally {
+      setVerifying(false);
+    }
+  };  
 
   if (loading) {
     return (
@@ -640,19 +765,160 @@ export default function AccountSecurityPage() {
     }
   };
 
+  const platformLabel = (p: SocialPlatform) => {
+    if (p === "instagram") return "Instagram";
+    if (p === "tiktok") return "TikTok";
+    if (p === "google") return "Google";
+    if (p === "facebook") return "Facebook";
+    if (p === "x") return "X";
+    return "Custom Website";
+  };
+  
+  const isValidHttpUrl = (value: string) => {
+    try {
+      const u = new URL(value);
+      return u.protocol === "http:" || u.protocol === "https:";
+    } catch {
+      return false;
+    }
+  };
+  
+  const isHandleOrLink = (value: string) => {
+    const v = value.trim();
+    if (!v) return false;
+  
+    // allow @handle
+    if (v.startsWith("@") && v.length > 1) return true;
+  
+    // allow http(s) link
+    if (isValidHttpUrl(v)) return true;
+  
+    return false;
+  };  
+  
+  const handleAddSocialLink = async () => {
+    const input = socialUrl.trim();
+  
+    if (!isEditingSocial) {
+      triggerPopup(setPopup, "warning", "⚠️ Click Edit Social Links first.");
+      return;
+    }
+  
+    if (!input) {
+      triggerPopup(setPopup, "error", "❌ Please enter a link or @handle.");
+      return;
+    }
+  
+    // must be signed in
+    if (!user?.id) {
+      triggerPopup(setPopup, "error", "❌ Not signed in.");
+      return;
+    }
+  
+    // Custom website must be a real link
+    if (socialPlatform === "custom") {
+      const name = customWebsiteName.trim();
+      if (!name) {
+        triggerPopup(setPopup, "error", "❌ Please enter your website name.");
+        return;
+      }
+      if (!isValidHttpUrl(input)) {
+        triggerPopup(setPopup, "error", "❌ Custom Website must be a valid http(s) link.");
+        return;
+      }
+  
+      try {
+        const { data, error } = await supabase
+          .from("user_social_links")
+          .insert({
+            user_id: user.id,
+            platform: "custom",
+            label: name,
+            url: input,
+          })
+          .select("id, platform, label, url")
+          .single();
+  
+        if (error) throw error;
+  
+        setSocialLinks((prev) => [...prev, data as any]);
+        setCustomWebsiteName("");
+        setSocialUrl("");
+        triggerPopup(setPopup, "success", "✅ Website added!");
+      } catch (err: any) {
+        triggerPopup(setPopup, "error", "❌ " + (err?.message || "Failed to add website."));
+      }
+  
+      return;
+    }
+  
+    // Socials can be @handle OR link
+    if (!isHandleOrLink(input)) {
+      triggerPopup(setPopup, "error", "❌ Enter a valid @handle or http(s) link.");
+      return;
+    }
+  
+    try {
+      const { data, error } = await supabase
+        .from("user_social_links")
+        .insert({
+          user_id: user.id,
+          platform: socialPlatform,
+          label: platformLabel(socialPlatform),
+          url: input,
+        })
+        .select("id, platform, label, url")
+        .single();
+  
+      if (error) throw error;
+  
+      setSocialLinks((prev) => [...prev, data as any]);
+      setSocialUrl("");
+      triggerPopup(setPopup, "success", "✅ Social link added!");
+    } catch (err: any) {
+      triggerPopup(setPopup, "error", "❌ " + (err?.message || "Failed to add social link."));
+    }
+  };    
+
+  const handleSaveSocialLinks = async () => {
+    setIsEditingSocial(false);
+    triggerPopup(setPopup, "success", "✅ Social links saved!");
+  };   
+  
+  const handleRemoveSocialLink = async (idx: number) => {
+    const item = socialLinks[idx];
+    if (!item) return;
+  
+    // if it has an id, delete from DB
+    if (item.id) {
+      const { error } = await supabase
+        .from("user_social_links")
+        .delete()
+        .eq("id", item.id);
+  
+      if (error) {
+        triggerPopup(setPopup, "error", "❌ " + (error.message || "Failed to remove link."));
+        return;
+      }
+    }
+  
+    // remove from UI
+    setSocialLinks((prev) => prev.filter((_, i) => i !== idx));
+    triggerPopup(setPopup, "success", "✅ Link removed!");
+  };   
+
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-gray-50 text-gray-900 px-4 py-6 sm:p-6 lg:p-8 pb-[calc(env(safe-area-inset-bottom)+24px)]">
       <div className="max-w-3xl mx-auto">
         <h1 className="text-3xl font-bold mb-2">Account & Security</h1>
         <p className="text-gray-600 mb-8">
           Manage your login credentials, security settings, and account details.
         </p>
 
-        <div className="bg-white border border-gray-200 shadow-sm rounded-2xl p-6 space-y-8 transition-all">
-          
+        <div className="bg-white border border-gray-200 shadow-sm rounded-2xl p-4 sm:p-6 space-y-8 transition-all">
           {/* 🖼️ Avatar Display */}
           <div className="flex justify-center mb-6">
-            <div className="relative group">
+            <div className="relative group avatar-menu-container">
               {avatarUrl ? (
                 <NextImage
                   src={
@@ -782,7 +1048,7 @@ export default function AccountSecurityPage() {
  
           {/* Account Details Section */}
           <section>
-            <h2 className="text-lg font-semibold mb-3 text-gray-900">
+          <h2 className="text-base sm:text-lg font-semibold mb-2 sm:mb-3 text-gray-900">
               Account Details
             </h2>
 
@@ -918,23 +1184,195 @@ export default function AccountSecurityPage() {
           </section>
 
           {/* Edit / Save Buttons */}
-          <div className="flex justify-end pt-2">
+          <div className="flex flex-col sm:flex-row sm:justify-end gap-3 pt-2">
             {!isEditing ? (
-              <button
-                onClick={handleEditClick}
-                className="px-5 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 active:scale-95 transition-all"
-              >
+              <button onClick={handleEditClick} className={btnPrimary}>
                 Edit Details
               </button>
             ) : (
-              <button
-                onClick={handleSave}
-                className="px-6 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 active:scale-95 transition-all"
-              >
-                Save Changes
-              </button>
+              <div className="flex items-center gap-3">
+                <button type="button" onClick={handleCancelAccountEdits} className={btnGhost}>
+                  Cancel
+                </button>
+                <button onClick={handleSave} className={btnSuccess} disabled={verifying}>
+                  {verifying ? "Saving..." : "Save Changes"}
+                </button>
+              </div>
             )}
           </div>
+
+          {/* Social Media Links */}
+          <section>
+          <h2 className="text-base sm:text-lg font-semibold mb-2 sm:mb-3 text-gray-900">
+              Social Media Links
+            </h2>
+
+            <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-4">
+              {/* Platform dropdown */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Platform
+                </label>
+
+                <Select
+                  disabled={!isEditingSocial}
+                  value={socialPlatform}
+                  onValueChange={(v) => setSocialPlatform(v as SocialPlatform)}
+                >
+                  <SelectTrigger className="w-full h-11 text-sm">
+                    <SelectValue
+                      placeholder="Select platform"
+                    />
+                  </SelectTrigger>
+
+                  <SelectContent>
+                    {(["instagram","tiktok","google","facebook","x","custom"] as SocialPlatform[]).map((p) => (
+                      <SelectItem key={p} value={p}>
+                        <div className="flex items-center gap-2">
+                          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 border">
+                            {SOCIAL_ICONS[p]}
+                          </span>
+                          <span>{platformLabel(p)}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Custom Website Name */}
+              {socialPlatform === "custom" && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Website Name
+                  </label>
+                  <input
+                    disabled={!isEditingSocial}
+                    value={customWebsiteName}
+                    onChange={(e) => setCustomWebsiteName(e.target.value)}
+                    placeholder="e.g. My Portfolio"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white disabled:bg-gray-100 disabled:text-gray-500 focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              )}
+
+              {/* Link / handle */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {socialPlatform === "custom" ? "Link" : "Link or @handle"}
+                </label>
+
+                <input
+                  disabled={!isEditingSocial}
+                  value={socialUrl}
+                  onChange={(e) => setSocialUrl(e.target.value)}
+                  placeholder={socialPlatform === "custom" ? "https://..." : "@yourhandle or https://..."}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white disabled:bg-gray-100 disabled:text-gray-500 focus:ring-2 focus:ring-blue-500"
+                />
+
+                <p className="text-xs text-gray-500 mt-1">
+                  {socialPlatform === "custom"
+                    ? "Custom Website must be a valid http(s) link."
+                    : "For socials, you can enter @handle or a full http(s) link."}
+                </p>
+              </div>
+
+              {/* Add button */}
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  disabled={!isEditingSocial || !socialUrl.trim()}
+                  onClick={handleAddSocialLink}
+                  className={`${btnPrimary} w-full sm:w-auto px-4 py-2.5 disabled:opacity-50`}
+                >
+                  Add Link
+                </button>
+              </div>
+
+              {/* List */}
+              {socialLinks.length === 0 ? (
+                <p className="text-sm text-gray-500">No social links added yet.</p>
+              ) : (
+                <div className="space-y-3">
+                  {socialLinks.map((item, idx) => (
+                    <div
+                      key={item.id ?? idx}
+                      className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border bg-white p-3"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        {/* Logo */}
+                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 border">
+                          {SOCIAL_ICONS[item.platform]}
+                        </div>
+
+                        {/* Text */}
+                        <div className="min-w-0">
+                          <div className="text-sm font-semibold text-gray-900">
+                            {item.label}
+                          </div>
+
+                          {isValidHttpUrl(item.url) ? (
+                            <a
+                              href={item.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-blue-600 hover:underline break-all"
+                            >
+                              {item.url}
+                            </a>
+                          ) : (
+                            <div className="text-xs text-gray-600">{item.url}</div>
+                          )}
+                        </div>
+                      </div>
+
+                      {isEditingSocial && (
+                        <button
+                        type="button"
+                        onClick={() => handleRemoveSocialLink(idx)}
+                        className={`${btnDangerGhost} w-full sm:w-auto`}
+                        >
+                          Remove
+                        </button>                      
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Social Edit / Save buttons */}
+              <div className="flex flex-col sm:flex-row sm:justify-end gap-3 pt-2">
+                {!isEditingSocial ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSocialLinksDraft(socialLinks);
+                      setIsEditingSocial(true);
+                      triggerPopup(setPopup, "success", "✅ Social links editing enabled.");
+                    }}
+                    className={btnPrimary}
+                  >
+                    Edit Social Links
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-3">
+                    <button type="button" onClick={handleCancelSocialEdits} className={btnGhost}>
+                      Cancel
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleSaveSocialLinks}
+                      disabled={savingSocial}
+                      className={btnSuccess}
+                    >
+                      {savingSocial ? "Saving..." : "Save Social Links"}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
 
           {/* Change Phone Number */}
           <section>
@@ -955,7 +1393,7 @@ export default function AccountSecurityPage() {
 
               <button
                 onClick={() => setShowChangePhoneModal(true)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
+                className={btnPrimary}
               >
                 Change Phone
               </button>
@@ -1002,8 +1440,7 @@ export default function AccountSecurityPage() {
               </p>
               <button
                 onClick={handleResetPassword}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
-              >
+                className={btnPrimary}>
                 Send Password Reset Email
               </button>
             </div>
@@ -1030,8 +1467,8 @@ export default function AccountSecurityPage() {
 
       {/* 🔒 Secure Edit Verification Modal */}
       {showAuthModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm z-50 transition-all">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-md relative transform transition-all scale-100 animate-fadeIn">
+        <div className="fixed inset-0 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm z-50 transition-all px-4 py-6">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-md max-h-[85vh] overflow-y-auto relative transform transition-all scale-100 animate-fadeIn">
             <button
               className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition-colors"
               onClick={() => setShowAuthModal(false)}
@@ -1142,8 +1579,8 @@ export default function AccountSecurityPage() {
 
       {/* ✉️ Password Reset Confirmation Modal */}
       {showResetModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm z-50 transition-all">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-md relative animate-fadeIn">
+        <div className="fixed inset-0 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm z-50 transition-all px-4 py-6">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-md max-h-[85vh] overflow-y-auto relative animate-fadeIn">
             <button
               className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition-colors"
               onClick={() => setShowResetModal(false)}
@@ -1179,17 +1616,11 @@ export default function AccountSecurityPage() {
 
       {/* 🔒 Change Email Flow */}
       {showChangeEmailModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm z-50">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-md relative animate-fadeIn">
+        <div className="fixed inset-0 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm z-50 px-4 py-6">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-md max-h-[85vh] overflow-y-auto relative animate-fadeIn">
             <button
               className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition-colors"
-              onClick={() => {
-                setShowChangeEmailModal(false);
-                setIsIdentityVerified(false);
-                setIsChangeCodeSent(false);
-                setVerificationCode("");
-                setChangeEmailCode("");
-              }}
+              onClick={cancelChangeEmailFlow}
             >
               <X className="w-5 h-5" />
             </button>
@@ -1264,9 +1695,14 @@ export default function AccountSecurityPage() {
                   )}
 
                   <div className="flex items-center gap-3">
+                    <button type="button" onClick={cancelChangeEmailFlow} className={btnGhost}>
+                      Cancel
+                    </button>
+
                     <button
+                      type="button"
                       onClick={() => setIsChangeCodeSent(false)}
-                      className="px-5 py-2 rounded-xl text-sm font-medium text-gray-700 bg-white border border-gray-200 shadow-sm hover:bg-gray-50 hover:shadow-md active:scale-95 transition-all"
+                      className={btnGhost}
                     >
                       ← Back
                     </button>
@@ -1274,11 +1710,7 @@ export default function AccountSecurityPage() {
                     <button
                       onClick={handleVerifyIdentityCode}
                       disabled={verifying || verificationCode.length < 6}
-                      className={`px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-all shadow-sm active:scale-95 ${
-                        verifying || verificationCode.length < 6
-                          ? "bg-blue-400 cursor-not-allowed"
-                          : "bg-blue-600 hover:bg-blue-700"
-                      }`}
+                      className={`${btnPrimary} disabled:opacity-50`}
                     >
                       {verifying ? "Verifying..." : "Verify & Continue →"}
                     </button>
@@ -1419,8 +1851,8 @@ export default function AccountSecurityPage() {
 
       {/* 📱 Change Phone Number Modal */}
       {showChangePhoneModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm z-50">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-md relative animate-fadeIn">
+        <div className="fixed inset-0 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm z-50 px-4 py-6">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-md max-h-[85vh] overflow-y-auto relative animate-fadeIn">
             <button
               className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition-colors"
               onClick={() => setShowChangePhoneModal(false)}
@@ -1449,15 +1881,20 @@ export default function AccountSecurityPage() {
 
             <div className="flex justify-end gap-3 mt-4">
               <button
-                onClick={() => setShowChangePhoneModal(false)}
-                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-100"
+                type="button"
+                onClick={() => {
+                  setShowChangePhoneModal(false);
+                  setNewPhone("");
+                }}
+                className={btnGhost}
               >
                 Cancel
               </button>
+
               <button
                 onClick={handleChangePhone}
                 disabled={verifying || !newPhone}
-                className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                className={`${btnPrimary} disabled:opacity-50`}
               >
                 {verifying ? "Saving..." : "Save Number"}
               </button>
@@ -1468,8 +1905,8 @@ export default function AccountSecurityPage() {
 
       {/* 🖼️ Crop Modal */}
       {showCropModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-2xl border border-gray-200 p-6 sm:p-8 w-full max-w-lg relative">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm px-4 py-6">
+          <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-2xl border border-gray-200 p-6 sm:p-8 w-full max-w-md max-h-[85vh] overflow-y-auto relative">
             {/* ❌ Close */}
             <button
               className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition-all"
@@ -1527,7 +1964,7 @@ export default function AccountSecurityPage() {
 
       {/* 🧩 Avatar Options Modal */}
       {showAvatarOptionsModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fadeIn">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm px-4 py-6">
           <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-sm relative border border-gray-200">
             {/* ❌ Close Button */}
             <button
@@ -1612,20 +2049,71 @@ export default function AccountSecurityPage() {
 
       {popup.type && (
         <div
-          className={`fixed top-6 left-1/2 -translate-x-1/2 rounded-xl shadow-lg border px-6 py-3 flex items-center gap-3 z-[1000]
-            ${popup.visible ? "animate-fade-in-down" : "animate-fade-out-up"}
-            ${
-              popup.type === "success"
-                ? "bg-white border-green-200 text-green-700"
-                : popup.type === "error"
-                ? "bg-white border-red-200 text-red-700"
-                : "bg-white border-yellow-200 text-yellow-700"
-            }`}
+          className={[
+            "fixed top-4 right-4 left-4 sm:left-auto z-[1000]",
+            "transition-all duration-300",
+            popup.visible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2 pointer-events-none",
+          ].join(" ")}
         >
-          {popup.type === "success" && <CheckCircle2 className="w-5 h-5 text-green-500" />}
-          {popup.type === "error" && <XCircle className="w-5 h-5 text-red-500" />}
-          {popup.type === "warning" && <AlertTriangle className="w-5 h-5 text-yellow-500" />}
-          <span className="font-medium">{popup.message}</span>
+          <div
+            className={[
+              "w-full sm:w-[340px] max-w-none sm:max-w-[90vw]",
+              "rounded-2xl border bg-white shadow-xl",
+              "overflow-hidden",
+            ].join(" ")}
+          >
+            {/* top accent bar */}
+            <div
+              className={[
+                "h-1 w-full",
+                popup.type === "success"
+                  ? "bg-green-500"
+                  : popup.type === "error"
+                  ? "bg-red-500"
+                  : "bg-yellow-500",
+              ].join(" ")}
+            />
+
+            <div className="p-4 flex items-start gap-3">
+              {/* icon bubble */}
+              <div
+                className={[
+                  "mt-0.5 flex h-9 w-9 items-center justify-center rounded-full",
+                  popup.type === "success"
+                    ? "bg-green-50 text-green-600"
+                    : popup.type === "error"
+                    ? "bg-red-50 text-red-600"
+                    : "bg-yellow-50 text-yellow-700",
+                ].join(" ")}
+              >
+                {popup.type === "success" && <CheckCircle2 className="h-5 w-5" />}
+                {popup.type === "error" && <XCircle className="h-5 w-5" />}
+                {popup.type === "warning" && <AlertTriangle className="h-5 w-5" />}
+              </div>
+
+              {/* message */}
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-semibold text-gray-900">
+                  {popup.type === "success"
+                    ? "Success"
+                    : popup.type === "error"
+                    ? "Something went wrong"
+                    : "Heads up"}
+                </div>
+                <div className="text-sm text-gray-600 break-words">{popup.message}</div>
+              </div>
+
+              {/* close */}
+              <button
+                type="button"
+                onClick={() => setPopup({ type: null, message: "", visible: false })}
+                className="ml-1 rounded-full p-1 text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition"
+                aria-label="Close notification"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
