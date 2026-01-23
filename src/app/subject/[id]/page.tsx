@@ -70,6 +70,8 @@ export default function SubjectProfilePage() {
   const [copiedSubjectId, setCopiedSubjectId] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
   const [pageUrl, setPageUrl] = useState("");
+  const [qrUrl, setQrUrl] = useState("");
+
   
   const [copiedSocialId, setCopiedSocialId] = useState<string | null>(null);
   const router = useRouter();
@@ -77,8 +79,30 @@ export default function SubjectProfilePage() {
   const action = searchParams.get("action");
 
   useEffect(() => {
-    if (typeof window !== "undefined") setPageUrl(window.location.href);
-  }, []);  
+    if (typeof window === "undefined") return;
+  
+    const href = window.location.href;
+    setPageUrl(href);
+  
+    // If you're on localhost, your phone can't reach it.
+    // Use your computer’s LAN IP (you must set NEXT_PUBLIC_DEV_HOST).
+    const isLocalhost =
+      window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1";
+  
+    if (isLocalhost) {
+      const devHost = process.env.NEXT_PUBLIC_DEV_HOST; // like "192.168.1.23:3000"
+      if (devHost) {
+        setQrUrl(`${window.location.protocol}//${devHost}${window.location.pathname}`);
+      } else {
+        // fallback to href (still won't scan on phone) but at least won't crash
+        setQrUrl(href);
+        console.warn("Set NEXT_PUBLIC_DEV_HOST so QR works on your phone in local dev.");
+      }
+    } else {
+      setQrUrl(href);
+    }
+  }, []);    
 
   useEffect(() => {
     (async () => {
@@ -291,7 +315,7 @@ export default function SubjectProfilePage() {
                     title="Show QR code"
                     >
                     <div className="relative">
-                        <QRCodeCanvas value={pageUrl || ""} size={36} level="H" includeMargin={false} />
+                    <QRCodeCanvas value={qrUrl || ""} size={36} level="H" includeMargin={true} />
                         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
                         <div className="rounded bg-white p-px">
                             <Image
@@ -588,18 +612,18 @@ export default function SubjectProfilePage() {
             </div>
 
             <div className="relative flex items-center justify-center rounded-xl border bg-white p-6">
-                <QRCodeCanvas value={pageUrl || ""} size={240} level="H" includeMargin={false} />
+            <QRCodeCanvas value={qrUrl || ""} size={240} level="H" includeMargin={true} />
                 {/* DNounce logo in the middle */}
-                <div className="absolute flex items-center justify-center bg-white rounded-md p-0">
-                <Image
-                    src="/logo.png"
-                    alt="DNounce"
-                    width={140}
-                    height={140}
-                    className="object-cover scale-[1.25]"
-                    priority
-                />
-
+                <div className="absolute flex items-center justify-center">
+                    <div className="relative w-[92px] h-[92px] rounded-md bg-white overflow-hidden ring-1 ring-gray-200">
+                        <Image
+                        src="/logo.png"
+                        alt="DNounce"
+                        fill
+                        priority
+                        className="object-cover scale-[1.25]"
+                        />
+                    </div>
                 </div>
             </div>
 
