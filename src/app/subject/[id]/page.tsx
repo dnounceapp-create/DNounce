@@ -370,28 +370,29 @@ export default function SubjectProfilePage() {
                 </div>
             </div>
 
-            <button
-                type="button"
-                onClick={async () => {
+            <div className="flex justify-center sm:justify-end">
+                <button
+                    type="button"
+                    onClick={async () => {
                     const { data } = await supabase.auth.getSession();
                     const authed = !!data.session;
-                  
+
                     const dashboardSubmitUrl = `/dashboard/submit?subject_id=${subjectId}`;
-                  
+
                     if (!authed) {
-                      router.push(
+                        router.push(
                         `/loginsignup?redirectTo=${encodeURIComponent(dashboardSubmitUrl)}`
-                      );
-                      return;
+                        );
+                        return;
                     }
-                  
+
                     router.push(dashboardSubmitUrl);
-                  }}                  
-                className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition"
-            >
-                <FilePlus className="h-4 w-4" />
-                Submit A Record
-            </button>
+                    }}
+                    className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition"
+                >
+                    <FilePlus className="h-4 w-4" />
+                    Submit A Record
+                </button>
             </div>
             
             {/* Tabs */}
@@ -489,12 +490,14 @@ export default function SubjectProfilePage() {
                       {r.description}
                     </div>
                   
-                    <Link
-                      href={`/record/${r.id}`}
-                      className="inline-block mt-2 text-blue-600 hover:underline text-sm"
+                    <a
+                        href={`https://www.dnounce.com/public/record/${r.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-block mt-2 text-blue-600 hover:underline text-sm"
                     >
-                      View Record →
-                    </Link>
+                        View Record →
+                    </a>
                   </div>
                   
                   ))}
