@@ -84,25 +84,11 @@ export default function SubjectProfilePage() {
     const href = window.location.href;
     setPageUrl(href);
   
-    // If you're on localhost, your phone can't reach it.
-    // Use your computer’s LAN IP (you must set NEXT_PUBLIC_DEV_HOST).
-    const isLocalhost =
-      window.location.hostname === "localhost" ||
-      window.location.hostname === "127.0.0.1";
-  
-    if (isLocalhost) {
-      const devHost = process.env.NEXT_PUBLIC_DEV_HOST; // like "192.168.1.23:3000"
-      if (devHost) {
-        setQrUrl(`${window.location.protocol}//${devHost}${window.location.pathname}`);
-      } else {
-        // fallback to href (still won't scan on phone) but at least won't crash
-        setQrUrl(href);
-        console.warn("Set NEXT_PUBLIC_DEV_HOST so QR works on your phone in local dev.");
-      }
-    } else {
-      setQrUrl(href);
+    // Always encode the production URL so phone QR scans correctly
+    if (subjectId) {
+      setQrUrl(`https://www.dnounce.com/subject/${subjectId}`);
     }
-  }, []);    
+  }, [subjectId]);      
 
   useEffect(() => {
     (async () => {
@@ -393,6 +379,7 @@ export default function SubjectProfilePage() {
                     <FilePlus className="h-4 w-4" />
                     Submit A Record
                 </button>
+            </div>
             </div>
             
             {/* Tabs */}
