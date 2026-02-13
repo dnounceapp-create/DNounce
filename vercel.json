@@ -1,0 +1,9 @@
+{
+    "crons": [
+      {
+        "path": "/api/internal/record-lifecycle",
+        "schedule": "* * * * *"
+      }
+    ]
+}
+  

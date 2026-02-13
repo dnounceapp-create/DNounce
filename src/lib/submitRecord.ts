@@ -43,7 +43,7 @@ export async function submitRecord(formData: SubmitRecordInput) {
       description: formData.description.trim(),
       agree_terms: formData.agree_terms,
       record_type: "pending",
-      status: "pending",
+      status: "ai_verification",
       is_published: false,
     })
     .select("id")
@@ -68,13 +68,20 @@ export async function submitRecord(formData: SubmitRecordInput) {
   // -------------------------------------------------------
   // STEP 4 — Persist credibility (SERVER SIDE)
   // -------------------------------------------------------
-  fetch("/api/records/update-credibility", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ recordId, credibility }),
-  }).catch((err) => {
+  try {
+    const res = await fetch("/api/records/update-credibility", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ recordId, credibility }),
+    });
+  
+    if (!res.ok) {
+      const text = await res.text();
+      console.error("❌ update-credibility failed:", res.status, text);
+    }
+  } catch (err) {
     console.error("❌ update-credibility failed:", err);
-  });
+  }  
 
   return { recordId, credibility };
 }

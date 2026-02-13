@@ -46,7 +46,11 @@ export async function POST(req: Request) {
         credibility,
         ai_vendor_1_result: credibility,
         ai_vendor_1_score: score,
-      })
+        ai_completed_at: new Date().toISOString(),
+      
+        // advance workflow: once AI classification exists, notify subject stage
+        status: "subject_notified",
+      })      
       .eq("id", recordId)
       .select("id, record_type, credibility, ai_vendor_1_result, ai_vendor_1_score")
       .single();

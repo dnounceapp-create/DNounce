@@ -32,8 +32,8 @@ export default function LoginSignupPage() {
       if (user) router.replace("/dashboard/myrecords");
     };
     checkSession();
-  }, [router]);
-
+  }, [router]); 
+  
   // Google login
   const handleGoogle = async () => {
     if (typeof window === "undefined") return;
@@ -123,19 +123,25 @@ export default function LoginSignupPage() {
   // Email/password signup
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    const { error } = await supabase.auth.signUp({
+  
+    const res = await supabase.auth.signUp({
       email: signupEmail,
       password: signupPassword,
     });
-    if (error) {
-      alert(error.message);
+  
+    console.log("SIGNUP RES:", res);
+  
+    if (res.error) {
+      alert(res.error.message);
       return;
     }
-
+  
     const { data: { session } } = await supabase.auth.getSession();
+    console.log("SESSION AFTER SIGNUP:", session);
+  
     if (session) router.replace("/user-setup");
     else alert("Check your email to confirm your account, then sign in.");
-  };
+  };  
 
   return (
     <div className="min-h-[100dvh] pb-[env(safe-area-inset-bottom)] bg-gray-50 flex flex-col">
