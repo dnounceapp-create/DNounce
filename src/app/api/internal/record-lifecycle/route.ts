@@ -8,7 +8,6 @@ const admin = createClient(
 
 export async function GET() {
   try {
-
     const { data: records, error } = await admin
       .from("records")
       .select("*");
@@ -18,32 +17,34 @@ export async function GET() {
     const now = new Date();
 
     for (const r of records ?? []) {
-
       const status = (r.status || "").toLowerCase();
 
-      // -------------------------
-      // Stage 1 → Stage 2
-      // -------------------------
+      // =====================================================
+      // STAGE 1 → STAGE 2 (AI finished → Subject Notified)
+      // =====================================================
       if (status === "ai_verification" && r.ai_completed_at) {
-
         await admin
           .from("records")
-          .update({ status: "subject_notified" })
+          .update({
+            status: "subject_notified",
+          })
           .eq("id", r.id);
 
         continue;
       }
 
-      // -------------------------
-      // Stage 2 → Stage 3
-      // -------------------------
+      // =====================================================
+      // STAGE 2 → STAGE 3 (Publish after required window)
+      // =====================================================
       if (status === "subject_notified" && r.ai_completed_at) {
-
         const aiDone = new Date(r.ai_completed_at);
-        const publishTime = new Date(aiDone.getTime() + (72 + 24) * 60 * 60 * 1000);
+
+        // 72h AI window + 24h buffer
+        const publishTime = new Date(
+          aiDone.getTime() + (72 + 24) * 60 * 60 * 1000
+        );
 
         if (now >= publishTime) {
-
           await admin
             .from("records")
             .update({
@@ -57,64 +58,78 @@ export async function GET() {
         continue;
       }
 
-      // -------------------------
-      // Stage 4 → Stage 5
-      // -------------------------
-      if (status === "deletion_request" && r.updated_at) {
-
-        const start = new Date(r.updated_at);
-        const debateStart = new Date(start.getTime() + 72 * 60 * 60 * 1000);
+      // =====================================================
+      // STAGE 4 → STAGE 5 (Deletion Request → Debate after 72h)
+      // =====================================================
+      if (status === "deletion_request" && r.dispute_started_at) {
+        const start = new Date(r.dispute_started_at);
+        const debateStart = new Date(
+          start.getTime() + 72 * 60 * 60 * 1000
+        );
 
         if (now >= debateStart) {
           await admin
             .from("records")
-            .update({ status: "debate" })
+            .update({
+              status: "debate",
+              debate_started_at: now.toISOString(),
+            })
             .eq("id", r.id);
         }
 
         continue;
       }
 
-      // -------------------------
-      // Stage 5 → Stage 6
-      // -------------------------
-      if (status === "debate" && r.updated_at) {
-
-        const start = new Date(r.updated_at);
-        const votingStart = new Date(start.getTime() + 72 * 60 * 60 * 1000);
+      // =====================================================
+      // STAGE 5 → STAGE 6 (Debate → Voting after 72h)
+      // =====================================================
+      if (status === "debate" && r.debate_started_at) {
+        const start = new Date(r.debate_started_at);
+        const votingStart = new Date(
+          start.getTime() + 72 * 60 * 60 * 1000
+        );
 
         if (now >= votingStart) {
           await admin
             .from("records")
-            .update({ status: "voting" })
+            .update({
+              status: "voting",
+              voting_started_at: now.toISOString(),
+            })
             .eq("id", r.id);
         }
 
         continue;
       }
 
-      // -------------------------
-      // Stage 6 → Stage 7
-      // -------------------------
-      if (status === "voting" && r.updated_at) {
+      // =====================================================
+      // STAGE 6 → STAGE 7 (Voting → Decision after 48h)
+      // =====================================================
+      if (status === "voting" && r.voting_started_at) {
+        const start = new Date(r.voting_started_at);
+        const decisionTime = new Date(
+          start.getTime() + 48 * 60 * 60 * 1000
+        );
 
-        const start = new Date(r.updated_at);
-        const final = new Date(start.getTime() + 48 * 60 * 60 * 1000);
-
-        if (now >= final) {
+        if (now >= decisionTime) {
           await admin
             .from("records")
-            .update({ status: "decision" })
+            .update({
+              status: "decision",
+              decision_made_at: now.toISOString(),
+            })
             .eq("id", r.id);
         }
 
+        continue;
       }
-
     }
 
     return NextResponse.json({ ok: true });
-
-  } catch (e:any) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+  } catch (e: any) {
+    return NextResponse.json(
+      { error: e.message },
+      { status: 500 }
+    );
   }
 }
