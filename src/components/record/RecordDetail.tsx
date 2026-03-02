@@ -530,7 +530,7 @@ function AttachmentSection({
               key={a.id}
               type="button"
               onClick={() => setOpenId(a.id)}
-              className="group inline-flex items-center gap-2 rounded-2xl border bg-white px-2.5 py-2 sm:px-3 sm:py-2.5 shadow-sm hover:bg-gray-50 active:bg-gray-100"
+              className="group inline-flex items-center gap-3 rounded-2xl border border-gray-200 bg-gray-50 px-3 py-3 sm:px-4 sm:py-3 hover:bg-gray-100 active:bg-gray-200 transition"
               title={a.label || `Attachment #${n}`}
             >
               <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl border bg-gray-50">
@@ -1049,7 +1049,7 @@ function ReplyBubble({
                     }}
                     onMouseDown={(e) => e.stopPropagation()}
                     disabled={posting || replyBody.trim().length === 0}
-                    className="rounded-xl bg-black px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 inline-flex items-center gap-2"
+                    className="rounded-xl bg-black px-5 py-3 text-sm font-semibold text-white disabled:opacity-50 inline-flex items-center gap-2"
                   >
                     {posting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Shield className="h-4 w-4" />}
                     {posting ? "Posting…" : "Reply"}
@@ -1074,7 +1074,7 @@ function ReplyBubble({
               </button>
 
               {expandedReplies && (
-                <div className="mt-3 space-y-3 pl-3 sm:pl-6 border-l border-gray-200">
+                <div className="mt-4 space-y-4 pl-6 border-l border-gray-200">
                   {node.replies.map((r) => (
                     <ReplyBubble
                       key={r.id}
@@ -1179,10 +1179,10 @@ function StatementCard({
   stopAll: (e: any) => void;
 }) {
   return (
-    <div className={["relative overflow-hidden rounded-2xl border bg-white shadow-sm", RoleBorder(node.author_role)].join(" ")}>
+    <div className={["relative overflow-hidden rounded-3xl bg-white shadow-sm border border-gray-200", RoleBorder(node.author_role)].join(" ")}>
       <div className={["absolute left-0 top-0 bottom-0 w-1.5", RoleBar(node.author_role)].join(" ")} />
 
-      <div className="p-4 pl-5">
+      <div className="p-5 sm:p-6 pl-6">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-3 min-w-0">
             <div className="min-w-0">
@@ -1192,7 +1192,7 @@ function StatementCard({
           </div>
         </div>
 
-        <div className="mt-3 text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{node.body}</div>
+        <div className="mt-3 text-[15px] sm:text-[16px] text-gray-900 whitespace-pre-wrap leading-7">{node.body}</div>
 
         <EvidenceChips attachments={node.attachments} getNumberForPath={getNumberForPath} onOpenPreview={onOpenPreview} />
 
@@ -1349,7 +1349,7 @@ function StatementCard({
                   }}
                   onMouseDown={(e) => e.stopPropagation()}
                   disabled={posting || replyBody.trim().length === 0}
-                  className="rounded-xl bg-black px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 inline-flex items-center gap-2"
+                  className="rounded-xl bg-black px-5 py-3 text-sm font-semibold text-white disabled:opacity-50 inline-flex items-center gap-2"
                 >
                   {posting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Shield className="h-4 w-4" />}
                   {posting ? "Posting…" : "Reply"}
@@ -1375,7 +1375,7 @@ function StatementCard({
           </div>
 
           {expanded[node.id] && node.replies?.length > 0 && (
-            <div className="mt-3 space-y-3 pl-3 sm:pl-6 border-l border-gray-200">
+            <div className="mt-4 space-y-4 pl-6 border-l border-gray-200">
               {node.replies.map((r) => (
                 <ReplyBubble
                   key={r.id}
@@ -1836,7 +1836,7 @@ function DebateCourtroom({
   }
 
   return (
-    <div className="rounded-2xl border bg-white p-4 sm:p-5 shadow-sm">
+    <div className="rounded-3xl bg-white p-5 sm:p-6 shadow-sm border border-gray-200">
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="text-sm font-semibold text-gray-900">Debate Section</div>
@@ -1848,7 +1848,7 @@ function DebateCourtroom({
         ) : null}
       </div>
 
-      <div className="mt-4 rounded-2xl border bg-gray-50 p-4">
+      <div className="mt-6 space-y-6">
         {loading ? (
           <div className="text-sm text-gray-600">Loading debate…</div>
         ) : tree.length === 0 ? (
@@ -1901,7 +1901,7 @@ function DebateCourtroom({
           <textarea
             value={statementBody}
             onChange={(e) => setStatementBody(e.target.value)}
-            rows={5}
+            rows={6}
             className="mt-3 w-full rounded-2xl border p-3 text-sm outline-none focus:border-gray-900 bg-white"
             placeholder="Make your point clearly. Others will reply inside the thread."
             onClick={stop}
@@ -2000,7 +2000,7 @@ function DebateCourtroom({
               }
               onMouseDown={(e) => e.stopPropagation()}
               disabled={posting || statementBody.trim().length === 0}
-              className="rounded-xl bg-black px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 inline-flex items-center gap-2"
+              className="rounded-xl bg-black px-5 py-3 text-sm font-semibold text-white disabled:opacity-50 inline-flex items-center gap-2"
             >
               {posting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Shield className="h-4 w-4" />}
               {posting ? "Posting…" : "Submit Statement"}
@@ -3079,7 +3079,7 @@ function VotingCourtroom({
                 <span className="text-gray-600">{formatTimestampNoSeconds(myVote!.created_at)}</span>
               </div>
 
-              <div className="mt-3 text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
+              <div className="mt-3 text-[15px] sm:text-[16px] text-gray-900 whitespace-pre-wrap leading-7">
                 {myVote!.explanation}
               </div>
 
@@ -3100,7 +3100,7 @@ function VotingCourtroom({
                   type="button"
                   onClick={() => setChoice("keep")}
                   className={[
-                    "flex-1 rounded-full border px-4 py-3 text-sm font-semibold",
+                    "flex-1 rounded-2xl border px-5 py-4 text-base font-semibold transition",
                     choice === "keep"
                       ? "bg-green-600 text-white border-green-600"
                       : "bg-white text-gray-800 hover:bg-gray-50",
@@ -3113,7 +3113,7 @@ function VotingCourtroom({
                   type="button"
                   onClick={() => setChoice("delete")}
                   className={[
-                    "flex-1 rounded-full border px-4 py-3 text-sm font-semibold",
+                    "flex-1 rounded-2xl border px-5 py-4 text-base font-semibold transition",
                     choice === "delete"
                       ? "bg-red-600 text-white border-red-600"
                       : "bg-white text-gray-800 hover:bg-gray-50",
@@ -3126,7 +3126,7 @@ function VotingCourtroom({
               <textarea
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
-                rows={5}
+                rows={6}
                 className="mt-3 w-full rounded-2xl border p-3 text-sm outline-none focus:border-gray-900 bg-white"
                 placeholder="Write your reason (required)…"
               />
@@ -3186,7 +3186,7 @@ function VotingCourtroom({
                     </span>
                   </div>
 
-                  <div className="mt-3 text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{v.explanation}</div>
+                  <div className="mt-3 text-[15px] sm:text-[16px] text-gray-900 whitespace-pre-wrap leading-7">{v.explanation}</div>
 
                   <div className="mt-2">
                     <AgreeDisagree
@@ -3276,7 +3276,7 @@ function VotingCourtroom({
       {/* =========================
           Card #3: Community Section
       ========================== */}
-      <div className="rounded-2xl border bg-white p-5 shadow-sm mt-6">
+      <div className="rounded-3xl bg-white p-6 shadow-sm border border-gray-200 mt-8">
         <div className="text-sm font-semibold text-gray-900">Community Section</div>
         <div className="text-xs text-gray-500 mt-1">Please note that you are allowed only one statement.</div>
 
@@ -3301,7 +3301,7 @@ function VotingCourtroom({
                     type="button"
                     onClick={postCommunityStatement}
                     disabled={postingReply || communityStatementDraft.trim().length === 0}
-                    className="rounded-xl bg-black px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                    className="rounded-xl bg-black px-5 py-3 text-sm font-semibold text-white disabled:opacity-50"
                   >
                     {postingReply ? "Posting…" : "Post Statement"}
                   </button>
@@ -3759,7 +3759,7 @@ export default function RecordDetail({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
+        <div className="flex items-center justify-center min-h-[60vh]">
         <Loader2 className="h-10 w-10 animate-spin text-gray-600" />
       </div>
     );
@@ -3824,7 +3824,7 @@ export default function RecordDetail({
   });
 
   return (
-    <div className="max-w-3xl mx-auto px-3 sm:px-6 py-4 sm:py-10 space-y-5 sm:space-y-8 overflow-x-hidden">
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-8 sm:space-y-10 bg-gray-50 min-h-screen">
       <div className="flex items-center gap-3 mb-6">
         <FileText className="w-7 h-7 text-blue-600" />
         <h1 className="text-2xl font-bold text-gray-900">Record Detail</h1>
@@ -3980,7 +3980,7 @@ export default function RecordDetail({
         </div>
       </div>
 
-      <div className="border rounded-2xl p-4 sm:p-5 shadow-md bg-white space-y-4 sm:space-y-5">
+      <div className="rounded-3xl bg-white p-5 sm:p-6 shadow-sm border border-gray-200 space-y-6">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <h2 className="text-lg font-semibold text-gray-800">Submitted Record</h2>
 
@@ -4084,7 +4084,7 @@ export default function RecordDetail({
 
         <div className="pt-3 border-t">
           <div className="text-sm font-semibold text-gray-900 mb-2">Experience Details</div>
-          <div className="text-sm sm:text-[15px] text-gray-800 whitespace-pre-wrap break-words leading-relaxed">
+          <div className="text-[15px] sm:text-[16px] text-gray-900 whitespace-pre-wrap break-words leading-7 sm:leading-8">
            {record.description}
           </div>
         </div>
