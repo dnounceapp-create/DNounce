@@ -1,12 +1,12 @@
 export type RoleType = "subject" | "contributor" | "voter" | "citizen";
 
 export const stageShortLabel: Record<number, string> = {
-  1: "AI Review",
+  1: "AI Verification in Progress",
   2: "Subject Notified",
-  3: "Published",
-  4: "In Dispute",
-  5: "Debate",
-  6: "Voting",
+  3: "Record Published",
+  4: "Record in Dispute",
+  5: "Debate Phase",
+  6: "Voting in Progress",
   7: "Settled",
 };
 
@@ -134,7 +134,7 @@ export const stageConfig: Record<number, StageConfig> = {
   },
 
   3: {
-    label: "Published",
+    label: "Record Published",
     happens:
       "The record is published and receives an AI-recommended credibility label, becoming publicly visible on DNounce.",
     timeline: {
@@ -175,7 +175,7 @@ export const stageConfig: Record<number, StageConfig> = {
   },
 
   5: {
-    label: "Subject Dispute & Debate",
+    label: "Debate Phase",
     happens:
       "Both parties argue the case with evidence during this active dispute period.",
     timeline: {
@@ -220,7 +220,7 @@ export const stageConfig: Record<number, StageConfig> = {
   },
 
   7: {
-    label: "Anonymity Active",
+    label: "Settled",
     happens:
       "Final decision implemented. If deleted, the subject’s anonymity and privacy protections are reactivated; if kept, the record remains under anonymized format.",
     timeline: {

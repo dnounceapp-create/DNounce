@@ -73,6 +73,7 @@ export async function GET() {
             .update({
               status: "debate",
               debate_started_at: now.toISOString(),
+              debate_ends_at: new Date(now.getTime() + 72 * 60 * 60 * 1000).toISOString(),
             })
             .eq("id", r.id);
         }
@@ -81,20 +82,31 @@ export async function GET() {
       }
 
       // =====================================================
-      // STAGE 5 → STAGE 6 (Debate → Voting after 72h)
+      // STAGE 5 → STAGE 6 (Debate → Voting when debate ends)
       // =====================================================
       if (status === "debate" && r.debate_started_at) {
         const start = new Date(r.debate_started_at);
-        const votingStart = new Date(
-          start.getTime() + 72 * 60 * 60 * 1000
-        );
 
-        if (now >= votingStart) {
+        // Authoritative end if present, else fallback = start + 72h
+        const debateEnd = r.debate_ends_at
+          ? new Date(r.debate_ends_at)
+          : new Date(start.getTime() + 72 * 60 * 60 * 1000);
+
+        // If debate_ends_at was missing, backfill it once (optional but nice)
+        if (!r.debate_ends_at) {
+          await admin
+            .from("records")
+            .update({ debate_ends_at: debateEnd.toISOString() })
+            .eq("id", r.id);
+        }
+
+        if (now >= debateEnd) {
           await admin
             .from("records")
             .update({
               status: "voting",
               voting_started_at: now.toISOString(),
+              voting_ends_at: new Date(now.getTime() + 48 * 60 * 60 * 1000).toISOString(),
             })
             .eq("id", r.id);
         }
@@ -103,15 +115,23 @@ export async function GET() {
       }
 
       // =====================================================
-      // STAGE 6 → STAGE 7 (Voting → Decision after 48h)
+      // STAGE 6 → STAGE 7 (Voting → Decision when voting ends)
       // =====================================================
       if (status === "voting" && r.voting_started_at) {
         const start = new Date(r.voting_started_at);
-        const decisionTime = new Date(
-          start.getTime() + 48 * 60 * 60 * 1000
-        );
 
-        if (now >= decisionTime) {
+        const votingEnd = r.voting_ends_at
+          ? new Date(r.voting_ends_at)
+          : new Date(start.getTime() + 48 * 60 * 60 * 1000);
+
+        if (!r.voting_ends_at) {
+          await admin
+            .from("records")
+            .update({ voting_ends_at: votingEnd.toISOString() })
+            .eq("id", r.id);
+        }
+
+        if (now >= votingEnd) {
           await admin
             .from("records")
             .update({
@@ -133,3 +153,5 @@ export async function GET() {
     );
   }
 }
+
+
