@@ -3271,7 +3271,7 @@ function VotingCourtroom({
             </div>
           </div>
         )}
-      </div>
+      </VotingSectionCard>
 
       {/* =========================
           Card #3: Community Section
