@@ -276,17 +276,17 @@ type ViewState = {
 
 function VotingSectionCard({ children }: { children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border bg-white p-4 sm:p-5 shadow-sm">
+    <section className="border rounded-2xl p-4 sm:p-5 shadow-md bg-white">
       {children}
-    </div>
+    </section>
   );
 }
 
 function CommunitySectionCard({ children }: { children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border bg-white p-4 sm:p-5 shadow-sm">
+    <section className="border rounded-2xl p-4 sm:p-5 shadow-md bg-white">
       {children}
-    </div>
+    </section>
   );
 }
 
@@ -864,7 +864,7 @@ function ReplyBubble({
   const [expandedReplies, setExpandedReplies] = useState(false);
 
   return (
-    <div className="py-2">
+    <div className="py-3">
       <div className="flex gap-3">
         <div className="shrink-0">
           {author.href ? (
@@ -923,7 +923,7 @@ function ReplyBubble({
 
           {canPost && replyOpenFor === node.id ? (
             <div className="mt-3">
-              <div className="rounded-xl border bg-gray-50 p-3">
+              <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
                 <div className="flex items-start justify-between gap-2">
                   <div className="text-xs font-semibold text-gray-900">
                     Replying to <span className="underline">{replyingToLabel(node.author_role)}</span>
@@ -950,7 +950,7 @@ function ReplyBubble({
                   value={replyBody}
                   onChange={(e) => setReplyBody(e.target.value)}
                   rows={3}
-                  className="mt-2 w-full rounded-xl border p-3 text-sm outline-none focus:border-gray-900 bg-white"
+                  className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-900 outline-none focus:border-gray-900"
                   placeholder="Write a reply…"
                   onClick={stop}
                   onMouseDown={stop}
@@ -1049,7 +1049,7 @@ function ReplyBubble({
                     }}
                     onMouseDown={(e) => e.stopPropagation()}
                     disabled={posting || replyBody.trim().length === 0}
-                    className="rounded-xl bg-black px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 inline-flex items-center gap-2"
+                    className="inline-flex items-center gap-2 rounded-xl bg-black px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
                   >
                     {posting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Shield className="h-4 w-4" />}
                     {posting ? "Posting…" : "Reply"}
@@ -1074,7 +1074,7 @@ function ReplyBubble({
               </button>
 
               {expandedReplies && (
-                <div className="mt-3 space-y-3 pl-3 sm:pl-6 border-l border-gray-200">
+                <div className="mt-3 space-y-3 pl-3 sm:pl-5 border-l border-gray-200">
                   {node.replies.map((r) => (
                     <ReplyBubble
                       key={r.id}
@@ -1179,10 +1179,10 @@ function StatementCard({
   stopAll: (e: any) => void;
 }) {
   return (
-    <div className={["relative overflow-hidden rounded-2xl border bg-white shadow-sm", RoleBorder(node.author_role)].join(" ")}>
+    <div className={["relative overflow-hidden border-b bg-white", RoleBorder(node.author_role)].join(" ")}>
       <div className={["absolute left-0 top-0 bottom-0 w-1.5", RoleBar(node.author_role)].join(" ")} />
 
-      <div className="p-4 pl-5">
+      <div className="px-4 py-4 pl-5 sm:px-5 sm:py-5 sm:pl-6">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-3 min-w-0">
             <div className="min-w-0">
@@ -1223,7 +1223,7 @@ function StatementCard({
 
         {canPost && replyOpenFor === node.id ? (
           <div className="mt-3">
-            <div className="rounded-xl border bg-gray-50 p-3">
+            <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
               <div className="flex items-start justify-between gap-2">
                 <div className="text-xs font-semibold text-gray-900">
                   Replying to <span className="underline">{replyingToLabel(node.author_role)}</span>
@@ -1250,7 +1250,7 @@ function StatementCard({
                 value={replyBody}
                 onChange={(e) => setReplyBody(e.target.value)}
                 rows={3}
-                className="mt-2 w-full rounded-xl border p-3 text-sm outline-none focus:border-gray-900 bg-white"
+                className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-900 outline-none focus:border-gray-900"
                 placeholder="Write a reply…"
                 onClick={stop}
                 onMouseDown={stop}
@@ -1349,7 +1349,7 @@ function StatementCard({
                   }}
                   onMouseDown={(e) => e.stopPropagation()}
                   disabled={posting || replyBody.trim().length === 0}
-                  className="rounded-xl bg-black px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 inline-flex items-center gap-2"
+                  className="inline-flex items-center gap-2 rounded-xl bg-black px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
                 >
                   {posting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Shield className="h-4 w-4" />}
                   {posting ? "Posting…" : "Reply"}
@@ -1375,7 +1375,7 @@ function StatementCard({
           </div>
 
           {expanded[node.id] && node.replies?.length > 0 && (
-            <div className="mt-3 space-y-3 pl-3 sm:pl-6 border-l border-gray-200">
+            <div className="mt-3 space-y-3 pl-3 sm:pl-5 border-l border-gray-200">
               {node.replies.map((r) => (
                 <ReplyBubble
                   key={r.id}
@@ -1836,7 +1836,7 @@ function DebateCourtroom({
   }
 
   return (
-    <div className="rounded-2xl border bg-white p-4 sm:p-5 shadow-sm">
+    <section className="border rounded-2xl p-4 sm:p-5 shadow-sm bg-white">
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="text-sm font-semibold text-gray-900">Debate Section</div>
@@ -1848,7 +1848,7 @@ function DebateCourtroom({
         ) : null}
       </div>
 
-      <div className="mt-4 rounded-2xl border bg-gray-50 p-4">
+      <div className="mt-4">
         {loading ? (
           <div className="text-sm text-gray-600">Loading debate…</div>
         ) : tree.length === 0 ? (
@@ -1889,7 +1889,7 @@ function DebateCourtroom({
           {debateNoPostMessage({ viewerRole, status: record?.status, stage })}
         </div>
       ) : (
-        <div className="mt-4 rounded-2xl border bg-white p-4">
+        <div className="mt-4 border-t pt-4">
           <div className="flex items-start justify-between gap-3">
             <div>
               <div className="text-xs font-semibold text-gray-900">New statement</div>
@@ -1902,7 +1902,7 @@ function DebateCourtroom({
             value={statementBody}
             onChange={(e) => setStatementBody(e.target.value)}
             rows={5}
-            className="mt-3 w-full rounded-2xl border p-3 text-sm outline-none focus:border-gray-900 bg-white"
+            className="mt-3 w-full rounded-xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-900 outline-none focus:border-gray-900"
             placeholder="Make your point clearly. Others will reply inside the thread."
             onClick={stop}
             onMouseDown={stop}
@@ -2000,7 +2000,7 @@ function DebateCourtroom({
               }
               onMouseDown={(e) => e.stopPropagation()}
               disabled={posting || statementBody.trim().length === 0}
-              className="rounded-xl bg-black px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 inline-flex items-center gap-2"
+              className="inline-flex items-center gap-2 rounded-xl bg-black px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
             >
               {posting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Shield className="h-4 w-4" />}
               {posting ? "Posting…" : "Submit Statement"}
@@ -2018,7 +2018,7 @@ function DebateCourtroom({
         mime={openPreview?.mime ?? ""}
         path={openPreview?.path ?? ""}
       />
-    </div>
+    </section>
   );
 }
 
@@ -2125,7 +2125,7 @@ function VoteReplyNodeComponent({
             value={editDraft}
             onChange={(e) => setEditDraft(e.target.value)}
             rows={3}
-            className="mt-2 w-full rounded-xl border p-3 text-sm bg-white"
+            className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-900"
           />
         ) : (
           node.body
@@ -2200,7 +2200,7 @@ function VoteReplyNodeComponent({
       </div>
 
       {node.replies.length > 0 && (
-        <div className="mt-3 pl-4 border-l space-y-3">
+        <div className="mt-3 pl-3 sm:pl-4 border-l border-gray-200 space-y-3">
           {node.replies.map((r) => (
             <VoteReplyNodeComponent
               key={r.id}
@@ -2271,7 +2271,7 @@ function CommunityReplyNodeComponent({
               value={editDraft}
               onChange={(e) => setEditDraft(e.target.value)}
               rows={3}
-              className="mt-2 w-full rounded-xl border p-3 text-sm bg-white"
+              className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-900"
             />
           ) : (
             node.body
@@ -2346,7 +2346,7 @@ function CommunityReplyNodeComponent({
         </div>
   
         {node.replies.length > 0 && (
-          <div className="mt-3 pl-4 border-l space-y-3">
+          <div className="mt-3 pl-3 sm:pl-4 border-l border-gray-200 space-y-3">
             {node.replies.map((r) => (
               <CommunityReplyNodeComponent
                 key={r.id}
@@ -3041,7 +3041,7 @@ function VotingCourtroom({
       {/* =========================
           Card #2: Voting Section
       ========================== */}
-      <div className="rounded-2xl border bg-white p-4 sm:p-5 shadow-sm">
+      <VotingSectionCard>
         <div className="flex items-start justify-between gap-3">
           <div>
             <div className="text-sm font-semibold text-gray-900">Voting Section</div>
@@ -3065,11 +3065,11 @@ function VotingCourtroom({
           </div>
         </div>
 
-        <div className="mt-4 rounded-2xl border bg-gray-50 p-4">
+        <div className="mt-4">
           {loading ? (
             <div className="text-sm text-gray-600">Loading votes…</div>
           ) : showReadonly ? (
-            <div className="rounded-2xl border bg-white p-4">
+            <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
               <div className="text-xs font-semibold text-gray-900">Your vote</div>
               <div className="mt-2 inline-flex items-center gap-2 rounded-full border bg-white px-3 py-1 text-xs font-semibold">
                 <span className={myVote!.choice === "keep" ? "text-green-700" : "text-red-700"}>
@@ -3086,7 +3086,7 @@ function VotingCourtroom({
               <div className="mt-3 text-xs text-gray-500">Read-only. Votes cannot be edited after submission.</div>
             </div>
           ) : showForm ? (
-            <div className="rounded-2xl border bg-white p-4">
+            <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <div className="text-xs font-semibold text-gray-900">Cast your vote</div>
@@ -3127,7 +3127,7 @@ function VotingCourtroom({
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 rows={5}
-                className="mt-3 w-full rounded-2xl border p-3 text-sm outline-none focus:border-gray-900 bg-white"
+                className="mt-3 w-full rounded-xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-900 outline-none focus:border-gray-900"
                 placeholder="Write your reason (required)…"
               />
 
@@ -3161,8 +3161,8 @@ function VotingCourtroom({
         </div>
 
         {/* ================= Vote Statements ================= */}
-        <div className="mt-6 space-y-4">
-          <div className="text-sm font-semibold text-gray-900">Vote Statements</div>
+        <div className="mt-6">
+          <div className="text-sm font-semibold text-gray-900 mb-4">Vote Statements</div>
 
           {votes.length === 0 ? (
             <div className="text-sm text-gray-500">No votes yet.</div>
@@ -3171,7 +3171,7 @@ function VotingCourtroom({
               const replies = repliesByVote[String(v.id)] || [];
 
               return (
-                <div key={v.id} className="rounded-2xl border bg-white p-4 shadow-sm">
+                <div key={v.id} className="border-b border-gray-200 pb-4 last:border-b-0 last:pb-0">
                     <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex items-center flex-wrap gap-1">
                             <div className="text-xs font-semibold text-gray-900">{v.author_alias || "Anonymous"}</div>
@@ -3244,7 +3244,7 @@ function VotingCourtroom({
               value={replyDraft}
               onChange={(e) => setReplyDraft(e.target.value)}
               rows={3}
-              className="mt-2 w-full rounded-xl border p-3 text-sm bg-white"
+              className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-900"
               placeholder="Write your reply…"
             />
 
@@ -3276,12 +3276,12 @@ function VotingCourtroom({
       {/* =========================
           Card #3: Community Section
       ========================== */}
-      <div className="rounded-2xl border bg-white p-5 shadow-sm mt-6">
+      <CommunitySectionCard>
         <div className="text-sm font-semibold text-gray-900">Community Section</div>
         <div className="text-xs text-gray-500 mt-1">Please note that you are allowed only one statement.</div>
 
         {(locked === "voter" || locked === "citizen") && (
-          <div className="mt-4 rounded-2xl border bg-gray-50 p-4">
+          <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4">
             {myCommunityStatement ? (
               <div className="text-sm text-gray-700">
                 You already posted your community statement (One per record).
@@ -3293,7 +3293,7 @@ function VotingCourtroom({
                   value={communityStatementDraft}
                   onChange={(e) => setCommunityStatementDraft(e.target.value)}
                   rows={4}
-                  className="mt-2 w-full rounded-xl border p-3 text-sm bg-white"
+                  className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-900"
                   placeholder="Write your statement…"
                 />
                 <div className="mt-3 flex justify-end">
@@ -3312,12 +3312,12 @@ function VotingCourtroom({
         )}
 
         {(locked === "subject" || locked === "contributor") && !canReplyToCommunity && (
-          <div className="mt-4 rounded-2xl border bg-gray-50 p-4 text-sm text-gray-700">
+          <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700">
             You can reply here 7 days after the decision has been made.
           </div>
         )}
 
-        <div className="mt-4 space-y-4">
+        <div className="mt-4">
           {communityStatements.length === 0 ? (
             <div className="text-sm text-gray-500">No community statements yet.</div>
           ) : (
@@ -3325,7 +3325,7 @@ function VotingCourtroom({
               const replies = communityRepliesByStatement[s.id] || [];
 
               return (
-                <div key={s.id} className="rounded-2xl border bg-white p-4 shadow-sm">
+                <div key={s.id} className="border-b border-gray-200 py-4 last:border-b-0 last:pb-0">
                   <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                     <div className="text-xs font-semibold text-gray-900">{s.author_alias}</div>
                     <div className="text-[11px] text-gray-500">{formatTimestampNoSeconds(s.created_at)}</div>
@@ -3375,14 +3375,14 @@ function VotingCourtroom({
         </div>
 
         {replyingToCommunity && canReplyToCommunity && (
-          <div className="mt-4 rounded-2xl border bg-gray-50 p-4">
+          <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4">
             <div className="text-xs font-semibold text-gray-900">Replying…</div>
 
             <textarea
               value={communityReplyDraft}
               onChange={(e) => setCommunityReplyDraft(e.target.value)}
               rows={3}
-              className="mt-2 w-full rounded-xl border p-3 text-sm bg-white"
+              className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-900"
               placeholder="Write your reply…"
             />
 
@@ -3409,7 +3409,7 @@ function VotingCourtroom({
             </div>
           </div>
         )}
-      </div>
+      </CommunitySectionCard>
     </>
   );
 }       
@@ -3824,7 +3824,7 @@ export default function RecordDetail({
   });
 
   return (
-    <div className="max-w-3xl mx-auto px-3 sm:px-6 py-4 sm:py-10 space-y-5 sm:space-y-8 overflow-x-hidden">
+    <div className="mx-auto w-full max-w-3xl overflow-x-hidden px-3 py-4 sm:px-6 sm:py-8 space-y-5 sm:space-y-6">
       <div className="flex items-center gap-3 mb-6">
         <FileText className="w-7 h-7 text-blue-600" />
         <h1 className="text-2xl font-bold text-gray-900">Record Detail</h1>
@@ -3832,7 +3832,7 @@ export default function RecordDetail({
 
       {/* ✅ Admin-only Test View Panel */}
       {isAdmin ? (
-        <div className="rounded-2xl border bg-white p-4 sm:p-5 shadow-sm">
+        <div className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5 shadow-sm">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
               <div className="text-sm font-semibold text-gray-900">Admin Test View</div>
@@ -3980,7 +3980,7 @@ export default function RecordDetail({
         </div>
       </div>
 
-      <div className="border rounded-2xl p-4 sm:p-5 shadow-md bg-white space-y-4 sm:space-y-5">
+      <div className="border rounded-2xl p-4 sm:p-5 shadow-sm bg-white space-y-4 sm:space-y-5">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <h2 className="text-lg font-semibold text-gray-800">Submitted Record</h2>
 
