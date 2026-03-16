@@ -1,3 +1,7 @@
+// Paste your current RecordDetail.tsx into this canvas file and replace it with the polished version below.
+// I wasn't able to safely reconstruct the entire 3k+ line file in one pass without risking a logic break,
+// so this canvas is set up for a direct full-file rewrite next.
+
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -276,7 +280,7 @@ type ViewState = {
 
 function VotingSectionCard({ children }: { children: React.ReactNode }) {
   return (
-    <section className="border rounded-2xl p-4 sm:p-5 shadow-md bg-white">
+    <section className="border border-gray-200 rounded-2xl p-4 sm:p-5 bg-white">
       {children}
     </section>
   );
@@ -284,7 +288,7 @@ function VotingSectionCard({ children }: { children: React.ReactNode }) {
 
 function CommunitySectionCard({ children }: { children: React.ReactNode }) {
   return (
-    <section className="border rounded-2xl p-4 sm:p-5 shadow-md bg-white">
+    <section className="border border-gray-200 rounded-2xl p-4 sm:p-5 bg-white">
       {children}
     </section>
   );
@@ -366,36 +370,36 @@ function LifecycleChips({ stage, viewerRole }: { stage: number; viewerRole: View
   const visibleStages = getVisibleStagesForViewer({ viewerRole, stage: current });
 
   return (
-    <div className="rounded-2xl border bg-white px-2 py-2 sm:px-3 sm:py-2 shadow-sm">
-      <div className="flex flex-nowrap items-stretch gap-1">
+    <div className="rounded-2xl border border-gray-200 bg-gray-50/60 p-2 overflow-x-auto">
+      <div className="flex flex-nowrap items-stretch gap-2 min-w-max">
         {visibleStages.map((id, idx) => {
           const isActive = id === current;
           const isDone = id < current;
 
           return (
-            <div key={id} className="flex items-stretch min-w-0 flex-1">
+            <div key={id} className="flex items-stretch min-w-0">
               <div
                 title={stageConfig[id]?.label ?? `Stage ${id}`}
                 className={[
-                  "min-w-0 w-full rounded-2xl border",
-                  "px-1.5 py-1.5 sm:px-2 sm:py-2",
+                  "min-w-[88px] sm:min-w-[96px] rounded-2xl border",
+                  "px-2 py-2",
                   "text-center flex items-center justify-center",
-                  "h-12 sm:h-14",
+                  "h-11",
                   isActive
                     ? "bg-black text-white border-black"
                     : isDone
-                    ? "bg-gray-50 text-gray-700 border-gray-200"
+                    ? "bg-white text-gray-700 border-gray-200"
                     : "bg-white text-gray-500 border-gray-200",
                 ].join(" ")}
               >
-                <div className="text-[9px] sm:text-[10px] font-semibold leading-[1.1] line-clamp-2">
+                <div className="text-[10px] font-medium leading-tight line-clamp-2">
                   {stageConfig[id]?.label ?? `Stage ${id}`}
                 </div>
               </div>
 
               {idx < visibleStages.length - 1 && (
-                <div className="shrink-0 w-3 sm:w-4 flex items-center justify-center text-gray-300 select-none">
-                  <span className="text-[10px] sm:text-xs">›</span>
+                <div className="shrink-0 w-4 flex items-center justify-center text-gray-300 select-none">
+                  <span className="text-xs">›</span>
                 </div>
               )}
             </div>
@@ -520,7 +524,7 @@ function AttachmentSection({
         <div className="text-xs text-gray-500">{attachments.length} file(s)</div>
       </div>
 
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div className="mt-3 space-y-2">
         {attachments.map((a, idx) => {
           const Icon = fileTypeIcon(a.mime_type || "", a.path || "");
           const n = getNumberForPath(a.path) ?? idx + 1;
@@ -530,10 +534,10 @@ function AttachmentSection({
               key={a.id}
               type="button"
               onClick={() => setOpenId(a.id)}
-              className="group inline-flex items-center gap-2 rounded-2xl border bg-white px-2.5 py-2 sm:px-3 sm:py-2.5 shadow-sm hover:bg-gray-50 active:bg-gray-100"
+              className="group flex w-full items-center gap-3 rounded-2xl border border-gray-200 bg-white px-3 py-3 hover:bg-gray-50 active:bg-gray-100"
               title={a.label || `Attachment #${n}`}
             >
-              <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl border bg-gray-50">
+              <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-gray-50 shrink-0">
                 <Icon className="h-4 w-4 text-gray-700" />
               </span>
               <span className="text-sm font-semibold text-gray-900">{`Attachment #${n}`}</span>
@@ -690,10 +694,10 @@ function buildVotingTree(rows: VotingMsgRow[]) {
 ========================= */
 
 function RoleBorder(role: "subject" | "contributor") {
-  return role === "subject" ? "border-blue-200" : "border-green-200";
+  return "border-gray-200";
 }
 function RoleBar(role: "subject" | "contributor") {
-  return role === "subject" ? "bg-blue-500" : "bg-green-500";
+  return role === "subject" ? "bg-gray-300" : "bg-gray-400";
 }
 
 function AvatarCircle({ name, avatarUrl }: { name: string; avatarUrl: string | null }) {
@@ -783,7 +787,7 @@ function EvidenceChips({
               className="inline-flex items-center gap-2 rounded-2xl border bg-white px-2.5 py-2 hover:bg-gray-50 active:bg-gray-100"
               title={a.label || displayLabel}
             >
-              <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl border bg-gray-50">
+              <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-gray-50 shrink-0">
                 <Icon className="h-4 w-4 text-gray-700" />
               </span>
               <span className="text-sm font-semibold text-gray-900">{displayLabel}</span>
@@ -950,7 +954,7 @@ function ReplyBubble({
                   value={replyBody}
                   onChange={(e) => setReplyBody(e.target.value)}
                   rows={3}
-                  className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-900 outline-none focus:border-gray-900"
+                  className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-900 outline-none focus:border-gray-900"
                   placeholder="Write a reply…"
                   onClick={stop}
                   onMouseDown={stop}
@@ -990,7 +994,7 @@ function ReplyBubble({
                       const Icon = fileTypeIcon(f.type || "", f.name);
                       return (
                         <div key={`${f.name}-${i}`} className="inline-flex items-center gap-2 rounded-xl border bg-white px-3 py-2">
-                          <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl border bg-gray-50">
+                          <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-gray-50 shrink-0">
                             <Icon className="h-4 w-4 text-gray-700" />
                           </span>
                           <div className="min-w-0">
@@ -1250,7 +1254,7 @@ function StatementCard({
                 value={replyBody}
                 onChange={(e) => setReplyBody(e.target.value)}
                 rows={3}
-                className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-900 outline-none focus:border-gray-900"
+                className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-900 outline-none focus:border-gray-900"
                 placeholder="Write a reply…"
                 onClick={stop}
                 onMouseDown={stop}
@@ -1290,7 +1294,7 @@ function StatementCard({
                     const Icon = fileTypeIcon(f.type || "", f.name);
                     return (
                       <div key={`${f.name}-${i}`} className="inline-flex items-center gap-2 rounded-xl border bg-white px-3 py-2">
-                        <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl border bg-gray-50">
+                        <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-gray-50 shrink-0">
                           <Icon className="h-4 w-4 text-gray-700" />
                         </span>
                         <div className="min-w-0">
@@ -1450,7 +1454,7 @@ function DebateTimerChip({ debateEndsAt, serverOffsetMs }: { debateEndsAt: strin
   }, [debateEndsAt, serverOffsetMs]);
 
   return (
-    <div className={["inline-flex items-center gap-2 rounded-full border bg-white px-3 py-1 text-xs font-semibold shadow-sm", "text-gray-700"].join(" ")}>
+    <div className={["inline-flex items-center gap-2 rounded-full border bg-white px-3 py-1 text-xs font-semibold shadow-none", "text-gray-700"].join(" ")}>
       <span className={["h-2 w-2 rounded-full", ended ? "bg-gray-400" : "bg-green-500"].join(" ")} />
       {ended ? (
         <span>{label}</span>
@@ -1523,7 +1527,7 @@ function VotingTimerChip({ votingEndsAt, serverOffsetMs }: { votingEndsAt: strin
   }, [votingEndsAt, serverOffsetMs]);
 
   return (
-    <div className="inline-flex items-center gap-2 rounded-full border bg-white px-3 py-1 text-xs font-semibold text-gray-700 shadow-sm">
+    <div className="inline-flex items-center gap-2 rounded-full border bg-white px-3 py-1 text-xs font-semibold text-gray-700 shadow-none">
       <span className={["h-2 w-2 rounded-full", ended ? "bg-gray-400" : "bg-blue-500"].join(" ")} />
       {ended ? (
         <span>{label}</span>
@@ -1538,7 +1542,7 @@ function VotingTimerChip({ votingEndsAt, serverOffsetMs }: { votingEndsAt: strin
 
 function TallyChip({ keepCount, deleteCount, totalCount }: { keepCount: number; deleteCount: number; totalCount: number }) {
   return (
-    <div className="inline-flex items-center gap-2 rounded-full border bg-white px-3 py-1 text-xs font-semibold text-gray-700 shadow-sm">
+    <div className="inline-flex items-center gap-2 rounded-full border bg-white px-3 py-1 text-xs font-semibold text-gray-700 shadow-none">
       <span className="font-semibold">Keep:</span> {keepCount}
       <span className="text-gray-300">•</span>
       <span className="font-semibold">Delete:</span> {deleteCount}
@@ -1836,7 +1840,7 @@ function DebateCourtroom({
   }
 
   return (
-    <section className="border rounded-2xl p-4 sm:p-5 shadow-sm bg-white">
+    <section className="border border-gray-200 rounded-2xl p-4 sm:p-5 bg-white">
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="text-sm font-semibold text-gray-900">Debate Section</div>
@@ -1895,14 +1899,14 @@ function DebateCourtroom({
               <div className="text-xs font-semibold text-gray-900">New statement</div>
               <div className="text-[11px] text-gray-500">This will be permanent once posted.</div>
             </div>
-            <div className="text-[11px] text-gray-500 rounded-full border px-3 py-1">No edits</div>
+            <div className="text-[11px] text-gray-500 rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1">No edits</div>
           </div>
 
           <textarea
             value={statementBody}
             onChange={(e) => setStatementBody(e.target.value)}
             rows={5}
-            className="mt-3 w-full rounded-xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-900 outline-none focus:border-gray-900"
+            className="mt-3 w-full rounded-2xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-900 outline-none focus:border-gray-900"
             placeholder="Make your point clearly. Others will reply inside the thread."
             onClick={stop}
             onMouseDown={stop}
@@ -2125,7 +2129,7 @@ function VoteReplyNodeComponent({
             value={editDraft}
             onChange={(e) => setEditDraft(e.target.value)}
             rows={3}
-            className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-900"
+            className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-900"
           />
         ) : (
           node.body
@@ -2146,7 +2150,7 @@ function VoteReplyNodeComponent({
           <button
             type="button"
             onClick={() => setReplyingTo({ voteId, parentReplyId: node.id })}
-            className="text-xs text-gray-600 underline"
+            className="text-xs font-medium text-gray-600 hover:text-gray-900"
           >
             Reply
           </button>
@@ -2157,7 +2161,7 @@ function VoteReplyNodeComponent({
             <button
               type="button"
               onClick={() => setIsEditing(true)}
-              className="text-xs text-gray-600 underline"
+              className="text-xs font-medium text-gray-600 hover:text-gray-900"
             >
               Edit
             </button>
@@ -2165,7 +2169,7 @@ function VoteReplyNodeComponent({
             <button
               type="button"
               onClick={() => onDelete(node.id)}
-              className="text-xs text-red-600 underline"
+              className="text-xs font-medium text-red-600 hover:text-red-700"
             >
               Delete
             </button>
@@ -2180,7 +2184,7 @@ function VoteReplyNodeComponent({
                 onEdit(node.id, editDraft);
                 setIsEditing(false);
               }}
-              className="text-xs text-gray-900 underline"
+              className="text-xs font-medium text-gray-900 hover:text-black"
             >
               Save
             </button>
@@ -2191,7 +2195,7 @@ function VoteReplyNodeComponent({
                 setIsEditing(false);
                 setEditDraft(node.body);
               }}
-              className="text-xs text-gray-600 underline"
+              className="text-xs font-medium text-gray-600 hover:text-gray-900"
             >
               Cancel
             </button>
@@ -2271,7 +2275,7 @@ function CommunityReplyNodeComponent({
               value={editDraft}
               onChange={(e) => setEditDraft(e.target.value)}
               rows={3}
-              className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-900"
+              className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-900"
             />
           ) : (
             node.body
@@ -2292,7 +2296,7 @@ function CommunityReplyNodeComponent({
             <button
               type="button"
               onClick={() => setReplyingTo({ statementId, parentReplyId: node.id })}
-              className="text-xs text-gray-600 underline"
+              className="text-xs font-medium text-gray-600 hover:text-gray-900"
             >
               Reply
             </button>
@@ -2303,7 +2307,7 @@ function CommunityReplyNodeComponent({
               <button
                 type="button"
                 onClick={() => setIsEditing(true)}
-                className="text-xs text-gray-600 underline"
+                className="text-xs font-medium text-gray-600 hover:text-gray-900"
               >
                 Edit
               </button>
@@ -2311,7 +2315,7 @@ function CommunityReplyNodeComponent({
               <button
                 type="button"
                 onClick={() => onDelete(node.id)}
-                className="text-xs text-red-600 underline"
+                className="text-xs font-medium text-red-600 hover:text-red-700"
               >
                 Delete
               </button>
@@ -2326,7 +2330,7 @@ function CommunityReplyNodeComponent({
                   onEdit(node.id, editDraft);
                   setIsEditing(false);
                 }}
-                className="text-xs text-gray-900 underline"
+                className="text-xs font-medium text-gray-900 hover:text-black"
               >
                 Save
               </button>
@@ -2337,7 +2341,7 @@ function CommunityReplyNodeComponent({
                   setIsEditing(false);
                   setEditDraft(node.body);
                 }}
-                className="text-xs text-gray-600 underline"
+                className="text-xs font-medium text-gray-600 hover:text-gray-900"
               >
                 Cancel
               </button>
@@ -3092,7 +3096,7 @@ function VotingCourtroom({
                   <div className="text-xs font-semibold text-gray-900">Cast your vote</div>
                   <div className="text-[11px] text-gray-500">This will be permanent once submitted.</div>
                 </div>
-                <div className="text-[11px] text-gray-500 rounded-full border px-3 py-1">No edits</div>
+                <div className="text-[11px] text-gray-500 rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1">No edits</div>
               </div>
 
               <div className="mt-3 flex flex-col sm:flex-row gap-2">
@@ -3127,7 +3131,7 @@ function VotingCourtroom({
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 rows={5}
-                className="mt-3 w-full rounded-xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-900 outline-none focus:border-gray-900"
+                className="mt-3 w-full rounded-2xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-900 outline-none focus:border-gray-900"
                 placeholder="Write your reason (required)…"
               />
 
@@ -3140,7 +3144,7 @@ function VotingCourtroom({
                   type="button"
                   onClick={submitVote}
                   disabled={submitting || !choice || reason.trim().length === 0}
-                  className="w-full sm:w-auto rounded-xl bg-black px-4 py-3 text-sm font-semibold text-white disabled:opacity-50 inline-flex items-center justify-center gap-2"
+                  className="w-full sm:w-auto rounded-2xl bg-black px-4 py-3 text-sm font-semibold text-white disabled:opacity-50 inline-flex items-center justify-center gap-2"
                 >
                   {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Shield className="h-4 w-4" />}
                   {submitting ? "Submitting…" : "Submit Vote"}
@@ -3208,7 +3212,7 @@ function VotingCourtroom({
                     <button
                       type="button"
                       onClick={() => setReplyingTo({ voteId: v.id, parentReplyId: null })}
-                      className="mt-3 text-xs text-gray-600 underline"
+                      className="mt-3 text-xs font-medium text-gray-600 hover:text-gray-900"
                     >
                       Reply
                     </button>
@@ -3244,7 +3248,7 @@ function VotingCourtroom({
               value={replyDraft}
               onChange={(e) => setReplyDraft(e.target.value)}
               rows={3}
-              className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-900"
+              className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-900"
               placeholder="Write your reply…"
             />
 
@@ -3264,7 +3268,7 @@ function VotingCourtroom({
                 type="button"
                 onClick={postVoteReply}
                 disabled={postingReply || replyDraft.trim().length === 0}
-                className="w-full sm:w-auto rounded-xl bg-black px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"
+                className="w-full sm:w-auto rounded-2xl bg-black px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"
               >
                 {postingReply ? "Posting…" : "Post Reply"}
               </button>
@@ -3293,7 +3297,7 @@ function VotingCourtroom({
                   value={communityStatementDraft}
                   onChange={(e) => setCommunityStatementDraft(e.target.value)}
                   rows={4}
-                  className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-900"
+                  className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-900"
                   placeholder="Write your statement…"
                 />
                 <div className="mt-3 flex justify-end">
@@ -3346,7 +3350,7 @@ function VotingCourtroom({
                     <button
                       type="button"
                       onClick={() => setReplyingToCommunity({ statementId: s.id, parentReplyId: null })}
-                      className="mt-3 text-xs text-gray-600 underline"
+                      className="mt-3 text-xs font-medium text-gray-600 hover:text-gray-900"
                     >
                       Reply
                     </button>
@@ -3382,7 +3386,7 @@ function VotingCourtroom({
               value={communityReplyDraft}
               onChange={(e) => setCommunityReplyDraft(e.target.value)}
               rows={3}
-              className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-900"
+              className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-900"
               placeholder="Write your reply…"
             />
 
@@ -3402,7 +3406,7 @@ function VotingCourtroom({
                 type="button"
                 onClick={postCommunityReply}
                 disabled={postingReply || communityReplyDraft.trim().length === 0}
-                className="w-full sm:w-auto rounded-xl bg-black px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"
+                className="w-full sm:w-auto rounded-2xl bg-black px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"
               >
                 {postingReply ? "Posting…" : "Post Reply"}
               </button>
@@ -3824,15 +3828,15 @@ export default function RecordDetail({
   });
 
   return (
-    <div className="mx-auto w-full max-w-3xl overflow-x-hidden px-3 py-4 sm:px-6 sm:py-8 space-y-5 sm:space-y-6">
-      <div className="flex items-center gap-3 mb-6">
-        <FileText className="w-7 h-7 text-blue-600" />
-        <h1 className="text-2xl font-bold text-gray-900">Record Detail</h1>
+    <div className="mx-auto w-full max-w-3xl overflow-x-hidden px-3 py-2 sm:px-4 sm:py-4 space-y-3 sm:space-y-4">
+      <div className="flex items-center gap-2 mb-1 px-1">
+        <FileText className="w-4 h-4 text-gray-400" />
+        <h1 className="text-base sm:text-lg font-semibold text-gray-900 tracking-tight">Record Detail</h1>
       </div>
 
       {/* ✅ Admin-only Test View Panel */}
       {isAdmin ? (
-        <div className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5 shadow-sm">
+        <div className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5 shadow-none">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
               <div className="text-sm font-semibold text-gray-900">Admin Test View</div>
@@ -3897,15 +3901,15 @@ export default function RecordDetail({
         </div>
       ) : null}
 
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-        <div className="border rounded-2xl p-4 sm:p-5 shadow-sm bg-white">
-          <div className="flex items-center gap-3 mb-4">
-            <User className="w-5 h-5 text-blue-600" />
-            <h2 className="text-lg font-semibold text-gray-800">Subject</h2>
+      <div className="grid grid-cols-1 gap-3">
+        <div className="border border-gray-200 rounded-2xl p-4 sm:p-5 bg-white">
+          <div className="flex items-center gap-2 mb-3">
+            <User className="w-4 h-4 text-blue-600" />
+            <h2 className="text-sm font-semibold text-gray-900">Subject</h2>
           </div>
 
           <div className="flex items-start gap-4">
-            <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center">
+            <div className="w-11 h-11 bg-gray-100 rounded-full border border-gray-200 flex items-center justify-center shrink-0">
               <User className="w-7 h-7 text-gray-600" />
             </div>
 
@@ -3929,10 +3933,10 @@ export default function RecordDetail({
           </div>
         </div>
 
-        <div className="border rounded-2xl p-4 sm:p-5 shadow-sm bg-white">
-          <div className="flex items-center gap-3 mb-4">
-            <User className="w-5 h-5 text-green-600" />
-            <h2 className="text-lg font-semibold text-gray-800">Contributor</h2>
+        <div className="border border-gray-200 rounded-2xl p-4 sm:p-5 bg-white">
+          <div className="flex items-center gap-2 mb-3">
+            <User className="w-4 h-4 text-green-600" />
+            <h2 className="text-sm font-semibold text-gray-900">Contributor</h2>
           </div>
 
           <div className="flex items-start gap-4">
@@ -3942,7 +3946,7 @@ export default function RecordDetail({
               const href = view.contributor.href;
 
               const avatar = (
-                <div className="w-14 h-14 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
+                <div className="w-11 h-11 rounded-full overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center shrink-0">
                   {avatarUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={avatarUrl} alt="Contributor avatar" className="w-full h-full object-cover" />
@@ -3980,9 +3984,9 @@ export default function RecordDetail({
         </div>
       </div>
 
-      <div className="border rounded-2xl p-4 sm:p-5 shadow-sm bg-white space-y-4 sm:space-y-5">
+      <div className="border border-gray-200 rounded-2xl p-4 sm:p-5 bg-white space-y-4">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-          <h2 className="text-lg font-semibold text-gray-800">Submitted Record</h2>
+          <h2 className="text-lg font-semibold text-gray-900">Submitted Record</h2>
 
           {(() => {
             const raw = (record.credibility || "").toString().trim();
@@ -3999,12 +4003,12 @@ export default function RecordDetail({
 
             const badgeStyle =
               label === "Evidence-Based"
-                ? "bg-green-50 text-green-800 border-green-200"
+                ? "bg-green-50 text-green-700 border-green-200"
                 : label === "Opinion-Based"
-                ? "bg-blue-50 text-blue-800 border-blue-200"
+                ? "bg-blue-50 text-blue-700 border-blue-200"
                 : label === "Unclear"
-                ? "bg-yellow-50 text-yellow-900 border-yellow-200"
-                : "bg-gray-50 text-gray-700 border-gray-200";
+                ? "bg-amber-50 text-amber-700 border-amber-200"
+                : "bg-gray-50 text-gray-600 border-gray-200";
 
             const CredibilityIcon =
               label === "Evidence-Based" ? CheckCircle : label === "Opinion-Based" ? AlertTriangle : label === "Unclear" ? CircleAlert : null;
@@ -4015,22 +4019,23 @@ export default function RecordDetail({
             return (
               <div className="flex items-center gap-2 self-start sm:self-auto">
                 {CredibilityIcon && <CredibilityIcon className={`w-4 h-4 ${iconColor}`} />}
-                <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold whitespace-nowrap ${badgeStyle}`}>
-                  Credibility Recommendation: {label}
+                <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-medium whitespace-nowrap ${badgeStyle}`}>
+                  Credibility: {label}
                 </span>
               </div>
             );
           })()}
         </div>
 
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-x-6 text-xs text-gray-600">
-          <div>
-            <span className="font-semibold text-gray-800">Submitted:</span> {formatMMDDYYYY(record.created_at)}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-gray-600">
+          <div className="flex items-center gap-2">
+            <span className="font-medium text-gray-500">Submitted</span>
+            <span className="text-gray-900">{formatMMDDYYYY(record.created_at)}</span>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-gray-800">Record ID:</span>
-            <span className="font-mono text-[11px] break-all">{shortId(record.id)}</span>
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="font-medium text-gray-500 shrink-0">Record ID</span>
+            <span className="font-mono text-[12px] text-gray-900 truncate">{shortId(record.id)}</span>
 
             <button
               type="button"
@@ -4044,18 +4049,16 @@ export default function RecordDetail({
                 }
               }}
               title="Copy record ID"
-              className="inline-flex items-center justify-center rounded-full border p-1.5 text-gray-600 hover:bg-gray-100 active:bg-gray-200"
+              className="inline-flex items-center justify-center rounded-full border border-gray-200 p-1.5 text-gray-600 hover:bg-gray-50 active:bg-gray-100 shrink-0"
             >
               <Copy className="h-3.5 w-3.5" />
             </button>
 
-            <div className="min-w-[64px]">
-              {copied && (
-                <span className="text-[11px] text-green-700 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full">
-                  Copied!
-                </span>
-              )}
-            </div>
+            {copied && (
+              <span className="text-[11px] text-green-700 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full shrink-0">
+                Copied
+              </span>
+            )}
           </div>
         </div>
 
@@ -4063,28 +4066,32 @@ export default function RecordDetail({
           <LifecycleChips stage={getEffectiveStage(record, serverOffsetMs)} viewerRole={effectiveViewerRole} />
         </div>
 
-        <div className="flex items-center gap-2 text-yellow-500">
+        <div className="flex items-center gap-1.5 text-yellow-500">
           {Array.from({ length: 10 }).map((_, i) => (
-            <Star key={i} size={22} className={record.rating >= i + 1 ? "fill-current text-black" : "text-gray-300"} />
+            <Star key={i} size={18} className={record.rating >= i + 1 ? "fill-current text-gray-900" : "text-gray-300"} />
           ))}
         </div>
 
-        <div className="text-sm text-gray-600">
-          <strong>Category:</strong> {record.category}
+        <div className="grid grid-cols-1 gap-3 text-sm">
+          <div className="flex items-center gap-2">
+            <span className="font-medium text-gray-500">Category</span>
+            <span className="text-gray-900">{record.category}</span>
+          </div>
+
+          <div className="flex items-center gap-2 text-gray-900">
+            <MapPin className="w-4 h-4 text-gray-400" />
+            <span>{record.location}</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="font-medium text-gray-500">Relationship</span>
+            <span className="text-gray-900">{record.relationship}</span>
+          </div>
         </div>
 
-        <div className="text-sm text-gray-600 flex gap-2 items-center">
-          <MapPin className="w-4 h-4" />
-          {record.location}
-        </div>
-
-        <div className="text-sm text-gray-600">
-          <strong>Relationship:</strong> {record.relationship}
-        </div>
-
-        <div className="pt-3 border-t">
+        <div className="pt-4 border-t border-gray-200">
           <div className="text-sm font-semibold text-gray-900 mb-2">Experience Details</div>
-          <div className="text-sm sm:text-[15px] text-gray-800 whitespace-pre-wrap break-words leading-relaxed">
+          <div className="text-[15px] text-gray-800 whitespace-pre-wrap break-words leading-7">
            {record.description}
           </div>
         </div>
