@@ -365,15 +365,43 @@ function LifecycleChips({ stage, viewerRole }: { stage: number; viewerRole: View
   const current = Math.min(7, Math.max(1, stage || 1));
   const visibleStages = getVisibleStagesForViewer({ viewerRole, stage: current });
 
+  const scrollRef = React.useRef<HTMLDivElement | null>(null);
+  const activeRef = React.useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!scrollRef.current || !activeRef.current) return;
+
+    const container = scrollRef.current;
+    const active = activeRef.current;
+
+    const containerWidth = container.clientWidth;
+    const activeLeft = active.offsetLeft;
+    const activeWidth = active.offsetWidth;
+
+    const targetScrollLeft = Math.max(0, activeLeft - containerWidth / 2 + activeWidth / 2);
+
+    container.scrollTo({
+      left: targetScrollLeft,
+      behavior: "smooth",
+    });
+  }, [current, viewerRole]);
+
   return (
-    <div className="rounded-2xl border border-gray-200 bg-gray-50/60 p-2 overflow-x-auto">
+    <div
+      ref={scrollRef}
+      className="rounded-2xl border border-gray-200 bg-gray-50/60 p-2 overflow-x-auto"
+    >
       <div className="flex flex-nowrap items-stretch gap-2 min-w-max">
         {visibleStages.map((id, idx) => {
           const isActive = id === current;
           const isDone = id < current;
 
           return (
-            <div key={id} className="flex items-stretch min-w-0">
+            <div
+              key={id}
+              ref={isActive ? activeRef : null}
+              className="flex items-stretch min-w-0"
+            >
               <div
                 title={stageConfig[id]?.label ?? `Stage ${id}`}
                 className={[
@@ -445,8 +473,8 @@ function AttachmentModal({
       >
         <div className="flex items-start justify-between gap-3 p-4 border-b bg-white">
           <div className="min-w-0">
-            <div className="text-sm font-semibold text-gray-900 truncate">{title}</div>
-            {subtitle ? <div className="text-xs text-gray-500 truncate">{subtitle}</div> : null}
+            <div className="text-sm font-semibold text-gray-900 break-words whitespace-normal leading-tight">{title}</div>
+            {subtitle ? <div className="text-xs text-gray-500 break-words whitespace-normal leading-tight">{subtitle}</div> : null}
           </div>
 
           <button
@@ -998,7 +1026,7 @@ function ReplyBubble({
                             <Icon className="h-4 w-4 text-gray-700" />
                           </span>
                           <div className="min-w-0">
-                            <div className="text-xs font-semibold text-gray-900 max-w-[220px] truncate">{f.name}</div>
+                            <div className="text-xs font-semibold text-gray-900 max-w-[220px] break-words whitespace-normal leading-tight">{f.name}</div>
                             <div className="text-[11px] text-gray-500">
                               {(f.type || "file")} • {Math.round((f.size / 1024) * 10) / 10} KB
                             </div>
@@ -1298,7 +1326,7 @@ function StatementCard({
                           <Icon className="h-4 w-4 text-gray-700" />
                         </span>
                         <div className="min-w-0">
-                          <div className="text-xs font-semibold text-gray-900 max-w-[220px] truncate">{f.name}</div>
+                          <div className="text-xs font-semibold text-gray-900 max-w-[220px] break-words whitespace-normal leading-tight">{f.name}</div>
                           <div className="text-[11px] text-gray-500">
                             {(f.type || "file")} • {Math.round((f.size / 1024) * 10) / 10} KB
                           </div>
@@ -1954,7 +1982,7 @@ function DebateCourtroom({
                       </span>
 
                       <div className="min-w-0">
-                        <div className="text-xs font-semibold text-gray-900 max-w-[220px] truncate">{f.name}</div>
+                        <div className="text-xs font-semibold text-gray-900 max-w-[220px] break-words whitespace-normal leading-tight">{f.name}</div>
                         <div className="text-[11px] text-gray-500">
                           {(f.type || "file")} • {Math.round((f.size / 1024) * 10) / 10} KB
                         </div>
@@ -4041,7 +4069,7 @@ export default function RecordDetail({
 
           <div className="flex items-center gap-2 min-w-0">
             <span className="font-medium text-gray-500 shrink-0">Record ID</span>
-            <span className="font-mono text-[12px] text-gray-900 truncate">{shortId(record.id)}</span>
+            <span className="font-mono text-[12px] text-gray-900 break-words whitespace-normal leading-tight">{shortId(record.id)}</span>
 
             <button
               type="button"
@@ -4080,7 +4108,7 @@ export default function RecordDetail({
 
         <div className="grid grid-cols-1 gap-3 text-sm">
           <div className="flex items-center gap-2">
-            <span className="font-medium text-gray-500">Category</span>
+            <span className="font-medium text-gray-500">Category:</span>
             <span className="text-gray-900">{record.category}</span>
           </div>
 
@@ -4090,7 +4118,7 @@ export default function RecordDetail({
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="font-medium text-gray-500">Relationship</span>
+            <span className="font-medium text-gray-500">Relationship:</span>
             <span className="text-gray-900">{record.relationship}</span>
           </div>
         </div>
