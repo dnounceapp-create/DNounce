@@ -1,7 +1,3 @@
-// Paste your current RecordDetail.tsx into this canvas file and replace it with the polished version below.
-// I wasn't able to safely reconstruct the entire 3k+ line file in one pass without risking a logic break,
-// so this canvas is set up for a direct full-file rewrite next.
-
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -729,7 +725,9 @@ function NameAndAvatar({
     <div className="flex items-center gap-3 min-w-0">
       <AvatarCircle name={p.name} avatarUrl={p.avatarUrl} />
       <div className="min-w-0">
-        <div className="text-sm font-semibold text-gray-900 truncate">{p.name}</div>
+        <div className="text-sm font-semibold text-gray-900 break-words leading-tight whitespace-normal">
+          {p.name}
+        </div>
       </div>
     </div>
   );
@@ -881,17 +879,19 @@ function ReplyBubble({
         </div>
 
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 min-w-0">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0">
             {author.href ? (
               <Link
                 href={author.href}
-                className="text-sm font-semibold text-gray-900 hover:underline truncate"
+                className="text-sm font-semibold text-gray-900 hover:underline break-words whitespace-normal leading-tight"
                 onClick={(e) => e.stopPropagation()}
               >
                 {author.name}
               </Link>
             ) : (
-              <div className="text-sm font-semibold text-gray-900 truncate">{author.name}</div>
+              <div className="text-sm font-semibold text-gray-900 break-words whitespace-normal leading-tight">
+                {author.name}
+              </div>
             )}
             <span className="text-[11px] text-gray-500">{formatTimestampNoSeconds(node.created_at)}</span>
           </div>
@@ -1542,12 +1542,18 @@ function VotingTimerChip({ votingEndsAt, serverOffsetMs }: { votingEndsAt: strin
 
 function TallyChip({ keepCount, deleteCount, totalCount }: { keepCount: number; deleteCount: number; totalCount: number }) {
   return (
-    <div className="inline-flex items-center gap-2 rounded-full border bg-white px-3 py-1 text-xs font-semibold text-gray-700 shadow-none">
-      <span className="font-semibold">Keep:</span> {keepCount}
-      <span className="text-gray-300">•</span>
-      <span className="font-semibold">Delete:</span> {deleteCount}
-      <span className="text-gray-300">•</span>
-      <span className="font-semibold">Total:</span> {totalCount}
+    <div className="inline-flex max-w-full flex-wrap items-center gap-x-2 gap-y-1 rounded-2xl border bg-white px-3 py-2 text-xs font-semibold text-gray-700 shadow-none">
+      <span className="whitespace-nowrap">
+        <span className="font-semibold">Keep:</span> {keepCount}
+      </span>
+      <span className="text-gray-300 hidden sm:inline">•</span>
+      <span className="whitespace-nowrap">
+        <span className="font-semibold">Delete:</span> {deleteCount}
+      </span>
+      <span className="text-gray-300 hidden sm:inline">•</span>
+      <span className="whitespace-nowrap">
+        <span className="font-semibold">Total:</span> {totalCount}
+      </span>
     </div>
   );
 }
@@ -3046,7 +3052,7 @@ function VotingCourtroom({
           Card #2: Voting Section
       ========================== */}
       <VotingSectionCard>
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <div className="text-sm font-semibold text-gray-900">Voting Section</div>
             <div className="text-[11px] text-gray-500">
@@ -3054,8 +3060,8 @@ function VotingCourtroom({
             </div>
           </div>
 
-          <div className="flex flex-col items-start sm:items-end gap-2">
-            <div className="relative group">
+          <div className="flex w-full sm:w-auto flex-col items-start gap-2 sm:items-end">
+            <div className="relative group max-w-full">
               <TallyChip keepCount={keepCount} deleteCount={deleteCount} totalCount={totalCount} />
               {Object.values(voteBadges).filter(b => b.is_convicted).length > 0 && (
                 <div className="absolute top-full right-0 mt-1 hidden group-hover:block bg-gray-800 text-white text-xs rounded-lg p-2 whitespace-nowrap z-10">
@@ -3914,7 +3920,7 @@ export default function RecordDetail({
             </div>
 
             <div className="min-w-0">
-              <p className="text-lg font-semibold text-gray-900 break-words">
+              <p className="text-lg font-semibold text-gray-900 break-words leading-tight">
                 {subject?.name}
                 {subject?.nickname && <span className="text-gray-500 ml-1">({subject.nickname})</span>}
               </p>
@@ -3968,11 +3974,11 @@ export default function RecordDetail({
 
                   <div className="min-w-0">
                     {href ? (
-                      <Link href={href} className="text-lg font-semibold text-gray-900 break-words hover:underline block">
+                      <Link href={href} className="block text-lg font-semibold text-gray-900 break-words leading-tight hover:underline">
                         {name}
                       </Link>
                     ) : (
-                      <p className="text-lg font-semibold text-gray-900 truncate">{name}</p>
+                      <p className="text-lg font-semibold text-gray-900 break-words leading-tight">{name}</p>
                     )}
 
                     <p className="mt-1 text-xs text-gray-400">Submitted this record</p>
