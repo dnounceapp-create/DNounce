@@ -389,7 +389,7 @@ function LifecycleChips({ stage, viewerRole }: { stage: number; viewerRole: View
   return (
     <div
       ref={scrollRef}
-      className="rounded-2xl border border-gray-200 bg-gray-50/60 p-2 overflow-x-auto"
+      className="w-full rounded-2xl border border-gray-200 bg-gray-50/60 p-2 overflow-x-auto"
     >
       <div className="flex flex-nowrap items-stretch gap-2 min-w-max">
         {visibleStages.map((id, idx) => {
@@ -3865,8 +3865,8 @@ export default function RecordDetail({
     <div
       className={
         embedded
-          ? "mx-auto w-full max-w-3xl px-3 py-3 sm:px-4 sm:py-4 space-y-3 sm:space-y-4"
-          : "mx-auto w-full max-w-3xl px-3 py-2 sm:px-4 sm:py-4 space-y-3 sm:space-y-4"
+          ? "w-full overflow-x-hidden px-3 py-3 sm:px-4 sm:py-4 space-y-3 sm:space-y-4"
+          : "mx-auto w-full max-w-3xl overflow-x-hidden px-3 py-2 sm:px-4 sm:py-4 space-y-3 sm:space-y-4"
       }
     >
       {!embedded && (
