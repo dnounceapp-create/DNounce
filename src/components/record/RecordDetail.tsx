@@ -3862,14 +3862,22 @@ export default function RecordDetail({
   });
 
   return (
-    <div className="mx-auto w-full max-w-3xl overflow-x-hidden px-3 py-2 sm:px-4 sm:py-4 space-y-3 sm:space-y-4">
-      <div className="flex items-center gap-2 mb-1 px-1">
-        <FileText className="w-4 h-4 text-gray-400" />
-        <h1 className="text-base sm:text-lg font-semibold text-gray-900 tracking-tight">Record Detail</h1>
-      </div>
+    <div
+      className={
+        embedded
+          ? "mx-auto w-full max-w-3xl px-3 py-3 sm:px-4 sm:py-4 space-y-3 sm:space-y-4"
+          : "mx-auto w-full max-w-3xl px-3 py-2 sm:px-4 sm:py-4 space-y-3 sm:space-y-4"
+      }
+    >
+      {!embedded && (
+        <div className="flex items-center gap-2 mb-1 px-1">
+          <FileText className="w-4 h-4 text-gray-400" />
+          <h1 className="text-base sm:text-lg font-semibold text-gray-900 tracking-tight">Record Detail</h1>
+        </div>
+      ) : null}
 
       {/* ✅ Admin-only Test View Panel */}
-      {isAdmin ? (
+      {isAdmin && !embedded ? (
         <div className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5 shadow-none">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
