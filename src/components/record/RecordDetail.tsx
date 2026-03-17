@@ -3874,7 +3874,7 @@ export default function RecordDetail({
           <FileText className="w-4 h-4 text-gray-400" />
           <h1 className="text-base sm:text-lg font-semibold text-gray-900 tracking-tight">Record Detail</h1>
         </div>
-      ) : null}
+      )}
 
       {/* ✅ Admin-only Test View Panel */}
       {isAdmin && !embedded ? (
