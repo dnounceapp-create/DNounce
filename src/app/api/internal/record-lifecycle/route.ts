@@ -113,7 +113,6 @@ export async function GET() {
 
         continue;
       }
-
       // =====================================================
       // STAGE 6 → STAGE 7 (Voting → Decision when voting ends)
       // =====================================================
@@ -132,10 +131,29 @@ export async function GET() {
         }
 
         if (now >= votingEnd) {
+          const executionEndsAt = new Date(votingEnd.getTime() + 3 * 24 * 60 * 60 * 1000);
           await admin
             .from("records")
             .update({
               status: "decision",
+              execution_ends_at: executionEndsAt.toISOString(),
+            })
+            .eq("id", r.id);
+        }
+
+        continue;
+      }
+
+      // =====================================================
+      // STAGE 7 — Finalize after execution window closes
+      // =====================================================
+      if (status === "decision" && r.execution_ends_at && !r.decision_made_at) {
+        const executionEnd = new Date(r.execution_ends_at);
+
+        if (now >= executionEnd) {
+          await admin
+            .from("records")
+            .update({
               decision_made_at: now.toISOString(),
             })
             .eq("id", r.id);

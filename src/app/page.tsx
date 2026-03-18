@@ -1183,8 +1183,8 @@ export default function HomePage() {
 
             <div className="space-y-3 text-sm">
               <div>
-                <span className="font-semibold text-red-700">5-Downvote Badge of Shame:</span>
-                <span className="text-red-600"> Get 5+ downvotes on your explanation → automatic "</span>
+                <span className="font-semibold text-red-700">20% Downvote Badge of Shame:</span>
+                <span className="text-red-600"> Get 20% downvotes from total voters on your explanation → automatic "</span>
                 <span className="text-yellow-600">⚠ Low-Quality Voter</span>
                 <span className="text-red-600">" badge for the life of the record.</span>
               </div>

@@ -21,6 +21,7 @@ import {
   MessageSquare,
   ChevronRight,
   ChevronDown,
+  Flag,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -606,6 +607,7 @@ type CommunityStatementRow = {
   record_id: string;
   author_user_id: string;
   author_alias: string;
+  author_role: "citizen" | "voter" | "subject" | "contributor";
   body: string;
   created_at: string;
 };
@@ -1441,12 +1443,14 @@ function StatementCard({
 
 function formatRemaining(ms: number) {
   const total = Math.max(0, Math.floor(ms / 1000));
-  const h = Math.floor(total / 3600);
+  const d = Math.floor(total / 86400);
+  const h = Math.floor((total % 86400) / 3600);
   const m = Math.floor((total % 3600) / 60);
   const s = total % 60;
   const hh = String(h).padStart(2, "0");
   const mm = String(m).padStart(2, "0");
   const ss = String(s).padStart(2, "0");
+  if (d > 0) return `${d}d ${hh}h ${mm}m ${ss}s`;
   return `${hh}:${mm}:${ss}`;
 }
 
@@ -2113,6 +2117,7 @@ function VoteReplyNodeComponent({
   node,
   voteId,
   canReplyToVotes,
+  canReactToVotes,
   setReplyingTo,
   sessionUserId,
   onEdit,
@@ -2121,8 +2126,8 @@ function VoteReplyNodeComponent({
   node: VoteReplyNode;
   voteId: string;
   canReplyToVotes: boolean;
+  canReactToVotes: boolean;
   setReplyingTo: (v: { voteId: string; parentReplyId: string | null }) => void;
-  
   sessionUserId: string | null;
   onEdit: (replyId: string, newBody: string) => void;
   onDelete: (replyId: string) => void;
@@ -2174,7 +2179,7 @@ function VoteReplyNodeComponent({
         <AgreeDisagree
             targetType="record_vote_replies"
             targetId={String(node.id)}
-            disabled={!sessionUserId}
+            disabled={!sessionUserId || !canReactToVotes}
             size={26}
         />
       </div>
@@ -2245,6 +2250,7 @@ function VoteReplyNodeComponent({
               node={r}
               voteId={voteId}
               canReplyToVotes={canReplyToVotes}
+              canReactToVotes={canReactToVotes}
               setReplyingTo={setReplyingTo}
               sessionUserId={sessionUserId}
               onEdit={onEdit}
@@ -2258,17 +2264,19 @@ function VoteReplyNodeComponent({
 }
 
 function CommunityReplyNodeComponent({
-    node,
-    statementId,
-    canReplyToCommunity,
-    setReplyingTo,
-    sessionUserId,
-    onEdit,
-    onDelete,
-  }: {
+  node,
+  statementId,
+  canReplyToCommunity,
+  canReactToCommunity,
+  setReplyingTo,
+  sessionUserId,
+  onEdit,
+  onDelete,
+}: {
     node: CommunityReplyNode;
     statementId: number;
     canReplyToCommunity: boolean;
+    canReactToCommunity: boolean;
     setReplyingTo: (v: { statementId: number; parentReplyId: number | null }) => void;
   
     sessionUserId: string | null;
@@ -2320,7 +2328,7 @@ function CommunityReplyNodeComponent({
           <AgreeDisagree
             targetType="record_community_replies"
             targetId={String(node.id)}
-            disabled={!sessionUserId}
+            disabled={!sessionUserId || !canReactToCommunity}
             size={26}
           />
         </div>
@@ -2391,6 +2399,7 @@ function CommunityReplyNodeComponent({
                 node={r}
                 statementId={statementId}
                 canReplyToCommunity={canReplyToCommunity}
+                canReactToCommunity={canReactToCommunity}
                 setReplyingTo={setReplyingTo}
                 sessionUserId={sessionUserId}
                 onEdit={onEdit}
@@ -2422,26 +2431,53 @@ function VotingCourtroom({
   const stage = getEffectiveStage(record, serverOffsetMs);
   const nowMs = Date.now() + (serverOffsetMs || 0);
 
-  // Debate gating (Voting + Community start only after debate ends)
+  // Debate gating — computed here but early return happens AFTER all hooks
   const debateEndMs = record?.debate_ends_at ? new Date(record.debate_ends_at).getTime() : null;
-  const debateEnded = !!debateEndMs && nowMs >= debateEndMs;
-  if (!debateEnded) return null;
+  const recordStatus = normalizeStatus(record?.status);
+  // Treat debate as ended if: debate_ends_at passed, OR record is already at voting/decision stage,
+  // OR voting timestamps exist. This handles cases where record is reset straight to voting
+  // without a debate_ends_at being set.
+  const debateEnded =
+    (!!debateEndMs && nowMs >= debateEndMs) ||
+    stage >= 6 ||
+    recordStatus === "voting" ||
+    recordStatus === "decision" ||
+    !!record?.voting_started_at;
 
   // Voting window (timestamp-driven)
   const votingStartMs = record?.voting_started_at ? new Date(record.voting_started_at).getTime() : null;
   const votingEndMs = record?.voting_ends_at ? new Date(record.voting_ends_at).getTime() : null;
 
-  const isCurrentlyVoting =
-    !!votingStartMs && !!votingEndMs && nowMs >= votingStartMs && nowMs < votingEndMs;
+  const isVotingWindow =
+  !!votingStartMs && !!votingEndMs && nowMs >= votingStartMs && nowMs < votingEndMs;
 
-  const votingEnded = !!votingEndMs && nowMs >= votingEndMs;
-  const isVotingOpen = isCurrentlyVoting && !votingEnded;
+  const isCurrentlyVoting = isVotingWindow; // alias used by votingNoVoteMessage
+
+  const isPostVoting =
+    !!votingEndMs && nowMs >= votingEndMs;
+
+  const votingEnded = isPostVoting;
+
+  const [executionByVote, setExecutionByVote] = useState<
+    Record<
+      string,
+      {
+        execute_yes_count: number;
+        execute_no_count: number;
+        eligible_citizen_count: number;
+        required_execute_count: number;
+        my_direction: 1 | -1 | null;
+        is_convicted: boolean;
+      }
+    >
+  >({});
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
   const [myVote, setMyVote] = useState<null | { choice: "keep" | "delete"; explanation: string; created_at: string }>(null)
   const [voteBadges, setVoteBadges] = useState<Record<string, { is_low_quality: boolean; is_convicted: boolean }>>({});
+  const [myFlags, setMyFlags] = useState<Set<string>>(new Set());
 
   const [choice, setChoice] = useState<"keep" | "delete" | "">("");
   const [reason, setReason] = useState("");
@@ -2468,20 +2504,40 @@ function VotingCourtroom({
 
   const maxChars = 4000;
 
-  const settledAtMs =
+  const decisionStartedMs =
   record?.decision_started_at
     ? new Date(record.decision_started_at).getTime()
     : null;
 
-  const settledPlus7Ms =
-    settledAtMs !== null ? settledAtMs + 7 * 24 * 60 * 60 * 1000 : null;
+  const sevenDayUnlockMs =
+    decisionStartedMs !== null ? decisionStartedMs + 7 * 24 * 60 * 60 * 1000 : null;
 
-  const isAfterSettledPlus7 =
-    settledPlus7Ms !== null ? nowMs >= settledPlus7Ms : false;
+  const isAfterSevenDayUnlock =
+    sevenDayUnlockMs !== null && nowMs >= sevenDayUnlockMs;
 
   // During voting: only voters can reply to votes
   // After voting ends: voters + citizens can reply
   const locked = viewerRoleLocked;
+
+  const executionWindowEndMs =
+  votingEndMs ? votingEndMs + 3 * 24 * 60 * 60 * 1000 : null;
+
+  const isExecutionWindowOpen =
+    !!votingEndMs &&
+    !!executionWindowEndMs &&
+    nowMs >= votingEndMs &&
+    nowMs < executionWindowEndMs;
+
+  const myCitizenStatementEligible =
+    !!myCommunityStatement &&
+    myCommunityStatement.author_role === "citizen" &&
+    !!votingStartMs &&
+    !!executionWindowEndMs &&
+    new Date(myCommunityStatement.created_at).getTime() >= votingStartMs &&
+    new Date(myCommunityStatement.created_at).getTime() < executionWindowEndMs;
+
+  const canCastExecutionVote =
+    locked === "citizen" && isExecutionWindowOpen && myCitizenStatementEligible;
 
   async function getActorId(): Promise<string> {
     const real = (await supabase.auth.getUser()).data.user;
@@ -2490,25 +2546,44 @@ function VotingCourtroom({
     return isImpersonating && actingAuthUserId ? actingAuthUserId : real.id;
   }
 
-  const canReplyToVotes =
-    locked === "public"
-      ? false
-      : locked === "subject" || locked === "contributor"
-        ? stage >= 7 && isAfterSettledPlus7
-        : isVotingOpen
-          ? locked === "voter"
-          : locked === "voter" || locked === "citizen";
+  const canInteractVotingSection =
+    locked === "voter"
+      ? (isVotingWindow || isPostVoting)
+      : locked === "citizen"
+      ? isPostVoting
+      : (locked === "subject" || locked === "contributor")
+      ? isAfterSevenDayUnlock
+      : false;
+
+  // canReplyToVotes mirrors canInteractVotingSection exactly
+  const canReplyToVotes = canInteractVotingSection;
+  // canReactToVotes mirrors canReplyToVotes exactly (reactions = reply permissions)
+  const canReactToVotes = canReplyToVotes;
+
+  // Quality review (upvote/downvote on vote statements) is VOTER-ONLY at all times
+  const canQualityReviewVotes = locked === "voter" && (isVotingWindow || isPostVoting);
 
   const canPostCommunityStatement =
-    stage >= 6 && (locked === "voter" || locked === "citizen") && !myCommunityStatement;
-      
-  const canReplyToCommunity =
-    stage >= 6 &&
+    !myCommunityStatement &&
     (
-      locked === "voter" ||
-      locked === "citizen" ||
-      ((locked === "subject" || locked === "contributor") && stage >= 7 && isAfterSettledPlus7)
+      ((locked === "voter" || locked === "citizen") && (isVotingWindow || isPostVoting)) ||
+      ((locked === "subject" || locked === "contributor") && isAfterSevenDayUnlock)
     );
+    
+  const canInteractCommunitySection =
+    ((locked === "voter" || locked === "citizen") && (isVotingWindow || isPostVoting)) ||
+    ((locked === "subject" || locked === "contributor") && isAfterSevenDayUnlock);
+
+  async function loadMyFlags(recordId: string, userId: string) {
+    const { data } = await supabase
+      .from("reactions")
+      .select("target_id")
+      .eq("target_type", "record_vote_quality")
+      .eq("user_id", userId);
+      
+    const flagged = new Set<string>((data ?? []).map((r: any) => String(r.target_id)));
+    setMyFlags(flagged);
+  }
 
   async function loadVoteBadges(recordId: string) {
         try {
@@ -2536,6 +2611,69 @@ function VotingCourtroom({
           console.warn("Error loading vote badges:", e);
           return {};
         }
+  }
+
+  async function loadExecutionByVote(recordId: string, userId: string | null) {
+    try {
+      const { data: rows, error } = await supabase
+        .from("voter_quality_badges_public")
+        .select(
+          "vote_id, execute_yes_count, execute_no_count, eligible_citizen_count, required_execute_count, is_convicted"
+        )
+        .eq("record_id", recordId);
+
+      if (error) {
+        console.warn("Failed to load execution state:", error.message);
+        return;
+      }
+
+      let myDirections: Record<string, 1 | -1 | null> = {};
+
+      if (userId) {
+        const { data: mine, error: mineErr } = await supabase
+          .from("record_vote_execution_votes")
+          .select("vote_id, direction")
+          .eq("record_id", recordId)
+          .eq("user_id", userId);
+
+        if (mineErr) {
+          console.warn("Failed to load my execution votes:", mineErr.message);
+        } else {
+          (mine || []).forEach((row: any) => {
+            myDirections[String(row.vote_id)] =
+              row.direction === 1 ? 1 : row.direction === -1 ? -1 : null;
+          });
+        }
+      }
+
+      const next: Record<
+        string,
+        {
+          execute_yes_count: number;
+          execute_no_count: number;
+          eligible_citizen_count: number;
+          required_execute_count: number;
+          my_direction: 1 | -1 | null;
+          is_convicted: boolean;
+        }
+      > = {};
+
+      (rows || []).forEach((row: any) => {
+        const voteId = String(row.vote_id);
+        next[voteId] = {
+          execute_yes_count: Number(row.execute_yes_count ?? 0),
+          execute_no_count: Number(row.execute_no_count ?? 0),
+          eligible_citizen_count: Number(row.eligible_citizen_count ?? 0),
+          required_execute_count: Number(row.required_execute_count ?? 0),
+          my_direction: myDirections[voteId] ?? null,
+          is_convicted: !!row.is_convicted,
+        };
+      });
+
+      setExecutionByVote(next);
+    } catch (e) {
+      console.warn("Error loading execution state:", e);
+    }
   }
 
   async function loadTally(recordId: string) {
@@ -2607,7 +2745,7 @@ function VotingCourtroom({
   async function loadCommunity(recordId: string, userId: string | null) {
     const { data: stmtRows } = await supabase
       .from("record_community_statements")
-      .select("id, record_id, author_user_id, author_alias, body, created_at")
+      .select("id, record_id, author_user_id, author_alias, author_role, body, created_at")
       .eq("record_id", recordId)
       .order("created_at", { ascending: true });
   
@@ -2650,15 +2788,17 @@ function VotingCourtroom({
         const actorId = realId ? await getActorId() : null;
 
         await Promise.all([
-        loadTally(record.id),
-        loadVotes(record.id),
-        loadVoteReplies(record.id),
-        loadCommunity(record.id, actorId),
-        loadMyVote(record.id, actorId),
+          loadTally(record.id),
+          loadVotes(record.id),
+          loadVoteReplies(record.id),
+          loadCommunity(record.id, actorId),
+          loadMyVote(record.id, actorId),
+          loadExecutionByVote(record.id, actorId),
         ]);
   
       // Badges can come in after votes render (non-blocking)
       loadVoteBadges(record.id).then(setVoteBadges);
+      if (actorId) loadMyFlags(record.id, actorId);
     } finally {
       setLoading(false);
     }
@@ -2678,23 +2818,38 @@ function VotingCourtroom({
     try {
         const actorId = await getActorId();
 
-        const { data: alias, error: aErr } = await supabase.rpc("get_or_create_alias", {
-          p_record_id: record.id,
-          p_auth_user_id: actorId,
-          p_role: locked === "voter" ? "voter" : "citizen",
-        });
+        const roleForStatement =
+        locked === "voter"
+          ? "voter"
+          : locked === "citizen"
+          ? "citizen"
+          : locked === "subject"
+          ? "subject"
+          : locked === "contributor"
+          ? "contributor"
+          : "citizen";
+
+      const { data: alias, error: aErr } = await supabase.rpc("get_or_create_alias", {
+        p_record_id: record.id,
+        p_auth_user_id: actorId,
+        p_role: roleForStatement,
+      });
         if (aErr) throw aErr;
         
         const { error } = await supabase.from("record_community_statements").insert({
           record_id: record.id,
           author_user_id: actorId,
           author_alias: alias,
+          author_role: roleForStatement,
           body: text,
         });
         if (error) throw error;
 
       setCommunityStatementDraft("");
-      await loadCommunity(record.id, sessionUserId);
+      await Promise.all([
+        loadCommunity(record.id, actorId),
+        loadExecutionByVote(record.id, actorId),
+      ]);
     } catch (e: any) {
       alert(e?.message || "Failed to post statement.");
     } finally {
@@ -2703,7 +2858,7 @@ function VotingCourtroom({
   }
 
   async function postCommunityReply() {
-    if (!canReplyToCommunity) return;
+    if (!canInteractCommunitySection) return;
     if (!replyingToCommunity) return;
 
     const text = communityReplyDraft.trim();
@@ -2749,7 +2904,7 @@ function VotingCourtroom({
 
       setCommunityReplyDraft("");
       setReplyingToCommunity(null);
-      await loadCommunity(record.id, sessionUserId);
+      await loadCommunity(record.id, actorId);
     } catch (e: any) {
       alert(e?.message || "Failed to post reply.");
     } finally {
@@ -2764,7 +2919,8 @@ function VotingCourtroom({
     setPostingReply(true);
     try {
       await supabase.rpc("edit_community_reply", { p_reply_id: replyId, p_new_body: text });
-      await loadCommunity(record.id, sessionUserId);
+      const actorId = await getActorId();
+      await loadCommunity(record.id, actorId);
     } catch (e: any) {
       alert(e?.message || "Failed to edit reply.");
     } finally {
@@ -2778,7 +2934,8 @@ function VotingCourtroom({
     setPostingReply(true);
     try {
       await supabase.rpc("delete_community_reply", { p_reply_id: replyId });
-      await loadCommunity(record.id, sessionUserId);
+      const actorId = await getActorId();
+      await loadCommunity(record.id, actorId);
     } catch (e: any) {
       alert(e?.message || "Failed to delete reply.");
     } finally {
@@ -2794,29 +2951,85 @@ function VotingCourtroom({
 
   useEffect(() => {
     if (!record?.id) return;
-
-    const ch = supabase
-      .channel(`record_votes:${record.id}`)
+  
+    const recordId = record.id;
+    const actorId = isImpersonating && actingAuthUserId ? actingAuthUserId : sessionUserId;
+  
+    const votesChannel = supabase
+      .channel(`record_votes:${recordId}`)
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "record_votes", filter: `record_id=eq.${record.id}` },
+        {
+          event: "*",
+          schema: "public",
+          table: "record_votes",
+          filter: `record_id=eq.${recordId}`,
+        },
         async () => {
-            await Promise.all([loadTally(record.id), loadVotes(record.id)]);
-            loadVoteBadges(record.id).then(setVoteBadges); // optional
+          await Promise.all([
+            loadTally(recordId),
+            loadVotes(recordId),
+            loadExecutionByVote(recordId, actorId),
+          ]);
+          loadVoteBadges(recordId).then(setVoteBadges);
         }
       )
       .subscribe();
-
+  
+    const communityChannel = supabase
+      .channel(`record_community_statements:${recordId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "record_community_statements",
+          filter: `record_id=eq.${recordId}`,
+        },
+        async () => {
+          await Promise.all([
+            loadCommunity(recordId, actorId),
+            loadExecutionByVote(recordId, actorId),
+          ]);
+          loadVoteBadges(recordId).then(setVoteBadges);
+        }
+      )
+      .subscribe();
+  
+    const executionChannel = supabase
+      .channel(`record_vote_execution_votes:${recordId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "record_vote_execution_votes",
+          filter: `record_id=eq.${recordId}`,
+        },
+        async () => {
+          await Promise.all([
+            loadTally(recordId),
+            loadExecutionByVote(recordId, actorId),
+          ]);
+          loadVoteBadges(recordId).then(setVoteBadges);
+        }
+      )
+      .subscribe();
+  
     return () => {
-      supabase.removeChannel(ch);
+      supabase.removeChannel(votesChannel);
+      supabase.removeChannel(communityChannel);
+      supabase.removeChannel(executionChannel);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [record?.id]); 
+  }, [record?.id, sessionUserId]);
+
+  // Early return AFTER all hooks — safe per React Rules of Hooks
+  if (!debateEnded) return null;
 
   const canVote =
-  isVotingOpen &&
-  !votingEnded &&
-  locked === "citizen" &&
+  isVotingWindow &&
+  locked === "voter" &&
   !myVote;
 
   async function submitVote() {
@@ -2856,8 +3069,12 @@ function VotingCourtroom({
         });
         if (error) throw error;
 
-        await Promise.all([loadTally(record.id), loadVotes(record.id)]);
-        await loadMyVote(record.id, actorId);
+        await Promise.all([
+          loadTally(record.id),
+          loadVotes(record.id),
+          loadMyVote(record.id, actorId),
+          loadExecutionByVote(record.id, actorId),
+        ]);
         loadVoteBadges(record.id).then(setVoteBadges);
     } catch (e: any) {
       alert(e?.message || "Failed to submit vote.");
@@ -2893,7 +3110,7 @@ function VotingCourtroom({
   }
 
   async function postVoteReply() {
-    if (!canReplyToVotes) return;
+    if (!canInteractVotingSection) return;
     if (!replyingTo) return;
   
     const text = replyDraft.trim();
@@ -2998,7 +3215,10 @@ function VotingCourtroom({
       }
   
       // ✅ Finally refresh from server (authoritative)
-      await loadVoteReplies(record.id);
+      await Promise.all([
+        loadVoteReplies(record.id),
+        loadExecutionByVote(record.id, actorId),
+      ]);
     } catch (e: any) {
       // rollback optimistic node on failure
       setRepliesByVote((prev) => {
@@ -3023,7 +3243,11 @@ function VotingCourtroom({
         p_reply_id: replyId,      // send string numeric -> postgres can cast if rpc arg is bigint
         p_new_body: text,
       });
-      await loadVoteReplies(record.id);
+      const actorId = await getActorId();
+      await Promise.all([
+        loadVoteReplies(record.id),
+        loadExecutionByVote(record.id, actorId),
+      ]);
     } catch (e: any) {
       alert(e?.message || "Failed to edit reply.");
     } finally {
@@ -3037,11 +3261,40 @@ function VotingCourtroom({
     setPostingReply(true);
     try {
       await supabase.rpc("delete_vote_reply", { p_reply_id: replyId });
-      await loadVoteReplies(record.id);
+      const actorId = await getActorId();
+      await Promise.all([
+        loadVoteReplies(record.id),
+        loadExecutionByVote(record.id, actorId),
+      ]);
     } catch (e: any) {
       alert(e?.message || "Failed to delete reply.");
     } finally {
       setPostingReply(false);
+    }
+  }
+
+  async function toggleExecutionVote(voteId: string, direction: 1 | -1) {
+    if (!canCastExecutionVote) return;
+
+    try {
+      const { error } = await supabase.rpc("toggle_vote_execution", {
+        p_record_id: record.id,
+        p_vote_id: Number(voteId),
+        p_direction: direction,
+      });
+
+      if (error) throw error;
+
+      const actorId = await getActorId();
+
+      await Promise.all([
+        loadExecutionByVote(record.id, actorId),
+        loadTally(record.id),
+      ]);
+
+      loadVoteBadges(record.id).then(setVoteBadges);
+    } catch (e: any) {
+      alert(e?.message || "Failed to submit execution vote.");
     }
   }
 
@@ -3057,7 +3310,7 @@ function VotingCourtroom({
           return (
             <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800 ml-2 border border-red-300" title="This vote does NOT count toward the final tally">
               <span className="w-1.5 h-1.5 rounded-full bg-red-600"></span>
-              CONVICTED • Lost Voting Right
+              DISQUALIFIED • Lost Voting Right
             </span>
           );
         }
@@ -3209,47 +3462,139 @@ function VotingCourtroom({
               const replies = repliesByVote[String(v.id)] || [];
 
               return (
-                <div key={v.id} className="border-b border-gray-200 pb-4 last:border-b-0 last:pb-0">
-                    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="flex items-center flex-wrap gap-1">
-                            <div className="text-xs font-semibold text-gray-900">{v.author_alias || "Anonymous"}</div>
-                            <VoteBadge voteId={v.id} />
-                        </div>
-                        <div className="text-[11px] text-gray-500">{formatTimestampNoSeconds(v.created_at)}</div>
-                    </div>
+                <div key={v.id} className="border-b border-gray-200 pb-5 last:border-b-0 last:pb-0">
 
-                  <div className="mt-2 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold">
-                    <span className={v.choice === "keep" ? "text-green-700" : "text-red-700"}>
+                  {/* Header: alias + badge + timestamp inline, choice pill on right */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs font-semibold text-gray-900">{v.author_alias || "Anonymous"}</span>
+                    <VoteBadge voteId={v.id} />
+                    <span className="text-[11px] text-gray-400">{formatTimestampNoSeconds(v.created_at)}</span>
+                    <span className={[
+                      "ml-auto inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold",
+                      v.choice === "keep"
+                        ? "text-green-700 border-green-200 bg-green-50"
+                        : "text-red-700 border-red-200 bg-red-50",
+                    ].join(" ")}>
                       {v.choice.toUpperCase()}
                     </span>
                   </div>
 
-                  <div className="mt-3 text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{v.explanation}</div>
+                  {/* Voter Disqualification Review — above explanation */}
+                  {(() => {
+                    const execState = executionByVote[String(v.id)];
+                    const badge = voteBadges[String(v.id)];
+                    const isLowQuality = badge?.is_low_quality || badge?.is_convicted;
+                    if (!isLowQuality) return null;
+                    const executionActive = isExecutionWindowOpen;
+                    return (
+                      <div className="mt-2 rounded-xl border border-gray-200 bg-gray-50 p-3">
+                        <div className="text-[11px] font-semibold text-gray-700">Voter Disqualification Review</div>
+                        {(() => {
+                          const eligible = execState?.eligible_citizen_count ?? 0;
+                          const yes = execState?.execute_yes_count ?? 0;
+                          const needed = execState?.required_execute_count ?? 0;
+                          const pct = eligible > 0 ? Math.round((yes / eligible) * 100) : 0;
+                          const neededPct = eligible > 0 ? Math.round((needed / eligible) * 100) : 50;
+                          return (
+                            <div className="mt-2">
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-[11px] text-gray-500">{pct}% of citizens approved disqualification — {neededPct}% needed</span>                                
+                              </div>
+                              <div className="w-full h-1.5 rounded-full bg-gray-200 overflow-hidden">
+                                <div className={["h-full rounded-full transition-all", pct >= neededPct ? "bg-red-500" : "bg-yellow-400"].join(" ")} style={{ width: `${Math.min(100, pct)}%` }} />
+                              </div>
+                            </div>
+                          );
+                        })()}
+                        {executionActive && canCastExecutionVote ? (
+                          <div className="mt-3 flex flex-col sm:flex-row gap-2">
+                            <button type="button" onClick={() => toggleExecutionVote(v.id, 1)} className={["flex-1 rounded-xl border px-4 py-2 text-sm font-semibold", execState?.my_direction === 1 ? "bg-red-600 text-white border-red-600" : "bg-white text-gray-800 hover:bg-gray-50"].join(" ")}>Approve Disqualification</button>
+                            <button type="button" onClick={() => toggleExecutionVote(v.id, -1)} className={["flex-1 rounded-xl border px-4 py-2 text-sm font-semibold", execState?.my_direction === -1 ? "bg-black text-white border-black" : "bg-white text-gray-800 hover:bg-gray-50"].join(" ")}>Oppose Disqualification</button>
+                          </div>
+                        ) : executionActive ? (
+                          <div className="mt-2 text-xs text-gray-500">Only eligible citizens can approve disqualification.</div>
+                        ) : (
+                          <div className="mt-2 text-xs text-gray-500">Community review opens after voting ends.</div>
+                        )}
+                      </div>
+                    );
+                  })()}
 
-                  <div className="mt-2">
+                  {/* Explanation */}
+                  <div className="mt-2 text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{v.explanation}</div>
+
+                  {/* Action bar */}
+                  <div className="mt-3 flex items-center gap-3 flex-wrap">
+
+                    {/* General reaction — only after voting ends, not during active voting session */}
                     <AgreeDisagree
-                        targetType="record_votes"
-                        targetId={String(v.id)}
-                        disabled={!sessionUserId}
-                        size={26}
+                      targetType="record_votes"
+                      targetId={String(v.id)}
+                      disabled={!sessionUserId || isVotingWindow}
+                      size={24}
                     />
+
+                    <div className="h-4 w-px bg-gray-200" />
+
+                    {/* Quality flag — voter only, permanent, anonymous */}
+                    {canQualityReviewVotes && (
+                      <button
+                        type="button"
+                        disabled={myFlags.has(String(v.id))}
+                        title={myFlags.has(String(v.id)) ? "You already flagged this vote" : "Flag as low-quality reasoning"}
+                        onClick={async () => {
+                          if (myFlags.has(String(v.id))) return;
+                          const confirmed = confirm(
+                            "Flag this vote as low quality?\n\nThis is permanent and cannot be undone."
+                          );
+                          if (!confirmed) return;
+                          try {
+                            const actorId = await getActorId();
+                            const { error } = await supabase.from("reactions").insert({
+                              target_type: "record_vote_quality",
+                              target_id: String(v.id),
+                              user_id: actorId,
+                              direction: -1,
+                            });
+                            if (error) throw error;
+                            setMyFlags((prev) => new Set([...prev, String(v.id)]));
+                            loadVoteBadges(record.id).then(setVoteBadges);
+                          } catch (e: any) {
+                            alert(e?.message || "Failed to flag.");
+                          }
+                        }}
+                        className={[
+                          "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors",
+                          myFlags.has(String(v.id))
+                            ? "bg-yellow-50 border-yellow-300 text-yellow-700 cursor-not-allowed"
+                            : "bg-white border-gray-200 text-gray-500 hover:border-yellow-300 hover:text-yellow-600 hover:bg-yellow-50",
+                        ].join(" ")}
+                      >
+                        <Flag className="h-3 w-3" />
+                        {myFlags.has(String(v.id)) ? "Flagged" : "Flag"}
+                      </button>
+                    )}
+
+                    {canInteractVotingSection && (
+                      <>
+                        <div className="h-4 w-px bg-gray-200" />
+                        <button
+                          type="button"
+                          onClick={() => setReplyingTo({ voteId: v.id, parentReplyId: null })}
+                          className="flex items-center gap-1 text-[11px] font-medium text-gray-500 hover:text-gray-900 transition-colors"
+                        >
+                          <MessageSquare className="h-3.5 w-3.5" />
+                          Reply
+                        </button>
+                      </>
+                    )}
                   </div>
 
-                  {voteBadges[String(v.id)]?.is_convicted && (
+                  {(executionByVote[String(v.id)]?.is_convicted || voteBadges[String(v.id)]?.is_convicted) && (
                     <div className="mt-3 text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg p-2 flex items-center gap-2">
                       <AlertTriangle className="h-4 w-4 flex-shrink-0" />
-                      <span>This vote does NOT count toward the final tally due to poor explanation quality.</span>
+                      <span>This vote does NOT count toward the final tally — this voter has been disqualified.</span>
                     </div>
-                  )}
-
-                  {canReplyToVotes && (
-                    <button
-                      type="button"
-                      onClick={() => setReplyingTo({ voteId: v.id, parentReplyId: null })}
-                      className="mt-3 text-xs font-medium text-gray-600 hover:text-gray-900"
-                    >
-                      Reply
-                    </button>
                   )}
 
                   {replies.length > 0 && (
@@ -3260,6 +3605,7 @@ function VotingCourtroom({
                           node={r}
                           voteId={v.id}
                           canReplyToVotes={canReplyToVotes}
+                          canReactToVotes={canReactToVotes}
                           setReplyingTo={setReplyingTo}
                           sessionUserId={sessionUserId}
                           onEdit={editVoteReply}
@@ -3274,7 +3620,7 @@ function VotingCourtroom({
           )}
         </div>
 
-        {replyingTo && canReplyToVotes && (
+        {replyingTo && canInteractVotingSection && (
           <div className="mt-4 rounded-2xl border bg-gray-50 p-4">
             <div className="text-xs font-semibold text-gray-900">Replying…</div>
 
@@ -3318,7 +3664,7 @@ function VotingCourtroom({
         <div className="text-sm font-semibold text-gray-900">Community Section</div>
         <div className="text-xs text-gray-500 mt-1">Please note that you are allowed only one statement.</div>
 
-        {(locked === "voter" || locked === "citizen") && (
+        {(canPostCommunityStatement || !!myCommunityStatement) && (
           <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4">
             {myCommunityStatement ? (
               <div className="text-sm text-gray-700">
@@ -3349,7 +3695,7 @@ function VotingCourtroom({
           </div>
         )}
 
-        {(locked === "subject" || locked === "contributor") && !canReplyToCommunity && (
+        {(locked === "subject" || locked === "contributor") && !canInteractCommunitySection && (
           <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700">
             You can reply here 7 days after the decision has been made.
           </div>
@@ -3372,15 +3718,15 @@ function VotingCourtroom({
                   <div className="mt-2 text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{s.body}</div>
 
                   <div className="mt-2">
-                    <AgreeDisagree
-                        targetType="record_community_statements"
-                        targetId={String(s.id)}
-                        disabled={!sessionUserId}
-                        size={26}
-                    />
+                  <AgreeDisagree
+                    targetType="record_community_statements"
+                    targetId={String(s.id)}
+                    disabled={!sessionUserId || !canInteractCommunitySection}
+                    size={26}
+                  />
                   </div>
 
-                  {canReplyToCommunity && (
+                  {canInteractCommunitySection && (
                     <button
                       type="button"
                       onClick={() => setReplyingToCommunity({ statementId: s.id, parentReplyId: null })}
@@ -3397,7 +3743,8 @@ function VotingCourtroom({
                           key={r.id}
                           node={r}
                           statementId={s.id}
-                          canReplyToCommunity={canReplyToCommunity}
+                          canReplyToCommunity={canInteractCommunitySection}
+                          canReactToCommunity={canInteractCommunitySection}
                           setReplyingTo={setReplyingToCommunity}
                           sessionUserId={sessionUserId}
                           onEdit={editCommunityReply}
@@ -3412,7 +3759,7 @@ function VotingCourtroom({
           )}
         </div>
 
-        {replyingToCommunity && canReplyToCommunity && (
+        {replyingToCommunity && canInteractCommunitySection && (
           <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4">
             <div className="text-xs font-semibold text-gray-900">Replying…</div>
 
