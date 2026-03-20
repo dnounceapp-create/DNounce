@@ -1,7 +1,6 @@
 "use client";
 
 import { useAuth } from "@/lib/auth";
-import { stageConfig, STAGE_ORDER, outcomeLabels } from "@/config/stageConfig";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -65,93 +64,6 @@ const SETTINGS_NAV: NavItem[] = [
   { name: "Terms & Conditions", href: "/dashboard/settings/terms", icon: Info },
   { name: "Log Out", href: "/logout", icon: LogOut, special: true },
 ];
-
-
-// 🪄 Floating legend component
-function Legend() {
-  const [collapsed, setCollapsed] = useState(false);
-
-  return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4 text-sm">
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="font-semibold text-gray-800">Legend</h3>
-        <button
-          onClick={() => setCollapsed((p) => !p)}
-          className="p-2 rounded-md hover:bg-gray-100 active:scale-95 transition"
-          aria-label={collapsed ? "Expand legend" : "Collapse legend"}
-        >
-          {collapsed ? (
-            <ChevronDown className="w-4 h-4 text-gray-600" />
-          ) : (
-            <ChevronUp className="w-4 h-4 text-gray-600" />
-          )}
-        </button>
-      </div>
-
-      {!collapsed && (
-        <div className="space-y-3">
-          {/* Stages */}
-          <div>
-            <p className="text-xs font-medium text-gray-600 mb-1">Stages</p>
-            <ul className="space-y-1">
-              {STAGE_ORDER.map((id) => {
-                const s = stageConfig[id];
-                return (
-                  <li
-                    key={s.label}
-                    className="grid grid-cols-[18px_16px_1fr] items-center gap-2 py-0.5"
-                  >
-                    <span className="justify-self-end text-[11px] font-semibold text-gray-700">
-                      {id}.
-                    </span>
-
-                    <span className="justify-self-center h-4 w-4 grid place-items-center">
-                      <span className={`w-3 h-3 rounded-full border border-black/40 ${s.ui.chipClass}`} />
-                    </span>
-
-                    <span className="text-xs text-gray-800">{s.label}</span>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-
-          {/* Outcomes */}
-          <div>
-            <p className="text-xs font-medium text-gray-600 mb-1">Outcomes</p>
-            <ul className="space-y-1">
-              {outcomeLabels.map((s) => (
-                <li key={s.label} className="flex items-center gap-2">
-                  <span className={`w-3 h-3 rounded-full ${s.color}`} />
-                  <span className="text-xs text-gray-800">{s.label}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Roles */}
-          <div className="border-t border-gray-200 pt-2 mt-2">
-            <p className="text-xs font-medium text-gray-600 mb-1">Roles</p>
-            <ul className="space-y-1">
-              <li className="text-xs text-gray-800">
-                <span className="font-semibold text-gray-900">Contributor</span> — User who submits a record about another user.
-              </li>
-              <li className="text-xs text-gray-800">
-                <span className="font-semibold text-gray-900">Subject</span> — The individual that the record is about.
-              </li>
-            </ul>
-          </div>
-
-          {/* Submit a Record */}
-          <div className="border-t border-gray-200 pt-2 mt-2 flex items-center gap-2 text-xs text-gray-700">
-            <FileText className="w-3.5 h-3.5 text-blue-600" />
-            <span className="font-semibold text-gray-900">Submit a Record</span>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -594,12 +506,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               );
             })}
           </div>
-
-          {!inSettings && !inSubmit && (
-            <div className="mt-6">
-              <Legend />
-            </div>
-          )}
         </aside>
 
         <main className="flex-1 p-4 sm:p-8 overflow-y-auto relative">

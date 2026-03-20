@@ -14,6 +14,7 @@ type SubmitRecordInput = {
   category?: string;
   description: string;
   agree_terms: boolean;
+  contributorDisplayName?: string;
 };
 
 export async function submitRecord(formData: SubmitRecordInput) {
@@ -60,6 +61,7 @@ export async function submitRecord(formData: SubmitRecordInput) {
       record_type: "pending",
       status: "ai_verification",
       is_published: false,
+      record_alias: formData.contributorDisplayName || null,
     })
     .select("id")
     .single();

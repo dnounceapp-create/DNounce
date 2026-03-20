@@ -480,6 +480,7 @@ export default function SubjectProfilePage() {
   }
   
   function recordTitle(r: SubjectRecord) {
+    if (r.record_alias) return r.record_alias;
     const subjectName = subject?.name || "Subject";
     const contributor = contributorLabelByRules(r);
     return `${contributor} • ${subjectName}`;

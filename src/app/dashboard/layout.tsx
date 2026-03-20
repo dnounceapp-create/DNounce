@@ -1,7 +1,6 @@
 "use client";
 
 import { useAuth } from "@/lib/auth";
-import { stageConfig, STAGE_ORDER, outcomeLabels } from "@/config/stageConfig";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -67,93 +66,6 @@ const SETTINGS_NAV: NavItem[] = [
   { name: "Log Out", href: "/logout", icon: LogOut, special: true },
 ];
 
-
-// 🪄 Floating legend component
-function Legend() {
-  const [collapsed, setCollapsed] = useState(false);
-
-  return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4 text-sm">
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="font-semibold text-gray-800">Legend</h3>
-        <button
-          onClick={() => setCollapsed((p) => !p)}
-          className="p-2 rounded-md hover:bg-gray-100 active:scale-95 transition"
-          aria-label={collapsed ? "Expand legend" : "Collapse legend"}
-        >
-          {collapsed ? (
-            <ChevronDown className="w-4 h-4 text-gray-600" />
-          ) : (
-            <ChevronUp className="w-4 h-4 text-gray-600" />
-          )}
-        </button>
-      </div>
-
-      {!collapsed && (
-        <div className="space-y-3">
-          {/* Stages */}
-          <div>
-            <p className="text-xs font-medium text-gray-600 mb-1">Stages</p>
-            <ul className="space-y-1">
-              {STAGE_ORDER.map((id) => {
-                const s = stageConfig[id];
-                return (
-                  <li
-                    key={s.label}
-                    className="grid grid-cols-[18px_16px_1fr] items-center gap-2 py-0.5"
-                  >
-                    <span className="justify-self-end text-[11px] font-semibold text-gray-700">
-                      {id}.
-                    </span>
-
-                    <span className="justify-self-center h-4 w-4 grid place-items-center">
-                      <span className={`w-3 h-3 rounded-full border border-black/40 ${s.ui.chipClass}`} />
-                    </span>
-
-                    <span className="text-xs text-gray-800">{s.label}</span>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-
-          {/* Outcomes */}
-          <div>
-            <p className="text-xs font-medium text-gray-600 mb-1">Outcomes</p>
-            <ul className="space-y-1">
-              {outcomeLabels.map((s) => (
-                <li key={s.label} className="flex items-center gap-2">
-                  <span className={`w-3 h-3 rounded-full ${s.color}`} />
-                  <span className="text-xs text-gray-800">{s.label}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Roles */}
-          <div className="border-t border-gray-200 pt-2 mt-2">
-            <p className="text-xs font-medium text-gray-600 mb-1">Roles</p>
-            <ul className="space-y-1">
-              <li className="text-xs text-gray-800">
-                <span className="font-semibold text-gray-900">Contributor</span> — User who submits a record about another user.
-              </li>
-              <li className="text-xs text-gray-800">
-                <span className="font-semibold text-gray-900">Subject</span> — The individual that the record is about.
-              </li>
-            </ul>
-          </div>
-
-          {/* Submit a Record */}
-          <div className="border-t border-gray-200 pt-2 mt-2 flex items-center gap-2 text-xs text-gray-700">
-            <FileText className="w-3.5 h-3.5 text-blue-600" />
-            <span className="font-semibold text-gray-900">Submit a Record</span>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -179,9 +91,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [subjectId, setSubjectId] = useState<string | null>(null);
   const desktopInputRef = useRef<HTMLInputElement>(null);
   const mobileInputRef = useRef<HTMLInputElement>(null);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [adv, setAdv] = useState({
+    firstName: "", lastName: "", nickname: "",
+    organization: "", location: "", category: "",
+    subjectId: "", recordId: "",
+  });
+  const [advTags, setAdvTags] = useState<string[]>([]);
+  const [advTagInput, setAdvTagInput] = useState("");
+  const [advResults, setAdvResults] = useState<any[]>([]);
+  const [advLoading, setAdvLoading] = useState(false);
 
   useEffect(() => {
-    console.log("fetchSubjectId effect fired, user:", user);
     if (!user?.id) return;
     async function fetchSubjectId() {
       try {
@@ -191,9 +112,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           .select("subject_id")
           .eq("auth_user_id", user!.id)
           .single();
-        console.log("USER ID:", user!.id);
-        console.log("DATA:", data);
-        console.log("ERROR:", error);
         if (!error && data?.subject_id) {
           setSubjectId(data.subject_id);
         }
@@ -235,8 +153,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               data?.address?.village ||
               data?.address?.state ||
               "Unknown Location";
-  
-            console.log("Detected city:", city);
             // setUserCity(city);
           } catch (err) {
             console.warn("Reverse geocoding failed:", err);
@@ -280,6 +196,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return () => clearTimeout(delay);
   }, [query, category, userLocation]); 
 
+  const runAdvancedSearch = async () => {
+    setAdvLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (adv.firstName) params.set("firstName", adv.firstName);
+      if (adv.lastName) params.set("lastName", adv.lastName);
+      if (adv.nickname) params.set("nickname", adv.nickname);
+      if (adv.organization) params.set("organization", adv.organization);
+      if (adv.location) params.set("location", adv.location);
+      if (adv.category) params.set("category", adv.category);
+      if (adv.subjectId) params.set("subjectId", adv.subjectId);
+      if (adv.recordId) params.set("recordId", adv.recordId);
+      if (advTags.length) params.set("hashtags", advTags.join(" "));
+      const res = await fetch(`/api/advancedsearch?${params}`);
+      const data = await res.json();
+      setAdvResults(data.results || []);
+    } catch (err) {
+      console.error("Advanced search error:", err);
+    } finally {
+      setAdvLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (menuOpen) setMenuOpen(false);
   }, [pathname]);
@@ -320,7 +259,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 className="h-11 min-w-[170px] px-4 bg-gray-50 text-sm text-gray-700 font-medium border-r border-gray-200 rounded-l-full focus:outline-none hover:bg-gray-100"
               >
                 <option value="all">All</option>
-                <option value="profile">Subjects</option>
+                <option value="profile">Profiles</option>
                 <option value="category">Category</option>
                 <option value="organization">Company / Organization</option>
                 <option value="record">Records</option>
@@ -361,7 +300,186 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   </button>
                 )}
               </div>
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => setAdvancedOpen((v) => !v)}
+                className="shrink-0 px-3 h-11 text-xs font-medium text-blue-600 hover:text-blue-800 border-l border-gray-200 rounded-r-full hover:bg-blue-50 transition"
+              >
+                Advanced
+              </button>
             </div>
+            
+            {/* 🔬 Advanced Search Panel */}
+            {advancedOpen && (
+              <div className="absolute top-14 left-0 right-0 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-gray-900">Advanced search</span>
+                  </div>
+                  <button onClick={() => setAdvancedOpen(false)} className="p-1 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  {([
+                    ["firstName", "First name", "e.g. John"],
+                    ["lastName", "Last name", "e.g. Doe"],
+                    ["nickname", "Nickname", "e.g. JD"],
+                    ["organization", "Organization", "e.g. Acme Corp"],
+                    ["location", "Location", "e.g. Astoria, NY"],
+                    ["category", "Category", "e.g. Barber"],
+                    ["subjectId", "Subject ID", ""],
+                    ["recordId", "Record ID", ""],
+                  ] as [keyof typeof adv, string, string][]).map(([key, label, placeholder]) => (
+                    <div key={key} className="flex flex-col gap-1">
+                      <label className="text-[11px] font-medium text-gray-500 uppercase tracking-wide">{label}</label>
+                      <input
+                        type="text"
+                        placeholder={placeholder}
+                        value={adv[key]}
+                        onChange={(e) => setAdv((p) => ({ ...p, [key]: e.target.value }))}
+                        className="h-9 px-3 text-sm border border-gray-200 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800"
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex flex-col gap-1 mb-4">
+                  <label className="text-[11px] font-medium text-gray-500 uppercase tracking-wide">
+                    Hashtags <span className="normal-case font-normal tracking-normal text-gray-400">— space to add</span>
+                  </label>
+                  <div
+                    className="min-h-[36px] px-2 py-1 border border-gray-200 rounded-lg bg-gray-50 flex flex-wrap gap-1.5 items-center cursor-text"
+                    onClick={() => document.getElementById("adv-tag-input")?.focus()}
+                  >
+                    {advTags.map((tag, i) => (
+                      <span key={i} className="flex items-center gap-1 bg-blue-50 text-blue-700 text-xs px-2 py-0.5 rounded-full border border-blue-100">
+                        #{tag}
+                        <button onClick={() => setAdvTags((t) => t.filter((_, j) => j !== i))} className="text-blue-400 hover:text-blue-700">×</button>
+                      </span>
+                    ))}
+                    <input
+                      id="adv-tag-input"
+                      value={advTagInput}
+                      onChange={(e) => setAdvTagInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === " " || e.key === "Enter") {
+                          e.preventDefault();
+                          const val = advTagInput.trim().replace(/^#/, "");
+                          if (val && !advTags.includes(val)) setAdvTags((t) => [...t, val]);
+                          setAdvTagInput("");
+                        } else if (e.key === "Backspace" && advTagInput === "" && advTags.length) {
+                          setAdvTags((t) => t.slice(0, -1));
+                        }
+                      }}
+                      placeholder={advTags.length === 0 ? "type and press space..." : ""}
+                      className="flex-1 min-w-[100px] bg-transparent outline-none text-sm text-gray-800"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-400">More fields = more specific results</span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => { setAdv({ firstName:"",lastName:"",nickname:"",organization:"",location:"",category:"",subjectId:"",recordId:"" }); setAdvTags([]); setAdvResults([]); }}
+                      className="px-3 py-1.5 text-xs text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+                    >
+                      Clear all
+                    </button>
+                    <button
+                      onClick={runAdvancedSearch}
+                      disabled={advLoading}
+                      className="px-4 py-1.5 text-xs font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
+                    >
+                      {advLoading ? "Searching..." : "Search →"}
+                    </button>
+                  </div>
+                </div>
+
+                {advResults.length > 0 && (
+                  <div className="mt-4 border-t border-gray-100 pt-4 space-y-2 max-h-[40vh] overflow-y-auto">
+                    {advResults.map((item: any) => {
+                      const href = item.type === "profile" ? `/subject/${item.id}` : `/record/${item.id}`;
+                      return (
+                        <SearchResultCard
+                          key={`${item.type}-${item.id}`}
+                          type={item.type}
+                          title={item.name}
+                          subtitle={item.organization || item.category}
+                          location={item.location}
+                          id={item.id}
+                          href={href}
+                          onRemove={() => {}}
+                        />
+                      );
+                    })}
+                  </div>
+                )}
+
+                {advResults.length === 0 && !advLoading && Object.values(adv).some(Boolean) && (
+                  <div className="mt-4 border-t border-gray-100 pt-4 text-center text-sm text-gray-400">
+                    No results found
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* 🔍 Desktop Results Dropdown */}
+            {query && (
+              <div className="absolute top-12 left-0 right-0 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 max-h-[70vh] overflow-y-auto p-4 space-y-6">
+                {results.length > 0 ? (
+                  <>
+                    {["profile", "organization", "record", "category", "hashtag"].map((type) => {
+                      const groupItems = results.filter((r) => r.type === type);
+                      if (groupItems.length === 0) return null;
+                      const title =
+                        type === "profile" ? "Profiles" :
+                        type === "organization" ? "Companies / Organizations" :
+                        type === "record" ? "Records" :
+                        type === "category" ? "Categories" : "Hashtags";
+                      return (
+                        <div key={type}>
+                          <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2 px-1">
+                            {title}
+                          </h3>
+                          <ul className="space-y-2">
+                            {groupItems.map((item: any) => {
+                              const href =
+                                item.type === "profile" ? `/subject/${item.id}` :
+                                item.type === "organization" ? `/organization/${item.id}` :
+                                item.type === "record" ? `/record/${item.id}` :
+                                item.type === "hashtag" ? `/#${item.tag}` :
+                                item.id ? `/category/${item.id}` :
+                                `/search?category=${encodeURIComponent(item.name)}`;
+                              return (
+                                <SearchResultCard
+                                  key={`${type}-${item.id}`}
+                                  type={item.type}
+                                  title={item.name || item.title || item.organization || `#${item.tag}`}
+                                  subtitle={item.organization || item.category || item.role}
+                                  location={item.location || item.city}
+                                  id={item.id}
+                                  href={href}
+                                  onRemove={() => console.log("Remove", item.id)}
+                                />
+                              );
+                            })}
+                          </ul>
+                        </div>
+                      );
+                    })}
+                  </>
+                ) : (
+                  <div className="text-center text-gray-500 py-6">
+                    <Search className="w-6 h-6 mx-auto mb-2 text-gray-400" />
+                    No results found for "{query}"
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -441,7 +559,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   className="text-[13px] text-gray-700 bg-transparent border-none outline-none cursor-pointer appearance-none h-9 pl-1 pr-5 truncate max-w-[130px]"
                 >
                   <option value="all">All</option>
-                  <option value="profile">Subjects</option>
+                  <option value="profile">Profiles</option>
                   <option value="category">Category</option>
                   <option value="organization">Company / Organization</option>
                   <option value="record">Records</option>
@@ -500,7 +618,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
                         const title =
                           type === "profile"
-                            ? "Subjects"
+                            ? "Profiles"
                             : type === "organization"
                             ? "Companies / Organizations"
                             : type === "record"
@@ -518,11 +636,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                               {groupItems.map((item: any) => {
                                 const href =
                                   item.type === "profile"
-                                    ? `/profile/${item.id}`
+                                    ? `/subject/${item.id}`
                                     : item.type === "organization"
                                     ? `/organization/${item.id}`
                                     : item.type === "record"
-                                    ? `/records/${item.id}`
+                                    ? `/record/${item.id}`
                                     : item.type === "hashtag"
                                     ? `/#${item.tag}`
                                     : item.id
@@ -630,12 +748,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               );
             })}
           </div>
-
-          {!inSettings && !inSubmit && (
-            <div className="mt-6">
-              <Legend />
-            </div>
-          )}
         </aside>
 
         <main className="flex-1 p-4 sm:p-8 overflow-y-auto relative">
