@@ -42,11 +42,12 @@ interface NavItem {
   href: string;
   icon: any;
   special?: boolean;
+  special_profile?: boolean;
 }
 
 const MAIN_NAV: NavItem[] = [
   { name: "My Reputation", href: "/dashboard/reputation", icon: Star },
-  { name: "My Profile", href: "/dashboard/profile", icon: User },
+  { name: "My Profile", href: "/dashboard/profile", icon: User, special_profile: true },
   { name: "Records Submitted", href: "/dashboard/records-submitted", icon: Layers },
   { name: "My Records", href: "/dashboard/myrecords", icon: FileText },
   { name: "Records I've Voted", href: "/dashboard/voted", icon: Vote },
@@ -175,8 +176,33 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [userLocation, setUserLocation] = useState<string>("");
   const [selectedProfileId, setSelectedProfileId] = useState<string>("");
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [subjectId, setSubjectId] = useState<string | null>(null);
   const desktopInputRef = useRef<HTMLInputElement>(null);
   const mobileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    console.log("fetchSubjectId effect fired, user:", user);
+    if (!user?.id) return;
+    async function fetchSubjectId() {
+      try {
+        const { supabase } = await import("@/lib/supabaseClient");
+        const { data, error } = await supabase
+          .from("users")
+          .select("subject_id")
+          .eq("auth_user_id", user!.id)
+          .single();
+        console.log("USER ID:", user!.id);
+        console.log("DATA:", data);
+        console.log("ERROR:", error);
+        if (!error && data?.subject_id) {
+          setSubjectId(data.subject_id);
+        }
+      } catch (err) {
+        console.error("Failed to fetch subject_id:", err);
+      }
+    }
+    fetchSubjectId();
+  }, [user]);
   
   // Save selected category persistently
   useEffect(() => {
@@ -547,10 +573,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {currentNav.map((item) => {
             const active = pathname === item.href;
             const Icon = item.icon;
+            const resolvedHref = item.special_profile && subjectId
+              ? `/subject/${subjectId}`
+              : item.href;
             return (
               <Link
                 key={item.name}
-                href={item.href}
+                href={resolvedHref}
                 onClick={() => setMenuOpen(false)}
                 className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition ${
                   active
@@ -586,8 +615,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 ? `${baseClasses} ${logoutClasses}`
                 : `${baseClasses} ${active ? activeClasses : normalClasses}`;
 
+              const resolvedHref = item.special_profile && subjectId
+                ? `/subject/${subjectId}`
+                : item.href;
               return (
-                <Link key={item.name} href={item.href} className={classes}>
+                <Link
+                  key={item.name}
+                  href={resolvedHref}
+                  className={classes}
+                >
                   <Icon className="w-4 h-4" />
                   {item.name}
                 </Link>

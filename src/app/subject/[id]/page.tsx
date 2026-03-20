@@ -543,6 +543,12 @@ export default function SubjectProfilePage() {
 
   return (
     <div className="max-w-5xl mx-auto p-6">
+      <button
+        onClick={() => window.history.back()}
+        className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 mb-4 transition"
+      >
+        ← Back
+      </button>
       <div className="border rounded-2xl bg-white p-6">
         <div className="flex flex-col md:flex-row gap-6">
           <div className="flex-1">
@@ -843,7 +849,7 @@ export default function SubjectProfilePage() {
                   <div className="grid grid-cols-3 gap-4">
                     <div className="text-center">
                       <div className="text-2xl font-bold text-gray-900">{breakdown.total}</div>
-                      <div className="text-sm text-gray-500">Matching Records</div>
+                      <div className="text-sm text-gray-500">Total Records</div>
                     </div>
                     <div className="text-center">
                       <div className="text-2xl font-bold text-gray-900">{breakdown.evidence}</div>

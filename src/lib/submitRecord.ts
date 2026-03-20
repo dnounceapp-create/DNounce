@@ -24,6 +24,21 @@ export async function submitRecord(formData: SubmitRecordInput) {
   if (!formData.description?.trim()) throw new Error("Missing description");
   if (!formData.rating || formData.rating <= 0) throw new Error("Missing rating");
 
+  // ----------------------------
+  // STEP 1b — Prevent self-submission
+  // ----------------------------
+  const { data: sessionData } = await supabase.auth.getSession();
+  const authUserId = sessionData.session?.user?.id;
+  if (authUserId) {
+    const { data: selfSubject } = await supabase
+      .from("subjects")
+      .select("subject_uuid")
+      .eq("owner_auth_user_id", authUserId)
+      .eq("subject_uuid", formData.subjectId)
+      .maybeSingle();
+    if (selfSubject) throw new Error("You cannot submit a record about yourself.");
+  }
+
   // -----------------------------------
   // STEP 2 — Insert record into Supabase
   // -----------------------------------
