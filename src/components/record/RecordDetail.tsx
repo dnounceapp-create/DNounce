@@ -14,6 +14,8 @@ import {
   Copy,
   Paperclip,
   X,
+  Pin,
+  Eye,
   FileImage,
   File as FileIcon,
   FileText as FileTextIcon,
@@ -3821,6 +3823,86 @@ export default function RecordDetail({
 
   const fetchRecordRef = useRef<null | (() => Promise<void>)>(null);
 
+  useEffect(() => {
+    async function checkPinned() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user || !recordId) return;
+      const { data } = await supabase
+        .from("pinned_records")
+        .select("id")
+        .eq("user_id", session.user.id)
+        .eq("record_id", recordId)
+        .maybeSingle();
+      setPinned(!!data);
+    }
+    checkPinned();
+  }, [recordId]);
+
+  async function togglePin() {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user || !recordId) return;
+    setPinLoading(true);
+    try {
+      if (pinned) {
+        await supabase
+          .from("pinned_records")
+          .delete()
+          .eq("user_id", session.user.id)
+          .eq("record_id", recordId);
+        setPinned(false);
+      } else {
+        await supabase
+          .from("pinned_records")
+          .insert({ user_id: session.user.id, record_id: recordId });
+        setPinned(true);
+      }
+    } catch (err) {
+      console.error("Pin toggle failed:", err);
+    } finally {
+      setPinLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    async function checkFollowing() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user || !recordId) return;
+      const { data } = await supabase
+        .from("record_follows")
+        .select("id")
+        .eq("user_id", session.user.id)
+        .eq("record_id", recordId)
+        .maybeSingle();
+      setFollowing(!!data);
+    }
+    checkFollowing();
+  }, [recordId]);
+
+  async function toggleFollow() {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user || !recordId) return;
+    setFollowLoading(true);
+    try {
+      if (following) {
+        await supabase
+          .from("record_follows")
+          .delete()
+          .eq("user_id", session.user.id)
+          .eq("record_id", recordId);
+        setFollowing(false);
+      } else {
+        await supabase
+          .from("record_follows")
+          .insert({ user_id: session.user.id, record_id: recordId });
+        setFollowing(true);
+      }
+    } catch (err) {
+      console.error("Follow toggle failed:", err);
+    } finally {
+      setFollowLoading(false);
+    }
+  }
+
   const [serverOffsetMs, setServerOffsetMs] = useState(0);
   const [currentStage, setCurrentStage] = useState<number>(1);
 
@@ -3830,6 +3912,10 @@ export default function RecordDetail({
   const [error, setError] = useState<string | null>(null);
 
   const [copied, setCopied] = useState(false);
+  const [pinned, setPinned] = useState(false);
+  const [pinLoading, setPinLoading] = useState(false);
+  const [following, setFollowing] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
   const [viewerRole, setViewerRole] = useState<ViewerRole>("public");
 
   const [viewerProfile, setViewerProfile] = useState<{ first_name: string | null; last_name: string | null; avatar_url: string | null } | null>(
@@ -4448,6 +4534,34 @@ export default function RecordDetail({
                 Copied
               </span>
             )}
+
+            <button
+              type="button"
+              onClick={togglePin}
+              disabled={pinLoading}
+              title={pinned ? "Unpin record" : "Pin record"}
+              className={`inline-flex items-center justify-center rounded-full border p-1.5 shrink-0 transition ${
+                pinned
+                  ? "bg-blue-50 border-blue-300 text-blue-600 hover:bg-blue-100"
+                  : "border-gray-200 text-gray-600 hover:bg-gray-50 active:bg-gray-100"
+              }`}
+            >
+              <Pin className="h-3.5 w-3.5" fill={pinned ? "currentColor" : "none"} />
+            </button>
+
+            <button
+              type="button"
+              onClick={toggleFollow}
+              disabled={followLoading}
+              title={following ? "Unfollow record" : "Follow record for updates"}
+              className={`inline-flex items-center justify-center rounded-full border p-1.5 shrink-0 transition ${
+                following
+                  ? "bg-green-50 border-green-300 text-green-600 hover:bg-green-100"
+                  : "border-gray-200 text-gray-600 hover:bg-gray-50 active:bg-gray-100"
+              }`}
+            >
+              <Eye className="h-3.5 w-3.5" fill={following ? "currentColor" : "none"} />
+            </button>
           </div>
         </div>
 

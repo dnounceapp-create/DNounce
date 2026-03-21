@@ -1,10 +1,9 @@
 "use client";
 
-import { CheckCircle, AlertTriangle, CircleAlert } from "lucide-react";
+import { AlertTriangle, CircleAlert } from "lucide-react";
 import { useMemo, useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { X } from "lucide-react";
-import Image from "next/image";
 import { stageConfig, STAGE_ORDER } from "@/config/stageConfig";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -12,12 +11,12 @@ const DEFAULT_SORT = "Newest Submitted" as const;
 
 type RecordItem = {
   id: string;
-  contributor_alias: string;
+  record_alias: string;
   subject_name: string;
   submitted_at: string;
   stage: number | null;
   outcome: "keep" | "delete" | null;
-  credibility: "Evidence-Based" | "Opinion-Based" | "Unable to Verify" | string;
+  credibility: string;
   last_activity_at: string;
 };
 
@@ -26,7 +25,6 @@ const outcomeLabels: Record<string, { label: string; color: string }> = {
   delete: { label: "Deleted from page", color: "bg-red-200 text-red-800" },
 };
 
-// Human labels for chips
 const filterLabels: Record<string, string> = {
   status: "Status",
   time: "Time",
@@ -35,39 +33,18 @@ const filterLabels: Record<string, string> = {
 
 type FiltersState = { status?: string; time?: string; credibilityrecord?: string };
 
-function RecordMeta({ record }: { record: RecordItem }) {
-  const dateRef = useRef<HTMLParagraphElement>(null);
-
-  return (
-    <div className="flex flex-col items-start max-w-full">
-      <p
-        ref={dateRef}
-        className="text-[11px] sm:text-xs text-gray-500 flex items-center gap-2"
-      >
-        Submitted • {timeAgo(record.submitted_at)} •{" "}
-        {new Date(record.submitted_at).toLocaleDateString()}
-      </p>
-      <StageStepper current={record.outcome ? 7 : record.stage ?? 0} widthRef={dateRef} />
-    </div>
-  );
-}
-
 function timeAgo(dateString: string) {
   const diff = Date.now() - new Date(dateString).getTime();
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-
   if (days < 1) return "Today";
   if (days === 1) return "1 day ago";
   if (days < 7) return `${days} days ago`;
-
   const weeks = Math.floor(days / 7);
   if (weeks === 1) return "About 1 week ago";
   if (weeks < 5) return `About ${weeks} weeks ago`;
-
   const months = Math.floor(days / 30);
   if (months === 1) return "About 1 month ago";
   if (months < 12) return `About ${months} months ago`;
-
   const years = Math.floor(days / 365);
   return years === 1 ? "About 1 year ago" : `About ${years} years ago`;
 }
@@ -83,12 +60,9 @@ function StageStepper({
   const [containerWidth, setContainerWidth] = useState(0);
 
   useEffect(() => {
-    if (widthRef?.current) {
-      setContainerWidth(widthRef.current.offsetWidth);
-    }
+    if (widthRef?.current) setContainerWidth(widthRef.current.offsetWidth);
   }, [widthRef]);
 
-  // space available for connectors between circles
   const connectorWidth =
     containerWidth > 0 ? (containerWidth - steps.length * 20) / (steps.length - 1) : 24;
 
@@ -97,17 +71,12 @@ function StageStepper({
       {steps.map((s, idx) => {
         const isDone = current > s;
         const isActive = current === s;
-
         return (
           <div key={s} className="flex items-center">
             <div
               className={[
                 "w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-semibold transition-colors",
-                isActive
-                  ? "bg-blue-500 text-white"
-                  : isDone
-                  ? "bg-blue-300 text-white"
-                  : "bg-gray-200 text-gray-500",
+                isActive ? "bg-blue-500 text-white" : isDone ? "bg-blue-300 text-white" : "bg-gray-200 text-gray-500",
               ].join(" ")}
             >
               {s}
@@ -125,6 +94,19 @@ function StageStepper({
   );
 }
 
+function RecordMeta({ record }: { record: RecordItem }) {
+  const dateRef = useRef<HTMLParagraphElement>(null);
+  return (
+    <div className="flex flex-col items-start max-w-full">
+      <p ref={dateRef} className="text-[11px] sm:text-xs text-gray-500 flex items-center gap-2">
+        Submitted • {timeAgo(record.submitted_at)} •{" "}
+        {new Date(record.submitted_at).toLocaleDateString()}
+      </p>
+      <StageStepper current={record.outcome ? 7 : record.stage ?? 0} widthRef={dateRef} />
+    </div>
+  );
+}
+
 function statusToStage(status: string): number {
   const map: Record<string, number> = {
     ai_verification: 1,
@@ -138,13 +120,13 @@ function statusToStage(status: string): number {
   return map[status] ?? 1;
 }
 
-export default function MyRecordsPage() {
+export default function RecordsSubmittedPage() {
   const [filters, setFilters] = useState<FiltersState>({});
   const [sort, setSort] = useState<string>(DEFAULT_SORT);
   const [pageSize, setPageSize] = useState(10);
   const [page, setPage] = useState(1);
   const [records, setRecords] = useState<RecordItem[]>([]);
-  const [stats, setStats] = useState({ my_total_records: 0, kept: 0, deleted: 0 });
+  const [stats, setStats] = useState({ total: 0, kept: 0, deleted: 0 });
   const [loadingData, setLoadingData] = useState(true);
 
   useEffect(() => {
@@ -153,13 +135,14 @@ export default function MyRecordsPage() {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session?.user) return;
 
-        const { data: userData } = await supabase
-          .from("users")
-          .select("subject_id")
-          .eq("auth_user_id", session.user.id)
+        // Get contributor_id for this user
+        const { data: contributorData } = await supabase
+          .from("contributors")
+          .select("id")
+          .eq("user_id", session.user.id)
           .single();
 
-        if (!userData?.subject_id) return;
+        if (!contributorData?.id) return;
 
         const { data: rawRecords } = await supabase
           .from("records")
@@ -171,17 +154,16 @@ export default function MyRecordsPage() {
             final_outcome,
             credibility,
             ai_vendor_1_result,
-            subjects!inner(name)
+            subjects(name)
           `)
-          .eq("subject_id", userData.subject_id)
-          .eq("is_published", true)
+          .eq("contributor_id", contributorData.id)
           .order("submitted_at", { ascending: false });
 
         if (!rawRecords) return;
 
         const mapped: RecordItem[] = rawRecords.map((r: any) => ({
           id: r.id,
-          contributor_alias: r.record_alias?.split(" • ")[0] || "Anonymous",
+          record_alias: r.record_alias || "Anonymous",
           subject_name: r.subjects?.name || "Unknown",
           submitted_at: r.submitted_at,
           stage: statusToStage(r.status),
@@ -192,12 +174,12 @@ export default function MyRecordsPage() {
 
         setRecords(mapped);
         setStats({
-          my_total_records: mapped.length,
+          total: mapped.length,
           kept: mapped.filter((r) => r.outcome === "keep").length,
           deleted: mapped.filter((r) => r.outcome === "delete").length,
         });
       } catch (err) {
-        console.error("Failed to fetch records:", err);
+        console.error("Failed to fetch submitted records:", err);
       } finally {
         setLoadingData(false);
       }
@@ -209,23 +191,18 @@ export default function MyRecordsPage() {
   const hasNonDefaultSort = sort !== DEFAULT_SORT;
   const hasActive = hasActiveFilters || hasNonDefaultSort;
 
-  const activeCount =
-    (hasActiveFilters ? Object.keys(filters).length : 0) + (hasNonDefaultSort ? 1 : 0);
-
-  // ---- Helpers to map filter values ---------------------------------------
   const statusToPredicate = (status?: string) => {
     if (!status) return () => true;
-
-    const map: Record<string, (record: RecordItem) => boolean> = {
-      "AI Verification": (record) => record.stage === 1,
-      "Subject Notified": (record) => record.stage === 2,
-      Published: (record) => record.stage === 3,
-      "Deletion Request": (record) => record.stage === 4,
-      Debate: (record) => record.stage === 5,
-      Voting: (record) => record.stage === 6,
-      Anonymity: (record) => record.stage === 7,
-      Kept: (record) => record.outcome === "keep",
-      Deleted: (record) => record.outcome === "delete",
+    const map: Record<string, (r: RecordItem) => boolean> = {
+      "AI Verification": (r) => r.stage === 1,
+      "Subject Notified": (r) => r.stage === 2,
+      Published: (r) => r.stage === 3,
+      "Deletion Request": (r) => r.stage === 4,
+      Debate: (r) => r.stage === 5,
+      Voting: (r) => r.stage === 6,
+      Anonymity: (r) => r.stage === 7,
+      Kept: (r) => r.outcome === "keep",
+      Deleted: (r) => r.outcome === "delete",
     };
     return map[status] ?? (() => true);
   };
@@ -233,58 +210,42 @@ export default function MyRecordsPage() {
   const timeToPredicate = (time?: string) => {
     if (!time) return () => true;
     const now = Date.now();
-    const days =
-      time === "Last 24 hours" ? 1 : time === "Last 7 days" ? 7 : time === "Last 30 days" ? 30 : 0;
+    const days = time === "Last 24 hours" ? 1 : time === "Last 7 days" ? 7 : time === "Last 30 days" ? 30 : 0;
     if (!days) return () => true;
     const cutoff = now - days * 24 * 60 * 60 * 1000;
-    return (record: RecordItem) => new Date(record.submitted_at).getTime() >= cutoff;
+    return (r: RecordItem) => new Date(r.submitted_at).getTime() >= cutoff;
   };
 
-  const credibilityrecordToPredicate = (credibilityrecord?: string) => {
-    if (!credibilityrecord) return () => true;
-    return (record: RecordItem) => record.credibility === credibilityrecord;
+  const credibilityToPredicate = (cred?: string) => {
+    if (!cred) return () => true;
+    return (r: RecordItem) => r.credibility === cred;
   };
 
-  // ---- Sorting comparator ---------------------------------------------------
   const sortComparator = (key: string): ((a: RecordItem, b: RecordItem) => number) => {
     switch (key) {
-      case "Newest Submitted":
-        return (a, b) => new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime();
-      case "Oldest Submitted":
-        return (a, b) => new Date(a.submitted_at).getTime() - new Date(b.submitted_at).getTime();
-      case "Stage (1 → 7)":
-        return (a, b) => {
-          if (a.stage == null && b.stage == null) return 0;
-          if (a.stage == null) return 1;
-          if (b.stage == null) return -1;
-          return a.stage - b.stage;
-        };
-      case "Record ID":
-        return (a, b) => a.id.localeCompare(b.id);
-      case "Subject (A → Z)":
-        return (a, b) => a.subject_name.localeCompare(b.subject_name);
-      case "Last Activity":
-        return (a, b) =>
-          new Date(b.last_activity_at).getTime() - new Date(a.last_activity_at).getTime();
-      default:
-        return () => 0;
+      case "Newest Submitted": return (a, b) => new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime();
+      case "Oldest Submitted": return (a, b) => new Date(a.submitted_at).getTime() - new Date(b.submitted_at).getTime();
+      case "Stage (1 → 7)": return (a, b) => {
+        if (a.stage == null && b.stage == null) return 0;
+        if (a.stage == null) return 1;
+        if (b.stage == null) return -1;
+        return a.stage - b.stage;
+      };
+      case "Record ID": return (a, b) => a.id.localeCompare(b.id);
+      case "Subject (A → Z)": return (a, b) => a.subject_name.localeCompare(b.subject_name);
+      case "Last Activity": return (a, b) => new Date(b.last_activity_at).getTime() - new Date(a.last_activity_at).getTime();
+      default: return () => 0;
     }
   };
 
-  // ---- Apply filters + sort -------------------------------------------------
   const displayRecords = useMemo(() => {
-    const byStatus = statusToPredicate(filters.status);
-    const byTime = timeToPredicate(filters.time);
-    const byType = credibilityrecordToPredicate(filters.credibilityrecord);
-
     const filtered = records.filter(
-      (record) => byStatus(record) && byTime(record) && byType(record)
+      (r) => statusToPredicate(filters.status)(r) && timeToPredicate(filters.time)(r) && credibilityToPredicate(filters.credibilityrecord)(r)
     );
-    const cmp = sortComparator(sort);
-    return [...filtered].sort(cmp);
-  }, [filters, sort]);
+    return [...filtered].sort(sortComparator(sort));
+  }, [records, filters, sort]);
 
-  const totalPages = Math.ceil(displayRecords.length / pageSize);
+  const totalPages = Math.max(1, Math.ceil(displayRecords.length / pageSize));
   const paginatedRecords = displayRecords.slice((page - 1) * pageSize, page * pageSize);
 
   const buildPagination = () => {
@@ -293,9 +254,7 @@ export default function MyRecordsPage() {
       for (let i = 1; i <= totalPages; i++) pages.push(i);
     } else {
       if (page > 3) pages.push(1, "…");
-      for (let i = Math.max(1, page - 2); i <= Math.min(totalPages, page + 2); i++) {
-        pages.push(i);
-      }
+      for (let i = Math.max(1, page - 2); i <= Math.min(totalPages, page + 2); i++) pages.push(i);
       if (page < totalPages - 2) pages.push("…", totalPages);
     }
     return pages;
@@ -306,52 +265,31 @@ export default function MyRecordsPage() {
     delete next[key];
     setFilters(next);
   };
-  const clearFilters = () => setFilters({});
-  const clearSort = () => setSort(DEFAULT_SORT);
-  const clearAll = () => {
-    setFilters({});
-    setSort(DEFAULT_SORT);
-  };
 
-  const handleDisputeRecord = (id: string) => {
-    alert(`Dispute Record for record #${id}`);
-  };
-
-  // ---- UI -------------------------------------------------------------------
   return (
     <div className="min-h-screen bg-gray-50">
       <main className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto">
+
         {/* Stats Row */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
           <div className="bg-white/90 backdrop-blur-sm shadow-sm hover:shadow-md transition rounded-2xl p-4 sm:p-6 text-center border border-gray-100">
-            <p className="text-xs sm:text-sm font-medium text-gray-600">My Total Records</p>
-            <p className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
-              {stats.my_total_records}
-            </p>
+            <p className="text-xs sm:text-sm font-medium text-gray-600">Total Submitted</p>
+            <p className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">{stats.total}</p>
           </div>
-
           <div className="bg-white/90 backdrop-blur-sm shadow-sm hover:shadow-md transition rounded-2xl p-4 sm:p-6 text-center border border-gray-100">
             <p className="text-xs sm:text-sm font-medium text-gray-600">Kept Records</p>
-            <p className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
-              {stats.kept}
-            </p>
+            <p className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">{stats.kept}</p>
           </div>
-
           <div className="bg-white/90 backdrop-blur-sm shadow-sm hover:shadow-md transition rounded-2xl p-4 sm:p-6 text-center border border-gray-100">
             <p className="text-xs sm:text-sm font-medium text-gray-600">Deleted Records</p>
-            <p className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
-              {stats.deleted}
-            </p>
+            <p className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">{stats.deleted}</p>
           </div>
         </div>
 
         {/* Filters + Sort */}
         <div className="flex flex-col gap-3 sm:gap-4 md:flex-row md:items-center md:justify-between mb-6 sm:mb-8 bg-white/90 backdrop-blur-sm shadow-sm rounded-2xl px-4 sm:px-6 py-3 sm:py-4 border border-gray-100">
-          {/* Left: Filters */}
           <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 sm:gap-3">
-            <span className="col-span-2 sm:col-span-1 font-medium text-gray-700 text-sm">
-              Filters
-            </span>
+            <span className="col-span-2 sm:col-span-1 font-medium text-gray-700 text-sm">Filters</span>
 
             <select
               aria-label="Filter by status"
@@ -387,9 +325,7 @@ export default function MyRecordsPage() {
               aria-label="Filter by credibility"
               className="border rounded-md px-3 py-2 text-sm hover:shadow-sm w-full sm:w-auto"
               value={filters.credibilityrecord || ""}
-              onChange={(e) =>
-                setFilters({ ...filters, credibilityrecord: e.target.value })
-              }
+              onChange={(e) => setFilters({ ...filters, credibilityrecord: e.target.value })}
             >
               <option value="">Credibility Record</option>
               <option>Evidence-Based</option>
@@ -397,9 +333,9 @@ export default function MyRecordsPage() {
               <option>Unable to Verify</option>
             </select>
 
-            {Object.keys(filters).length > 0 && (
+            {hasActiveFilters && (
               <button
-                onClick={clearFilters}
+                onClick={() => setFilters({})}
                 className="px-3 py-2 text-xs sm:text-sm font-medium rounded-full bg-gray-100 text-gray-800 hover:bg-gray-200 transition w-full sm:w-auto"
               >
                 Clear Filters
@@ -407,18 +343,15 @@ export default function MyRecordsPage() {
             )}
           </div>
 
-          {/* Right: Clear All + Sort */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4">
             {hasActive && (
               <button
-                onClick={clearAll}
-                title="Clear all filters and sorting"
+                onClick={() => { setFilters({}); setSort(DEFAULT_SORT); }}
                 className="px-3 py-2 text-xs sm:text-sm font-medium rounded-full bg-black text-white hover:bg-gray-800 transition w-full sm:w-auto"
               >
                 Clear All
               </button>
             )}
-
             <div className="flex items-center gap-2">
               <span className="font-medium text-gray-700 text-sm">Sort</span>
               <select
@@ -434,10 +367,9 @@ export default function MyRecordsPage() {
                 <option>Subject (A → Z)</option>
                 <option>Last Activity</option>
               </select>
-
               {hasNonDefaultSort && (
                 <button
-                  onClick={clearSort}
+                  onClick={() => setSort(DEFAULT_SORT)}
                   className="px-3 py-2 text-xs sm:text-sm font-medium rounded-full bg-gray-100 text-gray-800 hover:bg-gray-200 transition"
                 >
                   Clear Sort
@@ -459,7 +391,6 @@ export default function MyRecordsPage() {
                   {filterLabels[key]}: {value}
                   <button
                     onClick={() => removeFilter(key as keyof FiltersState)}
-                    aria-label={`Remove ${filterLabels[key]} filter`}
                     className="hover:bg-white/20 rounded-full p-0.5 transition"
                   >
                     <X size={14} className="text-white" />
@@ -472,74 +403,59 @@ export default function MyRecordsPage() {
 
         {/* Record List */}
         <div className="bg-white shadow rounded-xl border border-gray-100">
-          {/* Header row — hidden on mobile */}
-          <div className="hidden md:grid grid-cols-4 px-6 py-3 font-semibold text-gray-600 text-sm">
+          <div className="hidden md:grid grid-cols-3 px-6 py-3 font-semibold text-gray-600 text-sm">
             <div>Record Name</div>
             <div className="text-center">Status</div>
             <div className="text-center">Credibility Record</div>
-            <div className="flex justify-center">Dispute Record</div>
           </div>
 
           {loadingData ? (
             <div className="p-6 text-center text-gray-500">Loading records…</div>
           ) : displayRecords.length === 0 ? (
             <div className="p-6 text-center text-gray-500">
-              No records found against you.
+              You haven't submitted any records yet.
             </div>
           ) : (
             paginatedRecords.map((record) => (
               <div
                 key={record.id}
-                className="md:grid md:grid-cols-4 md:items-center gap-3 px-4 sm:px-6 py-4 md:py-5 border-t first:border-t-0 hover:bg-gray-50/50 transition"
+                className="md:grid md:grid-cols-3 md:items-center gap-3 px-4 sm:px-6 py-4 md:py-5 border-t first:border-t-0 hover:bg-gray-50/50 transition"
               >
-                {/* Mobile: stacked card header */}
                 <div className="md:col-span-1">
                   <Link href={`/record/${record.id}`} className="font-medium text-gray-900 text-sm sm:text-base hover:underline">
-                    {record.contributor_alias} vs {record.subject_name}
+                    {record.record_alias}
                   </Link>
-                  <p className="text-[11px] sm:text-xs text-gray-500">Record ID: {String(record.id).slice(0, 8)}…</p>
-
-                  {/* date + stepper with shared width */}
+                  <p className="text-[11px] sm:text-xs text-gray-500 mt-0.5">
+                    Subject: {record.subject_name}
+                  </p>
+                  <p className="text-[11px] sm:text-xs text-gray-400">
+                    Record ID: {String(record.id).slice(0, 8)}…
+                  </p>
                   <div className="mt-2">
                     <RecordMeta record={record} />
                   </div>
                 </div>
 
-                {/* Status */}
                 <div className="mt-3 md:mt-0 text-left md:text-center">
                   {record.stage && record.stage !== 7 ? (
                     (() => {
                       const s = stageConfig[record.stage];
-                      if (!s) {
-                        return (
-                          <span className="inline-block px-2 py-1 rounded-full text-[11px] sm:text-xs font-medium bg-gray-100 text-gray-600">
-                            —
-                          </span>
-                        );
-                      }
+                      if (!s) return <span className="inline-block px-2 py-1 rounded-full text-[11px] sm:text-xs font-medium bg-gray-100 text-gray-600">—</span>;
                       return (
-                        <span
-                          className={`inline-block px-2 py-1 rounded-full text-[11px] sm:text-xs font-medium ${s.ui.chipClass}`}
-                          title={`${s.timeline.summary} — ${s.happens}`}
-                        >
+                        <span className={`inline-block px-2 py-1 rounded-full text-[11px] sm:text-xs font-medium ${s.ui.chipClass}`}>
                           {s.label}
                         </span>
                       );
                     })()
                   ) : record.outcome ? (
-                    <span
-                      className={`inline-block px-2 py-1 rounded-full text-[11px] sm:text-xs font-medium ${outcomeLabels[record.outcome].color}`}
-                    >
-                      {outcomeLabels[record.outcome].label}
+                    <span className={`inline-block px-2 py-1 rounded-full text-[11px] sm:text-xs font-medium ${outcomeLabels[record.outcome]?.color || "bg-gray-100 text-gray-600"}`}>
+                      {outcomeLabels[record.outcome]?.label || record.outcome}
                     </span>
                   ) : (
-                    <span className="inline-block px-2 py-1 rounded-full text-[11px] sm:text-xs font-medium bg-gray-100 text-gray-600">
-                      —
-                    </span>
+                    <span className="inline-block px-2 py-1 rounded-full text-[11px] sm:text-xs font-medium bg-gray-100 text-gray-600">—</span>
                   )}
                 </div>
 
-                {/* Credibility */}
                 <div className="mt-3 md:mt-0 text-left md:text-center">
                   <span
                     className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] sm:text-xs font-medium ${
@@ -550,45 +466,23 @@ export default function MyRecordsPage() {
                         : "bg-yellow-100 text-yellow-700"
                     }`}
                   >
-                    {record.credibility === "Opinion-Based" && (
-                      <AlertTriangle size={12} className="text-red-700" />
-                    )}
-                    {record.credibility === "Unable to Verify" && (
-                      <CircleAlert size={12} className="text-yellow-700" />
-                    )}
+                    {record.credibility === "Opinion-Based" && <AlertTriangle size={12} className="text-red-700" />}
+                    {record.credibility === "Unable to Verify" && <CircleAlert size={12} className="text-yellow-700" />}
                     {record.credibility}
                   </span>
-                </div>
-
-                {/* Action */}
-                <div className="mt-3 md:mt-0 flex md:justify-center">
-                  {record.stage === 3 && !stageConfig[3].flags.interactionsLocked ? (
-                    <button
-                      onClick={() => handleDisputeRecord(record.id)}
-                      className="px-3 py-2 bg-orange-500 text-white text-xs sm:text-sm rounded-md hover:bg-orange-600 active:scale-[0.99] transition"
-                    >
-                      Dispute Record
-                    </button>
-                  ) : (
-                    <span className="text-[11px] sm:text-xs text-gray-400">—</span>
-                  )}
                 </div>
               </div>
             ))
           )}
 
-          {/* Pagination Controls */}
+          {/* Pagination */}
           <div className="px-4 sm:px-6 py-4 bg-white/70 backdrop-blur-md border-t border-gray-100 rounded-b-xl">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              {/* Rows per page */}
               <div className="flex items-center gap-2 text-sm text-gray-700">
                 <span className="whitespace-nowrap">Rows per page:</span>
                 <select
                   value={pageSize}
-                  onChange={(e) => {
-                    setPageSize(Number(e.target.value));
-                    setPage(1);
-                  }}
+                  onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
                   className="border rounded px-2 py-1.5 text-sm hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
                 >
                   <option value={10}>10</option>
@@ -598,12 +492,10 @@ export default function MyRecordsPage() {
                 </select>
               </div>
 
-              {/* Page navigation */}
               <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
                 <button
                   disabled={page === 1}
                   onClick={() => setPage(page - 1)}
-                  aria-label="Previous page"
                   className="px-3 py-1.5 rounded-full border text-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-100 transition whitespace-nowrap"
                 >
                   Previous
@@ -611,14 +503,11 @@ export default function MyRecordsPage() {
 
                 {buildPagination().map((p, i) =>
                   typeof p === "string" ? (
-                    <span key={`${p}-${i}`} className="px-2 text-sm select-none">
-                      …
-                    </span>
+                    <span key={`${p}-${i}`} className="px-2 text-sm select-none">…</span>
                   ) : (
                     <button
                       key={i}
                       onClick={() => setPage(p)}
-                      aria-label={`Go to page ${p}`}
                       className={`px-3 py-1.5 rounded-full text-sm transition-all whitespace-nowrap ${
                         page === p
                           ? "bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-md"
@@ -633,7 +522,6 @@ export default function MyRecordsPage() {
                 <button
                   disabled={page === totalPages}
                   onClick={() => setPage(page + 1)}
-                  aria-label="Next page"
                   className="px-3 py-1.5 rounded-full border text-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-100 transition whitespace-nowrap"
                 >
                   Next
