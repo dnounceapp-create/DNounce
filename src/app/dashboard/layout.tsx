@@ -405,9 +405,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       const href = item.type === "profile" ? `/subject/${item.id}` : `/record/${item.id}`;
                       return (
                         <>
-                          {(() => { console.log("item avatar_url:", item.type, item.avatar_url); return null; })()}
                           <SearchResultCard
-                            key={`${type}-${item.id}`}
+                            key={`${item.type}-${item.id}`}
                             type={item.type}
                             title={item.name || item.title || item.organization || `#${item.tag}`}
                             subtitle={item.organization || item.category || item.role}
