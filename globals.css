@@ -120,3 +120,22 @@ input:focus, textarea:focus, select:focus {
 }
 
 
+img {
+  -webkit-user-drag: none;
+  user-drag: none;
+}
+
+.no-screenshot {
+  position: relative;
+  isolation: isolate;
+}
+
+.no-screenshot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  mix-blend-mode: screen;
+  background: rgba(255, 255, 255, 0.01);
+  pointer-events: none;
+  z-index: 1;
+}

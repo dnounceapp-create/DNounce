@@ -12,6 +12,7 @@ import {
   CheckCircle,
   AlertTriangle,
   CircleAlert,
+  X,
 } from "lucide-react";
 import {
   FaInstagram,
@@ -212,6 +213,7 @@ export default function SubjectProfilePage() {
 
   // comments/traction per record
   const [commentCounts, setCommentCounts] = useState<Record<string, number>>({});
+  const [avatarLightboxOpen, setAvatarLightboxOpen] = useState(false);
 
   const hasActiveFilters = Object.values(filters).some(Boolean);
   const hasNonDefaultSort = sort !== DEFAULT_SORT;
@@ -559,17 +561,43 @@ export default function SubjectProfilePage() {
               <div className="flex flex-col">
                 {/* Avatar + 3 lines */}
                 <div className="grid grid-cols-[72px_1fr] gap-x-4 items-start">
-                  <div className="w-[72px] h-[72px] bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
+                <div
+                    className={`w-[72px] h-[72px] bg-gray-200 rounded-full flex items-center justify-center overflow-hidden ${subject.avatar_url ? "cursor-pointer hover:ring-2 hover:ring-gray-900 transition" : ""}`}
+                    onClick={() => subject.avatar_url && setAvatarLightboxOpen(true)}
+                  >
                     {subject.avatar_url ? (
                       <img
                         src={subject.avatar_url}
                         alt="Subject avatar"
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover select-none pointer-events-none no-screenshot"
+                        style={{ WebkitUserSelect: "none", userSelect: "none" }}
                       />
                     ) : (
                       <User className="h-8 w-8 text-gray-600" />
                     )}
                   </div>
+
+                  {avatarLightboxOpen && subject.avatar_url && (
+                    <div
+                      className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4"
+                      onClick={() => setAvatarLightboxOpen(false)}
+                    >
+                      <div className="relative max-w-sm w-full" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={() => setAvatarLightboxOpen(false)}
+                          className="absolute -top-10 right-0 text-white hover:text-gray-300 transition"
+                        >
+                          <X className="w-6 h-6" />
+                        </button>
+                        <img
+                          src={subject.avatar_url}
+                          alt="Subject avatar"
+                          className="w-full rounded-2xl object-cover shadow-2xl select-none no-screenshot"
+                          style={{ WebkitUserSelect: "none", userSelect: "none" }}
+                        />
+                      </div>
+                    </div>
+                  )}
 
                   <div className="flex flex-col gap-1 pt-0.5">
                     <h3 className="text-xl font-semibold text-gray-900 leading-tight">

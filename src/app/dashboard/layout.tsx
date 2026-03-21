@@ -35,6 +35,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { supabase } from "@/lib/supabaseClient";
 
 interface NavItem {
   name: string;
@@ -106,7 +107,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (!user?.id) return;
     async function fetchSubjectId() {
       try {
-        const { supabase } = await import("@/lib/supabaseClient");
         const { data, error } = await supabase
           .from("users")
           .select("subject_id")
@@ -404,16 +404,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     {advResults.map((item: any) => {
                       const href = item.type === "profile" ? `/subject/${item.id}` : `/record/${item.id}`;
                       return (
-                        <SearchResultCard
-                          key={`${item.type}-${item.id}`}
-                          type={item.type}
-                          title={item.name}
-                          subtitle={item.organization || item.category}
-                          location={item.location}
-                          id={item.id}
-                          href={href}
-                          onRemove={() => {}}
-                        />
+                        <>
+                          {(() => { console.log("item avatar_url:", item.type, item.avatar_url); return null; })()}
+                          <SearchResultCard
+                            key={`${type}-${item.id}`}
+                            type={item.type}
+                            title={item.name || item.title || item.organization || `#${item.tag}`}
+                            subtitle={item.organization || item.category || item.role}
+                            location={item.location || item.city}
+                            id={item.id}
+                            href={href}
+                            avatarUrl={item.avatar_url || null}
+                            onRemove={() => console.log("Remove", item.id)}
+                          />
+                        </>
                       );
                     })}
                   </div>
@@ -454,21 +458,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                 item.type === "hashtag" ? `/#${item.tag}` :
                                 item.id ? `/category/${item.id}` :
                                 `/search?category=${encodeURIComponent(item.name)}`;
-                              return (
-                                <SearchResultCard
-                                  key={`${type}-${item.id}`}
-                                  type={item.type}
-                                  title={item.name || item.title || item.organization || `#${item.tag}`}
-                                  subtitle={item.organization || item.category || item.role}
-                                  location={item.location || item.city}
-                                  id={item.id}
-                                  href={href}
-                                  onRemove={() => console.log("Remove", item.id)}
-                                />
-                              );
-                            })}
-                          </ul>
-                        </div>
+                                return (
+                                  <SearchResultCard
+                                    key={`${type}-${item.id}`}
+                                    type={item.type}
+                                    title={item.name || item.title || item.organization || `#${item.tag}`}
+                                    subtitle={item.organization || item.category || item.role}
+                                    location={item.location || item.city}
+                                    id={item.id}
+                                    href={href}
+                                    avatarUrl={item.avatar_url || null}
+                                    onRemove={() => console.log("Remove", item.id)}
+                                  />
+                                );
+                              })}
+                            </ul>
+                          </div>
                       );
                     })}
                   </>
@@ -656,6 +661,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                     location={item.location || item.city}
                                     id={item.id}
                                     href={href}
+                                    avatarUrl={item.avatar_url || null}
                                     onRemove={() => console.log("Remove", item.id)}
                                   />
                                 );    

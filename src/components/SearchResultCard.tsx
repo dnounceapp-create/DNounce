@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import {
   User,
@@ -12,20 +13,14 @@ import {
 } from "lucide-react";
 
 interface SearchResultCardProps {
-  /** record type */
   type: "profile" | "organization" | "record" | "category" | "hashtag" | string;
-  /** main display name */
   title: string;
-  /** optional subtitle (e.g. company name, category) */
   subtitle?: string;
-  /** optional location */
   location?: string;
-  /** record id */
   id?: string;
-  /** link destination */
   href?: string;
-  /** when user clicks the ❌ */
   onRemove?: () => void;
+  avatarUrl?: string | null;
 }
 
 /**
@@ -43,6 +38,7 @@ export default function SearchResultCard({
   id,
   href = "#",
   onRemove,
+  avatarUrl,
 }: SearchResultCardProps) {
   /** choose icon + color per type */
   const typeStyles = {
@@ -54,6 +50,7 @@ export default function SearchResultCard({
   }[type] || { icon: User, color: "text-gray-600 border-gray-400" };
 
   const Icon = typeStyles.icon;
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   return (
     <div className="flex items-center justify-between border border-gray-200 rounded-xl p-3 hover:shadow-sm transition bg-white">
@@ -61,10 +58,42 @@ export default function SearchResultCard({
       <div className="flex items-center gap-3 min-w-0">
         {/* circular icon */}
         <div
-          className={`w-9 h-9 flex items-center justify-center rounded-full border ${typeStyles.color} flex-shrink-0`}
+          className={`w-9 h-9 flex items-center justify-center rounded-full border overflow-hidden ${avatarUrl ? "border-gray-900" : typeStyles.color} flex-shrink-0 ${avatarUrl ? "cursor-pointer" : ""}`}
+          onClick={(e) => {
+            if (avatarUrl) {
+              e.preventDefault();
+              e.stopPropagation();
+              setLightboxOpen(true);
+            }
+          }}
         >
-          <Icon className="w-4 h-4" />
+          {avatarUrl ? (
+            <img src={avatarUrl} alt={title} className="w-full h-full object-cover select-none pointer-events-none" style={{ WebkitUserSelect: "none", userSelect: "none" }} />
+          ) : (
+            <Icon className="w-4 h-4" />
+          )}
         </div>
+
+        {lightboxOpen && avatarUrl && (
+          <div
+            className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4"
+            onClick={() => setLightboxOpen(false)}
+          >
+            <div className="relative max-w-sm w-full" onClick={(e) => e.stopPropagation()}>
+              <button
+                onClick={() => setLightboxOpen(false)}
+                className="absolute -top-10 right-0 text-white hover:text-gray-300 transition"
+              >
+                <X className="w-6 h-6" />
+              </button>
+              <img
+                src={avatarUrl}
+                alt={title}
+                className="w-full rounded-2xl object-cover shadow-2xl"
+              />
+            </div>
+          </div>
+        )}
 
         {/* text area */}
         <div className="min-w-0">
