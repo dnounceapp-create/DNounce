@@ -29,6 +29,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { stageConfig } from "@/config/stageConfig";
 import AgreeDisagree from "@/components/reactions/AgreeDisagree";
+import MentionTextarea, { notifyMentions } from "@/components/MentionTextarea";
 
 const PUBLIC_STAGE_ORDER = [3, 6, 7] as const;
 const FULL_STAGE_ORDER = [1, 2, 3, 4, 5, 6, 7] as const;
@@ -982,12 +983,13 @@ function ReplyBubble({
                   </button>
                 </div>
 
-                <textarea
+                <MentionTextarea
                   value={replyBody}
-                  onChange={(e) => setReplyBody(e.target.value)}
+                  onChange={setReplyBody}
+                  recordId={node.record_id}
                   rows={3}
-                  className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-900 outline-none focus:border-gray-900"
                   placeholder="Write a reply…"
+                  className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-900 outline-none focus:border-gray-900"
                   onClick={stop}
                   onMouseDown={stop}
                   onKeyDown={stop}
@@ -1870,6 +1872,9 @@ function DebateCourtroom({
         setExpanded((prev) => ({ ...prev, [opts.expandParentIfNeeded as string]: true }));
       }
 
+      if (text.includes("@")) {
+        await notifyMentions(record.id, text, actorId, authorRole === "subject" ? subjectName : contributorSelf.name);
+      }
       opts.after();
       await load();
     } catch (e: any) {
@@ -1942,12 +1947,13 @@ function DebateCourtroom({
             <div className="text-[11px] text-gray-500 rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1">No edits</div>
           </div>
 
-          <textarea
+          <MentionTextarea
             value={statementBody}
-            onChange={(e) => setStatementBody(e.target.value)}
+            onChange={setStatementBody}
+            recordId={record.id}
             rows={5}
-            className="mt-3 w-full rounded-2xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-900 outline-none focus:border-gray-900"
             placeholder="Make your point clearly. Others will reply inside the thread."
+            className="mt-3 w-full rounded-2xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-900 outline-none focus:border-gray-900"
             onClick={stop}
             onMouseDown={stop}
             onKeyDown={stop}
@@ -2898,12 +2904,15 @@ function VotingCourtroom({
         });
         if (error) throw error;
 
-      setCommunityStatementDraft("");
-      await Promise.all([
-        loadCommunity(record.id, actorId),
-        loadExecutionByVote(record.id, actorId),
-      ]);
-    } catch (e: any) {
+        if (text.includes("@")) {
+          await notifyMentions(record.id, text, actorId, alias);
+        }
+        setCommunityStatementDraft("");
+        await Promise.all([
+          loadCommunity(record.id, actorId),
+          loadExecutionByVote(record.id, actorId),
+        ]);
+      } catch (e: any) {
       alert(e?.message || "Failed to post statement.");
     } finally {
       setPostingReply(false);
@@ -2955,6 +2964,9 @@ function VotingCourtroom({
 
       if (error) throw error;
 
+      if (text.includes("@")) {
+        await notifyMentions(record.id, text, actorId, alias);
+      }
       setCommunityReplyDraft("");
       setReplyingToCommunity(null);
       await loadCommunity(record.id, actorId);
@@ -3315,6 +3327,9 @@ function VotingCourtroom({
     try {
       await supabase.rpc("delete_vote_reply", { p_reply_id: replyId });
       const actorId = await getActorId();
+      if (text.includes("@")) {
+        await notifyMentions(record.id, text, actorId, alias);
+      }
       await Promise.all([
         loadVoteReplies(record.id),
         loadExecutionByVote(record.id, actorId),
@@ -3683,12 +3698,13 @@ function VotingCourtroom({
           <div className="mt-4 rounded-2xl border bg-gray-50 p-4">
             <div className="text-xs font-semibold text-gray-900">Replying…</div>
 
-            <textarea
+            <MentionTextarea
               value={replyDraft}
-              onChange={(e) => setReplyDraft(e.target.value)}
+              onChange={setReplyDraft}
+              recordId={record.id}
               rows={3}
-              className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-900"
               placeholder="Write your reply…"
+              className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-900"
             />
 
             <div className="mt-3 flex flex-col sm:flex-row sm:justify-end gap-3">
@@ -3732,12 +3748,13 @@ function VotingCourtroom({
             ) : (
               <>
                 <div className="text-xs font-semibold text-gray-900">Your community statement</div>
-                <textarea
+                <MentionTextarea
                   value={communityStatementDraft}
-                  onChange={(e) => setCommunityStatementDraft(e.target.value)}
+                  onChange={setCommunityStatementDraft}
+                  recordId={record.id}
                   rows={4}
-                  className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-900"
                   placeholder="Write your statement…"
+                  className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-900"
                 />
                 <div className="mt-3 flex justify-end">
                   <button
@@ -3828,12 +3845,13 @@ function VotingCourtroom({
           <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4">
             <div className="text-xs font-semibold text-gray-900">Replying…</div>
 
-            <textarea
+            <MentionTextarea
               value={communityReplyDraft}
-              onChange={(e) => setCommunityReplyDraft(e.target.value)}
+              onChange={setCommunityReplyDraft}
+              recordId={record.id}
               rows={3}
-              className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-900"
               placeholder="Write your reply…"
+              className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-900"
             />
 
             <div className="mt-3 flex justify-end gap-3">
