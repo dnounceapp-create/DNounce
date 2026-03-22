@@ -1,95 +1,45 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { CheckCircle2, XCircle } from "lucide-react";
+import { CheckCircle2, XCircle, Lock } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 
 type Prefs = {
   notif_email: boolean;
   notif_push: boolean;
-
-  // Subject
-  notif_subject_record_submitted: boolean;
-  notif_subject_record_published: boolean;
-  notif_subject_dispute_opened: boolean;
-  notif_subject_debate_open: boolean;
-  notif_subject_voting_started: boolean;
-  notif_subject_voting_ended: boolean;
-  notif_subject_interaction_unlocked: boolean;
-  notif_subject_reply_to_statement: boolean;
-
-  // Contributor
-  notif_contributor_ai_complete: boolean;
-  notif_contributor_record_published: boolean;
-  notif_contributor_record_disputed: boolean;
-  notif_contributor_debate_open: boolean;
-  notif_contributor_voting_started: boolean;
-  notif_contributor_voting_ended: boolean;
-  notif_contributor_interaction_unlocked: boolean;
-  notif_contributor_reply_to_statement: boolean;
-
-  // Voter
-  notif_voter_voting_open: boolean;
-  notif_voter_voting_ended: boolean;
-  notif_voter_vote_flagged: boolean;
-  notif_voter_reply_to_vote: boolean;
-
-  // Citizen
-  notif_citizen_reply_to_statement: boolean;
-  notif_citizen_record_decided: boolean;
-
-  // Pinned
-  notif_pinned_stage_change: boolean;
+  notif_tagged: boolean;
+  notif_debate_new_statement: boolean;
+  notif_debate_reply: boolean;
+  notif_community_new_statement: boolean;
+  notif_vote_reply: boolean;
   notif_pinned_debate_open: boolean;
   notif_pinned_voting_open: boolean;
-  notif_pinned_decided: boolean;
-
-  // Following
-  notif_following_stage_change: boolean;
+  notif_pinned_outcome: boolean;
+  notif_pinned_all_activity: boolean;
   notif_following_debate_open: boolean;
   notif_following_voting_open: boolean;
-  notif_following_decided: boolean;
+  notif_following_outcome: boolean;
+  notif_following_all_activity: boolean;
+  notif_citizen_community_activity: boolean;
 };
 
 const DEFAULTS: Prefs = {
   notif_email: true,
   notif_push: false,
-
-  notif_subject_record_submitted: true,
-  notif_subject_record_published: true,
-  notif_subject_dispute_opened: true,
-  notif_subject_debate_open: true,
-  notif_subject_voting_started: true,
-  notif_subject_voting_ended: true,
-  notif_subject_interaction_unlocked: true,
-  notif_subject_reply_to_statement: true,
-
-  notif_contributor_ai_complete: true,
-  notif_contributor_record_published: true,
-  notif_contributor_record_disputed: true,
-  notif_contributor_debate_open: true,
-  notif_contributor_voting_started: true,
-  notif_contributor_voting_ended: true,
-  notif_contributor_interaction_unlocked: true,
-  notif_contributor_reply_to_statement: true,
-
-  notif_voter_voting_open: true,
-  notif_voter_voting_ended: true,
-  notif_voter_vote_flagged: true,
-  notif_voter_reply_to_vote: true,
-
-  notif_citizen_reply_to_statement: true,
-  notif_citizen_record_decided: false,
-
-  notif_pinned_stage_change: true,
+  notif_tagged: true,
+  notif_debate_new_statement: true,
+  notif_debate_reply: true,
+  notif_community_new_statement: true,
+  notif_vote_reply: true,
   notif_pinned_debate_open: true,
   notif_pinned_voting_open: true,
-  notif_pinned_decided: true,
-
-  notif_following_stage_change: true,
+  notif_pinned_outcome: true,
+  notif_pinned_all_activity: false,
   notif_following_debate_open: true,
   notif_following_voting_open: true,
-  notif_following_decided: true,
+  notif_following_outcome: true,
+  notif_following_all_activity: false,
+  notif_citizen_community_activity: false,
 };
 
 function ToggleRow({
@@ -97,28 +47,39 @@ function ToggleRow({
   desc,
   value,
   onChange,
+  locked,
 }: {
   title: string;
   desc: string;
   value: boolean;
-  onChange: (v: boolean) => void;
+  onChange?: (v: boolean) => void;
+  locked?: boolean;
 }) {
   return (
-    <div className="flex items-center justify-between bg-white border border-gray-200 rounded-xl p-3">
-      <div className="mr-4">
-        <p className="font-medium text-gray-800 text-sm">{title}</p>
-        <p className="text-xs text-gray-500 mt-0.5">{desc}</p>
+    <div className={`flex items-center justify-between border rounded-xl p-3 ${locked ? "bg-gray-50 border-gray-100" : "bg-white border-gray-200"}`}>
+      <div className="mr-4 flex-1">
+        <div className="flex items-center gap-2">
+          <p className={`font-medium text-sm ${locked ? "text-gray-400" : "text-gray-800"}`}>{title}</p>
+          {locked && <Lock className="w-3 h-3 text-gray-400" />}
+        </div>
+        <p className="text-xs text-gray-400 mt-0.5">{desc}</p>
       </div>
-      <button
-        onClick={() => onChange(!value)}
-        className={`shrink-0 px-4 py-1 rounded-full text-sm font-medium transition-all ${
-          value
-            ? "bg-green-100 text-green-700 border border-green-300"
-            : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-        }`}
-      >
-        {value ? "On" : "Off"}
-      </button>
+      {locked ? (
+        <span className="shrink-0 px-4 py-1 rounded-full text-sm font-medium bg-green-50 text-green-600 border border-green-200">
+          Always on
+        </span>
+      ) : (
+        <button
+          onClick={() => onChange?.(!value)}
+          className={`shrink-0 px-4 py-1 rounded-full text-sm font-medium transition-all ${
+            value
+              ? "bg-green-100 text-green-700 border border-green-300"
+              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+          }`}
+        >
+          {value ? "On" : "Off"}
+        </button>
+      )}
     </div>
   );
 }
@@ -144,13 +105,11 @@ export default function NotificationsPage() {
     async function load() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) return;
-
       const { data } = await supabase
         .from("user_preferences")
         .select("*")
         .eq("user_id", session.user.id)
         .maybeSingle();
-
       if (data) {
         setPrefs((prev) => ({
           ...prev,
@@ -202,9 +161,10 @@ export default function NotificationsPage() {
     <div className="min-h-screen bg-gray-50 text-gray-900 p-4 sm:p-6 lg:p-8">
       <div className="max-w-3xl mx-auto">
         <h1 className="text-3xl font-bold mb-2">Notifications</h1>
-        <p className="text-gray-600 mb-8">
-          Control exactly when and how DNounce alerts you — by role and by stage.
+        <p className="text-gray-500 mb-2 text-sm">
+          Control exactly when DNounce alerts you. Locked items cannot be turned off — they protect you from missing critical updates about your records.
         </p>
+        <p className="text-gray-400 text-xs mb-8">Everything else is on by default but fully adjustable.</p>
 
         <div className="bg-white border border-gray-200 rounded-2xl p-6 space-y-8">
 
@@ -214,162 +174,62 @@ export default function NotificationsPage() {
             <ToggleRow title="Push notifications" desc="Browser or PWA alerts even when DNounce isn't open." value={prefs.notif_push} onChange={set("notif_push")} />
           </Section>
 
-          {/* ── Subject ── */}
-          <Section title="Subject" subtitle="You are the person a record is about.">
+          {/* ── Always On ── */}
+          <Section title="Critical Alerts" subtitle="These cannot be turned off. They ensure you never miss something that requires your action.">
+            <ToggleRow locked title="Record stage changes" desc="Every time a record you're involved in moves to a new stage — as subject or contributor." value={true} />
+            <ToggleRow locked title="Vote flagged" desc="When your vote explanation is flagged as low quality by the community." value={true} />
+            <ToggleRow locked title="Vote convicted" desc="When your vote is disqualified and removed from the final tally." value={true} />
+          </Section>
+
+          {/* ── Tags ── */}
+          <Section title="Tags" subtitle="When someone mentions or tags you anywhere on DNounce.">
+            <ToggleRow title="Tagged in a statement or reply" desc="When someone tags you in a debate statement, vote reply, or community comment." value={prefs.notif_tagged} onChange={set("notif_tagged")} />
+          </Section>
+
+          {/* ── Debate ── */}
+          <Section title="Debate Activity" subtitle="For records where you are the subject or contributor.">
             <ToggleRow
-              title="Record submitted about you"
-              desc="When a contributor files a record naming you — before it publishes. You have 24 hours to review privately."
-              value={prefs.notif_subject_record_submitted}
-              onChange={set("notif_subject_record_submitted")}
+              title="New opening statement"
+              desc="When the other party posts their first statement in the debate."
+              value={prefs.notif_debate_new_statement}
+              onChange={set("notif_debate_new_statement")}
             />
             <ToggleRow
-              title="Record published"
-              desc="When the record goes live and becomes publicly visible."
-              value={prefs.notif_subject_record_published}
-              onChange={set("notif_subject_record_published")}
-            />
-            <ToggleRow
-              title="Dispute confirmation"
-              desc="Confirmation when your deletion request is received and the debate clock starts."
-              value={prefs.notif_subject_dispute_opened}
-              onChange={set("notif_subject_dispute_opened")}
-            />
-            <ToggleRow
-              title="Debate window opens"
-              desc="When the 72-hour debate window starts — time to present your case and respond."
-              value={prefs.notif_subject_debate_open}
-              onChange={set("notif_subject_debate_open")}
-            />
-            <ToggleRow
-              title="Voting begins"
-              desc="When the community starts voting on whether to keep or delete the record."
-              value={prefs.notif_subject_voting_started}
-              onChange={set("notif_subject_voting_started")}
-            />
-            <ToggleRow
-              title="Voting concluded"
-              desc="When the 48-hour vote closes and the outcome is decided."
-              value={prefs.notif_subject_voting_ended}
-              onChange={set("notif_subject_voting_ended")}
-            />
-            <ToggleRow
-              title="Community interaction unlocked"
-              desc="7 days after a decision — you can interact with the community section again."
-              value={prefs.notif_subject_interaction_unlocked}
-              onChange={set("notif_subject_interaction_unlocked")}
-            />
-            <ToggleRow
-              title="Someone replied to your statement"
-              desc="When the contributor replies to your debate statement."
-              value={prefs.notif_subject_reply_to_statement}
-              onChange={set("notif_subject_reply_to_statement")}
+              title="Reply to your statement"
+              desc="When the other party replies to one of your debate statements."
+              value={prefs.notif_debate_reply}
+              onChange={set("notif_debate_reply")}
             />
           </Section>
 
-          {/* ── Contributor ── */}
-          <Section title="Contributor" subtitle="You submitted the record.">
+          {/* ── Voting ── */}
+          <Section title="Voting Activity" subtitle="For records where you cast a vote.">
             <ToggleRow
-              title="AI review complete"
-              desc="When DNounce AI finishes reviewing your submission and assigns a credibility label."
-              value={prefs.notif_contributor_ai_complete}
-              onChange={set("notif_contributor_ai_complete")}
-            />
-            <ToggleRow
-              title="Record published"
-              desc="When your record goes live publicly."
-              value={prefs.notif_contributor_record_published}
-              onChange={set("notif_contributor_record_published")}
-            />
-            <ToggleRow
-              title="Record disputed"
-              desc="When the subject files a deletion request — debate opens in 24 hours."
-              value={prefs.notif_contributor_record_disputed}
-              onChange={set("notif_contributor_record_disputed")}
-            />
-            <ToggleRow
-              title="Debate window opens"
-              desc="When the 72-hour debate window starts — time to defend your record with evidence."
-              value={prefs.notif_contributor_debate_open}
-              onChange={set("notif_contributor_debate_open")}
-            />
-            <ToggleRow
-              title="Voting begins"
-              desc="When the community starts voting on your record."
-              value={prefs.notif_contributor_voting_started}
-              onChange={set("notif_contributor_voting_started")}
-            />
-            <ToggleRow
-              title="Voting concluded"
-              desc="When the vote closes and the outcome is final."
-              value={prefs.notif_contributor_voting_ended}
-              onChange={set("notif_contributor_voting_ended")}
-            />
-            <ToggleRow
-              title="Community interaction unlocked"
-              desc="7 days after a decision — you can participate in the community section again."
-              value={prefs.notif_contributor_interaction_unlocked}
-              onChange={set("notif_contributor_interaction_unlocked")}
-            />
-            <ToggleRow
-              title="Someone replied to your statement"
-              desc="When the subject replies to your debate statement."
-              value={prefs.notif_contributor_reply_to_statement}
-              onChange={set("notif_contributor_reply_to_statement")}
+              title="Reply to your vote"
+              desc="When someone replies to your vote statement."
+              value={prefs.notif_vote_reply}
+              onChange={set("notif_vote_reply")}
             />
           </Section>
 
-          {/* ── Voter ── */}
-          <Section title="Voter" subtitle="You submitted a vote on a record.">
+          {/* ── Community ── */}
+          <Section title="Community Activity" subtitle="For community statements and replies.">
             <ToggleRow
-              title="Voting window opens"
-              desc="When a record you're eligible to vote on enters the 48-hour voting stage."
-              value={prefs.notif_voter_voting_open}
-              onChange={set("notif_voter_voting_open")}
+              title="New community statement on your record"
+              desc="When a citizen or voter posts a community statement on a record you're involved in."
+              value={prefs.notif_community_new_statement}
+              onChange={set("notif_community_new_statement")}
             />
             <ToggleRow
-              title="Voting concluded"
-              desc="When the vote closes and you can see the final outcome."
-              value={prefs.notif_voter_voting_ended}
-              onChange={set("notif_voter_voting_ended")}
-            />
-            <ToggleRow
-              title="Your vote was flagged"
-              desc="When the community flags your vote explanation as low quality."
-              value={prefs.notif_voter_vote_flagged}
-              onChange={set("notif_voter_vote_flagged")}
-            />
-            <ToggleRow
-              title="Someone replied to your vote"
-              desc="When another participant replies to your vote statement."
-              value={prefs.notif_voter_reply_to_vote}
-              onChange={set("notif_voter_reply_to_vote")}
-            />
-          </Section>
-
-          {/* ── Citizen ── */}
-          <Section title="Citizen" subtitle="You participated in the community section of a record.">
-            <ToggleRow
-              title="Someone replied to your statement"
-              desc="When another participant replies to your community statement or comment."
-              value={prefs.notif_citizen_reply_to_statement}
-              onChange={set("notif_citizen_reply_to_statement")}
-            />
-            <ToggleRow
-              title="Record outcome decided"
-              desc="When a record you participated in is officially kept or deleted."
-              value={prefs.notif_citizen_record_decided}
-              onChange={set("notif_citizen_record_decided")}
+              title="Reply to your community statement"
+              desc="When someone replies to a community statement you posted. Off by default — turn on if you want to track replies."
+              value={prefs.notif_citizen_community_activity}
+              onChange={set("notif_citizen_community_activity")}
             />
           </Section>
 
           {/* ── Pinned ── */}
           <Section title="Pinned Records" subtitle="Records you've pinned to your dashboard.">
-            <ToggleRow
-              title="Stage change"
-              desc="Any time a pinned record moves to a new stage."
-              value={prefs.notif_pinned_stage_change}
-              onChange={set("notif_pinned_stage_change")}
-            />
             <ToggleRow
               title="Debate opens"
               desc="When a pinned record enters the debate stage."
@@ -378,26 +238,26 @@ export default function NotificationsPage() {
             />
             <ToggleRow
               title="Voting opens"
-              desc="When a pinned record enters the voting stage."
+              desc="When a pinned record enters the community voting stage."
               value={prefs.notif_pinned_voting_open}
               onChange={set("notif_pinned_voting_open")}
             />
             <ToggleRow
               title="Outcome decided"
-              desc="When a pinned record is officially kept or deleted."
-              value={prefs.notif_pinned_decided}
-              onChange={set("notif_pinned_decided")}
+              desc="When a pinned record is officially kept or deleted by the community."
+              value={prefs.notif_pinned_outcome}
+              onChange={set("notif_pinned_outcome")}
+            />
+            <ToggleRow
+              title="All activity"
+              desc="Every debate reply, vote reply, community reply, and flag on pinned records. Off by default — can be noisy."
+              value={prefs.notif_pinned_all_activity}
+              onChange={set("notif_pinned_all_activity")}
             />
           </Section>
 
           {/* ── Following ── */}
           <Section title="Following Records" subtitle="Records you're following for updates.">
-            <ToggleRow
-              title="Stage change"
-              desc="Any time a followed record moves to a new stage."
-              value={prefs.notif_following_stage_change}
-              onChange={set("notif_following_stage_change")}
-            />
             <ToggleRow
               title="Debate opens"
               desc="When a followed record enters the debate stage."
@@ -406,15 +266,21 @@ export default function NotificationsPage() {
             />
             <ToggleRow
               title="Voting opens"
-              desc="When a followed record enters the voting stage."
+              desc="When a followed record enters the community voting stage."
               value={prefs.notif_following_voting_open}
               onChange={set("notif_following_voting_open")}
             />
             <ToggleRow
               title="Outcome decided"
-              desc="When a followed record is officially kept or deleted."
-              value={prefs.notif_following_decided}
-              onChange={set("notif_following_decided")}
+              desc="When a followed record is officially kept or deleted by the community."
+              value={prefs.notif_following_outcome}
+              onChange={set("notif_following_outcome")}
+            />
+            <ToggleRow
+              title="All activity"
+              desc="Every debate reply, vote reply, community reply, and flag on followed records. Off by default — can be noisy."
+              value={prefs.notif_following_all_activity}
+              onChange={set("notif_following_all_activity")}
             />
           </Section>
 
