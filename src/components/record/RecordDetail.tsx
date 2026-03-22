@@ -2124,6 +2124,7 @@ function VoteReplyNodeComponent({
   sessionUserId,
   onEdit,
   onDelete,
+  categoryByUser,
 }: {
   node: VoteReplyNode;
   voteId: string;
@@ -2133,6 +2134,7 @@ function VoteReplyNodeComponent({
   sessionUserId: string | null;
   onEdit: (replyId: string, newBody: string) => void;
   onDelete: (replyId: string) => void;
+  categoryByUser: Record<string, string>;
 }) {
   const isDeleted = !!node.deleted_at;
   const isEdited = !!node.edited_at;
@@ -2154,6 +2156,9 @@ function VoteReplyNodeComponent({
     <div>
       <div className="text-xs font-semibold text-gray-900">
         {node.author_alias}
+        {categoryByUser[node.author_user_id] && (
+          <span className="ml-1 font-normal text-gray-400">({categoryByUser[node.author_user_id]})</span>
+        )}
       </div>
 
       <div className="text-[11px] text-gray-500">
@@ -2257,6 +2262,7 @@ function VoteReplyNodeComponent({
               sessionUserId={sessionUserId}
               onEdit={onEdit}
               onDelete={onDelete}
+              categoryByUser={categoryByUser}
             />
           ))}
         </div>
@@ -2274,16 +2280,17 @@ function CommunityReplyNodeComponent({
   sessionUserId,
   onEdit,
   onDelete,
+  categoryByUser,
 }: {
     node: CommunityReplyNode;
     statementId: number;
     canReplyToCommunity: boolean;
     canReactToCommunity: boolean;
     setReplyingTo: (v: { statementId: number; parentReplyId: number | null }) => void;
-  
     sessionUserId: string | null;
     onEdit: (replyId: number, newBody: string) => void;
     onDelete: (replyId: number) => void;
+    categoryByUser: Record<string, string>;
   }) {
     const isDeleted = !!node.deleted_at;
     const isEdited = !!node.edited_at;
@@ -2303,7 +2310,12 @@ function CommunityReplyNodeComponent({
   
     return (
       <div>
-        <div className="text-xs font-semibold text-gray-900">{node.author_alias}</div>
+        <div className="text-xs font-semibold text-gray-900">
+          {node.author_alias}
+          {categoryByUser[node.author_user_id] && (
+            <span className="ml-1 font-normal text-gray-400">({categoryByUser[node.author_user_id]})</span>
+          )}
+        </div>
   
         <div className="text-[11px] text-gray-500">
           {formatTimestampNoSeconds(node.created_at)}
@@ -2406,6 +2418,7 @@ function CommunityReplyNodeComponent({
                 sessionUserId={sessionUserId}
                 onEdit={onEdit}
                 onDelete={onDelete}
+                categoryByUser={categoryByUser}
               />
             ))}
           </div>
@@ -3646,16 +3659,17 @@ function VotingCourtroom({
                     <div className="mt-4 pl-3 sm:pl-4 border-l space-y-3">
                       {replies.map((r) => (
                         <VoteReplyNodeComponent
-                          key={r.id}
-                          node={r}
-                          voteId={v.id}
-                          canReplyToVotes={canReplyToVotes}
-                          canReactToVotes={canReactToVotes}
-                          setReplyingTo={setReplyingTo}
-                          sessionUserId={sessionUserId}
-                          onEdit={editVoteReply}
-                          onDelete={deleteVoteReply}
-                        />
+                        key={r.id}
+                        node={r}
+                        voteId={v.id}
+                        canReplyToVotes={canReplyToVotes}
+                        canReactToVotes={canReactToVotes}
+                        setReplyingTo={setReplyingTo}
+                        sessionUserId={sessionUserId}
+                        onEdit={editVoteReply}
+                        onDelete={deleteVoteReply}
+                        categoryByUser={categoryByUser}
+                      />
                       ))}
                     </div>
                   )}
@@ -3799,6 +3813,7 @@ function VotingCourtroom({
                           sessionUserId={sessionUserId}
                           onEdit={editCommunityReply}
                           onDelete={deleteCommunityReply}
+                          categoryByUser={categoryByUser}
                         />
                       ))}
                     </div>

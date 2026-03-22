@@ -1079,48 +1079,24 @@ export default function SubjectProfilePage() {
               </>
             )}
 
-{activeTab === "reputations" && (
-              <div className="space-y-6">
-                {/* Scores */}
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-3">Reputation Scores</h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {[
-                      { label: "Overall Score",     val: subjectScores?.overall_score },
-                      { label: "Subject Score",     val: subjectScores?.subject_score },
-                      { label: "Contributor Score", val: subjectScores?.contributor_score },
-                      { label: "Voter Score",       val: subjectScores?.voter_score },
-                      { label: "Citizen Score",     val: subjectScores?.citizen_score },
-                    ].map((s) => (
-                      <div key={s.label} className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-xl px-4 py-3">
-                        <span className="text-sm text-gray-700">{s.label}</span>
-                        <span className="text-sm font-bold text-gray-900">
-                          {s.val != null ? `${s.val} / 100` : "—"}
-                        </span>
+            {activeTab === "reputations" && (
+              <div>
+                <h4 className="font-medium text-gray-900 mb-3">Badges</h4>
+                {subjectBadges.length === 0 ? (
+                  <p className="text-sm text-gray-500">No badges earned yet.</p>
+                ) : (
+                  <div className="flex flex-wrap gap-3">
+                    {subjectBadges.map((badge: any) => (
+                      <div
+                        key={badge.id}
+                        className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border bg-gray-50 text-sm font-medium text-gray-700"
+                      >
+                        <span>{badge.icon}</span>
+                        {badge.label}
                       </div>
                     ))}
                   </div>
-                </div>
-
-                {/* Badges */}
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-3">Badges</h4>
-                  {subjectBadges.length === 0 ? (
-                    <p className="text-sm text-gray-500">No badges earned yet.</p>
-                  ) : (
-                    <div className="flex flex-wrap gap-3">
-                      {subjectBadges.map((badge: any) => (
-                        <div
-                          key={badge.id}
-                          className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border bg-gray-50 text-sm font-medium text-gray-700"
-                        >
-                          <span>{badge.icon}</span>
-                          {badge.label}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                )}
               </div>
             )}
 
