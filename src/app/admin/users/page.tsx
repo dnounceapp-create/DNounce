@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { Search, RefreshCw, Ban, ShieldCheck, ShieldOff } from "lucide-react";
+import { Search, RefreshCw, Ban, ShieldCheck, History } from "lucide-react";
+import UserHistoryPanel from "./UserHistoryPanel";
 
 type UserRow = {
   id: string;
@@ -33,6 +34,7 @@ export default function AdminUsersPage() {
   const [adminLevel, setAdminLevel] = useState(0);
   const [myUserId, setMyUserId] = useState("");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
   const [banModal, setBanModal] = useState<{ userId: string; name: string } | null>(null);
   const [banReason, setBanReason] = useState("");
@@ -72,8 +74,6 @@ export default function AdminUsersPage() {
       .from("user_scores")
       .select("user_id, subject_score, contributor_score");
 
-    const { data: authUsers } = await supabase.auth.admin?.listUsers?.() ?? { data: null };
-
     const acctMap: Record<string, any> = {};
     (accts ?? []).forEach((a: any) => { acctMap[a.user_id] = a; });
 
@@ -109,15 +109,12 @@ export default function AdminUsersPage() {
     if (!banModal || !banReason.trim()) return;
     setActionLoading(banModal.userId);
     const { data: { session } } = await supabase.auth.getSession();
-
     const expiresAt = banPermanent ? null : new Date(Date.now() + Number(banDays) * 86400000).toISOString();
-
     const { error } = await supabase.from("user_bans").insert({
       user_id: banModal.userId, banned_by: session!.user.id,
       reason: banReason, is_permanent: banPermanent, expires_at: expiresAt,
     });
     if (error) { showToast("error", error.message); setActionLoading(null); return; }
-
     await supabase.from("users").update({ is_banned: true }).eq("auth_user_id", banModal.userId);
     await supabase.from("admin_audit_log").insert({
       admin_user_id: session!.user.id, admin_level: adminLevel,
@@ -125,7 +122,6 @@ export default function AdminUsersPage() {
       target_type: "users", target_id: banModal.userId,
       new_value: { reason: banReason, expires_at: expiresAt },
     });
-
     showToast("success", `${banModal.name} banned`);
     setBanModal(null);
     setBanReason("");
@@ -136,14 +132,12 @@ export default function AdminUsersPage() {
   async function unbanUser(userId: string, name: string) {
     setActionLoading(userId);
     const { data: { session } } = await supabase.auth.getSession();
-
     await supabase.from("user_bans").update({ is_active: false, revoked_at: new Date().toISOString() }).eq("user_id", userId).eq("is_active", true);
     await supabase.from("users").update({ is_banned: false }).eq("auth_user_id", userId);
     await supabase.from("admin_audit_log").insert({
       admin_user_id: session!.user.id, admin_level: adminLevel,
       action: "unban_user", target_type: "users", target_id: userId,
     });
-
     showToast("success", `${name} unbanned`);
     await load();
     setActionLoading(null);
@@ -152,13 +146,10 @@ export default function AdminUsersPage() {
   async function setAdminRole(userId: string, level: number) {
     if (adminLevel < 3) { showToast("error", "Only Super Admins can manage admin roles."); return; }
     const { data: { session } } = await supabase.auth.getSession();
-
     await supabase.from("admin_roles").update({ is_active: false, revoked_at: new Date().toISOString() }).eq("user_id", userId).eq("is_active", true);
-
     if (level > 0) {
       await supabase.from("admin_roles").insert({ user_id: userId, level, assigned_by: session!.user.id });
     }
-
     await supabase.from("users").update({ admin: level > 0 }).eq("auth_user_id", userId);
     await supabase.from("admin_audit_log").insert({
       admin_user_id: session!.user.id, admin_level: adminLevel,
@@ -166,7 +157,6 @@ export default function AdminUsersPage() {
       target_type: "users", target_id: userId,
       new_value: { level },
     });
-
     showToast("success", level === 0 ? "Admin role revoked" : `Assigned level ${level}`);
     await load();
   }
@@ -248,19 +238,25 @@ export default function AdminUsersPage() {
                       </td>
                       <td className="px-4 py-3 text-gray-400 text-xs">{new Date(u.created_at).toLocaleDateString()}</td>
                       <td className="px-4 py-3">
-                        {adminLevel >= 2 && !isSelf && (
-                          u.is_banned ? (
-                            <button onClick={() => unbanUser(u.auth_user_id, name)} disabled={actionLoading === u.auth_user_id}
-                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-900/50 text-green-400 hover:bg-green-900 text-xs transition disabled:opacity-50">
-                              <ShieldCheck className="w-3.5 h-3.5" /> Unban
-                            </button>
-                          ) : (
-                            <button onClick={() => setBanModal({ userId: u.auth_user_id, name })} disabled={actionLoading === u.auth_user_id}
-                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-900/50 text-red-400 hover:bg-red-900 text-xs transition disabled:opacity-50">
-                              <Ban className="w-3.5 h-3.5" /> Ban
-                            </button>
-                          )
-                        )}
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => setSelectedUserId(u.auth_user_id)}
+                            className="p-1.5 rounded-lg bg-gray-800 text-gray-400 hover:text-blue-400 transition" title="Full profile">
+                            <History className="w-3.5 h-3.5" />
+                          </button>
+                          {adminLevel >= 2 && !isSelf && (
+                            u.is_banned ? (
+                              <button onClick={() => unbanUser(u.auth_user_id, name)} disabled={actionLoading === u.auth_user_id}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-900/50 text-green-400 hover:bg-green-900 text-xs transition disabled:opacity-50">
+                                <ShieldCheck className="w-3.5 h-3.5" /> Unban
+                              </button>
+                            ) : (
+                              <button onClick={() => setBanModal({ userId: u.auth_user_id, name })} disabled={actionLoading === u.auth_user_id}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-900/50 text-red-400 hover:bg-red-900 text-xs transition disabled:opacity-50">
+                                <Ban className="w-3.5 h-3.5" /> Ban
+                              </button>
+                            )
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -271,7 +267,6 @@ export default function AdminUsersPage() {
         )}
       </div>
 
-      {/* Ban modal */}
       {banModal && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
           <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 w-full max-w-md space-y-4">
@@ -307,6 +302,10 @@ export default function AdminUsersPage() {
         <div className={`fixed bottom-6 right-6 px-4 py-3 rounded-xl text-sm font-medium shadow-lg ${toast.type === "success" ? "bg-green-900 text-green-300 border border-green-700" : "bg-red-900 text-red-300 border border-red-700"}`}>
           {toast.msg}
         </div>
+      )}
+
+      {selectedUserId && (
+        <UserHistoryPanel userId={selectedUserId} onClose={() => setSelectedUserId(null)} />
       )}
     </div>
   );

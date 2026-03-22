@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { Search, ChevronDown, Trash2, RefreshCw, Eye } from "lucide-react";
+import { Search, Trash2, RefreshCw, Eye, History } from "lucide-react";
 import Link from "next/link";
+import RecordHistoryPanel from "./RecordHistoryPanel";
 
 const STATUSES = ["all", "ai_verification", "subject_notified", "published", "deletion_request", "debate", "voting", "decision"];
 const CREDIBILITIES = ["all", "Evidence-Based", "Opinion-Based", "Unclear", "Pending AI Review"];
@@ -26,6 +27,7 @@ export default function AdminRecordsPage() {
   const [credFilter, setCredFilter] = useState("all");
   const [adminLevel, setAdminLevel] = useState(0);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [selectedRecordId, setSelectedRecordId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
 
   useEffect(() => {
@@ -54,16 +56,13 @@ export default function AdminRecordsPage() {
     setActionLoading(id);
     const { data: { session } } = await supabase.auth.getSession();
     const old = records.find(r => r.id === id);
-
     const { error } = await supabase.from("records").update({ status: newStatus }).eq("id", id);
     if (error) { showToast("error", error.message); setActionLoading(null); return; }
-
     await supabase.from("admin_audit_log").insert({
       admin_user_id: session!.user.id, admin_level: adminLevel,
       action: "change_record_status", target_type: "records", target_id: id,
       old_value: { status: old?.status }, new_value: { status: newStatus },
     });
-
     showToast("success", `Status changed to ${newStatus}`);
     await load();
     setActionLoading(null);
@@ -73,15 +72,12 @@ export default function AdminRecordsPage() {
     if (!confirm("Permanently delete this record? This cannot be undone.")) return;
     setActionLoading(id);
     const { data: { session } } = await supabase.auth.getSession();
-
     const { error } = await supabase.from("records").delete().eq("id", id);
     if (error) { showToast("error", error.message); setActionLoading(null); return; }
-
     await supabase.from("admin_audit_log").insert({
       admin_user_id: session!.user.id, admin_level: adminLevel,
       action: "delete_record", target_type: "records", target_id: id,
     });
-
     showToast("success", "Record deleted");
     await load();
     setActionLoading(null);
@@ -91,16 +87,13 @@ export default function AdminRecordsPage() {
     setActionLoading(id);
     const { data: { session } } = await supabase.auth.getSession();
     const old = records.find(r => r.id === id);
-
     const { error } = await supabase.from("records").update({ credibility: cred }).eq("id", id);
     if (error) { showToast("error", error.message); setActionLoading(null); return; }
-
     await supabase.from("admin_audit_log").insert({
       admin_user_id: session!.user.id, admin_level: adminLevel,
       action: "override_credibility", target_type: "records", target_id: id,
       old_value: { credibility: old?.credibility }, new_value: { credibility: cred },
     });
-
     showToast("success", `Credibility set to ${cred}`);
     await load();
     setActionLoading(null);
@@ -130,7 +123,6 @@ export default function AdminRecordsPage() {
         </button>
       </div>
 
-      {/* Filters */}
       <div className="flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
@@ -147,7 +139,6 @@ export default function AdminRecordsPage() {
         </select>
       </div>
 
-      {/* Table */}
       <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
         {loading ? (
           <div className="p-8 text-center text-gray-500 text-sm animate-pulse">Loading records…</div>
@@ -191,13 +182,17 @@ export default function AdminRecordsPage() {
                     <td className="px-4 py-3 text-gray-400 text-xs">{new Date(r.created_at).toLocaleDateString()}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
+                        <button onClick={() => setSelectedRecordId(r.id)}
+                          className="p-1.5 rounded-lg bg-gray-800 text-gray-400 hover:text-blue-400 transition" title="Full history">
+                          <History className="w-3.5 h-3.5" />
+                        </button>
                         <Link href={`/record/${r.id}`} target="_blank"
-                          className="p-1.5 rounded-lg bg-gray-800 text-gray-400 hover:text-white transition">
+                          className="p-1.5 rounded-lg bg-gray-800 text-gray-400 hover:text-white transition" title="View record">
                           <Eye className="w-3.5 h-3.5" />
                         </Link>
                         {adminLevel >= 1 && (
                           <button onClick={() => deleteRecord(r.id)} disabled={actionLoading === r.id}
-                            className="p-1.5 rounded-lg bg-gray-800 text-gray-400 hover:text-red-400 transition disabled:opacity-50">
+                            className="p-1.5 rounded-lg bg-gray-800 text-gray-400 hover:text-red-400 transition disabled:opacity-50" title="Delete">
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         )}
@@ -215,6 +210,10 @@ export default function AdminRecordsPage() {
         <div className={`fixed bottom-6 right-6 px-4 py-3 rounded-xl text-sm font-medium shadow-lg ${toast.type === "success" ? "bg-green-900 text-green-300 border border-green-700" : "bg-red-900 text-red-300 border border-red-700"}`}>
           {toast.msg}
         </div>
+      )}
+
+      {selectedRecordId && (
+        <RecordHistoryPanel recordId={selectedRecordId} onClose={() => setSelectedRecordId(null)} />
       )}
     </div>
   );
