@@ -147,6 +147,13 @@ export default function ReputationPage() {
           .eq("user_id", session.user.id),
       ]);
 
+      if (!scoresRes.data && session?.user) {
+        await supabase.rpc("refresh_user_scores", { p_user_id: session.user.id });
+        await supabase.rpc("refresh_user_badges", { p_user_id: session.user.id });
+        await loadData();
+        return;
+      }
+
       if (scoresRes.data) {
         setScores({
           subject_score:     scoresRes.data.subject_score,

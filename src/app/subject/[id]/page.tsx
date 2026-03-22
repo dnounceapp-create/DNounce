@@ -374,12 +374,23 @@ export default function SubjectProfilePage() {
 
           // 4) Scores — fetch via subject owner
           if (ownerAuthUserId) {
-            const { data: scoreData } = await supabase
+            let { data: scoreData } = await supabase
+            .from("user_scores")
+            .select("subject_score,contributor_score,voter_score,citizen_score,overall_score")
+            .eq("user_id", ownerAuthUserId)
+            .maybeSingle();
+
+          if (!scoreData) {
+            await supabase.rpc("refresh_user_scores", { p_user_id: ownerAuthUserId });
+            const { data: freshData } = await supabase
               .from("user_scores")
               .select("subject_score,contributor_score,voter_score,citizen_score,overall_score")
               .eq("user_id", ownerAuthUserId)
               .maybeSingle();
-            setSubjectScores(scoreData || null);
+            scoreData = freshData;
+          }
+
+          setSubjectScores(scoreData || null);
 
           const { data: badgeData } = await supabase
             .from("badges")
