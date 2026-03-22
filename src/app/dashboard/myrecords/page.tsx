@@ -163,6 +163,7 @@ export default function MyRecordsPage() {
           .single();
 
         if (!userData?.subject_id) return;
+        setSubjectId(userData.subject_id);
 
         const { data: rawRecords } = await supabase
           .from("records")
@@ -334,7 +335,7 @@ export default function MyRecordsPage() {
           status: "deletion_request",
         })
         .eq("id", id)
-        .eq("subject_id", userData?.subject_id); // safety: only subject can dispute
+        .eq("subject_id", subjectId ?? "");
 
       if (error) throw error;
 

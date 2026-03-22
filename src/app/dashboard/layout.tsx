@@ -571,7 +571,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </button>
 
           {/* Bell Icon */}
-          <div className="relative">
+          <div className="relative flex items-center">
             <button
               onClick={() => setNotifOpen((v) => !v)}
               className="p-2 rounded-full hover:bg-gray-100 transition relative"
@@ -637,6 +637,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </div>
             )}
           </div>
+
+          {notifOpen && (
+            <div
+              className="fixed inset-0 z-40"
+              onClick={() => setNotifOpen(false)}
+            />
+          )}
 
           {/* Settings Icon */}
           <Link
