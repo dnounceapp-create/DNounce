@@ -146,6 +146,9 @@ export default function MyRecordsPage() {
   const [records, setRecords] = useState<RecordItem[]>([]);
   const [stats, setStats] = useState({ my_total_records: 0, kept: 0, deleted: 0 });
   const [loadingData, setLoadingData] = useState(true);
+  const [subjectId, setSubjectId] = useState<string | null>(null);
+  const [disputingId, setDisputingId] = useState<string | null>(null);
+  const [disputeToast, setDisputeToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -313,8 +316,43 @@ export default function MyRecordsPage() {
     setSort(DEFAULT_SORT);
   };
 
-  const handleDisputeRecord = (id: string) => {
-    alert(`Dispute Record for record #${id}`);
+  const handleDisputeRecord = async (id: string) => {
+    const confirmed = window.confirm(
+      "Are you sure you want to dispute this record? This will request its deletion and move it to the next stage."
+    );
+    if (!confirmed) return;
+
+    setDisputingId(id);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error("Not signed in.");
+
+      const { error } = await supabase
+        .from("records")
+        .update({
+          dispute_started_at: new Date().toISOString(),
+          status: "deletion_request",
+        })
+        .eq("id", id)
+        .eq("subject_id", userData?.subject_id); // safety: only subject can dispute
+
+      if (error) throw error;
+
+      // refresh records list
+      setRecords((prev) =>
+        prev.map((r) =>
+          r.id === id
+            ? { ...r, stage: 4, outcome: null }
+            : r
+        )
+      );
+      setDisputeToast({ type: "success", msg: "Dispute submitted. The record has been flagged for deletion review." });
+    } catch (err: any) {
+      setDisputeToast({ type: "error", msg: err?.message || "Failed to submit dispute." });
+    } finally {
+      setDisputingId(null);
+      setTimeout(() => setDisputeToast(null), 4000);
+    }
   };
 
   // ---- UI -------------------------------------------------------------------
@@ -565,9 +603,10 @@ export default function MyRecordsPage() {
                   {record.stage === 3 && !stageConfig[3].flags.interactionsLocked ? (
                     <button
                       onClick={() => handleDisputeRecord(record.id)}
-                      className="px-3 py-2 bg-orange-500 text-white text-xs sm:text-sm rounded-md hover:bg-orange-600 active:scale-[0.99] transition"
+                      disabled={disputingId === record.id}
+                      className="px-3 py-2 bg-orange-500 text-white text-xs sm:text-sm rounded-md hover:bg-orange-600 active:scale-[0.99] transition disabled:opacity-50"
                     >
-                      Dispute Record
+                      {disputingId === record.id ? "Submitting…" : "Dispute Record"}
                     </button>
                   ) : (
                     <span className="text-[11px] sm:text-xs text-gray-400">—</span>
@@ -643,6 +682,16 @@ export default function MyRecordsPage() {
           </div>
         </div>
       </main>
+
+      {disputeToast && (
+        <div className={`fixed bottom-6 right-6 flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg text-sm font-medium z-50 ${
+          disputeToast.type === "success"
+            ? "bg-green-50 text-green-800 border border-green-200"
+            : "bg-red-50 text-red-800 border border-red-200"
+        }`}>
+          {disputeToast.msg}
+        </div>
+      )}
     </div>
   );
 }

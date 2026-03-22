@@ -740,13 +740,7 @@ export default function SubjectProfilePage() {
                   { label: "Citizen Score",       val: subjectScores?.citizen_score },
                 ].map((s) => (
                   <div key={s.label}>
-                    <p className={`text-xl font-bold ${
-                      s.val == null ? "text-gray-400" :
-                      s.val >= 80 ? "text-green-600" :
-                      s.val >= 60 ? "text-blue-600" :
-                      s.val >= 40 ? "text-yellow-500" :
-                      "text-red-500"
-                    }`}>
+                    <p className="text-xl font-bold text-gray-900">
                       {s.val != null ? s.val : "—"}
                     </p>
                     <p className="text-xs text-gray-600">{s.label}</p>

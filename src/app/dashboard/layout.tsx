@@ -102,6 +102,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [advTagInput, setAdvTagInput] = useState("");
   const [advResults, setAdvResults] = useState<any[]>([]);
   const [advLoading, setAdvLoading] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -122,6 +125,40 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     fetchSubjectId();
   }, [user]);
   
+  useEffect(() => {
+    if (!user?.id) return;
+    async function fetchNotifications() {
+      const { data } = await supabase
+        .from("notifications")
+        .select("id, title, body, type, read, created_at, record_id")
+        .eq("user_id", user!.id)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      if (data) {
+        setNotifications(data);
+        setUnreadCount(data.filter((n: any) => !n.read).length);
+      }
+    }
+    fetchNotifications();
+  }, [user]);
+
+  async function markAllRead() {
+    if (!user?.id) return;
+    await supabase
+      .from("notifications")
+      .update({ read: true })
+      .eq("user_id", user.id)
+      .eq("read", false);
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    setUnreadCount(0);
+  }
+
+  async function markOneRead(id: string) {
+    await supabase.from("notifications").update({ read: true }).eq("id", id);
+    setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, read: true } : n));
+    setUnreadCount((prev) => Math.max(0, prev - 1));
+  }
+
   // Save selected category persistently
   useEffect(() => {
     localStorage.setItem("searchCategory", category);
@@ -532,6 +569,74 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Menu className="w-6 h-6 text-gray-700" />
             )}
           </button>
+
+          {/* Bell Icon */}
+          <div className="relative">
+            <button
+              onClick={() => setNotifOpen((v) => !v)}
+              className="p-2 rounded-full hover:bg-gray-100 transition relative"
+              title="Notifications"
+            >
+              <Bell className="w-5 h-5 text-gray-600" />
+              {unreadCount > 0 && (
+                <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-semibold rounded-full flex items-center justify-center">
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
+            </button>
+
+            {notifOpen && (
+              <div className="absolute right-0 top-full mt-2 w-80 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+                  <span className="text-sm font-semibold text-gray-900">Notifications</span>
+                  {unreadCount > 0 && (
+                    <button onClick={markAllRead} className="text-xs text-blue-600 hover:underline">
+                      Mark all read
+                    </button>
+                  )}
+                </div>
+
+                <div className="max-h-80 overflow-y-auto divide-y divide-gray-100">
+                  {notifications.length === 0 ? (
+                    <div className="px-4 py-6 text-center text-sm text-gray-400">
+                      No notifications yet.
+                    </div>
+                  ) : (
+                    notifications.map((n) => (
+                      <div
+                        key={n.id}
+                        onClick={() => {
+                          markOneRead(n.id);
+                          if (n.record_id) window.location.href = `/record/${n.record_id}`;
+                          setNotifOpen(false);
+                        }}
+                        className={`flex items-start gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition ${!n.read ? "bg-blue-50/60" : ""}`}
+                      >
+                        <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${!n.read ? "bg-blue-500" : "bg-transparent"}`} />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-semibold text-gray-900 leading-tight">{n.title}</p>
+                          <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{n.body}</p>
+                          <p className="text-[11px] text-gray-400 mt-1">
+                            {new Date(n.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                <div className="px-4 py-2 border-t border-gray-100 text-center">
+                  <Link
+                    href="/dashboard/settings/notifications"
+                    className="text-xs text-gray-500 hover:text-gray-700"
+                    onClick={() => setNotifOpen(false)}
+                  >
+                    Notification settings
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Settings Icon */}
           <Link
