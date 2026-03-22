@@ -3327,9 +3327,6 @@ function VotingCourtroom({
     try {
       await supabase.rpc("delete_vote_reply", { p_reply_id: replyId });
       const actorId = await getActorId();
-      if (text.includes("@")) {
-        await notifyMentions(record.id, text, actorId, alias);
-      }
       await Promise.all([
         loadVoteReplies(record.id),
         loadExecutionByVote(record.id, actorId),
