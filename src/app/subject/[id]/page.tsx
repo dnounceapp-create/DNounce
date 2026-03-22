@@ -360,6 +360,7 @@ export default function SubjectProfilePage() {
 
         const ownerAuthUserId = ownerRows?.[0]?.auth_user_id;
 
+        // Social links — only if claimed
         if (!ownerAuthUserId) {
           setSocialLinks([]);
         } else {
@@ -368,29 +369,47 @@ export default function SubjectProfilePage() {
             .select("id, platform, label, url, created_at")
             .eq("user_id", ownerAuthUserId)
             .order("created_at", { ascending: true });
-
           if (socialsErr) throw socialsErr;
           setSocialLinks(socials || []);
+        }
 
-          // 4) Scores — fetch via subject owner
-          if (ownerAuthUserId) {
-            let { data: scoreData } = await supabase
+        // Subject score — always available, even for unclaimed profiles
+        let { data: subjectScoreData } = await supabase
+          .from("subject_scores")
+          .select("subject_score")
+          .eq("subject_uuid", subjectId)
+          .maybeSingle();
+
+        if (!subjectScoreData) {
+          await supabase.rpc("refresh_subject_score", { p_subject_uuid: subjectId });
+          const { data: freshSubjectScore } = await supabase
+            .from("subject_scores")
+            .select("subject_score")
+            .eq("subject_uuid", subjectId)
+            .maybeSingle();
+          subjectScoreData = freshSubjectScore;
+        }
+
+        // Other scores + badges — only if profile is claimed
+        let userScoreData = null;
+        if (ownerAuthUserId) {
+          const { data: usd } = await supabase
             .from("user_scores")
-            .select("subject_score,contributor_score,voter_score,citizen_score,overall_score")
+            .select("contributor_score,voter_score,citizen_score,overall_score")
             .eq("user_id", ownerAuthUserId)
             .maybeSingle();
 
-          if (!scoreData) {
+          if (!usd) {
             await supabase.rpc("refresh_user_scores", { p_user_id: ownerAuthUserId });
-            const { data: freshData } = await supabase
+            const { data: freshUsd } = await supabase
               .from("user_scores")
-              .select("subject_score,contributor_score,voter_score,citizen_score,overall_score")
+              .select("contributor_score,voter_score,citizen_score,overall_score")
               .eq("user_id", ownerAuthUserId)
               .maybeSingle();
-            scoreData = freshData;
+            userScoreData = freshUsd;
+          } else {
+            userScoreData = usd;
           }
-
-          setSubjectScores(scoreData || null);
 
           const { data: badgeData } = await supabase
             .from("badges")
@@ -398,8 +417,15 @@ export default function SubjectProfilePage() {
             .eq("user_id", ownerAuthUserId);
           setSubjectBadges(badgeData || []);
         }
+
+        setSubjectScores({
+          subject_score: subjectScoreData?.subject_score ?? null,
+          contributor_score: userScoreData?.contributor_score ?? null,
+          voter_score: userScoreData?.voter_score ?? null,
+          citizen_score: userScoreData?.overall_score ?? null,
+          overall_score: userScoreData?.overall_score ?? null,
+        });
           
-        }
       } catch (e: any) {
         setErr(e?.message || "Failed to load subject profile");
         setSubject(null);
@@ -714,7 +740,13 @@ export default function SubjectProfilePage() {
                   { label: "Citizen Score",       val: subjectScores?.citizen_score },
                 ].map((s) => (
                   <div key={s.label}>
-                    <p className="text-xl font-bold text-gray-900">
+                    <p className={`text-xl font-bold ${
+                      s.val == null ? "text-gray-400" :
+                      s.val >= 80 ? "text-green-600" :
+                      s.val >= 60 ? "text-blue-600" :
+                      s.val >= 40 ? "text-yellow-500" :
+                      "text-red-500"
+                    }`}>
                       {s.val != null ? s.val : "—"}
                     </p>
                     <p className="text-xs text-gray-600">{s.label}</p>

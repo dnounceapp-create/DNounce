@@ -135,35 +135,62 @@ export default function ReputationPage() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) return;
 
-      const [scoresRes, badgesRes] = await Promise.all([
+      // Get subject_uuid for this user
+      const { data: subjectRow } = await supabase
+        .from("subjects")
+        .select("subject_uuid")
+        .eq("owner_auth_user_id", session.user.id)
+        .maybeSingle();
+
+      const [userScoresRes, subjectScoreRes, badgesRes] = await Promise.all([
         supabase
           .from("user_scores")
-          .select("subject_score,contributor_score,voter_score,citizen_score,overall_score,updated_at")
+          .select("contributor_score,voter_score,citizen_score,overall_score,updated_at")
           .eq("user_id", session.user.id)
           .maybeSingle(),
+        subjectRow?.subject_uuid
+          ? supabase
+              .from("subject_scores")
+              .select("subject_score")
+              .eq("subject_uuid", subjectRow.subject_uuid)
+              .maybeSingle()
+          : Promise.resolve({ data: null }),
         supabase
           .from("badges")
           .select("id,label,color,icon")
           .eq("user_id", session.user.id),
       ]);
 
-      if (!scoresRes.data && session?.user) {
+      // Auto-calculate if no scores yet — no recursion
+      if (!userScoresRes.data) {
         await supabase.rpc("refresh_user_scores", { p_user_id: session.user.id });
         await supabase.rpc("refresh_user_badges", { p_user_id: session.user.id });
-        await loadData();
-        return;
+        if (subjectRow?.subject_uuid) {
+          await supabase.rpc("refresh_subject_score", { p_subject_uuid: subjectRow.subject_uuid });
+        }
       }
 
-      if (scoresRes.data) {
-        setScores({
-          subject_score:     scoresRes.data.subject_score,
-          contributor_score: scoresRes.data.contributor_score,
-          voter_score:       scoresRes.data.voter_score,
-          citizen_score:     scoresRes.data.citizen_score,
-          overall_score:     scoresRes.data.overall_score,
-        });
-        setLastUpdated(scoresRes.data.updated_at);
-      }
+      // Re-fetch after calculation if needed
+      const finalUserScores = userScoresRes.data ?? (await supabase
+        .from("user_scores")
+        .select("contributor_score,voter_score,citizen_score,overall_score,updated_at")
+        .eq("user_id", session.user.id)
+        .maybeSingle()).data;
+
+      const finalSubjectScore = subjectScoreRes.data ?? (subjectRow?.subject_uuid ? (await supabase
+        .from("subject_scores")
+        .select("subject_score")
+        .eq("subject_uuid", subjectRow.subject_uuid)
+        .maybeSingle()).data : null);
+
+      setScores({
+        subject_score:     finalSubjectScore?.subject_score ?? null,
+        contributor_score: finalUserScores?.contributor_score ?? null,
+        voter_score:       finalUserScores?.voter_score ?? null,
+        citizen_score:     finalUserScores?.citizen_score ?? null,
+        overall_score:     finalUserScores?.overall_score ?? null,
+      });
+      if (finalUserScores?.updated_at) setLastUpdated(finalUserScores.updated_at);
       setBadges(badgesRes.data || []);
     } catch (err) {
       console.error("Failed to load reputation:", err);
@@ -177,9 +204,19 @@ export default function ReputationPage() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) return;
+
+      const { data: subjectRow } = await supabase
+        .from("subjects")
+        .select("subject_uuid")
+        .eq("owner_auth_user_id", session.user.id)
+        .maybeSingle();
+
       await Promise.all([
         supabase.rpc("refresh_user_scores", { p_user_id: session.user.id }),
         supabase.rpc("refresh_user_badges", { p_user_id: session.user.id }),
+        subjectRow?.subject_uuid
+          ? supabase.rpc("refresh_subject_score", { p_subject_uuid: subjectRow.subject_uuid })
+          : Promise.resolve(),
       ]);
       await loadData();
     } catch (err) {
