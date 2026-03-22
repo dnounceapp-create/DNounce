@@ -2491,6 +2491,7 @@ function VotingCourtroom({
   // Build reply tree grouped by vote_id
   const [sessionUserId, setSessionUserId] = useState<string | null>(null);
   const [votes, setVotes] = useState<VoteRow[]>([]);
+  const [categoryByUser, setCategoryByUser] = useState<Record<string, string>>({});
   const [repliesByVote, setRepliesByVote] = useState<Record<string, VoteReplyNode[]>>({});
   const [replyDraft, setReplyDraft] = useState("");
   const [replyingTo, setReplyingTo] = useState<null | { voteId: string; parentReplyId: string | null }>(null);
@@ -2744,6 +2745,42 @@ function VotingCourtroom({
     setRepliesByVote(next);
   }
   
+  async function loadCategories(recordId: string) {
+    try {
+      const { data: voteUsers } = await supabase
+        .from("record_votes")
+        .select("user_id")
+        .eq("record_id", recordId);
+
+      const { data: stmtUsers } = await supabase
+        .from("record_community_statements")
+        .select("author_user_id")
+        .eq("record_id", recordId);
+
+      const allUserIds = [
+        ...new Set([
+          ...(voteUsers || []).map((r: any) => r.user_id),
+          ...(stmtUsers || []).map((r: any) => r.author_user_id),
+        ]),
+      ].filter(Boolean);
+
+      if (!allUserIds.length) return;
+
+      const { data: accounts } = await supabase
+        .from("user_accountdetails")
+        .select("user_id, job_title")
+        .in("user_id", allUserIds);
+
+      const map: Record<string, string> = {};
+      (accounts || []).forEach((a: any) => {
+        if (a.job_title) map[a.user_id] = a.job_title;
+      });
+      setCategoryByUser(map);
+    } catch (err) {
+      console.error("Failed to load categories:", err);
+    }
+  }
+
   async function loadCommunity(recordId: string, userId: string | null) {
     const { data: stmtRows } = await supabase
       .from("record_community_statements")
@@ -2796,7 +2833,8 @@ function VotingCourtroom({
           loadCommunity(record.id, actorId),
           loadMyVote(record.id, actorId),
           loadExecutionByVote(record.id, actorId),
-        ]);
+          loadCategories(record.id),
+        ])
   
       // Badges can come in after votes render (non-blocking)
       loadVoteBadges(record.id).then(setVoteBadges);
@@ -3468,7 +3506,12 @@ function VotingCourtroom({
 
                   {/* Header: alias + badge + timestamp inline, choice pill on right */}
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs font-semibold text-gray-900">{v.author_alias || "Anonymous"}</span>
+                    <span className="text-xs font-semibold text-gray-900">
+                      {v.author_alias || "Anonymous"}
+                      {categoryByUser[v.user_id] && (
+                        <span className="ml-1 font-normal text-gray-400">({categoryByUser[v.user_id]})</span>
+                      )}
+                    </span>
                     <VoteBadge voteId={v.id} />
                     <span className="text-[11px] text-gray-400">{formatTimestampNoSeconds(v.created_at)}</span>
                     <span className={[
@@ -3713,7 +3756,12 @@ function VotingCourtroom({
               return (
                 <div key={s.id} className="border-b border-gray-200 py-4 last:border-b-0 last:pb-0">
                   <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="text-xs font-semibold text-gray-900">{s.author_alias}</div>
+                    <div className="text-xs font-semibold text-gray-900">
+                      {s.author_alias}
+                      {categoryByUser[s.author_user_id] && (
+                        <span className="ml-1 font-normal text-gray-400">({categoryByUser[s.author_user_id]})</span>
+                      )}
+                    </div>
                     <div className="text-[11px] text-gray-500">{formatTimestampNoSeconds(s.created_at)}</div>
                   </div>
 
@@ -4277,8 +4325,7 @@ export default function RecordDetail({
   const subjectName = (subject?.name as string) || "Subject";
   const subjectProfileHref = subject?.subject_uuid ? `/subject/${subject.subject_uuid}` : null;
 
-  const contributorLinkAllowedForViewer =
-    effectiveViewerRole === "contributor" ? true : canShowContributorProfileLink(record);
+  const contributorLinkAllowedForViewer = canShowContributorProfileLink(record);
 
   const view = makeViewState({
     viewerRole: effectiveViewerRole,

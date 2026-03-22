@@ -214,6 +214,14 @@ export default function SubjectProfilePage() {
   // comments/traction per record
   const [commentCounts, setCommentCounts] = useState<Record<string, number>>({});
   const [avatarLightboxOpen, setAvatarLightboxOpen] = useState(false);
+  const [subjectScores, setSubjectScores] = useState<{
+    subject_score: number | null;
+    contributor_score: number | null;
+    voter_score: number | null;
+    citizen_score: number | null;
+    overall_score: number | null;
+  } | null>(null);
+  const [subjectBadges, setSubjectBadges] = useState<any[]>([]);
 
   const hasActiveFilters = Object.values(filters).some(Boolean);
   const hasNonDefaultSort = sort !== DEFAULT_SORT;
@@ -363,6 +371,23 @@ export default function SubjectProfilePage() {
 
           if (socialsErr) throw socialsErr;
           setSocialLinks(socials || []);
+
+          // 4) Scores — fetch via subject owner
+          if (ownerAuthUserId) {
+            const { data: scoreData } = await supabase
+              .from("user_scores")
+              .select("subject_score,contributor_score,voter_score,citizen_score,overall_score")
+              .eq("user_id", ownerAuthUserId)
+              .maybeSingle();
+            setSubjectScores(scoreData || null);
+
+          const { data: badgeData } = await supabase
+            .from("badges")
+            .select("id, label, color, icon")
+            .eq("user_id", ownerAuthUserId);
+          setSubjectBadges(badgeData || []);
+        }
+          
         }
       } catch (e: any) {
         setErr(e?.message || "Failed to load subject profile");
@@ -668,28 +693,22 @@ export default function SubjectProfilePage() {
                 </div>
               </div>
 
-              {/* RIGHT: Scores (placeholders) */}
+              {/* RIGHT: Scores */}
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 text-center">
-                <div>
-                  <p className="text-xl font-bold text-gray-900">—</p>
-                  <p className="text-xs text-gray-600">Subject Score</p>
-                </div>
-                <div>
-                  <p className="text-xl font-bold text-gray-900">—</p>
-                  <p className="text-xs text-gray-600">Overall User Score</p>
-                </div>
-                <div>
-                  <p className="text-xl font-bold text-gray-900">—</p>
-                  <p className="text-xs text-gray-600">Contributor Score</p>
-                </div>
-                <div>
-                  <p className="text-xl font-bold text-gray-900">—</p>
-                  <p className="text-xs text-gray-600">Voter Score</p>
-                </div>
-                <div>
-                  <p className="text-xl font-bold text-gray-900">—</p>
-                  <p className="text-xs text-gray-600">Citizen Score</p>
-                </div>
+                {[
+                  { label: "Subject Score",      val: subjectScores?.subject_score },
+                  { label: "Overall Score",       val: subjectScores?.overall_score },
+                  { label: "Contributor Score",   val: subjectScores?.contributor_score },
+                  { label: "Voter Score",         val: subjectScores?.voter_score },
+                  { label: "Citizen Score",       val: subjectScores?.citizen_score },
+                ].map((s) => (
+                  <div key={s.label}>
+                    <p className="text-xl font-bold text-gray-900">
+                      {s.val != null ? s.val : "—"}
+                    </p>
+                    <p className="text-xs text-gray-600">{s.label}</p>
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -1060,13 +1079,48 @@ export default function SubjectProfilePage() {
               </>
             )}
 
-            {activeTab === "reputations" && (
-              <div>
-                <h4 className="font-medium text-gray-900 mb-3">Reputations</h4>
-                <p className="text-gray-500 text-sm">No reputations found.</p>
+{activeTab === "reputations" && (
+              <div className="space-y-6">
+                {/* Scores */}
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-3">Reputation Scores</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {[
+                      { label: "Overall Score",     val: subjectScores?.overall_score },
+                      { label: "Subject Score",     val: subjectScores?.subject_score },
+                      { label: "Contributor Score", val: subjectScores?.contributor_score },
+                      { label: "Voter Score",       val: subjectScores?.voter_score },
+                      { label: "Citizen Score",     val: subjectScores?.citizen_score },
+                    ].map((s) => (
+                      <div key={s.label} className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-xl px-4 py-3">
+                        <span className="text-sm text-gray-700">{s.label}</span>
+                        <span className="text-sm font-bold text-gray-900">
+                          {s.val != null ? `${s.val} / 100` : "—"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
 
-                <h4 className="font-medium text-gray-900 mb-3 mt-6">Badges</h4>
-                <p className="text-gray-500 text-sm">No badges found.</p>
+                {/* Badges */}
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-3">Badges</h4>
+                  {subjectBadges.length === 0 ? (
+                    <p className="text-sm text-gray-500">No badges earned yet.</p>
+                  ) : (
+                    <div className="flex flex-wrap gap-3">
+                      {subjectBadges.map((badge: any) => (
+                        <div
+                          key={badge.id}
+                          className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border bg-gray-50 text-sm font-medium text-gray-700"
+                        >
+                          <span>{badge.icon}</span>
+                          {badge.label}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
