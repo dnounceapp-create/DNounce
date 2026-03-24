@@ -1,22 +1,9 @@
 "use client";
+// ─── TICKETS ──────────────────────────────────────────────────────────────────
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { Search, RefreshCw, MessageSquare, CheckCircle, X, Pencil } from "lucide-react";
-import { CSVButton, EditModal, fmtDate, Cell } from "../adminUtils";
-
-const TICKET_EDIT_FIELDS = [
-  { key: "id", label: "Ticket ID", readOnly: true },
-  { key: "user_id", label: "User ID", readOnly: true },
-  { key: "type", label: "Type", readOnly: true },
-  { key: "topic", label: "Topic", type: "text" as const },
-  { key: "category", label: "Category", type: "text" as const },
-  { key: "priority", label: "Priority", type: "select" as const, options: ["low", "normal", "high", "urgent"] },
-  { key: "message", label: "Message", type: "textarea" as const },
-  { key: "status", label: "Status", type: "select" as const, options: ["open", "in_progress", "closed"] },
-  { key: "admin_note", label: "Internal Note", type: "textarea" as const },
-  { key: "created_at", label: "Created At", readOnly: true },
-  { key: "resolved_at", label: "Resolved At", readOnly: true },
-];
+import { Search, RefreshCw, ChevronRight, MessageSquare } from "lucide-react";
+import { CSVButton, SidePanel, SmartEditModal, DetailRow, DetailSection, CopyID, fmtDate, type SmartField } from "../adminUtils";
 
 export default function AdminTicketsPage() {
   const [tickets, setTickets] = useState<any[]>([]);
@@ -24,12 +11,12 @@ export default function AdminTicketsPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("open");
   const [selected, setSelected] = useState<any | null>(null);
-  const [editTicket, setEditTicket] = useState<any | null>(null);
+  const [responses, setResponses] = useState<any[]>([]);
+  const [editModal, setEditModal] = useState<{ ticket: any; type: string } | null>(null);
   const [response, setResponse] = useState("");
-  const [adminNote, setAdminNote] = useState("");
   const [posting, setPosting] = useState(false);
-  const [toast, setToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
   const [adminLevel, setAdminLevel] = useState(0);
+  const [toast, setToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
 
   useEffect(() => {
     async function init() {
@@ -44,35 +31,56 @@ export default function AdminTicketsPage() {
 
   async function load() {
     setLoading(true);
-    const { data } = await supabase.from("support_tickets").select("id, user_id, type, topic, category, priority, message, status, created_at, admin_note, resolved_at, assigned_to").eq("type", "support").order("created_at", { ascending: false }).limit(500);
+    const { data } = await supabase.from("support_tickets").select("id,user_id,type,topic,category,priority,message,status,created_at,admin_note,resolved_at,assigned_to").eq("type", "support").order("created_at", { ascending: false }).limit(500);
     const rows = (data as any[]) ?? [];
-    const userIds = [...new Set(rows.map(r => r.user_id))];
-    const { data: accts } = await supabase.from("user_accountdetails").select("user_id, first_name, last_name").in("user_id", userIds);
-    const acctMap: Record<string, string> = {};
-    (accts ?? []).forEach((a: any) => { acctMap[a.user_id] = `${a.first_name ?? ""} ${a.last_name ?? ""}`.trim() || "User"; });
-    setTickets(rows.map(r => ({ ...r, user_name: acctMap[r.user_id] ?? "User" })));
+    const userIds = [...new Set(rows.map(r => r.user_id).filter(Boolean))];
+    const { data: accts } = userIds.length ? await supabase.from("user_accountdetails").select("user_id,first_name,last_name,email").in("user_id", userIds) : { data: [] };
+    const m: Record<string, any> = {}; (accts ?? []).forEach((a: any) => { m[a.user_id] = a; });
+    setTickets(rows.map(r => ({ ...r, user_name: `${m[r.user_id]?.first_name ?? ""} ${m[r.user_id]?.last_name ?? ""}`.trim() || "User", user_email: m[r.user_id]?.email ?? "" })));
     setLoading(false);
   }
 
-  async function loadDetail(ticket: any) {
-    const { data: responses } = await supabase.from("support_ticket_responses").select("id, body, created_at, admin_user_id").eq("ticket_id", ticket.id).order("created_at", { ascending: true });
-    const adminIds = [...new Set((responses ?? []).map((r: any) => r.admin_user_id))];
-    let adminNames: Record<string, string> = {};
-    if (adminIds.length) {
-      const { data: accts } = await supabase.from("user_accountdetails").select("user_id, first_name, last_name").in("user_id", adminIds);
-      (accts ?? []).forEach((a: any) => { adminNames[a.user_id] = `${a.first_name ?? ""} ${a.last_name ?? ""}`.trim() || "Admin"; });
-    }
-    setSelected({ ...ticket, responses: (responses ?? []).map((r: any) => ({ ...r, admin_name: adminNames[r.admin_user_id] ?? "Admin" })) });
-    setAdminNote(ticket.admin_note ?? "");
+  async function selectTicket(t: any) {
+    setSelected(t);
+    const { data } = await supabase.from("support_ticket_responses").select("id,body,created_at,admin_user_id").eq("ticket_id", t.id).order("created_at", { ascending: true });
+    const adminIds = [...new Set((data ?? []).map((r: any) => r.admin_user_id))];
+    let names: Record<string, string> = {};
+    if (adminIds.length) { const { data: ac } = await supabase.from("user_accountdetails").select("user_id,first_name,last_name").in("user_id", adminIds); (ac ?? []).forEach((a: any) => { names[a.user_id] = `${a.first_name ?? ""} ${a.last_name ?? ""}`.trim() || "Admin"; }); }
+    setResponses((data ?? []).map((r: any) => ({ ...r, admin_name: names[r.admin_user_id] ?? "Admin" })));
   }
 
-  async function saveTicket(updated: Record<string, any>) {
+  async function saveEdit(updated: Record<string, any>, note: string, type: string) {
     const { data: { session } } = await supabase.auth.getSession();
-    const { error } = await supabase.from("support_tickets").update({ topic: updated.topic, category: updated.category, priority: updated.priority, message: updated.message, status: updated.status, admin_note: updated.admin_note }).eq("id", updated.id);
-    if (error) throw error;
-    await supabase.from("admin_audit_log").insert({ admin_user_id: session!.user.id, admin_level: adminLevel, action: "edit_ticket", target_type: "support_tickets", target_id: updated.id, new_value: updated });
+    if (type === "details") {
+      const { error } = await supabase.from("support_tickets").update({ topic: updated.topic, category: updated.category, priority: updated.priority, admin_note: updated.admin_note || null }).eq("id", updated.id);
+      if (error) throw error;
+    }
+    if (type === "close") {
+      if (!updated.admin_note?.trim()) throw new Error("Resolution note is required when closing a ticket");
+      const { error } = await supabase.from("support_tickets").update({ status: "closed", resolved_at: new Date().toISOString(), admin_note: updated.admin_note }).eq("id", updated.id);
+      if (error) throw error;
+    }
+    if (type === "reopen") {
+      await supabase.from("support_tickets").update({ status: "open", resolved_at: null }).eq("id", updated.id);
+    }
+    if (type === "assign") {
+      if (!updated.assigned_to?.trim()) throw new Error("Admin user ID is required");
+      const { data: adminUser } = await supabase.from("user_accountdetails").select("user_id,first_name").eq("user_id", updated.assigned_to.trim()).maybeSingle();
+      if (!adminUser) throw new Error(`No user found with ID: ${updated.assigned_to}. Check the ID and try again.`);
+      const { error } = await supabase.from("support_tickets").update({ assigned_to: updated.assigned_to.trim(), status: "in_progress" }).eq("id", updated.id);
+      if (error) throw error;
+    }
+    if (type === "edit_response") {
+      const { error } = await supabase.from("support_ticket_responses").update({ body: updated.body }).eq("id", updated.response_id);
+      if (error) throw error;
+    }
+    if (type === "delete_response") {
+      await supabase.from("support_ticket_responses").delete().eq("id", updated.response_id);
+    }
+    await supabase.from("admin_audit_log").insert({ admin_user_id: session!.user.id, admin_level: adminLevel, action: `ticket_${type}`, target_type: "support_tickets", target_id: updated.id, new_value: { ...updated, note } });
     showToast("success", "Ticket updated");
     await load();
+    setSelected(null);
   }
 
   async function postResponse() {
@@ -82,102 +90,144 @@ export default function AdminTicketsPage() {
     const { error } = await supabase.from("support_ticket_responses").insert({ ticket_id: selected.id, admin_user_id: session!.user.id, body: response.trim() });
     if (error) { showToast("error", error.message); setPosting(false); return; }
     await supabase.from("notifications").insert({ user_id: selected.user_id, title: "Response to your support ticket", body: `An admin responded to your ticket: "${selected.topic}"`, type: "ticket_response", record_id: null });
-    if (adminNote) await supabase.from("support_tickets").update({ admin_note: adminNote }).eq("id", selected.id);
+    await supabase.from("admin_audit_log").insert({ admin_user_id: session!.user.id, admin_level: adminLevel, action: "ticket_respond", target_type: "support_tickets", target_id: selected.id });
     setResponse("");
-    showToast("success", "Response posted");
-    await loadDetail(selected);
+    showToast("success", "Response sent and user notified");
+    await selectTicket(selected);
     setPosting(false);
   }
 
-  async function closeTicket(id: string) {
-    const { data: { session } } = await supabase.auth.getSession();
-    await supabase.from("support_tickets").update({ status: "closed", resolved_at: new Date().toISOString(), admin_note: adminNote || null }).eq("id", id);
-    await supabase.from("admin_audit_log").insert({ admin_user_id: session!.user.id, admin_level: adminLevel, action: "close_ticket", target_type: "support_tickets", target_id: id });
-    showToast("success", "Ticket closed");
-    setSelected(null);
-    await load();
-  }
-
-  function showToast(type: "success" | "error", msg: string) { setToast({ type, msg }); setTimeout(() => setToast(null), 3000); }
+  function showToast(t: "success" | "error", m: string) { setToast({ type: t, msg: m }); setTimeout(() => setToast(null), 3500); }
 
   const filtered = tickets.filter(t => {
     const q = search.toLowerCase();
-    const matchSearch = !search || t.topic?.toLowerCase().includes(q) || t.message?.toLowerCase().includes(q) || t.user_name?.toLowerCase().includes(q) || t.id?.includes(q) || t.category?.toLowerCase().includes(q);
-    return matchSearch && (statusFilter === "all" || t.status === statusFilter);
+    return (!search || t.topic?.toLowerCase().includes(q) || t.message?.toLowerCase().includes(q) || t.user_name?.toLowerCase().includes(q) || t.user_email?.toLowerCase().includes(q) || t.id?.includes(q)) && (statusFilter === "all" || t.status === statusFilter);
   });
+  const csvData = filtered.map(t => ({ id: t.id, user_id: t.user_id, user_name: t.user_name, user_email: t.user_email, topic: t.topic, category: t.category, priority: t.priority, message: t.message, status: t.status, admin_note: t.admin_note ?? "", assigned_to: t.assigned_to ?? "", created_at: t.created_at, resolved_at: t.resolved_at ?? "" }));
 
-  const csvData = filtered.map(t => ({
-    id: t.id, user_id: t.user_id, user_name: t.user_name, type: t.type, topic: t.topic,
-    category: t.category, priority: t.priority, message: t.message, status: t.status,
-    admin_note: t.admin_note ?? "", assigned_to: t.assigned_to ?? "",
-    created_at: t.created_at, resolved_at: t.resolved_at ?? "",
-  }));
+  const detailFields: SmartField[] = [
+    { key: "id", label: "Ticket ID", type: "readonly" },
+    { key: "topic", label: "Topic / Subject", type: "text", required: true, help: "Short summary of what the user needs help with." },
+    { key: "category", label: "Category", type: "text", help: "e.g. Billing, Account, Records, Technical" },
+    { key: "priority", label: "Priority Level", type: "select", required: true, options: [{ value: "low", label: "Low — not time-sensitive" }, { value: "normal", label: "Normal — standard response time" }, { value: "high", label: "High — needs attention soon" }, { value: "urgent", label: "🔴 Urgent — respond immediately" }] },
+    { key: "admin_note", label: "Internal Admin Note", type: "textarea", help: "Visible only to admins. Not shown to the user." },
+  ];
+  const closeFields: SmartField[] = [
+    { key: "id", label: "Ticket ID", type: "readonly" },
+    { key: "admin_note", label: "Resolution Summary", type: "textarea", required: true, help: "Summarize how this was resolved. Logged for future reference." },
+  ];
+  const assignFields: SmartField[] = [
+    { key: "id", label: "Ticket ID", type: "readonly" },
+    { key: "assigned_to", label: "Assign To (Auth User ID)", type: "text", required: true, help: "Enter the auth_user_id of the admin to assign. The ticket status will change to 'In Progress'." },
+  ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <div><h1 className="text-white text-2xl font-bold">Support Tickets</h1><p className="text-gray-400 text-sm mt-1">{filtered.length} tickets</p></div>
-        <div className="flex gap-2">
-          <CSVButton data={csvData} filename="dnounce-tickets" />
-          <button onClick={load} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-800 text-gray-300 hover:text-white text-sm transition"><RefreshCw className="w-4 h-4" /> Refresh</button>
-        </div>
+        <div><h1 className="text-white text-2xl font-bold">Support Tickets</h1><p className="text-gray-400 text-sm mt-1">{filtered.length} tickets — click to view full detail, respond, edit, or close</p></div>
+        <div className="flex gap-2"><CSVButton data={csvData} filename="dnounce-tickets" /><button onClick={load} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-800 text-gray-300 hover:text-white text-sm transition"><RefreshCw className="w-4 h-4" /> Refresh</button></div>
       </div>
       <div className="flex gap-3">
-        <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" /><input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search topic, message, user, ID…" className="w-full bg-gray-900 border border-gray-700 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder-gray-500 outline-none focus:border-gray-500" /></div>
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="bg-gray-900 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white outline-none">
-          {["all","open","in_progress","closed"].map(s => <option key={s} value={s}>{s}</option>)}
-        </select>
+        <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" /><input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search topic, message, user name, email, ticket ID…" className="w-full bg-gray-900 border border-gray-700 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder-gray-500 outline-none focus:border-gray-500" /></div>
+        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="bg-gray-900 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white outline-none">{["all", "open", "in_progress", "closed"].map(s => <option key={s} value={s}>{s}</option>)}</select>
+      </div>
+      <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
+        {loading ? <div className="p-8 text-center text-gray-500 text-sm animate-pulse">Loading…</div> : (
+          <div className="overflow-x-auto"><table className="w-full text-xs">
+            <thead><tr className="border-b border-gray-800 bg-gray-950">{["Ticket ID", "User", "Email", "Topic", "Category", "Priority", "Status", "Responses", "Assigned To", "Created", ""].map(h => <th key={h} className="text-left text-gray-500 font-medium px-4 py-3 whitespace-nowrap">{h}</th>)}</tr></thead>
+            <tbody className="divide-y divide-gray-800/50">
+              {filtered.map(t => (
+                <tr key={t.id} onClick={() => selectTicket(t)} className={`hover:bg-gray-800/50 transition cursor-pointer ${selected?.id === t.id ? "bg-gray-800/70" : ""}`}>
+                  <td className="px-4 py-3"><CopyID id={t.id} /></td>
+                  <td className="px-4 py-3 text-white font-medium">{t.user_name}</td>
+                  <td className="px-4 py-3 text-gray-400">{t.user_email || "—"}</td>
+                  <td className="px-4 py-3 text-gray-200 max-w-[180px] truncate">{t.topic}</td>
+                  <td className="px-4 py-3 text-gray-400">{t.category || "—"}</td>
+                  <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold border ${t.priority === "urgent" ? "bg-red-900 text-red-300 border-red-700" : t.priority === "high" ? "bg-orange-900 text-orange-300 border-orange-700" : "bg-gray-800 text-gray-400 border-gray-700"}`}>{t.priority}</span></td>
+                  <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold border ${t.status === "open" ? "bg-yellow-900 text-yellow-300 border-yellow-700" : t.status === "in_progress" ? "bg-blue-900 text-blue-300 border-blue-700" : "bg-gray-800 text-gray-400 border-gray-700"}`}>{t.status}</span></td>
+                  <td className="px-4 py-3 text-center text-gray-400">{t.response_count ?? "—"}</td>
+                  <td className="px-4 py-3">{t.assigned_to ? <CopyID id={t.assigned_to} /> : <span className="text-gray-600">Unassigned</span>}</td>
+                  <td className="px-4 py-3 text-gray-400 whitespace-nowrap">{fmtDate(t.created_at)}</td>
+                  <td className="px-4 py-3"><ChevronRight className="w-4 h-4 text-gray-600" /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table></div>
+        )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
-          {loading ? <div className="p-8 text-center text-gray-500 text-sm animate-pulse">Loading…</div> : (
-            <div className="overflow-x-auto max-h-[650px] overflow-y-auto">
-              <table className="w-full text-xs">
-                <thead><tr className="border-b border-gray-800 bg-gray-950 sticky top-0">
-                  {["ID","User","Topic","Category","Priority","Status","Created","Actions"].map(h => <th key={h} className="text-left text-gray-500 font-medium px-3 py-3 whitespace-nowrap">{h}</th>)}
-                </tr></thead>
-                <tbody className="divide-y divide-gray-800/60">
-                  {filtered.map(t => (
-                    <tr key={t.id} onClick={() => loadDetail(t)} className={`hover:bg-gray-800/40 transition cursor-pointer ${selected?.id === t.id ? "bg-gray-800/60" : ""}`}>
-                      <td className="px-3 py-2.5"><Cell val={t.id} mono /></td>
-                      <td className="px-3 py-2.5 text-white whitespace-nowrap">{t.user_name}</td>
-                      <td className="px-3 py-2.5"><Cell val={t.topic} /></td>
-                      <td className="px-3 py-2.5"><Cell val={t.category} /></td>
-                      <td className="px-3 py-2.5"><span className={`px-1.5 py-0.5 rounded font-semibold ${t.priority === "urgent" ? "bg-red-900 text-red-400" : t.priority === "high" ? "bg-orange-900 text-orange-400" : "bg-gray-800 text-gray-400"}`}>{t.priority}</span></td>
-                      <td className="px-3 py-2.5"><span className={`px-1.5 py-0.5 rounded font-semibold ${t.status === "open" ? "bg-yellow-900 text-yellow-400" : t.status === "closed" ? "bg-gray-800 text-gray-400" : "bg-blue-900 text-blue-400"}`}>{t.status}</span></td>
-                      <td className="px-3 py-2.5 text-gray-400 whitespace-nowrap">{fmtDate(t.created_at)}</td>
-                      <td className="px-3 py-2.5"><button onClick={e => { e.stopPropagation(); setEditTicket(t); }} className="p-1.5 rounded-lg bg-gray-800 text-gray-400 hover:text-yellow-400 transition"><Pencil className="w-3.5 h-3.5" /></button></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-
-        {selected ? (
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5 space-y-4 max-h-[700px] overflow-y-auto">
-            <div className="flex items-start justify-between gap-2">
-              <div><h3 className="text-white font-semibold text-sm">{selected.topic}</h3><div className="text-gray-500 text-xs mt-0.5">{selected.user_name} • {selected.category} • {selected.priority} • ID: {selected.id?.slice(0,8)}…</div></div>
-              <button onClick={() => setSelected(null)} className="text-gray-500 hover:text-white"><X className="w-4 h-4" /></button>
-            </div>
-            <div className="bg-gray-800 rounded-xl p-3 text-sm text-gray-300 whitespace-pre-wrap">{selected.message}</div>
-            {(selected.responses ?? []).length > 0 && <div className="space-y-2">{selected.responses.map((r: any) => (<div key={r.id} className="bg-gray-800 rounded-xl p-3 space-y-1"><div className="text-xs font-semibold text-blue-400">{r.admin_name}</div><div className="text-sm text-gray-300 whitespace-pre-wrap">{r.body}</div><div className="text-[11px] text-gray-500">{fmtDate(r.created_at)}</div></div>))}</div>}
-            <div><label className="text-gray-400 text-xs mb-1 block">Internal note</label><textarea value={adminNote} onChange={e => setAdminNote(e.target.value)} rows={2} className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white outline-none" placeholder="Internal note…" /></div>
-            {selected.status !== "closed" && <div><textarea value={response} onChange={e => setResponse(e.target.value)} rows={3} className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white outline-none" placeholder="Response to user…" />
-              <div className="mt-2 flex gap-2">
-                <button onClick={postResponse} disabled={posting || !response.trim()} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-medium disabled:opacity-50"><MessageSquare className="w-4 h-4" />{posting ? "Posting…" : "Respond"}</button>
-                <button onClick={() => closeTicket(selected.id)} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-green-700 text-white text-sm font-medium"><CheckCircle className="w-4 h-4" /> Close</button>
+      {selected && (
+        <SidePanel title={selected.topic} subtitle={`From ${selected.user_name} (${selected.user_email})`} onClose={() => setSelected(null)}
+          actions={
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-2">
+                <button onClick={() => setEditModal({ ticket: selected, type: "details" })} className="px-3 py-2 rounded-xl bg-gray-800 text-gray-300 hover:text-white text-xs font-medium border border-gray-700 transition">✏️ Edit Details</button>
+                <button onClick={() => setEditModal({ ticket: selected, type: "assign" })} className="px-3 py-2 rounded-xl bg-gray-800 text-gray-300 hover:text-white text-xs font-medium border border-gray-700 transition">👤 Assign to Admin</button>
+                {selected.status !== "closed"
+                  ? <button onClick={() => setEditModal({ ticket: selected, type: "close" })} className="px-3 py-2 rounded-xl bg-green-900/30 text-green-400 hover:bg-green-900/60 text-xs font-medium border border-green-800 transition">✅ Close Ticket</button>
+                  : <button onClick={() => saveEdit(selected, "Admin reopened ticket", "reopen")} className="px-3 py-2 rounded-xl bg-gray-800 text-gray-300 hover:text-white text-xs font-medium border border-gray-700 transition">↩️ Reopen</button>}
               </div>
-            </div>}
-            {selected.status === "closed" && <div className="text-gray-500 text-xs">Closed {fmtDate(selected.resolved_at)}</div>}
-          </div>
-        ) : <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 flex items-center justify-center text-gray-500 text-sm">Select a ticket</div>}
-      </div>
+              {selected.status !== "closed" && (
+                <div>
+                  <label className="block text-gray-400 text-xs font-medium mb-1.5">Send Response to User</label>
+                  <textarea value={response} onChange={e => setResponse(e.target.value)} rows={3} placeholder="Write a response to the user. They will receive an in-app notification." className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-600 outline-none focus:border-blue-500 resize-none" />
+                  <button onClick={postResponse} disabled={posting || !response.trim()} className="mt-2 w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-medium disabled:opacity-40 transition">
+                    <MessageSquare className="w-4 h-4" />{posting ? "Sending…" : "Send Response & Notify User"}
+                  </button>
+                </div>
+              )}
+            </div>
+          }>
+          <DetailSection title="Ticket Details">
+            <DetailRow label="Ticket ID" value={selected.id} mono copyable />
+            <DetailRow label="Status" value={selected.status} />
+            <DetailRow label="Priority" value={selected.priority} highlight={selected.priority === "urgent" ? "red" : selected.priority === "high" ? "red" : undefined} />
+            <DetailRow label="Category" value={selected.category} />
+            <DetailRow label="Assigned To" value={selected.assigned_to} mono copyable />
+            <DetailRow label="Created" value={fmtDate(selected.created_at)} />
+            <DetailRow label="Resolved At" value={fmtDate(selected.resolved_at)} />
+          </DetailSection>
+          <DetailSection title="Submitter">
+            <DetailRow label="Name" value={selected.user_name} />
+            <DetailRow label="Email" value={selected.user_email} copyable />
+            <DetailRow label="User ID" value={selected.user_id} mono copyable />
+          </DetailSection>
+          <DetailSection title="Full Message">
+            <div className="py-3 text-sm text-gray-300 whitespace-pre-wrap leading-relaxed">{selected.message}</div>
+          </DetailSection>
+          {selected.admin_note && <DetailSection title="Internal Admin Note"><div className="py-3 text-sm text-yellow-300 whitespace-pre-wrap leading-relaxed">{selected.admin_note}</div></DetailSection>}
+          {responses.length > 0 && (
+            <DetailSection title={`Admin Responses (${responses.length})`}>
+              {responses.map((r: any, i: number) => (
+                <div key={r.id} className="py-3 border-b border-gray-700/50 last:border-0">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="text-blue-400 text-xs font-semibold">{r.admin_name}</div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-500 text-[11px]">{fmtDate(r.created_at)}</span>
+                      <button onClick={() => setEditModal({ ticket: { ...selected, response_id: r.id, body: r.body }, type: "edit_response" })} className="text-gray-600 hover:text-yellow-400 text-[11px] transition">Edit</button>
+                      {adminLevel >= 2 && <button onClick={() => { if (confirm("Delete this response? The user has already seen it.")) saveEdit({ ...selected, response_id: r.id }, "Admin deleted response", "delete_response"); }} className="text-gray-600 hover:text-red-400 text-[11px] transition">Delete</button>}
+                    </div>
+                  </div>
+                  <div className="text-sm text-gray-300 whitespace-pre-wrap">{r.body}</div>
+                </div>
+              ))}
+            </DetailSection>
+          )}
+        </SidePanel>
+      )}
 
-      {toast && <div className={`fixed bottom-6 right-6 px-4 py-3 rounded-xl text-sm font-medium shadow-lg z-50 ${toast.type === "success" ? "bg-green-900 text-green-300 border border-green-700" : "bg-red-900 text-red-300 border border-red-700"}`}>{toast.msg}</div>}
-      {editTicket && <EditModal title={`Edit Ticket — ${editTicket.id?.slice(0,8)}…`} data={editTicket} fields={TICKET_EDIT_FIELDS} onSave={saveTicket} onClose={() => setEditTicket(null)} />}
+      {editModal && (
+        <SmartEditModal
+          title={editModal.type === "details" ? "Edit Ticket Details" : editModal.type === "close" ? "Close Ticket" : editModal.type === "assign" ? "Assign Ticket" : editModal.type === "edit_response" ? "Edit Admin Response" : "Reopen Ticket"}
+          subtitle={editModal.ticket.topic}
+          data={editModal.ticket}
+          fields={editModal.type === "details" ? detailFields : editModal.type === "close" ? closeFields : editModal.type === "assign" ? assignFields : editModal.type === "edit_response" ? [{ key: "id", label: "Ticket ID", type: "readonly" as const }, { key: "_warn", type: "warning" as const, label: "", help: "The user has already seen this response. Editing it changes the historical record." }, { key: "body", label: "Response Text", type: "textarea" as const, required: true }] : detailFields}
+          warning={editModal.type === "edit_response" ? undefined : undefined}
+          onSave={(u, n) => saveEdit(u, n, editModal.type)}
+          onClose={() => setEditModal(null)}
+        />
+      )}
+      {toast && <div className={`fixed bottom-6 right-6 px-4 py-3 rounded-xl text-sm font-medium shadow-lg z-[80] border ${toast.type === "success" ? "bg-green-900 text-green-300 border-green-700" : "bg-red-900 text-red-300 border-red-700"}`}>{toast.msg}</div>}
     </div>
   );
 }
