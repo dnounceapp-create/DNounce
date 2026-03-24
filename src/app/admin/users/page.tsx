@@ -5,8 +5,8 @@ import { Search, RefreshCw, ChevronRight } from "lucide-react";
 import { CSVButton, SidePanel, SmartEditModal, DetailRow, DetailSection, CopyID, fmtDate, type SmartField } from "../adminUtils";
 import UserHistoryPanel from "./UserHistoryPanel";
 
-const LEVEL_LABELS: Record<number, string> = { 0: "Regular User", 1: "Support Agent", 2: "Moderator", 3: "Super Admin" };
-const LEVEL_COLORS: Record<number, string> = { 0: "bg-gray-800 text-gray-400 border-gray-700", 1: "bg-blue-900 text-blue-300 border-blue-700", 2: "bg-purple-900 text-purple-300 border-purple-700", 3: "bg-red-900 text-red-300 border-red-700" };
+const LEVEL_LABELS: Record<string, string> = {"":"Regular User", support_agent:"Support Agent", moderator:"Moderator", super_admin:"Super Admin"};
+const LEVEL_COLORS: Record<string, string> = {"":"bg-gray-800 text-gray-400 border-gray-700", support_agent:"bg-blue-900 text-blue-300 border-blue-700", moderator:"bg-purple-900 text-purple-300 border-purple-700", super_admin:"bg-red-900 text-red-300 border-red-700"};
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<any[]>([]);
@@ -14,7 +14,7 @@ export default function AdminUsersPage() {
   const [search, setSearch] = useState("");
   const [filterBanned, setFilterBanned] = useState("all");
   const [filterLevel, setFilterLevel] = useState("all");
-  const [adminLevel, setAdminLevel] = useState(0);
+  const [adminLevel, setAdminLevel] = useState("");
   const [myUserId, setMyUserId] = useState("");
   const [selected, setSelected] = useState<any | null>(null);
   const [showHistory, setShowHistory] = useState(false);
@@ -26,8 +26,8 @@ export default function AdminUsersPage() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
       setMyUserId(session.user.id);
-      const { data: role } = await supabase.from("admin_roles").select("level").eq("user_id", session.user.id).eq("is_active", true).maybeSingle();
-      setAdminLevel(role?.level ?? 0);
+      const { data: role } = await supabase.from("admin_roles").select("role").eq("user_id", session.user.id).eq("is_active", true).maybeSingle();
+      setAdminLevel(role?.role ?? "");
       await load();
     }
     init();
@@ -38,21 +38,21 @@ export default function AdminUsersPage() {
     const [usersRes, acctsRes, adminRolesRes, scoresRes, bansRes, socialRes, prefsRes] = await Promise.all([
       supabase.from("users").select("id,auth_user_id,is_banned,admin,created_at,onboarding_complete,personal_category,subject_id,contributor_id,updated_at").order("created_at", { ascending: false }).limit(500),
       supabase.from("user_accountdetails").select("user_id,first_name,last_name,job_title,organization,location,nickname,phone,email,avatar_url,created_at,updated_at"),
-      supabase.from("admin_roles").select("user_id,level,created_at,assigned_by").eq("is_active", true),
+      supabase.from("admin_roles").select("user_id,role,created_at,assigned_by").eq("is_active", true),
       supabase.from("user_scores").select("user_id,subject_score,contributor_score,voter_score,citizen_score,overall_score,updated_at"),
       supabase.from("user_bans").select("user_id,id,reason,is_permanent,expires_at,created_at,is_active,revoked_at,banned_by").eq("is_active", true),
       supabase.from("user_social_links").select("user_id,platform,label,url,id"),
       supabase.from("user_preferences").select("user_id,language,theme,font_size,reduce_motion,notif_email,notif_push,updated_at"),
     ]);
     const acctMap: Record<string, any> = {}; (acctsRes.data ?? []).forEach((a: any) => { acctMap[a.user_id] = a; });
-    const adminMap: Record<string, number> = {}; (adminRolesRes.data ?? []).forEach((r: any) => { adminMap[r.user_id] = r.level; });
+    const adminMap: Record<string, string> = {}; (adminRolesRes.data ?? []).forEach((r: any) => { adminMap[r.user_id] = r.role; });
     const scoreMap: Record<string, any> = {}; (scoresRes.data ?? []).forEach((s: any) => { scoreMap[s.user_id] = s; });
     const banMap: Record<string, any> = {}; (bansRes.data ?? []).forEach((b: any) => { banMap[b.user_id] = b; });
     const socialMap: Record<string, any[]> = {}; (socialRes.data ?? []).forEach((s: any) => { if (!socialMap[s.user_id]) socialMap[s.user_id] = []; socialMap[s.user_id].push(s); });
     const prefsMap: Record<string, any> = {}; (prefsRes.data ?? []).forEach((p: any) => { prefsMap[p.user_id] = p; });
     const merged = (usersRes.data ?? []).map((u: any) => {
       const a = acctMap[u.auth_user_id] ?? {}; const s = scoreMap[u.auth_user_id] ?? {};
-      return { ...u, ...a, admin_level: adminMap[u.auth_user_id] ?? 0, ...s, active_ban: banMap[u.auth_user_id] ?? null, social_links: socialMap[u.auth_user_id] ?? [], prefs: prefsMap[u.auth_user_id] ?? null };
+      return { ...u, ...a, admin_level: adminMap[u.auth_user_id] ?? "", ...s, active_ban: banMap[u.auth_user_id] ?? null, social_links: socialMap[u.auth_user_id] ?? [], prefs: prefsMap[u.auth_user_id] ?? null };
     });
     setUsers(merged); setLoading(false);
   }
@@ -127,12 +127,12 @@ export default function AdminUsersPage() {
     }
 
     if (type === "admin_role") {
-      if (adminLevel < 3) throw new Error("Only Super Admins can change admin roles");
+      if (adminLevel !== "super_admin") throw new Error("Only Super Admins can change admin roles");
       if (updated.auth_user_id === myUserId) throw new Error("You cannot change your own admin role");
-      const newLevel = Number(updated.new_admin_level);
+      const newRole = updated.new_admin_role;
       await supabase.from("admin_roles").update({ is_active: false, revoked_at: new Date().toISOString() }).eq("user_id", updated.auth_user_id).eq("is_active", true);
-      if (newLevel > 0) await supabase.from("admin_roles").insert({ user_id: updated.auth_user_id, level: newLevel, assigned_by: session!.user.id });
-      await supabase.from("users").update({ admin: newLevel > 0 }).eq("auth_user_id", updated.auth_user_id);
+      if (newRole) await supabase.from("admin_roles").insert({ user_id: updated.auth_user_id, role: newRole, assigned_by: session!.user.id });
+      await supabase.from("users").update({ admin: !!newRole }).eq("auth_user_id", updated.auth_user_id);
     }
 
     await supabase.from("admin_audit_log").insert({ admin_user_id: session!.user.id, admin_level: adminLevel, action: `edit_user_${type}`, target_type: "users", target_id: updated.auth_user_id, new_value: { ...updated, note } });
@@ -204,8 +204,8 @@ export default function AdminUsersPage() {
   ];
   const adminRoleFields: SmartField[] = [
     { key: "auth_user_id", label: "User ID", type: "readonly" },
-    { key: "_warn", type: "warning", label: "", help: "Admin role changes take effect immediately. The user will have new permissions on their next page load. Only Super Admins (Level 3) can perform this action." },
-    { key: "new_admin_level", label: "New Admin Level", type: "select", required: true, options: [{ value: "0", label: "0 — Regular User (remove all admin access)" }, { value: "1", label: "1 — Support Agent (manage tickets, records)" }, { value: "2", label: "2 — Moderator (+ ban users, manage badges)" }, { value: "3", label: "3 — Super Admin (full access, manage other admins)" }] },
+    { key: "_warn", type: "warning", label: "", help: "Admin role changes take effect immediately. Only Super Admins can perform this action." },
+    { key: "new_admin_role", label: "New Admin Role", type: "select", required: false, options: [{ value: "", label: "No admin access (regular user)" }, { value: "support_agent", label: "Support Agent — manage tickets and records" }, { value: "moderator", label: "Moderator — + ban users, manage badges" }, { value: "super_admin", label: "Super Admin — full access, manage other admins" }] },
   ];
 
   return (
@@ -217,7 +217,7 @@ export default function AdminUsersPage() {
       <div className="flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-[220px]"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" /><input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search name, email, user ID, job title, organization…" className="w-full bg-gray-900 border border-gray-700 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder-gray-500 outline-none focus:border-gray-500" /></div>
         <select value={filterBanned} onChange={e => setFilterBanned(e.target.value)} className="bg-gray-900 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white outline-none"><option value="all">All statuses</option><option value="active">Active only</option><option value="banned">Banned only</option></select>
-        <select value={filterLevel} onChange={e => setFilterLevel(e.target.value)} className="bg-gray-900 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white outline-none"><option value="all">All roles</option><option value="0">Regular Users</option><option value="1">Support Agents</option><option value="2">Moderators</option><option value="3">Super Admins</option></select>
+        <select value={filterLevel} onChange={e => setFilterLevel(e.target.value)} className="bg-gray-900 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white outline-none"><option value="all">All roles</option><option value="">Regular Users</option><option value="support_agent">Support Agents</option><option value="moderator">Moderators</option><option value="super_admin">Super Admins</option></select>
       </div>
 
       <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
@@ -235,7 +235,7 @@ export default function AdminUsersPage() {
                       <td className="px-4 py-3 text-gray-400">{u.email || "—"}</td>
                       <td className="px-4 py-3 text-gray-300">{u.job_title || "—"}</td>
                       <td className="px-4 py-3 text-gray-400">{u.organization || "—"}</td>
-                      <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold border ${LEVEL_COLORS[u.admin_level ?? 0]}`}>{LEVEL_LABELS[u.admin_level ?? 0]}</span></td>
+                      <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold border ${LEVEL_COLORS[u.admin_level ?? ""]}`}>{LEVEL_LABELS[u.admin_level ?? ""]}</span></td>
                       <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold border ${u.is_banned ? "bg-red-900 text-red-300 border-red-700" : "bg-green-900 text-green-300 border-green-700"}`}>{u.is_banned ? "Banned" : "Active"}</span></td>
                       <td className="px-4 py-3 text-center text-white font-medium">{u.subject_score ?? "—"}</td>
                       <td className="px-4 py-3 text-center text-white font-bold">{u.overall_score ?? "—"}</td>
@@ -261,10 +261,10 @@ export default function AdminUsersPage() {
                   <button onClick={() => setEditModal({ user: selected, type: "account" })} className="px-3 py-2 rounded-xl bg-gray-800 text-gray-300 hover:text-white text-xs font-medium border border-gray-700 transition">⚙️ Account Settings</button>
                   <button onClick={() => setEditModal({ user: selected, type: "scores" })} className="px-3 py-2 rounded-xl bg-gray-800 text-gray-300 hover:text-white text-xs font-medium border border-gray-700 transition">📊 Override Scores</button>
                   <button onClick={() => setEditModal({ user: { ...selected, language: selected.prefs?.language ?? "en", theme: selected.prefs?.theme ?? "system", font_size: selected.prefs?.font_size ?? "medium", reduce_motion: selected.prefs?.reduce_motion ?? false, notif_email: selected.prefs?.notif_email ?? true, notif_push: selected.prefs?.notif_push ?? false }, type: "preferences" })} className="px-3 py-2 rounded-xl bg-gray-800 text-gray-300 hover:text-white text-xs font-medium border border-gray-700 transition">🔔 Notification Prefs</button>
-                  {adminLevel >= 3 && selected.auth_user_id !== myUserId && <button onClick={() => setEditModal({ user: { ...selected, new_admin_level: String(selected.admin_level ?? 0) }, type: "admin_role" })} className="px-3 py-2 rounded-xl bg-gray-800 text-gray-300 hover:text-white text-xs font-medium border border-gray-700 transition col-span-2">🛡️ Change Admin Role</button>}
+                  {adminLevel === "super_admin" && selected.auth_user_id !== myUserId && <button onClick={() => setEditModal({ user: { ...selected, new_admin_role: selected.admin_level ?? "" }, type: "admin_role" })} className="px-3 py-2 rounded-xl bg-gray-800 text-gray-300 hover:text-white text-xs font-medium border border-gray-700 transition col-span-2">🛡️ Change Admin Role</button>}
                 </div>
               </div>
-              {adminLevel >= 2 && selected.auth_user_id !== myUserId && (
+              {(adminLevel === "moderator" || adminLevel === "super_admin") && selected.auth_user_id !== myUserId && (
                 <div>
                   <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-2">Ban Management</div>
                   <div className="grid grid-cols-2 gap-2">
@@ -297,7 +297,7 @@ export default function AdminUsersPage() {
             <DetailRow label="Personal Category" value={selected.personal_category} />
           </DetailSection>
           <DetailSection title="Account Status">
-            <DetailRow label="Admin Role" value={LEVEL_LABELS[selected.admin_level ?? 0]} />
+            <DetailRow label="Admin Role" value={LEVEL_LABELS[selected.admin_level ?? ""]} />
             <DetailRow label="Is Banned" value={selected.is_banned} highlight={selected.is_banned ? "red" : "green"} />
             <DetailRow label="Onboarding Complete" value={selected.onboarding_complete} />
             {selected.active_ban && <>

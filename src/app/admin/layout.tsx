@@ -23,22 +23,22 @@ const NAV = [
   { href: "/admin/audit", label: "Audit Log", icon: ScrollText },
 ];
 
-const LEVEL_LABELS: Record<number, string> = {
-  1: "Support Agent",
-  2: "Moderator",
-  3: "Super Admin",
+const LEVEL_LABELS: Record<string, string> = {
+  support_agent: "Support Agent",
+  moderator: "Moderator",
+  super_admin: "Super Admin",
 };
 
-const LEVEL_COLORS: Record<number, string> = {
-  1: "bg-blue-100 text-blue-800",
-  2: "bg-purple-100 text-purple-800",
-  3: "bg-red-100 text-red-800",
+const LEVEL_COLORS: Record<string, string> = {
+  support_agent: "bg-blue-100 text-blue-800",
+  moderator: "bg-purple-100 text-purple-800",
+  super_admin: "bg-red-100 text-red-800",
 };
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [adminLevel, setAdminLevel] = useState<number>(0);
+  const [adminLevel, setAdminLevel] = useState<string>("");
   const [adminName, setAdminName] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -50,12 +50,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       const { data: role } = await supabase
         .from("admin_roles")
-        .select("level")
+        .select("role")
         .eq("user_id", session.user.id)
         .eq("is_active", true)
         .maybeSingle();
 
-      if (!role?.level) { router.push("/dashboard"); return; }
+      if (!role?.role) { router.push("/dashboard"); return; }
 
       const { data: acct } = await supabase
         .from("user_accountdetails")
@@ -63,7 +63,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         .eq("user_id", session.user.id)
         .maybeSingle();
 
-      setAdminLevel(role.level);
+      setAdminLevel(role.role);
+
       setAdminName(`${acct?.first_name ?? ""} ${acct?.last_name ?? ""}`.trim() || session.user.email || "Admin");
       setLoading(false);
     }
