@@ -390,7 +390,7 @@ const STAGE_CONFIG: Record<string, {
 
 export function StageChangeModal({ currentStatus, targetStatus, onSave, onClose }: {
   currentStatus: string; targetStatus: string;
-  onSave: (data: Record<string, any>) => Promise<void>; onClose: () => void;
+  onSave: (data: Record<string, any>, note: string) => Promise<void>; onClose: () => void;
 }) {
   const config = STAGE_CONFIG[targetStatus];
   const now = new Date().toISOString().slice(0, 16);
