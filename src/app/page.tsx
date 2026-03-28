@@ -2,8 +2,8 @@
 // Deployment trigger - search functionality improvements
 
 import Link from "next/link";
-import { MapPin } from "lucide-react";
 import { searchSubjects } from "@/lib/searchSubjectsQuery";
+import SearchResultCard from "@/components/SearchResultCard";
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -40,6 +40,9 @@ import {
   User,
   ChevronsUpDown,
   Check,
+  Copy,
+  Star,
+  MapPin,
 } from "lucide-react";
 
 function buildNoProfileMessage({
@@ -90,7 +93,7 @@ function buildNoProfileMessage({
 
 export default function HomePage() {
   const [scrollProgress, setScrollProgress] = useState(0);
-  const [activeTab, setActiveTab] = useState<"records" | "reputations">("records");
+  const [activeTab, setActiveTab] = useState<"records" | "reputations" | "social">("records");
   const [formKey, setFormKey] = useState(0);
   const [relationshipTypes, setRelationshipTypes] = useState<{ id: string; label: string; value: string }[]>([]);
   const [relLoading, setRelLoading] = useState(true);
@@ -214,6 +217,10 @@ export default function HomePage() {
   const [otherRelationship, setOtherRelationship] = useState("");
   const [category, setCategory] = useState("");
   const [location, setLocation] = useState("");
+  const [searchFirstName, setSearchFirstName] = useState("");
+  const [searchLastName, setSearchLastName] = useState("");
+  const [searchSubjectId, setSearchSubjectId] = useState("");
+  const [searchRecordId, setSearchRecordId] = useState("");
   const [hashtag, setHashtag] = useState("");
   const [hashtagMessage, setHashtagMessage] = useState("");
   const [hashtagLoading, setHashtagLoading] = useState(false);
@@ -233,53 +240,36 @@ export default function HomePage() {
   const [searchOtherRelationship, setSearchOtherRelationship] = useState("");
 
 
-  const handleSearchRedirect = async () => {
-    setSearchLoading(true);
-    setSearchMessage("");
-    setShowResults(false);
-  
-    const filters = {
-      profileId,
-      nickname,
-      name,
-      organization,
-      category,
-      location,
-      relationship: searchRelationship,
-      otherRelationship: searchRelationship === "other" ? searchOtherRelationship : "",
-    };
-  
-    try {
-      // Call backend query
-      const results = await searchSubjects(filters);
-  
-      if (results.length > 0) {
-        setSearchResults(results);
-        setSearchMessage(`Found ${results.length} profile(s)`);
+  useEffect(() => {
+    const hasAny = searchFirstName || searchLastName || nickname || organization || location || category || searchSubjectId || searchRecordId;
+    if (!hasAny) { setSearchResults([]); setShowResults(false); return; }
+
+    const run = async () => {
+      setSearchLoading(true);
+      try {
+        const params = new URLSearchParams();
+        if (searchFirstName) params.set("firstName", searchFirstName);
+        if (searchLastName)  params.set("lastName",  searchLastName);
+        if (nickname)        params.set("nickname",   nickname);
+        if (organization)    params.set("organization", organization);
+        if (location)        params.set("location",   location);
+        if (category)        params.set("category",   category);
+        if (searchSubjectId) params.set("subjectId",  searchSubjectId);
+        if (searchRecordId)  params.set("recordId",   searchRecordId);
+        const res = await fetch(`/api/advancedsearch?${params}`);
+        const data = await res.json();
+        setSearchResults(data.results || []);
         setShowResults(true);
-      } else {
-        const message = buildNoProfileMessage({
-          profileId,
-          nickname,
-          name,
-          organization,
-          category,
-          location,
-          relationship: searchRelationship,
-          otherRelationship: searchOtherRelationship,
-          relationshipTypes,
-        });
-  
-        setSearchMessage(message);
-        setSearchResults([]);
+      } catch (err) {
+        console.error("Search error:", err);
+      } finally {
+        setSearchLoading(false);
       }
-    } catch (err) {
-      console.error("Unexpected error:", err);
-      setSearchMessage("Unexpected error. Please try again.");
-    } finally {
-      setSearchLoading(false);
-    }
-  };
+    };
+
+    const delay = setTimeout(run, 300);
+    return () => clearTimeout(delay);
+  }, [searchFirstName, searchLastName, nickname, organization, location, category, searchSubjectId, searchRecordId]);
   
   const handleSearch = async () => {
     const filters = {
@@ -641,130 +631,39 @@ export default function HomePage() {
             <p className="text-gray-600">Find reviews and reputation insights</p>
           </div>
 
-          <Card className="p-8 bg-white shadow-lg rounded-xl">
-
-            <div key={formKey} className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-6">
-              {/* Profile ID Field */}
-              <div className="flex flex-col">
-                <label className="mb-1 text-sm font-semibold text-gray-700">Profile ID</label>
-                <Input
-                  placeholder="e.g. 12345"
-                  type="text"
-                  value={profileId}
-                  onChange={(e) => setProfileId(e.target.value)}
-                  className="w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              {/* Name Field */}
-              <div className="flex flex-col">
-                <label className="mb-1 text-sm font-semibold text-gray-700">Name</label>
-                <Input
-                  placeholder="e.g. John Doe"
-                  type="text"
-                  value={name}
-                  onChange={(e) => {
-                    const value = e.target.value
-                      .split(" ")
-                      .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-                      .join(" ");
-                    setName(value);
-                  }}
-                  className="w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              {/* Nickname Field */}
-              <div className="flex flex-col">
-                <label className="mb-1 text-sm font-semibold text-gray-700">Also Known As</label>
-                <Input
-                  placeholder="Enter nickname"
-                  type="text"
-                  value={nickname}
-                  onChange={(e) => {
-                    const value = e.target.value
-                      .split(" ")
-                      .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-                      .join(" ");
-                    setNickname(value);
-                  }}
-                  className="w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              {/* Organization/Company Field */}
-              <div className="flex flex-col">
-                <label className="mb-1 text-sm font-semibold text-gray-700">Organization/Company</label>
-                <Input
-                  placeholder="e.g. Acme Inc."
-                  value={organization}
-                  onChange={(e) => {
-                    const value = e.target.value
-                      .split(" ")
-                      .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-                      .join(" ");
-                    setOrganization(value);
-                  }}
-                  className="w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              {/* Relationship Field */}
-              <div className="flex flex-col">
-                <label className="mb-1 text-sm font-semibold text-gray-700">Relationship</label>
-
-                {relLoading ? (
-                  <p className="text-sm text-gray-400">Loading relationships...</p>
-                ) : (
-                  <Select value={searchRelationship} onValueChange={setSearchRelationship}>
-                    <SelectTrigger className="w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500">
-                      <SelectValue placeholder="Select relationship" />
-                    </SelectTrigger>
-                    <SelectContent className="z-50 bg-white shadow-lg rounded-xl border border-gray-200">
-                      {relationshipTypes.map((rel) => (
-                        <SelectItem key={rel.id} value={rel.id}>
-                          {rel.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-
-                {/* 👇 Only show if "Other" selected */}
-                {relationshipTypes.find((rel) => rel.id === searchRelationship)?.value === "other" && (
-                  <Input
-                    placeholder="Please specify..."
-                    value={searchOtherRelationship}
-                    onChange={(e) => setSearchOtherRelationship(e.target.value)}
-                    className="mt-3 w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500"
-                  />
-                )}
-              </div>
-
-              {/* Category Field */}
-              <div className="flex flex-col">
-                <label className="mb-1 text-sm font-semibold text-gray-700">Category</label>
-                <Input
-                  placeholder="e.g. Barber, Waitress, Doctor..."
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Use a label that best fits how you may find this person.
-                </p>
-              </div>
-
-              {/* Location Field */}
-              <div className="flex flex-col">
-                <label className="mb-1 text-sm font-semibold text-gray-700">Location</label>
-                <div className="relative">
-                  <Input
+          <Card className="p-6 bg-white shadow-lg rounded-xl">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+              {([
+                ["First Name", searchFirstName, setSearchFirstName, "e.g. John"],
+                ["Last Name",  searchLastName,  setSearchLastName,  "e.g. Doe"],
+                ["Nickname",   nickname,        setNickname,        "e.g. JD"],
+                ["Organization", organization,  setOrganization,    "e.g. Acme Corp"],
+                ["Category",   category,        setCategory,        "e.g. Barber"],
+                ["Subject ID", searchSubjectId, setSearchSubjectId, ""],
+                ["Record ID",  searchRecordId,  setSearchRecordId,  ""],
+              ] as [string, string, (v: string) => void, string][]).map(([label, value, setter, placeholder]) => (
+                <div key={label} className="flex flex-col gap-1">
+                  <label className="text-[11px] font-medium text-gray-500 uppercase tracking-wide">{label}</label>
+                  <input
                     type="text"
+                    placeholder={placeholder}
+                    value={value}
+                    onChange={(e) => setter(e.target.value)}
+                    className="h-9 px-3 text-sm border border-gray-200 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800"
+                  />
+                </div>
+              ))}
+
+              {/* Location with autocomplete */}
+              <div className="flex flex-col gap-1">
+                <label className="text-[11px] font-medium text-gray-500 uppercase tracking-wide">Location</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="e.g. Astoria, NY"
                     value={locationInput}
                     onChange={(e) => setLocationInput(e.target.value)}
-                    placeholder="City or neighborhood..."
-                    className="w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500"
+                    className="h-9 px-3 text-sm border border-gray-200 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 w-full"
                   />
                   {locationSuggestions.length > 0 && (
                     <ul className="absolute z-50 bg-white border rounded-md w-full shadow-md mt-1 max-h-60 overflow-y-auto">
@@ -779,88 +678,55 @@ export default function HomePage() {
                           }}
                         >
                           <MapPin className="w-4 h-4 text-gray-600 shrink-0" />
-                          <span className="font-semibold text-gray-800 text-sm leading-tight">
-                            {s.description}
-                          </span>
+                          <span className="text-sm text-gray-800">{s.description}</span>
                         </li>
                       ))}
                     </ul>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  Type neighborhoods/towns or cities only.
-                </p>
               </div>
             </div>
 
-            {/* Buttons */}
-            <div className="flex justify-center gap-4">
-              <Button
-                onClick={handleSearchRedirect}
-                disabled={
-                  !(
-                    profileId ||
-                    nickname ||
-                    name ||
-                    organization ||
-                    category ||
-                    location ||
-                    searchRelationship ||
-                    searchOtherRelationship
-                  )
-                }
-              >
-                Search Profile
-              </Button>
-
-              <Button
-                variant="outline"
-                className="px-6 py-2 rounded-md"
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-xs text-gray-400">More fields = more specific results</span>
+              <button
                 onClick={() => {
-                  setProfileId("");
-                  setNickname("");
-                  setName("");
-                  setOrganization("");
-                  setCategory("");
-                  setLocation("");
-                  setSearchRelationship("");
-                  setSearchOtherRelationship("");
-                  setFormKey((prev) => prev + 1);
+                  setSearchFirstName(""); setSearchLastName(""); setNickname("");
+                  setOrganization(""); setCategory(""); setLocation("");
+                  setLocationInput(""); setSearchSubjectId(""); setSearchRecordId("");
+                  setSearchResults([]); setShowResults(false);
                 }}
+                className="px-3 py-1.5 text-xs text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition"
               >
-                Clear Filters
-              </Button>
+                Clear all
+              </button>
             </div>
 
-            {/* Loading Indicator */}
             {searchLoading && (
-              <div className="mt-6 flex justify-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <div className="flex justify-center py-4">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600" />
               </div>
             )}
 
-            {/* Search Results Message */}
-            {searchMessage && (
-              <div className={`mt-4 p-4 rounded-lg text-center ${
-                searchResults.length > 0 
-                  ? "bg-green-50 text-green-800 border border-green-200" 
-                  : "bg-yellow-50 text-yellow-800 border border-yellow-200"
-              }`}>
-                {searchMessage}
-              </div>
+            {showResults && searchResults.length === 0 && !searchLoading && (
+              <p className="text-center text-sm text-gray-400 py-4">No profiles found.</p>
             )}
 
-            {/* Actual Search Results */}
             {showResults && searchResults.length > 0 && (
-              <div className="mt-6">
-                <h3 className="text-lg font-semibold mb-4">Search Results</h3>
-                {searchResults.map((profile) => (
-                  <Card key={profile.id} className="p-4 mb-4">
-                    <h4 className="font-medium">{profile.name || "Unnamed Profile"}</h4>
-                    <p className="text-sm text-gray-600">ID: {profile.id}</p>
-                    {profile.organization && <p className="text-sm">Organization: {profile.organization}</p>}
-                    {profile.location && <p className="text-sm">Location: {profile.location}</p>}
-                  </Card>
+              <div className="space-y-2">
+                {searchResults.map((item: any) => (
+                  <SearchResultCard
+                    key={`${item.type}-${item.id}`}
+                    type={item.type || "profile"}
+                    title={item.name || "Unnamed Profile"}
+                    nickname={item.nickname}
+                    subtitle={item.organization}
+                    location={item.location}
+                    category={item.category}
+                    id={item.id}
+                    href={item.type === "record" ? `/record/${item.id}` : `/subject/${item.id}`}
+                    avatarUrl={item.avatar_url || null}
+                  />
                 ))}
               </div>
             )}
@@ -912,207 +778,224 @@ export default function HomePage() {
           </Card>
 
           <div className="mt-8">
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-              <div className="flex items-start gap-3">
-                <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium text-yellow-800">EXAMPLE ONLY - NOT REAL DATA</p>
-                  <p className="text-sm text-yellow-700">
-                    This is a demonstration of how subject profiles appear on DNounce
-                  </p>
-                </div>
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4 flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-yellow-800">EXAMPLE ONLY — NOT REAL DATA</p>
+                <p className="text-sm text-yellow-700">This is a demonstration of how subject profiles appear on DNounce</p>
               </div>
             </div>
 
-            <Card className="p-6 bg-white">
+            <div className="border rounded-2xl bg-white p-6">
               <div className="flex flex-col md:flex-row gap-6">
-                {/* Avatar */}
-                <div className="flex-shrink-0 w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto md:mx-0">
-                  <User className="h-8 w-8 text-gray-600" />
-                </div>
-
-                {/* Main Content */}
                 <div className="flex-1">
-                  <div className="flex items-start justify-between mb-6">
+
+                  {/* Header + Scores */}
+                  <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+                    {/* LEFT: Identity */}
+                    <div className="flex flex-col">
+                      <div className="grid grid-cols-[72px_1fr] gap-x-4 items-start">
+                        <div className="w-[72px] h-[72px] bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
+                          <User className="h-8 w-8 text-gray-500" />
+                        </div>
+                        <div className="flex flex-col gap-1 pt-0.5">
+                          <h3 className="text-xl font-semibold text-gray-900 leading-tight">
+                            John Example <span className="text-gray-400 font-normal text-base">(JE)</span>
+                          </h3>
+                          <p className="text-sm text-gray-600">AutoFix Garage</p>
+                          <p className="text-sm text-gray-500 flex items-center gap-1"><span>📍</span> San Francisco, CA</p>
+                        </div>
+                      </div>
+                      <div className="mt-3 flex items-center gap-2 text-xs text-gray-600">
+                        <span className="font-semibold text-gray-800">Subject ID:</span>
+                        <span className="font-mono text-gray-500">abc123…xyz789</span>
+                        <button disabled className="inline-flex items-center justify-center rounded-full border p-1.5 text-gray-400 cursor-not-allowed">
+                          <Copy className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* RIGHT: Scores */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 text-center">
+                      {[
+                        { label: "Subject Score",     val: "82" },
+                        { label: "Overall Score",     val: "76" },
+                        { label: "Contributor Score", val: "88" },
+                        { label: "Voter Score",       val: "70" },
+                        { label: "Citizen Score",     val: "91" },
+                      ].map((s) => (
+                        <div key={s.label}>
+                          <p className="text-xl font-bold text-gray-900">{s.val}</p>
+                          <p className="text-xs text-gray-600">{s.label}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Submit Record CTA */}
+                  <div className="mt-6 mb-4 rounded-2xl border bg-gray-50 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div>
-                      <h3 className="text-xl font-semibold text-gray-900">John Example</h3>
-                      <p className="text-sm text-gray-600">Mechanic at AutoFix Garage</p>
-                      <p className="text-sm text-gray-500 flex items-center gap-1">
-                        <span>📍</span> San Francisco, CA
-                      </p>
+                      <div className="text-sm font-semibold text-gray-900">Want to share an experience about this subject?</div>
+                      <div className="text-xs text-gray-600 mt-1">Sign in to submit a record. This subject will be pre-selected.</div>
                     </div>
-
-                    {/* Scores */}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 text-center mt-4">
-                      <div>
-                        <p className="text-xl font-bold text-gray-900">82%</p>
-                        <p className="text-sm text-gray-600">Subject Score</p>
-                      </div>
-                      <div>
-                        <p className="text-xl font-bold text-gray-900">76%</p>
-                        <p className="text-sm text-gray-600">Overall User Score</p>
-                      </div>
-                      <div>
-                        <p className="text-xl font-bold text-gray-900">88%</p>
-                        <p className="text-sm text-gray-600">Contributor Score</p>
-                      </div>
-                      <div>
-                        <p className="text-xl font-bold text-gray-900">70%</p>
-                        <p className="text-sm text-gray-600">Voter Score</p>
-                      </div>
-                      <div>
-                        <p className="text-xl font-bold text-gray-900">91%</p>
-                        <p className="text-sm text-gray-600">Citizen Score</p>
-                      </div>
-                    </div>
+                    <Link href="/loginsignup">
+                      <button className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition text-sm">
+                        Submit A Record
+                      </button>
+                    </Link>
                   </div>
 
-                  {/* ✅ Buttons go here, now full width */}
-                  <div className="flex border-b mb-6 text-sm font-medium">
-                    <button
-                      onClick={() => setActiveTab("records")}
-                      className={`flex-1 text-center px-4 py-2 ${
-                        activeTab === "records"
-                          ? "text-blue-600 border-b-2 border-blue-600"
-                          : "text-gray-500 hover:text-gray-700"
-                      }`}
-                    >
-                      Records About Me
-                    </button>
-                    <button
-                      onClick={() => setActiveTab("reputations")}
-                      className={`flex-1 text-center px-4 py-2 ${
-                        activeTab === "reputations"
-                          ? "text-blue-600 border-b-2 border-blue-600"
-                          : "text-gray-500 hover:text-gray-700"
-                      }`}
-                    >
-                      Reputations & Badges
-                    </button>
+                  {/* Tabs */}
+                  <div className="flex border-b mb-6 mt-6 text-sm font-medium">
+                    {(["records", "reputations", "social"] as const).map((tab) => (
+                      <button
+                        key={tab}
+                        onClick={() => setActiveTab(tab as any)}
+                        className={`flex-1 text-center px-4 py-2 ${activeTab === tab ? "text-blue-600 border-b-2 border-blue-600" : "text-gray-500 hover:text-gray-700"}`}
+                      >
+                        {tab === "records" ? "Records About Me" : tab === "reputations" ? "Reputations & Badges" : "Social Media"}
+                      </button>
+                    ))}
                   </div>
 
-                  {/* RECORDS TAB CONTENT */}
+                  {/* RECORDS TAB */}
                   {activeTab === "records" && (
                     <>
-                      {/* Record Breakdown */}
+                      {/* Filters — disabled */}
+                      <div className="mb-5 flex flex-wrap items-center gap-3">
+                        {["Newest", "All stages", "All credibility recommendations", "All record types", "All time"].map((label) => (
+                          <select key={label} disabled className="rounded-xl border px-3 py-2 text-sm bg-white text-gray-400 cursor-not-allowed">
+                            <option>{label}</option>
+                          </select>
+                        ))}
+                      </div>
+
+                      {/* Breakdown */}
                       <div className="mb-6">
-                        <h4 className="font-medium text-gray-900 mb-3 text-center md:text-left">Record Breakdown</h4>
+                        <h4 className="font-medium text-gray-900 mb-3">Record Breakdown</h4>
                         <div className="grid grid-cols-3 gap-4">
-                          <div className="text-center">
-                            <div className="text-2xl font-bold text-gray-900">8</div>
-                            <div className="text-sm text-gray-500">Total Records</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-2xl font-bold text-green-600">5</div>
-                            <div className="text-sm text-gray-500">Evidence-Based</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-2xl font-bold text-yellow-600">3</div>
-                            <div className="text-sm text-gray-500">Opinion-Based</div>
-                          </div>
+                          {[["8","Total Records"],["5","Evidence-Based"],["3","Opinion-Based"]].map(([val, label]) => (
+                            <div key={label} className="text-center">
+                              <div className="text-2xl font-bold text-gray-900">{val}</div>
+                              <div className="text-sm text-gray-500">{label}</div>
+                            </div>
+                          ))}
                         </div>
                       </div>
 
-                      {/* Recent Records */}
-                      <div>
-                        <div className="space-y-4">
-                          <div className="border-b border-gray-100 pb-4">
-                            <div className="flex items-start justify-between mb-2">
-                              <h5 className="font-medium text-gray-900">Unresolved Repairs and Poor Communication</h5>
-                              <div className="flex flex-col items-end">
-                                <span className="text-[11px] text-gray-500 mb-1">
-                                  AI Credibility Check suggests:
+                      {/* Record cards */}
+                      <div className="space-y-4">
+                        {[
+                          {
+                            title: "Unresolved Repairs and Poor Communication",
+                            category: "Mechanic",
+                            date: "Dec 15, 2024",
+                            comments: 24,
+                            cred: "Evidence-Based",
+                            credColor: "text-green-700 bg-green-50 border-green-200",
+                            credIcon: <CheckCircle className="w-3 h-3" />,
+                            desc: "I've attached repair invoices and email exchanges that show how my car was kept for weeks without updates or resolution.",
+                          },
+                          {
+                            title: "Average Service Experience",
+                            category: "Mechanic",
+                            date: "Dec 10, 2024",
+                            comments: 12,
+                            cred: "Opinion-Based",
+                            credColor: "text-orange-700 bg-orange-50 border-orange-200",
+                            credIcon: <AlertTriangle className="w-3 h-3" />,
+                            desc: "In my opinion, the service was just okay. Nothing terrible happened, but I expected more professionalism from a certified shop.",
+                          },
+                        ].map((r) => (
+                          <div key={r.title} className="w-full rounded-2xl border bg-white p-4 hover:shadow-sm hover:border-gray-300 transition">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                              <div className="text-sm font-semibold text-gray-900">{r.title}</div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[11px] text-gray-500 whitespace-nowrap">AI Credibility Recommendation:</span>
+                                <span className={`inline-flex items-center gap-1 text-xs font-semibold border rounded-full px-2 py-0.5 ${r.credColor}`}>
+                                  {r.credIcon} {r.cred}
                                 </span>
-                                <Badge className="bg-green-100 text-green-800 text-xs">EVIDENCE-SUPPORTED</Badge>
                               </div>
                             </div>
-                            <p className="text-sm text-gray-600 mb-2">
-                            I’ve attached repair invoices and email exchanges that show how my car was kept for...
-                            </p>
-                            <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500">
-                              <span>📅 Dec 15, 2024</span>
-                              <span>💬 24 comments</span>
-                              <span>✅ AI Credibility Check</span>
+                            <div className="mt-2 flex flex-wrap items-center gap-2">
+                              <span className="text-xs text-gray-700">{r.category}</span>
+                              <span className="text-xs text-gray-500">📅 {r.date}</span>
+                              <span className="text-xs text-gray-500">💬 {r.comments} comments</span>
                             </div>
-                            <Button
-                              variant="link"
-                              className="text-gray-400 p-0 h-auto text-sm mt-2 cursor-not-allowed"
-                              disabled
-                            >
-                              View Record
-                            </Button>
+                            <div className="mt-3 text-sm text-gray-700 line-clamp-3">{r.desc}</div>
+                            <div className="mt-4 flex gap-2">
+                              <button disabled className="rounded-xl border px-3 py-1.5 text-xs text-gray-400 cursor-not-allowed">View record</button>
+                              <button disabled className="rounded-xl border px-3 py-1.5 text-xs text-gray-400 cursor-not-allowed">Expand</button>
+                            </div>
                           </div>
+                        ))}
+                      </div>
 
-                          <div>
-                            <div className="flex items-start justify-between mb-2">
-                              <h5 className="font-medium text-gray-900">Average Service Experience</h5>
-                              <div className="flex flex-col items-end">
-                                <span className="text-[11px] text-gray-500 mb-1">
-                                  AI Credibility Check recommends:
-                                </span>
-                                <Badge className="bg-yellow-100 text-yellow-800 text-xs">OPINION-BASED</Badge>
-                              </div>
-                            </div>
-                            <p className="text-sm text-gray-600 mb-2">
-                            In my opinion, the service was just okay. Nothing terrible happened, but...
-                            </p>
-                            <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500">
-                              <span>📅 Dec 10, 2024</span>
-                              <span>💬 12 comments</span>
-                              <span>👤 By: Sarah M.</span>
-                            </div>
-                            <Button
-                              variant="link"
-                              className="text-gray-400 p-0 h-auto text-sm mt-2 cursor-not-allowed"
-                              disabled
-                            >
-                              View Record
-                            </Button>
-                          </div>
+                      {/* Pagination */}
+                      <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <span>Rows:</span>
+                          <select disabled className="rounded-lg border px-2 py-1 bg-white text-gray-400 cursor-not-allowed">
+                            <option>10</option>
+                          </select>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button disabled className="rounded-lg border px-3 py-1.5 text-sm opacity-40">Prev</button>
+                          <div className="text-sm text-gray-700">Page <span className="font-semibold">1</span> / 1</div>
+                          <button disabled className="rounded-lg border px-3 py-1.5 text-sm opacity-40">Next</button>
                         </div>
                       </div>
                     </>
                   )}
 
-                  {/* REPUTATIONS & BADGES TAB CONTENT */}
+                  {/* REPUTATIONS TAB */}
                   {activeTab === "reputations" && (
                     <div>
-                      {/* Reputations */}
-                      <h4 className="font-medium text-gray-900 mb-3">Reputations</h4>
-                      {randomReputations.length ? (
-                        <ul className="list-disc list-inside text-sm text-gray-600">
-                          {randomReputations.map((rep) => (
-                            <li key={rep.id}>
-                              <span className="font-medium">{rep.title}</span>: {rep.description}
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <p className="text-gray-500 text-sm">No reputations found.</p>
-                      )}
-
-                      {/* Badges */}
-                      <h4 className="font-medium text-gray-900 mb-3 mt-6">Badges</h4>
+                      <h4 className="font-medium text-gray-900 mb-3">Badges</h4>
                       {randomBadges.length ? (
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap gap-3">
                           {randomBadges.map((badge) => (
-                            <span
-                              key={badge.id}
-                              className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-gray-100 border"
-                            >
-                              <span className="mr-1">{badge.icon}</span>
-                              {badge.label}
-                            </span>
+                            <div key={badge.id} className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border bg-gray-50 text-sm font-medium text-gray-700">
+                              <span>{badge.icon}</span>
+                              <span>{badge.label}</span>
+                            </div>
                           ))}
                         </div>
                       ) : (
-                        <p className="text-gray-500 text-sm">No badges found.</p>
+                        <p className="text-sm text-gray-500">No badges earned yet.</p>
                       )}
                     </div>
                   )}
+
+                  {/* SOCIAL TAB */}
+                  {activeTab === "social" && (
+                    <div>
+                      <h4 className="font-medium text-gray-900 mb-3">Social Media</h4>
+                      <div className="space-y-3">
+                        {[
+                          { platform: "Instagram", handle: "@johnexample", icon: "📸" },
+                          { platform: "X / Twitter", handle: "@johnexample", icon: "🐦" },
+                        ].map((s) => (
+                          <div key={s.platform} className="flex items-center gap-4 rounded-xl border bg-white p-4">
+                            <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 text-lg">
+                              {s.icon}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="text-sm font-semibold text-gray-900">{s.platform}</div>
+                              <div className="text-xs text-gray-400 mt-0.5">{s.handle}</div>
+                            </div>
+                            <button disabled className="inline-flex items-center justify-center rounded-full border p-1.5 text-gray-400 cursor-not-allowed">
+                              <Copy className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                 </div>
               </div>
-            </Card>
+            </div>
           </div>
         </div>
       </section>
@@ -1393,242 +1276,166 @@ export default function HomePage() {
               </div>
             </Card>
             <section id="submit-record-section" className="bg-gray-50 py-16">
-        <div className="max-w-4xl mx-auto px-4">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Share Feedback</h2>
-            <p className="text-gray-600">Share experiences through our platform</p>
-          </div>
+              <div className="max-w-3xl mx-auto px-4">
+                <div className="text-center mb-8">
+                  <h2 className="text-3xl font-bold text-gray-900 mb-4">Share Feedback</h2>
+                  <p className="text-gray-600">Share experiences through our platform</p>
+                </div>
 
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mt-4 mb-6 w-full text-center">
-            <div className="flex flex-col items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-yellow-600" />
-              <div>
-                <p className="text-sm font-medium text-yellow-800">
-                  EXAMPLE ONLY - NOT REAL DATA
-                </p>
-                <p className="text-sm text-yellow-700">
-                  This is a demonstration of how profiles appear on DNounce
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <Card className="p-8 bg-white shadow-lg rounded-xl">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-6">
-              {/* Name Field */}
-              <div className="flex flex-col">
-                <label className="mb-1 text-sm font-semibold text-gray-700">Subject's Name</label>
-                <Input
-                  placeholder="e.g. John Doe"
-                  type="text"
-                  value={submitName}
-                  onChange={(e) => {
-                    const value = e.target.value
-                      .split(" ")
-                      .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-                      .join(" ");
-                    setSubmitName(value);
-                  }}
-                  className="w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              {/* Nickname Field */}
-              <div className="flex flex-col">
-                <label className="mb-1 text-sm font-semibold text-gray-700">Also Known As</label>
-                <Input
-                  placeholder="e.g. Johnny"
-                  type="text"
-                  value={submitNickname}
-                  onChange={(e) => {
-                    const value = e.target.value
-                      .split(" ")
-                      .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-                      .join(" ");
-                    setSubmitNickname(value);
-                  }}
-                  className="w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              {/* Organization/Company Field */}
-              <div className="flex flex-col">
-                <label className="mb-1 text-sm font-semibold text-gray-700">Organization/Company</label>
-                <Input
-                  placeholder="e.g. Acme Inc."
-                  type="text"
-                  value={submitOrganization}
-                  onChange={(e) => {
-                    const value = e.target.value
-                      .split(" ")
-                      .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-                      .join(" ");
-                    setSubmitOrganization(value);
-                  }}
-                  className="w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              {/* Relationship Field */}
-              <div className="flex flex-col">
-                <label className="mb-1 text-sm font-semibold text-gray-700">Relationship</label>
-
-                {relLoading ? (
-                  <p className="text-sm text-gray-400">Loading relationships...</p>
-                ) : (
-                  <Select value={submitRelationship} onValueChange={setSubmitRelationship}>
-                    <SelectTrigger className="w-full rounded-lg border-gray-300">
-                      <SelectValue placeholder="Select relationship" />
-                    </SelectTrigger>
-                    <SelectContent className="z-50 bg-white shadow-lg rounded-lg border border-gray-200">
-                      {relationshipTypes.map((rel) => (
-                        <SelectItem key={rel.id} value={rel.id}>
-                          {rel.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-
-                {/* 👇 Only show if "Other" selected */}
-                {relationshipTypes.find((rel) => rel.id === submitRelationship)?.value === "other" && (
-                  <Input
-                    placeholder="Please specify..."
-                    value={submitOtherRelationship}
-                    onChange={(e) => {
-                      const value = e.target.value
-                        .split(" ")
-                        .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-                        .join(" ");
-                      setSubmitOtherRelationship(value);
-                    }}
-                    className="mt-3 w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500"
-                  />
-                )}
-              </div>
-
-              {/* Category Field */}
-              <div className="flex flex-col">
-                <label className="mb-1 text-sm font-semibold text-gray-700">Category</label>
-                <Input
-                  placeholder="e.g. Barber, Waitress, Doctor..."
-                  className="w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                Use a label that best fits how you may find this person.
-                </p>
-              </div>
-
-              {/* Location Field */}
-              <div className="flex flex-col">
-                <label className="mb-1 text-sm font-semibold text-gray-700">Location</label>
-                <Input
-                  placeholder="City or neighborhood..."
-                  type="text"
-                  value={submitLocation}
-                  onChange={(e) => setSubmitLocation(e.target.value)}
-                  className="w-full rounded-xl border-gray-300 focus:ring-2 focus:ring-blue-500"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Type city name to see neighborhoods, or neighborhood to see full location.
-                </p>
-              </div>
-            </div>
-
-            {/* Evidence Upload */}
-            <div className="mb-8">
-              <label className="mb-1 text-sm font-semibold text-gray-700">Evidence Upload</label>
-              <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center">
-                <Upload className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                <p className="text-sm text-gray-600 mb-2">Drag and drop files here or click to browse</p>
-                <p className="text-xs text-gray-500">Supported formats: PDF, JPG, PNG, MP4, DOCX (Max 100MB each)</p>
-              </div>
-            </div>
-
-            {/* Description */}
-            <div className="mb-8">
-              <label className="mb-1 text-sm font-semibold text-gray-700">Experience Details</label>
-              <textarea
-                placeholder="Share the details of your experience as clearly and accurately as possible."
-                className="w-full h-32 p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              ></textarea>
-            </div>
-
-            {/* Terms & Conditions */}
-            <div className="mb-8">
-              <div className="flex items-start gap-3 mb-4">
-                <input
-                  type="checkbox"
-                  id="terms"
-                  checked={agreedToTerms}
-                  onChange={(e) => setAgreedToTerms(e.target.checked)}
-                  className="mt-1"
-                />
-                <label htmlFor="terms" className="text-sm text-gray-700">
-                  I agree to the{" "}
-                  <button
-                    type="button"
-                    onClick={() => document.getElementById("legal-section")?.scrollIntoView({ behavior: "smooth" })}
-                    className="text-blue-600 hover:underline"
-                  >
-                    Terms of Service
-                  </button>{" "}
-                  and confirm that my submission is truthful and complies with DNounce guidelines
-                </label>
-              </div>
-
-              <div
-                ref={termsRef}
-                onScroll={handleTermsScroll}
-                className="h-40 overflow-y-auto border border-gray-200 rounded-lg p-4 text-xs text-gray-600 bg-gray-50"
-              >
-                <h4 className="font-semibold mb-2">Important Legal Notice:</h4>
-                <p className="mb-2">
-                  By submitting this feedback, you acknowledge that DNounce is a public reputation platform and your
-                  submission may be publicly visible after AI credibility label classification.
-                </p>
-                <p className="mb-2">
-                  You certify that your submission is truthful to the best of your knowledge and based on either
-                  verifiable evidence or honest personal opinion.
-                </p>
-                <p className="mb-2">
-                  False or malicious submissions may result in permanent account suspension and legal consequences.
-                </p>
-                <p className="mb-2">
-                  The subject will be notified of this submission and will have the right to respond and challenge
-                  the information through our dispute resolution process.
-                </p>
-                <p className="mb-2">
-                  All submissions undergo AI credibility label classification and may be reviewed by community moderators before
-                  publication.
-                </p>
-                <p className="mb-2">
-                  You retain copyright of your original content but grant DNounce a license to display and distribute
-                  it as part of our platform services.
-                </p>
-                <p className="mb-2">
-                  DNounce is not responsible for the accuracy of user submissions but provides tools for community
-                  verification and dispute resolution.
-                </p>
-              </div>
-
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mt-4 mb-6 w-full text-center">
-                <div className="flex flex-col items-center gap-2">
-                  <AlertTriangle className="h-5 w-5 text-yellow-600" />
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6 flex items-center gap-3">
+                  <AlertTriangle className="h-5 w-5 text-yellow-600 shrink-0" />
                   <div>
-                    <p className="text-sm font-medium text-yellow-800">
-                      EXAMPLE ONLY - NOT REAL DATA
-                    </p>
-                    <p className="text-sm text-yellow-700">
-                      This is a demonstration of how profiles appear on DNounce
-                    </p>
+                    <p className="text-sm font-medium text-yellow-800">EXAMPLE ONLY — NOT REAL DATA</p>
+                    <p className="text-sm text-yellow-700">This is a preview. Sign up to submit a real record.</p>
                   </div>
                 </div>
+
+                <Card className="bg-white shadow-md rounded-2xl p-4 sm:p-6 md:p-8 space-y-8">
+
+                  {/* Contact Information */}
+                  <div className="rounded-2xl border border-gray-200 p-6 bg-white shadow-sm space-y-4">
+                    <div className="text-center mb-2">
+                      <h3 className="text-base font-semibold text-gray-900">Contact Information</h3>
+                      <p className="text-sm text-gray-500">Enter a phone number and/or email to find matching DNounce users or existing subjects.</p>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="flex flex-col">
+                        <label className="mb-2 text-[15px] font-medium text-gray-800">Phone Number</label>
+                        <Input placeholder="e.g. (718) 555-1234" disabled className="rounded-2xl bg-gray-100 text-gray-400 cursor-not-allowed" />
+                      </div>
+                      <div className="flex flex-col">
+                        <label className="mb-2 text-[15px] font-medium text-gray-800">Email Address</label>
+                        <Input placeholder="e.g. johndoe@example.com" disabled className="rounded-2xl bg-gray-100 text-gray-400 cursor-not-allowed" />
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3 bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
+                      <AlertTriangle className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
+                      <p className="text-sm text-blue-700"><span className="font-semibold">Why we ask:</span> Every submission triggers a quick notification to the subject so they can view/respond.</p>
+                    </div>
+                  </div>
+
+                  {/* Subject Info */}
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="flex flex-col">
+                        <label className="mb-2 text-[15px] font-medium text-gray-800">First Name <span className="text-red-500">*</span></label>
+                        <Input placeholder="e.g. John" disabled className="rounded-2xl bg-gray-100 text-gray-400 cursor-not-allowed" />
+                      </div>
+                      <div className="flex flex-col">
+                        <label className="mb-2 text-[15px] font-medium text-gray-800">Last Name</label>
+                        <Input placeholder="e.g. Doe" disabled className="rounded-2xl bg-gray-100 text-gray-400 cursor-not-allowed" />
+                      </div>
+                      <div className="flex flex-col">
+                        <label className="mb-2 text-[15px] font-medium text-gray-800">Also Known As</label>
+                        <Input placeholder="e.g. Johnny" disabled className="rounded-2xl bg-gray-100 text-gray-400 cursor-not-allowed" />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="flex flex-col">
+                        <label className="mb-2 text-[15px] font-medium text-gray-800">Organization / Company</label>
+                        <Input placeholder="e.g. Acme Inc." disabled className="rounded-2xl bg-gray-100 text-gray-400 cursor-not-allowed" />
+                      </div>
+                      <div className="flex flex-col">
+                        <label className="mb-2 text-[15px] font-medium text-gray-800">Relationship <span className="text-red-500">*</span></label>
+                        <Input placeholder="Select relationship" disabled className="rounded-2xl bg-gray-100 text-gray-400 cursor-not-allowed" />
+                      </div>
+                      <div className="flex flex-col">
+                        <label className="mb-2 text-[15px] font-medium text-gray-800">Category <span className="text-red-500">*</span></label>
+                        <Input placeholder="e.g. Barber, Waitress, Na..." disabled className="rounded-2xl bg-gray-100 text-gray-400 cursor-not-allowed" />
+                        <p className="text-xs text-gray-400 mt-1">Use a label that best fits how you may find this person.</p>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col max-w-xs">
+                      <label className="mb-2 text-[15px] font-medium text-gray-800">Location <span className="text-red-500">*</span></label>
+                      <Input placeholder="City or neighborhood..." disabled className="rounded-2xl bg-gray-100 text-gray-400 cursor-not-allowed" />
+                      <p className="text-xs text-gray-400 mt-1">Type city name to see neighborhoods, or neighborhood to see full location.</p>
+                    </div>
+                  </div>
+
+                  {/* Results placeholder */}
+                  <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                    <p className="text-sm font-medium text-gray-700 mb-2">Results</p>
+                    <p className="text-sm text-gray-400">Matching profiles will appear here based on contact info.</p>
+                  </div>
+
+                  {/* Rating */}
+                  <div className="space-y-2">
+                    <label className="text-[15px] font-medium text-gray-800">Rate Your Experience <span className="text-red-500">*</span></label>
+                    <div className="flex gap-1">
+                      {Array.from({ length: 10 }).map((_, i) => (
+                        <Star key={i} className="w-6 h-6 text-gray-300" />
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Evidence Upload */}
+                  <div className="space-y-2">
+                    <label className="text-[15px] font-medium text-gray-800">Evidence Upload</label>
+                    <div className="border-2 border-dashed border-gray-200 rounded-2xl p-8 text-center bg-gray-50">
+                      <Upload className="h-10 w-10 text-gray-300 mx-auto mb-3" />
+                      <p className="text-sm text-gray-400 mb-1">Drag and drop files here or click to browse</p>
+                      <p className="text-xs text-gray-400">Supported formats: PDF, JPG, PNG, MP4, DOCX (Max 100MB each)</p>
+                    </div>
+                  </div>
+
+                  {/* Description */}
+                  <div className="space-y-2">
+                    <label className="text-[15px] font-medium text-gray-800">Experience Details <span className="text-red-500">*</span></label>
+                    <textarea
+                      disabled
+                      placeholder="Share the details of your experience as clearly and accurately as possible."
+                      className="w-full h-32 p-4 border border-gray-200 rounded-2xl text-sm text-gray-400 bg-gray-50 cursor-not-allowed resize-none"
+                    />
+                  </div>
+
+                  {/* Terms & Conditions */}
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-3">
+                      <input
+                        type="checkbox"
+                        disabled
+                        className="mt-1 cursor-not-allowed"
+                      />
+                      <label className="text-sm text-gray-400">
+                        I agree to the{" "}
+                        <button
+                          type="button"
+                          onClick={() => document.getElementById("legal-section")?.scrollIntoView({ behavior: "smooth" })}
+                          className="text-blue-500 hover:underline"
+                        >
+                          Terms of Service
+                        </button>{" "}
+                        and confirm that my submission is truthful and complies with DNounce guidelines.
+                      </label>
+                    </div>
+
+                    <div className="h-40 overflow-y-auto border border-gray-200 rounded-xl p-4 text-xs text-gray-500 bg-gray-50 leading-relaxed">
+                      <h4 className="font-semibold mb-2 text-gray-700">Important Legal Notice:</h4>
+                      <p className="mb-2">By submitting this feedback, you acknowledge that DNounce is a public reputation platform and your submission may be publicly visible after AI credibility label classification.</p>
+                      <p className="mb-2">You certify that your submission is truthful to the best of your knowledge and based on either verifiable evidence or honest personal opinion.</p>
+                      <p className="mb-2">False or malicious submissions may result in permanent account suspension and legal consequences.</p>
+                      <p className="mb-2">The subject will be notified of this submission and will have the right to respond and challenge the information through our dispute resolution process.</p>
+                      <p className="mb-2">All submissions undergo AI credibility label classification and may be reviewed by community moderators before publication.</p>
+                      <p className="mb-2">You retain copyright of your original content but grant DNounce a license to display and distribute it as part of our platform services.</p>
+                      <p className="mb-2">DNounce is not responsible for the accuracy of user submissions but provides tools for community verification and dispute resolution.</p>
+                    </div>
+                  </div>
+
+                  {/* CTA */}
+                  <div className="pt-2">
+                    <Link href="/loginsignup">
+                      <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-xl transition text-sm">
+                        Sign Up to Submit a Record →
+                      </button>
+                    </Link>
+                    <p className="text-center text-xs text-gray-400 mt-3">Already have an account? <Link href="/loginsignup" className="text-blue-500 hover:underline">Log in</Link></p>
+                  </div>
+
+                </Card>
               </div>
-            </div>
-          </Card>
-        </div>
-      </section>
+            </section>
 
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
               <div className="flex items-center gap-3 mb-4">

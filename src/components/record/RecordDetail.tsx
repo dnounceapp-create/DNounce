@@ -16,6 +16,8 @@ import {
   X,
   Pin,
   Eye,
+  Share2,
+  ShieldAlert,
   FileImage,
   File as FileIcon,
   FileText as FileTextIcon,
@@ -594,6 +596,7 @@ function AttachmentSection({
 type DebateMsgRow = {
   id: string;
   record_id: string;
+  author_user_id: string;
   author_role: "subject" | "contributor";
   body: string;
   created_at: string;
@@ -672,6 +675,20 @@ type VotingMsgRow = {
 type VotingMsgNode = VotingMsgRow & {
   replies: VotingMsgNode[];
 };
+
+function UserBadgePills({ userId, participantBadges }: { userId: string; participantBadges: Record<string, { label: string; icon: string }[]> }) {
+  const badges = participantBadges[userId] ?? [];
+  if (!badges.length) return null;
+  return (
+    <>
+      {badges.map(b => (
+        <span key={b.label} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full border border-gray-200 bg-gray-50 text-[10px] text-gray-600 font-medium">
+          {b.icon} {b.label}
+        </span>
+      ))}
+    </>
+  );
+}
 
 function buildTree(rows: DebateMsgRow[], attByMsg: Record<string, DebateAttachmentRow[]>) {
   const byId = new Map<string, DebateMsgNode>();
@@ -1165,6 +1182,7 @@ function StatementCard({
   onOpenPreview,
   expanded,
   setExpanded,
+  participantBadges,
   stop,
   stopAll,
 }: {
@@ -1213,6 +1231,8 @@ function StatementCard({
   expanded: Record<string, boolean>;
   setExpanded: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
 
+  participantBadges: Record<string, { label: string; icon: string }[]>;
+
   stop: (e: any) => void;
   stopAll: (e: any) => void;
 }) {
@@ -1225,6 +1245,9 @@ function StatementCard({
           <div className="flex items-start gap-3 min-w-0">
             <div className="min-w-0">
               <NameAndAvatar role={node.author_role} getAuthorPresentation={getAuthorPresentation} />
+              <div className="flex flex-wrap items-center gap-1 mt-0.5">
+                <UserBadgePills userId={node.author_user_id} participantBadges={participantBadges} />
+              </div>
               <div className="mt-1 text-[11px] text-gray-500">{formatTimestampNoSeconds(node.created_at)}</div>
             </div>
           </div>
@@ -1599,19 +1622,20 @@ function TallyChip({ keepCount, deleteCount, totalCount }: { keepCount: number; 
 ========================= */
 
 function DebateCourtroom({
-    record,
-    viewerRole,
-    serverOffsetMs,
-    isImpersonating,
-    actingAuthUserId,
-    subjectName,
-    subjectProfileHref,
-    contributorPublic,
-    contributorSelf,
-    contributorProfileHref,
-    getNumberForPath,
-    onDebateAttachmentsFlat,
-  }: {
+  record,
+  viewerRole,
+  serverOffsetMs,
+  isImpersonating,
+  actingAuthUserId,
+  subjectName,
+  subjectProfileHref,
+  contributorPublic,
+  contributorSelf,
+  contributorProfileHref,
+  getNumberForPath,
+  onDebateAttachmentsFlat,
+  participantBadges,
+}: {
     record: any;
     viewerRole: ViewerRole;
     serverOffsetMs: number;
@@ -1628,6 +1652,8 @@ function DebateCourtroom({
   
     getNumberForPath: (path: string) => number | null;
     onDebateAttachmentsFlat: (rows: DebateAttachmentRow[]) => void;
+    participantBadges: Record<string, { label: string; icon: string }[]>;
+
 }) {
   const stage = getEffectiveStage(record, serverOffsetMs);
   const shouldRender = stage >= 5;
@@ -1925,6 +1951,7 @@ function DebateCourtroom({
                 onOpenPreview={(args) => setOpenPreview(args)}
                 expanded={expanded}
                 setExpanded={setExpanded}
+                participantBadges={participantBadges}
                 stop={stop}
                 stopAll={stopAll}
               />
@@ -2131,6 +2158,8 @@ function VoteReplyNodeComponent({
   onEdit,
   onDelete,
   categoryByUser,
+  onReport,
+  locked,
 }: {
   node: VoteReplyNode;
   voteId: string;
@@ -2141,6 +2170,8 @@ function VoteReplyNodeComponent({
   onEdit: (replyId: string, newBody: string) => void;
   onDelete: (replyId: string) => void;
   categoryByUser: Record<string, string>;
+  onReport: (target: "record" | "contributor" | "subject" | "comment", id: string, label: string) => void;
+  locked: ViewerRole;
 }) {
   const isDeleted = !!node.deleted_at;
   const isEdited = !!node.edited_at;
@@ -2269,9 +2300,23 @@ function VoteReplyNodeComponent({
               onEdit={onEdit}
               onDelete={onDelete}
               categoryByUser={categoryByUser}
+              onReport={onReport}
+              locked={locked}
             />
           ))}
         </div>
+      )}
+
+      {sessionUserId && sessionUserId !== node.author_user_id && !isDeleted && locked === "voter" && (
+        <button
+          type="button"
+          onClick={() => onReport("comment", String(node.id), `Vote reply by ${node.author_alias}`)}
+          className="mt-2 inline-flex items-center gap-1 text-[11px] font-medium text-gray-400 hover:text-red-500 transition-colors"
+          title="Report for safety"
+        >
+          <ShieldAlert className="h-3 w-3" />
+          Report
+        </button>
       )}
     </div>
   );
@@ -2287,6 +2332,7 @@ function CommunityReplyNodeComponent({
   onEdit,
   onDelete,
   categoryByUser,
+  onReport,
 }: {
     node: CommunityReplyNode;
     statementId: number;
@@ -2297,6 +2343,7 @@ function CommunityReplyNodeComponent({
     onEdit: (replyId: number, newBody: string) => void;
     onDelete: (replyId: number) => void;
     categoryByUser: Record<string, string>;
+    onReport: (target: "record" | "contributor" | "subject" | "comment", id: string, label: string) => void;
   }) {
     const isDeleted = !!node.deleted_at;
     const isEdited = !!node.edited_at;
@@ -2425,29 +2472,45 @@ function CommunityReplyNodeComponent({
                 onEdit={onEdit}
                 onDelete={onDelete}
                 categoryByUser={categoryByUser}
+                onReport={onReport}
               />
             ))}
           </div>
+        )}
+
+        {sessionUserId && sessionUserId !== node.author_user_id && !isDeleted && (
+          <button
+            type="button"
+            onClick={() => onReport("comment", String(node.id), `Reply by ${node.author_alias}`)}
+            className="mt-2 inline-flex items-center gap-1 text-[11px] font-medium text-gray-400 hover:text-red-500 transition-colors"
+            title="Report for safety"
+          >
+            <ShieldAlert className="h-3 w-3" />
+            Report
+          </button>
         )}
       </div>
     );
 }
 
 function VotingCourtroom({
-    record,
-    viewerRoleUI,
-    viewerRoleLocked,
-    serverOffsetMs,
-    isImpersonating,
-    actingAuthUserId,
+  record,
+  viewerRoleUI,
+  viewerRoleLocked,
+  serverOffsetMs,
+  isImpersonating,
+  actingAuthUserId,
+  participantBadges,
+  onReport,
 }: {
     record: any;
     viewerRoleUI: ViewerRole;
-    viewerRoleLocked: ViewerRole; // this is the only one used for permissions/writes
+    viewerRoleLocked: ViewerRole;
     serverOffsetMs: number;
-  
     isImpersonating: boolean;
     actingAuthUserId: string | null;
+    participantBadges: Record<string, { label: string; icon: string }[]>;
+    onReport: (target: "record" | "contributor" | "subject" | "comment", id: string, label: string) => void;
 }) {
   const stage = getEffectiveStage(record, serverOffsetMs);
   const nowMs = Date.now() + (serverOffsetMs || 0);
@@ -3537,6 +3600,7 @@ function VotingCourtroom({
                         <span className="ml-1 font-normal text-gray-400">({categoryByUser[v.user_id]})</span>
                       )}
                     </span>
+                    <UserBadgePills userId={v.user_id} participantBadges={participantBadges} />
                     <VoteBadge voteId={v.id} />
                     <span className="text-[11px] text-gray-400">{formatTimestampNoSeconds(v.created_at)}</span>
                     <span className={[
@@ -3658,6 +3722,19 @@ function VotingCourtroom({
                         </button>
                       </>
                     )}
+
+                    {/* Safety report — voters only, not your own vote */}
+                    {sessionUserId && sessionUserId !== v.user_id && locked === "voter" && (
+                      <button
+                        type="button"
+                        onClick={() => onReport("comment", String(v.id), `Vote by ${v.author_alias || "Anonymous"}`)}
+                        className="ml-auto inline-flex items-center gap-1 text-[11px] font-medium text-gray-400 hover:text-red-500 transition-colors"
+                        title="Report for safety"
+                      >
+                        <ShieldAlert className="h-3 w-3" />
+                        Report
+                      </button>
+                    )}
                   </div>
 
                   {(executionByVote[String(v.id)]?.is_convicted || voteBadges[String(v.id)]?.is_convicted) && (
@@ -3681,6 +3758,8 @@ function VotingCourtroom({
                         onEdit={editVoteReply}
                         onDelete={deleteVoteReply}
                         categoryByUser={categoryByUser}
+                        onReport={onReport}
+                        locked={locked}
                       />
                       ))}
                     </div>
@@ -3784,11 +3863,14 @@ function VotingCourtroom({
               return (
                 <div key={s.id} className="border-b border-gray-200 py-4 last:border-b-0 last:pb-0">
                   <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="text-xs font-semibold text-gray-900">
-                      {s.author_alias}
-                      {categoryByUser[s.author_user_id] && (
-                        <span className="ml-1 font-normal text-gray-400">({categoryByUser[s.author_user_id]})</span>
-                      )}
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="text-xs font-semibold text-gray-900">
+                        {s.author_alias}
+                        {categoryByUser[s.author_user_id] && (
+                          <span className="ml-1 font-normal text-gray-400">({categoryByUser[s.author_user_id]})</span>
+                        )}
+                      </span>
+                      <UserBadgePills userId={s.author_user_id} participantBadges={participantBadges} />
                     </div>
                     <div className="text-[11px] text-gray-500">{formatTimestampNoSeconds(s.created_at)}</div>
                   </div>
@@ -3804,15 +3886,29 @@ function VotingCourtroom({
                   />
                   </div>
 
-                  {canInteractCommunitySection && (
-                    <button
-                      type="button"
-                      onClick={() => setReplyingToCommunity({ statementId: s.id, parentReplyId: null })}
-                      className="mt-3 text-xs font-medium text-gray-600 hover:text-gray-900"
-                    >
-                      Reply
-                    </button>
-                  )}
+                  <div className="mt-3 flex items-center justify-between">
+                    {canInteractCommunitySection ? (
+                      <button
+                        type="button"
+                        onClick={() => setReplyingToCommunity({ statementId: s.id, parentReplyId: null })}
+                        className="text-xs font-medium text-gray-600 hover:text-gray-900"
+                      >
+                        Reply
+                      </button>
+                    ) : <span />}
+
+                    {sessionUserId && sessionUserId !== s.author_user_id && (
+                      <button
+                        type="button"
+                        onClick={() => onReport("comment", String(s.id), `Comment by ${s.author_alias}`)}
+                        className="inline-flex items-center gap-1 text-[11px] font-medium text-gray-400 hover:text-red-500 transition-colors"
+                        title="Report for safety"
+                      >
+                        <ShieldAlert className="h-3 w-3" />
+                        Report
+                      </button>
+                    )}
+                  </div>
 
                   {replies.length > 0 && (
                     <div className="mt-4 pl-3 sm:pl-4 border-l space-y-3">
@@ -3828,6 +3924,7 @@ function VotingCourtroom({
                           onEdit={editCommunityReply}
                           onDelete={deleteCommunityReply}
                           categoryByUser={categoryByUser}
+                          onReport={onReport}
                         />
                       ))}
                     </div>
@@ -3994,6 +4091,64 @@ export default function RecordDetail({
   const [pinLoading, setPinLoading] = useState(false);
   const [following, setFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
+  const [recordUrl, setRecordUrl] = useState("");
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportTarget, setReportTarget] = useState<"record" | "contributor" | "subject" | "comment">("record");
+  const [reportTargetId, setReportTargetId] = useState<string>("");
+  const [reportTargetLabel, setReportTargetLabel] = useState<string>("");
+  const [reportReason, setReportReason] = useState("");
+  const [reportSubmitting, setReportSubmitting] = useState(false);
+  const [reportDone, setReportDone] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && recordId) {
+      setRecordUrl(`${window.location.origin}/record/${recordId}`);
+    }
+  }, [recordId]);
+
+  function openReport(target: "record" | "contributor" | "subject" | "comment", id: string, label: string) {
+    setReportTarget(target);
+    setReportTargetId(id);
+    setReportTargetLabel(label);
+    setReportReason("");
+    setReportDone(false);
+    setReportOpen(true);
+  }
+
+  async function submitReport() {
+    if (!reportReason.trim()) return;
+    setReportSubmitting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const { error } = await supabase.from("support_tickets").insert({
+        user_id: session?.user?.id ?? null,
+        type: "report",
+        category: reportTarget,
+        topic: reportTargetId,
+        message: `Target: ${reportTargetLabel}\nRecord: ${recordId}\n\n${reportReason.trim()}`,
+        priority: "normal",
+      });
+      if (error) throw error;
+      setReportDone(true);
+    } catch (e: any) {
+      alert(e?.message || "Failed to submit report.");
+    } finally {
+      setReportSubmitting(false);
+    }
+  }
+
+  async function handleShare() {
+    const url = recordUrl || window.location.href;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "DNounce Record", url });
+      } catch {}
+    } else {
+      setShareOpen(true);
+    }
+  }
   const [viewerRole, setViewerRole] = useState<ViewerRole>("public");
 
   const [viewerProfile, setViewerProfile] = useState<{ first_name: string | null; last_name: string | null; avatar_url: string | null } | null>(
@@ -4005,6 +4160,11 @@ export default function RecordDetail({
     last_name: string | null;
     avatar_url: string | null;
   } | null>(null);
+
+  const [contributorSubjectId, setContributorSubjectId] = useState<string | null>(null);
+  const [contributorBadges, setContributorBadges] = useState<{ label: string; icon: string }[]>([]);
+
+  const [participantBadges, setParticipantBadges] = useState<Record<string, { label: string; icon: string }[]>>({});
 
   const [debateAttachmentsFlat, setDebateAttachmentsFlat] = useState<DebateAttachmentRow[]>([]);
 
@@ -4263,21 +4423,70 @@ export default function RecordDetail({
 
         const reveal = shouldRevealContributorIdentity(rec);
         const shouldFetchContributorProfile = !!contributorUserId && (role === "contributor" || reveal);
-
+        const shouldFetchContributorBadges = !!contributorUserId;
+        
         if (shouldFetchContributorProfile && contributorUserId) {
           const { data: cAcct } = await supabase
             .from("user_accountdetails")
             .select("first_name,last_name,avatar_url")
             .eq("user_id", contributorUserId)
             .maybeSingle();
-
+        
           setContributorProfile({
             first_name: cAcct?.first_name ?? null,
             last_name: cAcct?.last_name ?? null,
             avatar_url: cAcct?.avatar_url ?? null,
           });
+
+          // Fetch contributor's subject UUID for profile link
+          const { data: cSubject } = await supabase
+            .from("subjects")
+            .select("subject_uuid")
+            .eq("owner_auth_user_id", contributorUserId)
+            .maybeSingle();
+          setContributorSubjectId(cSubject?.subject_uuid ?? null);
         } else {
           setContributorProfile(null);
+          setContributorSubjectId(null);
+        }
+        
+        // Always fetch badges regardless of identity reveal
+        if (contributorUserId) {
+          const { data: cBadges } = await supabase
+            .from("badges")
+            .select("label, icon")
+            .eq("user_id", contributorUserId);
+          setContributorBadges((cBadges ?? []).map((b: any) => ({ label: b.label, icon: b.icon })));
+        } else {
+          setContributorBadges([]);
+        }
+
+        // Load badges for all record participants
+        try {
+          const [stmtUsers, voteUsers, debateUsers] = await Promise.all([
+            supabase.from("record_community_statements").select("author_user_id").eq("record_id", recordId),
+            supabase.from("record_votes").select("user_id").eq("record_id", recordId),
+            supabase.from("record_debate_messages").select("author_user_id").eq("record_id", recordId),
+          ]);
+          const allIds = [...new Set([
+            ...(stmtUsers.data ?? []).map((r: any) => r.author_user_id),
+            ...(voteUsers.data ?? []).map((r: any) => r.user_id),
+            ...(debateUsers.data ?? []).map((r: any) => r.author_user_id),
+          ].filter(Boolean))];
+          if (allIds.length) {
+            const { data: allBadges } = await supabase.from("badges").select("user_id, label, icon").in("user_id", allIds);
+            const map: Record<string, { label: string; icon: string }[]> = {};
+            (allBadges ?? []).forEach((b: any) => {
+              if (!map[b.user_id]) map[b.user_id] = [];
+              // dedupe by label per user
+              if (!map[b.user_id].find((x: any) => x.label === b.label)) {
+                map[b.user_id].push({ label: b.label, icon: b.icon });
+              }
+            });
+            setParticipantBadges(map);
+          }
+        } catch (e) {
+          console.error("Failed to load participant badges:", e);
         }
       } catch (e: any) {
         setError(e?.message || "Failed to load record");
@@ -4331,9 +4540,11 @@ export default function RecordDetail({
 
   const contributorId =
     (record as any)?.contributor?.id ?? (record as any)?.contributor?.[0]?.id ?? null;
-  const contributorProfileHref = contributorId ? `/contributor/${contributorId}` : null;
-
   const reveal = shouldRevealContributorIdentity(record);
+
+  const contributorProfileHref = reveal && contributorSubjectId
+      ? `/subject/${contributorSubjectId}`
+      : null;
 
   const contributorRealName = `${contributorProfile?.first_name ?? ""} ${contributorProfile?.last_name ?? ""}`.trim();
   const contributorPublicName = reveal ? contributorRealName || "Individual Contributor" : "SuperHero123";
@@ -4454,11 +4665,21 @@ export default function RecordDetail({
       ) : null}
 
       <div className="grid grid-cols-1 gap-3">
-        <div className="border border-gray-200 rounded-2xl p-4 sm:p-5 bg-white">
+      <div className="border border-gray-200 rounded-2xl p-4 sm:p-5 bg-white relative">
           <div className="flex items-center gap-2 mb-3">
             <User className="w-4 h-4 text-blue-600" />
             <h2 className="text-sm font-semibold text-gray-900">Subject</h2>
           </div>
+
+          <button
+            type="button"
+            onClick={() => openReport("subject", subject?.subject_uuid ?? "", subject?.name ?? "Subject")}
+            className="absolute bottom-4 right-4 inline-flex items-center gap-1 text-[11px] font-medium text-gray-400 hover:text-red-500 transition-colors"
+            title="Report subject"
+          >
+            <ShieldAlert className="h-3 w-3" />
+            Report
+          </button>
 
           <div className="flex items-start gap-4">
             <div className="w-11 h-11 bg-gray-100 rounded-full border border-gray-200 flex items-center justify-center shrink-0">
@@ -4477,7 +4698,7 @@ export default function RecordDetail({
               </p>
 
               {view.subject.href ? (
-                <Link href={view.subject.href} className="text-blue-600 hover:underline text-sm">
+                <Link href={view.subject.href} className="text-blue-600 hover:underline text-sm mt-1 block">
                   View Profile →
                 </Link>
               ) : null}
@@ -4485,11 +4706,21 @@ export default function RecordDetail({
           </div>
         </div>
 
-        <div className="border border-gray-200 rounded-2xl p-4 sm:p-5 bg-white">
+        <div className="border border-gray-200 rounded-2xl p-4 sm:p-5 bg-white relative">
           <div className="flex items-center gap-2 mb-3">
             <User className="w-4 h-4 text-green-600" />
             <h2 className="text-sm font-semibold text-gray-900">Contributor</h2>
           </div>
+
+          <button
+            type="button"
+            onClick={() => openReport("contributor", contributorId ?? "", view.contributor.name)}
+            className="absolute bottom-4 right-4 inline-flex items-center gap-1 text-[11px] font-medium text-gray-400 hover:text-red-500 transition-colors"
+            title="Report contributor"
+          >
+            <ShieldAlert className="h-3 w-3" />
+            Report
+          </button>
 
           <div className="flex items-start gap-4">
             {(() => {
@@ -4527,7 +4758,28 @@ export default function RecordDetail({
                       <p className="text-lg font-semibold text-gray-900 break-words leading-tight">{name}</p>
                     )}
 
-                    <p className="mt-1 text-xs text-gray-400">Submitted this record</p>
+                    {contributorBadges.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mt-1.5">
+                        {(() => {
+                          const counts: Record<string, { icon: string; label: string; count: number }> = {};
+                          contributorBadges.forEach((b) => {
+                            if (!counts[b.label]) counts[b.label] = { icon: b.icon, label: b.label, count: 0 };
+                            counts[b.label].count++;
+                          });
+                          return Object.values(counts).map((b) => (
+                            <span key={b.label} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-gray-200 bg-gray-50 text-xs text-gray-700 font-medium">
+                              {b.icon} {b.label}
+                            </span>
+                          ));
+                        })()}
+                      </div>
+                    )}
+                    <p className="text-xs text-gray-400 mt-1">Submitted this record</p>
+                    {reveal && contributorSubjectId && (
+                      <Link href={`/subject/${contributorSubjectId}`} className="text-blue-600 hover:underline text-sm mt-1 block">
+                        View Profile →
+                      </Link>
+                    )}
                   </div>
                 </>
               );
@@ -4547,6 +4799,8 @@ export default function RecordDetail({
               ? "Evidence-Based"
               : raw.includes("Opinion-Based")
               ? "Opinion-Based"
+              : raw.includes("Unable to Verify") || raw.includes("unable")
+              ? "Unable to Verify"
               : raw.includes("Unclear")
               ? "Unclear"
               : raw
@@ -4557,22 +4811,29 @@ export default function RecordDetail({
               label === "Evidence-Based"
                 ? "bg-green-50 text-green-700 border-green-200"
                 : label === "Opinion-Based"
-                ? "bg-blue-50 text-blue-700 border-blue-200"
-                : label === "Unclear"
-                ? "bg-amber-50 text-amber-700 border-amber-200"
+                ? "bg-red-50 text-red-700 border-red-200"
+                : label === "Unable to Verify" || label === "Unclear"
+                ? "bg-yellow-50 text-yellow-700 border-yellow-200"
                 : "bg-gray-50 text-gray-600 border-gray-200";
 
             const CredibilityIcon =
-              label === "Evidence-Based" ? CheckCircle : label === "Opinion-Based" ? AlertTriangle : label === "Unclear" ? CircleAlert : null;
+              label === "Evidence-Based" ? CheckCircle
+              : label === "Opinion-Based" ? AlertTriangle
+              : label === "Unable to Verify" || label === "Unclear" ? AlertTriangle
+              : null;
 
             const iconColor =
-              label === "Evidence-Based" ? "text-green-600" : label === "Opinion-Based" ? "text-blue-600" : label === "Unclear" ? "text-yellow-600" : "";
+              label === "Evidence-Based" ? "text-green-600"
+              : label === "Opinion-Based" ? "text-red-600"
+              : label === "Unable to Verify" || label === "Unclear" ? "text-yellow-600"
+              : "";
 
             return (
-              <div className="flex items-center gap-2 self-start sm:self-auto">
-                {CredibilityIcon && <CredibilityIcon className={`w-4 h-4 ${iconColor}`} />}
-                <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-medium whitespace-nowrap ${badgeStyle}`}>
-                  Credibility: {label}
+              <div className="flex items-center gap-1.5 self-start sm:self-auto text-xs text-gray-500">
+                <span>AI Credibility Recommendation:</span>
+                <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium whitespace-nowrap ${badgeStyle}`}>
+                  {CredibilityIcon && <CredibilityIcon size={11} className={iconColor} />}
+                  {label}
                 </span>
               </div>
             );
@@ -4639,6 +4900,15 @@ export default function RecordDetail({
             >
               <Eye className="h-3.5 w-3.5" fill={following ? "currentColor" : "none"} />
             </button>
+
+            <button
+              type="button"
+              onClick={handleShare}
+              title="Share record"
+              className="inline-flex items-center justify-center rounded-full border border-gray-200 p-1.5 shrink-0 text-gray-600 hover:bg-gray-50 active:bg-gray-100 transition"
+            >
+              <Share2 className="h-3.5 w-3.5" />
+            </button>
           </div>
         </div>
 
@@ -4695,6 +4965,18 @@ export default function RecordDetail({
             </div>
           )
         ) : null}
+
+        <div className="pt-3 border-t border-gray-100 flex justify-end">
+          <button
+            type="button"
+            onClick={() => openReport("record", record.id, `Record ${shortId(record.id)}`)}
+            className="inline-flex items-center gap-1 text-[11px] font-medium text-gray-400 hover:text-red-500 transition-colors"
+            title="Report this record for safety"
+          >
+            <ShieldAlert className="h-3 w-3" />
+            Report this record
+          </button>
+        </div>
       </div>
 
       <DebateCourtroom
@@ -4715,16 +4997,219 @@ export default function RecordDetail({
         onDebateAttachmentsFlat={(rows) => setDebateAttachmentsFlat(rows)}
         isImpersonating={isImpersonating}
         actingAuthUserId={actingAuthUserId}
+        participantBadges={participantBadges}
       />
 
-        <VotingCourtroom
-        record={record}
-        viewerRoleUI={effectiveViewerRole}
-        viewerRoleLocked={testViewEnabled ? effectiveViewerRole : viewerRole}
-        serverOffsetMs={serverOffsetMs}
-        isImpersonating={isImpersonating}
-        actingAuthUserId={actingAuthUserId}
-        />
+      <VotingCourtroom
+                record={record}
+                viewerRoleUI={effectiveViewerRole}
+                viewerRoleLocked={testViewEnabled ? effectiveViewerRole : viewerRole}
+                serverOffsetMs={serverOffsetMs}
+                isImpersonating={isImpersonating}
+                actingAuthUserId={actingAuthUserId}
+                participantBadges={participantBadges}
+                onReport={openReport}
+                />
+
+{reportOpen && (
+                <div
+                  className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-4"
+                  onClick={() => setReportOpen(false)}
+                >
+                  <div
+                    className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <ShieldAlert className="w-4 h-4 text-red-500" />
+                        <span className="font-semibold text-gray-900">Report for Safety</span>
+                      </div>
+                      <button type="button" onClick={() => setReportOpen(false)}
+                        className="rounded-full border p-1.5 text-gray-600 hover:bg-gray-100">
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    {reportDone ? (
+                      <div className="text-center py-6">
+                        <ShieldAlert className="w-8 h-8 text-green-500 mx-auto mb-2" />
+                        <div className="font-semibold text-gray-900">Report submitted</div>
+                        <div className="text-xs text-gray-500 mt-1">Our team will review this shortly.</div>
+                        <button
+                          type="button"
+                          onClick={() => setReportOpen(false)}
+                          className="mt-4 rounded-xl bg-black px-4 py-2 text-sm font-semibold text-white"
+                        >
+                          Done
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="text-xs text-gray-500 mb-4">
+                          Reporting: <span className="font-semibold text-gray-800">{reportTargetLabel}</span>
+                        </div>
+
+                        <div className="text-xs font-semibold text-gray-900 mb-2">Why are you reporting this?</div>
+                        <div className="space-y-2 mb-4">
+                          {[
+                            "Harassment or bullying",
+                            "Hate speech or discrimination",
+                            "Threats or violence",
+                            "False or misleading information",
+                            "Spam or irrelevant content",
+                            "Privacy violation",
+                            "Inappropriate or explicit content",
+                            "Other safety concern",
+                          ].map((reason) => (
+                            <label key={reason} className="flex items-center gap-2.5 cursor-pointer group">
+                              <input
+                                type="checkbox"
+                                checked={reportReason.includes(reason)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setReportReason((prev) =>
+                                      prev ? `${prev}\n${reason}` : reason
+                                    );
+                                  } else {
+                                    setReportReason((prev) =>
+                                      prev
+                                        .split("\n")
+                                        .filter((r) => r !== reason)
+                                        .join("\n")
+                                    );
+                                  }
+                                }}
+                                className="h-4 w-4 rounded border-gray-300 text-red-600 accent-red-600"
+                              />
+                              <span className="text-sm text-gray-700 group-hover:text-gray-900">{reason}</span>
+                            </label>
+                          ))}
+                        </div>
+
+                        <div className="text-xs font-semibold text-gray-900 mb-1">Additional details <span className="font-normal text-gray-400">(optional)</span></div>
+                        <textarea
+                          value={reportReason.split("\n").filter((r) => ![
+                            "Harassment or bullying",
+                            "Hate speech or discrimination",
+                            "Threats or violence",
+                            "False or misleading information",
+                            "Spam or irrelevant content",
+                            "Privacy violation",
+                            "Inappropriate or explicit content",
+                            "Other safety concern",
+                          ].includes(r)).join("\n")}
+                          onChange={(e) => {
+                            const checked = reportReason
+                              .split("\n")
+                              .filter((r) => [
+                                "Harassment or bullying",
+                                "Hate speech or discrimination",
+                                "Threats or violence",
+                                "False or misleading information",
+                                "Spam or irrelevant content",
+                                "Privacy violation",
+                                "Inappropriate or explicit content",
+                                "Other safety concern",
+                              ].includes(r));
+                            const newText = e.target.value;
+                            setReportReason(newText ? [...checked, newText].join("\n") : checked.join("\n"));
+                          }}
+                          rows={3}
+                          placeholder="Describe any additional context…"
+                          className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-red-300 resize-none"
+                        />
+
+                        <div className="mt-4 flex justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setReportOpen(false)}
+                            className="rounded-xl border px-4 py-2 text-sm text-gray-600 hover:bg-gray-50"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            onClick={submitReport}
+                            disabled={reportSubmitting || !reportReason.trim()}
+                            className="rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 inline-flex items-center gap-2"
+                          >
+                            {reportSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldAlert className="w-4 h-4" />}
+                            {reportSubmitting ? "Submitting…" : "Submit Report"}
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}  
+
+              {shareOpen && (
+                <div
+                  className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-4"
+                  onClick={() => setShareOpen(false)}
+                >
+                  <div
+                    className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="font-semibold text-gray-900">Share Record</div>
+                      <button type="button" onClick={() => setShareOpen(false)}
+                        className="rounded-full border p-1.5 text-gray-600 hover:bg-gray-100">
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-2 rounded-xl border bg-gray-50 px-3 py-2">
+                      <span className="text-xs text-gray-600 truncate flex-1">{recordUrl}</span>
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          await navigator.clipboard.writeText(recordUrl);
+                          setShareCopied(true);
+                          setTimeout(() => setShareCopied(false), 1500);
+                        }}
+                        className="flex items-center justify-center gap-2 rounded-xl border bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
+                      >
+                        <Copy className="w-4 h-4" />
+                        {shareCopied ? "Copied!" : "Copy link"}
+                      </button>
+
+                      <a
+                        href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(recordUrl)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center gap-2 rounded-xl border bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
+                      >
+                        <span className="text-base">𝕏</span>
+                        Post
+                      </a>
+
+                      <a
+                        href={`https://wa.me/?text=${encodeURIComponent(recordUrl)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center gap-2 rounded-xl border bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
+                      >
+                        <span className="text-base">💬</span>
+                        WhatsApp
+                      </a>
+
+                      <a
+                        href={`sms:?body=${encodeURIComponent(recordUrl)}`}
+                        className="flex items-center justify-center gap-2 rounded-xl border bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
+                      >
+                        <span className="text-base">📱</span>
+                        SMS
+                      </a>                      
+                    </div>  
+                  </div>
+                </div>
+              )}
     </div>
   );
 }

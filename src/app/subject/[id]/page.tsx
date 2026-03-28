@@ -1123,15 +1123,24 @@ export default function SubjectProfilePage() {
                   <p className="text-sm text-gray-500">No badges earned yet.</p>
                 ) : (
                   <div className="flex flex-wrap gap-3">
-                    {subjectBadges.map((badge: any) => (
-                      <div
-                        key={badge.id}
-                        className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border bg-gray-50 text-sm font-medium text-gray-700"
-                      >
-                        <span>{badge.icon}</span>
-                        {badge.label}
-                      </div>
-                    ))}
+                    {(() => {
+                      // Count each badge label
+                      const counts: Record<string, { icon: string; label: string; count: number }> = {};
+                      subjectBadges.forEach((b: any) => {
+                        if (!counts[b.label]) counts[b.label] = { icon: b.icon, label: b.label, count: 0 };
+                        counts[b.label].count++;
+                      });
+                      return Object.values(counts).map((b) => (
+                        <div
+                          key={b.label}
+                          className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border bg-gray-50 text-sm font-medium text-gray-700"
+                        >
+                          <span>{b.icon}</span>
+                          <span>{b.label}</span>
+                          <span className="text-gray-400 font-normal">{b.count}</span>
+                        </div>
+                      ));
+                    })()}
                   </div>
                 )}
               </div>

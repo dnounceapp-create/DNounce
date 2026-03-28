@@ -127,6 +127,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   
   useEffect(() => {
     if (!user?.id) return;
+
     async function fetchNotifications() {
       const { data } = await supabase
         .from("notifications")
@@ -139,7 +140,39 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         setUnreadCount(data.filter((n: any) => !n.read).length);
       }
     }
+
     fetchNotifications();
+
+    // Realtime: push new notifications instantly without refresh
+    const channel = supabase
+      .channel(`notifications:${user.id}`, {
+        config: { broadcast: { self: true } },
+      })
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          setNotifications((prev) => [payload.new as any, ...prev]);
+          setUnreadCount((c) => c + 1);
+        }
+      )
+      .subscribe((status) => {
+        console.log("🔔 Realtime status:", status);
+        if (status === "TIMED_OUT") {
+          supabase.removeChannel(channel);
+          // refetch so we don't miss anything during the gap
+          fetchNotifications();
+        }
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
   async function markAllRead() {
@@ -166,43 +199,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     async function fetchUserLocation() {
-      if (!navigator.geolocation) {
-        console.warn("Geolocation not supported.");
-        // setUserCity("Unknown Location");
-        return;
-      }
-  
-      navigator.geolocation.getCurrentPosition(
-        async (pos) => {
-          const { latitude, longitude } = pos.coords;
-  
-          try {
-            const res = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`
-            );
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  
-            const data = await res.json().catch(() => ({}));
-  
-            const city =
-              data?.address?.city ||
-              data?.address?.town ||
-              data?.address?.village ||
-              data?.address?.state ||
-              "Unknown Location";
-            // setUserCity(city);
-          } catch (err) {
-            console.warn("Reverse geocoding failed:", err);
-            // setUserCity("Unknown Location");
-          }
-        },
-        (err) => {
-          console.warn("User denied geolocation:", err);
-          // setUserCity("Unknown Location");
+      try {
+        const res = await fetch(`https://ipinfo.io/json?token=${process.env.NEXT_PUBLIC_IPINFO_KEY}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.city && data.region) {
+          setUserLocation(`${data.city}, ${data.region}`);
         }
-      );
+      } catch (err) {
+        console.warn("IP location failed:", err);
+      }
     }
-  
     fetchUserLocation();
   }, []);     
 
@@ -229,9 +236,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       }
     };
   
-    const delay = setTimeout(fetchResults, 300); // debounce typing
+    const delay = setTimeout(fetchResults, 150); 
     return () => clearTimeout(delay);
-  }, [query, category, userLocation]); 
+  }, [query, category]);
+
+  useEffect(() => {
+    const hasAny = Object.values(adv).some(Boolean) || advTags.length > 0;
+    if (!hasAny) { setAdvResults([]); return; }
+    const delay = setTimeout(runAdvancedSearch, 300);
+    return () => clearTimeout(delay);
+  }, [adv, advTags]);
 
   const runAdvancedSearch = async () => {
     setAdvLoading(true);
@@ -246,6 +260,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       if (adv.subjectId) params.set("subjectId", adv.subjectId);
       if (adv.recordId) params.set("recordId", adv.recordId);
       if (advTags.length) params.set("hashtags", advTags.join(" "));
+      if (userLocation) params.set("userLocation", userLocation);
       const res = await fetch(`/api/advancedsearch?${params}`);
       const data = await res.json();
       setAdvResults(data.results || []);
@@ -340,7 +355,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <button
                 type="button"
                 onMouseDown={(e) => e.preventDefault()}
-                onClick={() => setAdvancedOpen((v) => !v)}
+                onClick={() => { setAdvancedOpen((v) => !v); setQuery(""); }}
                 className="shrink-0 px-3 h-11 text-xs font-medium text-blue-600 hover:text-blue-800 border-l border-gray-200 rounded-r-full hover:bg-blue-50 transition"
               >
                 Advanced
@@ -426,13 +441,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     >
                       Clear all
                     </button>
-                    <button
-                      onClick={runAdvancedSearch}
-                      disabled={advLoading}
-                      className="px-4 py-1.5 text-xs font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
-                    >
-                      {advLoading ? "Searching..." : "Search →"}
-                    </button>
                   </div>
                 </div>
 
@@ -446,8 +454,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                             key={`${item.type}-${item.id}`}
                             type={item.type}
                             title={item.name || item.title || item.organization || `#${item.tag}`}
-                            subtitle={item.organization || item.category || item.role}
+                            nickname={item.nickname}
+                            subtitle={item.organization || item.role}
                             location={item.location || item.city}
+                            category={item.category}
                             id={item.id}
                             href={href}
                             avatarUrl={item.avatar_url || null}
@@ -499,8 +509,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                     key={`${type}-${item.id}`}
                                     type={item.type}
                                     title={item.name || item.title || item.organization || `#${item.tag}`}
-                                    subtitle={item.organization || item.category || item.role}
+                                    nickname={item.nickname}
+                                    subtitle={item.organization || item.role}
                                     location={item.location || item.city}
+                                    category={item.category}
                                     id={item.id}
                                     href={href}
                                     avatarUrl={item.avatar_url || null}
@@ -768,8 +780,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                     key={`${type}-${item.id}`}
                                     type={item.type}
                                     title={item.name || item.title || item.organization || `#${item.tag}`}
-                                    subtitle={item.organization || item.category || item.role}
+                                    nickname={item.nickname}
+                                    subtitle={item.organization || item.role}
                                     location={item.location || item.city}
+                                    category={item.category}
                                     id={item.id}
                                     href={href}
                                     avatarUrl={item.avatar_url || null}

@@ -147,8 +147,10 @@ export default function MyRecordsPage() {
   const [stats, setStats] = useState({ my_total_records: 0, kept: 0, deleted: 0 });
   const [loadingData, setLoadingData] = useState(true);
   const [subjectId, setSubjectId] = useState<string | null>(null);
+  const [disputeConfirmId, setDisputeConfirmId] = useState<string | null>(null);
   const [disputingId, setDisputingId] = useState<string | null>(null);
   const [disputeToast, setDisputeToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
+  const [disputeSuccessId, setDisputeSuccessId] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -156,16 +158,24 @@ export default function MyRecordsPage() {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session?.user) return;
 
-        const { data: userData } = await supabase
-          .from("users")
-          .select("subject_id")
-          .eq("auth_user_id", session.user.id)
-          .single();
+        const { data: subjectData, error: subjectError } = await supabase
+          .from("subjects")
+          .select("subject_uuid")
+          .eq("owner_auth_user_id", session.user.id)
+          .maybeSingle();
 
-        if (!userData?.subject_id) return;
-        setSubjectId(userData.subject_id);
+        if (subjectError) {
+          return;
+        }
+        if (!subjectData?.subject_uuid) {
+          console.warn("No subject found for this user");
+          return;
+        }
+        setSubjectId(subjectData.subject_uuid);
 
-        const { data: rawRecords } = await supabase
+        console.log("✅ subjectUUID:", subjectData.subject_uuid);
+
+        const { data: rawRecords, error: recordsError } = await supabase
           .from("records")
           .select(`
             id,
@@ -177,8 +187,7 @@ export default function MyRecordsPage() {
             ai_vendor_1_result,
             subjects!inner(name)
           `)
-          .eq("subject_id", userData.subject_id)
-          .eq("is_published", true)
+          .eq("subject_id", subjectData.subject_uuid)
           .order("submitted_at", { ascending: false });
 
         if (!rawRecords) return;
@@ -286,7 +295,7 @@ export default function MyRecordsPage() {
     );
     const cmp = sortComparator(sort);
     return [...filtered].sort(cmp);
-  }, [filters, sort]);
+  }, [records, filters, sort]);
 
   const totalPages = Math.ceil(displayRecords.length / pageSize);
   const paginatedRecords = displayRecords.slice((page - 1) * pageSize, page * pageSize);
@@ -318,16 +327,13 @@ export default function MyRecordsPage() {
   };
 
   const handleDisputeRecord = async (id: string) => {
-    const confirmed = window.confirm(
-      "Are you sure you want to dispute this record? This will request its deletion and move it to the next stage."
-    );
-    if (!confirmed) return;
-
+    setDisputeConfirmId(null);
     setDisputingId(id);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) throw new Error("Not signed in.");
 
+      // Update the record status to deletion_request
       const { error } = await supabase
         .from("records")
         .update({
@@ -339,15 +345,36 @@ export default function MyRecordsPage() {
 
       if (error) throw error;
 
-      // refresh records list
+      // Get the record to find contributor for notification
+      const { data: rec } = await supabase
+        .from("records")
+        .select("contributor:contributors!records_contributor_id_fkey(user_id, auth_user_id)")
+        .eq("id", id)
+        .maybeSingle();
+
+      const contributorAuthId = (rec?.contributor as any)?.auth_user_id;
+
+      // Notify contributor
+      if (contributorAuthId) {
+        await supabase.from("notifications").insert({
+          user_id: contributorAuthId,
+          title: "Your record has been disputed",
+          body: "The subject has requested deletion of a record you submitted. It has entered the deletion request stage.",
+          type: "stage_4_contributor",
+          record_id: id,
+        });
+      }
+
+      // Update local state: move record to stage 4
       setRecords((prev) =>
         prev.map((r) =>
-          r.id === id
-            ? { ...r, stage: 4, outcome: null }
-            : r
+          r.id === id ? { ...r, stage: 4 } : r
         )
       );
-      setDisputeToast({ type: "success", msg: "Dispute submitted. The record has been flagged for deletion review." });
+
+      // Show success confirmation modal
+      setDisputeSuccessId(id);
+      setDisputeToast({ type: "success", msg: "Dispute submitted. The contributor has been notified." });
     } catch (err: any) {
       setDisputeToast({ type: "error", msg: err?.message || "Failed to submit dispute." });
     } finally {
@@ -603,7 +630,7 @@ export default function MyRecordsPage() {
                 <div className="mt-3 md:mt-0 flex md:justify-center">
                   {record.stage === 3 && !stageConfig[3].flags.interactionsLocked ? (
                     <button
-                      onClick={() => handleDisputeRecord(record.id)}
+                      onClick={() => setDisputeConfirmId(record.id)}
                       disabled={disputingId === record.id}
                       className="px-3 py-2 bg-orange-500 text-white text-xs sm:text-sm rounded-md hover:bg-orange-600 active:scale-[0.99] transition disabled:opacity-50"
                     >
@@ -683,6 +710,64 @@ export default function MyRecordsPage() {
           </div>
         </div>
       </main>
+
+      {disputeConfirmId && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-md p-6 space-y-4">
+            <h2 className="text-white font-semibold text-lg">Dispute this record?</h2>
+            <p className="text-gray-400 text-sm leading-relaxed">
+              This will flag the record for deletion and notify the contributor. The record enters a formal deletion review process — debate, community voting, and a final decision.
+            </p>
+            <p className="text-orange-400 text-xs font-medium">This action cannot be undone.</p>
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={() => setDisputeConfirmId(null)}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-gray-800 text-gray-300 hover:text-white text-sm transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDisputeRecord(disputeConfirmId)}
+                disabled={!!disputingId}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-orange-500 text-white hover:bg-orange-600 text-sm font-semibold transition disabled:opacity-50"
+              >
+                {disputingId ? "Submitting…" : "Yes, Dispute Record"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {disputeSuccessId && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center shrink-0">
+                <CheckCircle className="w-5 h-5 text-orange-500" />
+              </div>
+              <h2 className="text-gray-900 font-semibold text-lg">Dispute Submitted</h2>
+            </div>
+            <p className="text-gray-600 text-sm leading-relaxed">
+              Your dispute has been recorded. The contributor has been notified and the formal review process has begun.
+            </p>
+            <div className="bg-orange-50 border border-orange-200 rounded-xl p-3">
+              <p className="text-orange-700 text-xs font-medium">What happens next?</p>
+              <ul className="mt-1.5 space-y-1 text-orange-600 text-xs list-disc list-inside">
+                <li>The contributor reviews and may respond</li>
+                <li>Both parties can debate the record</li>
+                <li>Community votes on Keep or Delete</li>
+                <li>A final decision is issued</li>
+              </ul>
+            </div>
+            <button
+              onClick={() => setDisputeSuccessId(null)}
+              className="w-full px-4 py-2.5 rounded-xl bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800 transition"
+            >
+              Got it
+            </button>
+          </div>
+        </div>
+      )}
 
       {disputeToast && (
         <div className={`fixed bottom-6 right-6 flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg text-sm font-medium z-50 ${
