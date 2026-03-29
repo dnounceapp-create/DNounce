@@ -202,6 +202,29 @@ export default function UserSetupPage() {
 
       if (rpcError) throw rpcError;
 
+      // Create subject profile linked to this user
+      const fullName = `${form.first_name.trim()} ${form.last_name.trim()}`;
+      const { data: existingSubject } = await supabase
+        .from("subjects")
+        .select("subject_uuid")
+        .eq("owner_auth_user_id", userId)
+        .maybeSingle();
+
+      if (!existingSubject) {
+        const { error: subjectError } = await supabase
+          .from("subjects")
+          .insert({
+            name: fullName,
+            nickname: form.nickname.trim() || null,
+            organization: form.organization.trim() || null,
+            location: form.location.trim() || null,
+            avatar_url: avatarUrl || null,
+            owner_auth_user_id: userId,
+          });
+
+        if (subjectError) throw subjectError;
+      }
+
       if (userId) {
         console.log("👤 Current user ID before mark_onboarding_complete:", userId);
       

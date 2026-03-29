@@ -286,7 +286,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
       {/* Header */}
       <header className="px-4 sm:px-8 py-4 bg-white shadow-sm flex items-center justify-between sticky top-0 z-30">
         <Link
@@ -845,11 +845,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       )}
 
       {/* Main Section */}
-      <div className="flex flex-1">
-        <aside className="hidden md:flex flex-col w-64 bg-white border-r shadow-sm p-6 h-auto">
-          {/* Nav Links */}
-          <div className="space-y-2">
-            {currentNav.map((item) => {
+      <div className="flex flex-1 overflow-hidden">
+        <aside className="hidden md:flex flex-col w-64 bg-white border-r shadow-sm p-6 sticky top-[78px] h-[calc(100vh-78px)] overflow-y-auto shrink-0">
+            {/* Nav Links */}
+            <div className="space-y-2 flex-1">
+              {currentNav.map((item) => {
               const active = pathname === item.href;
               const Icon = item.icon;
 
@@ -881,53 +881,55 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </aside>
 
-        <main className="flex-1 p-4 sm:p-8 overflow-y-auto relative">
-          {children}
+        <main className="flex-1 overflow-y-auto relative min-h-0">
+          <div className="p-4 sm:p-8">
+            {children}
+          </div>
+      
+          {/* Footer */}
+          <footer className="bg-[#0A1120] text-gray-300 py-12">
+            <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-8">
+              <div>
+                <h4 className="text-white font-semibold mb-3">DNounce</h4>
+                <p className="text-sm leading-relaxed">
+                  Verified public reputation platform for documenting real experiences
+                  through community-driven feedback and AI credibility recommendations.
+                </p>
+              </div>
+              <div>
+                <h4 className="text-white font-semibold mb-3">Platform</h4>
+                <ul className="space-y-2 text-sm">
+                  <li><Link href="#" className="hover:text-white">Search Profiles</Link></li>
+                  <li><Link href="#" className="hover:text-white">Share Feedback</Link></li>
+                  <li><Link href="#" className="hover:text-white">Community Review</Link></li>
+                  <li><Link href="#" className="hover:text-white">Guidelines</Link></li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="text-white font-semibold mb-3">Legal</h4>
+                <ul className="space-y-2 text-sm">
+                  <li><Link href="#" className="hover:text-white">Terms of Service</Link></li>
+                  <li><Link href="#" className="hover:text-white">Privacy Policy</Link></li>
+                  <li><Link href="#" className="hover:text-white">Transparency Report</Link></li>
+                  <li><Link href="#" className="hover:text-white">Legal Framework</Link></li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="text-white font-semibold mb-3">Support</h4>
+                <ul className="space-y-2 text-sm">
+                  <li><Link href="#" className="hover:text-white">Help Center</Link></li>
+                  <li><Link href="#" className="hover:text-white">Contact Support</Link></li>
+                  <li><Link href="#" className="hover:text-white">Appeal Process</Link></li>
+                  <li><Link href="#" className="hover:text-white">Status Page</Link></li>
+                </ul>
+              </div>
+            </div>
+            <div className="mt-10 border-t border-gray-700 pt-6 text-center text-xs text-gray-400 max-w-6xl mx-auto px-6">
+              © 2025 DNounce. All rights reserved. Verifying experiences, preserving reputations.
+            </div>
+          </footer>
         </main>
       </div>
-
-      {/* Footer */}
-      <footer className="bg-[#0A1120] text-gray-300 py-12">
-        <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-8">
-          <div>
-            <h4 className="text-white font-semibold mb-3">DNounce</h4>
-            <p className="text-sm leading-relaxed">
-              Verified public reputation platform for documenting real experiences
-              through community-driven feedback and AI credibility recommendations.
-            </p>
-          </div>
-          <div>
-            <h4 className="text-white font-semibold mb-3">Platform</h4>
-            <ul className="space-y-2 text-sm">
-              <li><Link href="#" className="hover:text-white">Search Profiles</Link></li>
-              <li><Link href="#" className="hover:text-white">Share Feedback</Link></li>
-              <li><Link href="#" className="hover:text-white">Community Review</Link></li>
-              <li><Link href="#" className="hover:text-white">Guidelines</Link></li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="text-white font-semibold mb-3">Legal</h4>
-            <ul className="space-y-2 text-sm">
-              <li><Link href="#" className="hover:text-white">Terms of Service</Link></li>
-              <li><Link href="#" className="hover:text-white">Privacy Policy</Link></li>
-              <li><Link href="#" className="hover:text-white">Transparency Report</Link></li>
-              <li><Link href="#" className="hover:text-white">Legal Framework</Link></li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="text-white font-semibold mb-3">Support</h4>
-            <ul className="space-y-2 text-sm">
-              <li><Link href="#" className="hover:text-white">Help Center</Link></li>
-              <li><Link href="#" className="hover:text-white">Contact Support</Link></li>
-              <li><Link href="#" className="hover:text-white">Appeal Process</Link></li>
-              <li><Link href="#" className="hover:text-white">Status Page</Link></li>
-            </ul>
-          </div>
-        </div>
-        <div className="mt-10 border-t border-gray-700 pt-6 text-center text-xs text-gray-400 max-w-6xl mx-auto px-6">
-          © 2025 DNounce. All rights reserved. Verifying experiences, preserving reputations.
-        </div>
-      </footer>
     </div>
   );
 }
