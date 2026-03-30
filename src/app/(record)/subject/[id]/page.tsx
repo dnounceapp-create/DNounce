@@ -13,6 +13,8 @@ import {
   AlertTriangle,
   CircleAlert,
   X,
+  ShieldCheck,
+  ShieldQuestion,
 } from "lucide-react";
 import {
   FaInstagram,
@@ -29,25 +31,21 @@ import dynamic from "next/dynamic";
 
 function getPlatformIcon(platformRaw: string) {
   const p = (platformRaw || "").toLowerCase();
-
   if (p === "instagram") return FaInstagram;
   if (p === "tiktok") return FaTiktok;
   if (p === "facebook") return FaFacebook;
   if (p === "google") return FaGoogle;
   if (p === "x" || p === "twitter") return FaX;
-
-  return FaLink; // fallback
+  return FaLink;
 }
 
 function buildProfileUrl(platformRaw: string, value: string) {
   const handle = value.replace(/^@/, "");
   const p = (platformRaw || "").toLowerCase();
-
   if (p === "instagram") return `https://instagram.com/${handle}`;
   if (p === "tiktok") return `https://www.tiktok.com/@${handle}`;
   if (p === "x" || p === "twitter") return `https://x.com/${handle}`;
   if (p === "facebook") return `https://facebook.com/${handle}`;
-
   return "";
 }
 
@@ -57,7 +55,6 @@ function shortId(id: string, left = 6, right = 6) {
   return `${id.slice(0, left)}…${id.slice(-right)}`;
 }
 
-// This is for FILTERING “credibility buckets” only (not what we DISPLAY).
 function normalizeCredBucket(raw: any) {
   const s = (raw || "").toString().toLowerCase();
   if (s.includes("evidence")) return "Evidence-Based";
@@ -69,18 +66,12 @@ function normalizeCredBucket(raw: any) {
 
 function stageFromStatus(status?: string | null) {
   switch ((status || "").toLowerCase()) {
-    case "published":
-      return 3;
-    case "deletion_request":
-      return 4;
-    case "debate":
-      return 5;
-    case "voting":
-      return 6;
-    case "decision":
-      return 7;
-    default:
-      return 0;
+    case "published": return 3;
+    case "deletion_request": return 4;
+    case "debate": return 5;
+    case "voting": return 6;
+    case "decision": return 7;
+    default: return 0;
   }
 }
 
@@ -90,23 +81,20 @@ function prettyStage(status?: string | null) {
   if (s === "deletion_request") return "Deletion Requested";
   if (s === "debate") return "Under Debate";
   if (s === "voting") return "Voting Open";
-  if (s === "decision") return "Kept"; // never “Decision Reached”
+  if (s === "decision") return "Kept";
   return "In Review";
 }
 
 function withinTimeBucket(dateIso: string | undefined, bucket: string | undefined) {
   if (!bucket || bucket === "all") return true;
   if (!dateIso) return false;
-
   const t = new Date(dateIso).getTime();
   const now = Date.now();
   const day = 24 * 60 * 60 * 1000;
-
   if (bucket === "7d") return now - t <= 7 * day;
   if (bucket === "30d") return now - t <= 30 * day;
   if (bucket === "6m") return now - t <= 183 * day;
   if (bucket === "1y") return now - t <= 365 * day;
-
   return true;
 }
 
@@ -126,39 +114,33 @@ type SubjectRecord = any & {
   submitted_at?: string;
   published_at?: string | null;
   description?: string | null;
-
   credibility?: string | null;
   ai_vendor_1_result?: string | null;
-
   is_published?: boolean | null;
   status?: string | null;
   voting_ends_at?: string | null;
-
   rating?: number | null;
   category?: string | null;
   record_type?: string | null;
-
   record_alias?: string | null;
   contributor_display_name?: string | null;
   contributor_identity_preference?: boolean | null;
 };
 
 type RecordFilters = {
-  status?: string; // published/debate/voting/decision/...
-  ai_cred?: string; // “Unable to Verify”, “Evidence-Based”, etc
-  record_type?: string; // evidence/opinion/pending
-  time?: string; // 7d/30d/6m/1y/all
+  status?: string;
+  ai_cred?: string;
+  record_type?: string;
+  time?: string;
 };
 
 const DEFAULT_SORT: SortKey = "Newest";
 
 async function countExact(table: string, recordId: string): Promise<number> {
-  const { count, error } = await supabase
+  const { count } = await supabase
     .from(table as any)
     .select("id", { count: "exact", head: true })
     .eq("record_id", recordId);
-
-  if (error) return 0;
   return Number(count ?? 0);
 }
 
@@ -171,7 +153,6 @@ async function getTotalCommentCount(recordId: string): Promise<number> {
     "record_vote_replies",
     "record_debate_messages",
   ];
-
   const counts = await Promise.all(tables.map((t) => countExact(t, recordId)));
   return counts.reduce((a, b) => a + b, 0);
 }
@@ -184,6 +165,301 @@ const RecordDetail = dynamic(() => import("@/components/record/RecordDetail"), {
     </div>
   ),
 });
+
+// ─── Claim Banner ─────────────────────────────────────────────────────────────
+
+type ClaimState =
+  | "idle"           // not checked yet
+  | "not-logged-in"  // user is not logged in
+  | "already-owner"  // user owns this profile
+  | "unclaimed-match"   // unclaimed + email matches → auto-claim available
+  | "unclaimed-no-match" // unclaimed + no email match → manual claim
+  | "pending"        // user already submitted a claim
+  | "claimed-other"  // claimed by someone else
+  | "auto-claimed"   // just auto-claimed successfully
+  | "claim-submitted"; // just submitted manual claim
+
+function ClaimBanner({
+  subjectId,
+  subjectEmail,
+  onClaimed,
+}: {
+  subjectId: string;
+  subjectEmail: string | null;
+  onClaimed: () => void;
+}) {
+  const router = useRouter();
+  const [claimState, setClaimState] = useState<ClaimState>("idle");
+  const [note, setNote] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function check() {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) {
+        setClaimState("not-logged-in");
+        return;
+      }
+
+      // Check if this user already owns it
+      const { data: subj } = await supabase
+        .from("subjects")
+        .select("owner_auth_user_id, email")
+        .eq("subject_uuid", subjectId)
+        .maybeSingle();
+
+      if (!subj) return;
+
+      if (subj.owner_auth_user_id === user.id) {
+        setClaimState("already-owner");
+        return;
+      }
+
+      if (subj.owner_auth_user_id) {
+        setClaimState("claimed-other");
+        return;
+      }
+
+      // Profile is unclaimed — check for existing pending claim
+      const { data: existingClaim } = await supabase
+        .from("subject_claims")
+        .select("id, status")
+        .eq("subject_uuid", subjectId)
+        .eq("claimant_auth_user_id", user.id)
+        .maybeSingle();
+
+      if (existingClaim?.status === "pending") {
+        setClaimState("pending");
+        return;
+      }
+
+      // Check email match
+      const emailMatch =
+        subj.email &&
+        user.email &&
+        subj.email.toLowerCase() === user.email.toLowerCase();
+
+      setClaimState(emailMatch ? "unclaimed-match" : "unclaimed-no-match");
+    }
+
+    check();
+  }, [subjectId]);
+
+  async function handleAutoClaim() {
+    setLoading(true);
+    setError(null);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setLoading(false); return; }
+
+    const { error: updateErr } = await supabase
+      .from("subjects")
+      .update({ owner_auth_user_id: user.id })
+      .eq("subject_uuid", subjectId)
+      .is("owner_auth_user_id", null);
+
+    if (updateErr) {
+      setError("Something went wrong. Please try again.");
+      setLoading(false);
+      return;
+    }
+
+    setClaimState("auto-claimed");
+    setLoading(false);
+    onClaimed();
+  }
+
+  async function handleManualClaim() {
+    setLoading(true);
+    setError(null);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setLoading(false); return; }
+
+    const { error: insertErr } = await supabase
+      .from("subject_claims")
+      .insert({
+        subject_uuid: subjectId,
+        claimant_auth_user_id: user.id,
+        note: note.trim() || null,
+      });
+
+    if (insertErr) {
+      setError(insertErr.message.includes("unique")
+        ? "You already submitted a claim for this profile."
+        : "Something went wrong. Please try again.");
+      setLoading(false);
+      return;
+    }
+
+    setClaimState("claim-submitted");
+    setLoading(false);
+  }
+
+  // Don't show anything if already owner or claimed by someone else or still loading
+  if (claimState === "idle" || claimState === "already-owner" || claimState === "claimed-other") {
+    return null;
+  }
+
+  // Auto-claimed success
+  if (claimState === "auto-claimed") {
+    return (
+      <div className="mb-6 rounded-2xl border border-green-200 bg-green-50 p-4 flex items-start gap-3">
+        <ShieldCheck className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
+        <div>
+          <p className="text-sm font-semibold text-green-800">Profile claimed successfully!</p>
+          <p className="text-xs text-green-700 mt-0.5">
+            This profile is now linked to your account. Your details will sync automatically.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Manual claim submitted
+  if (claimState === "claim-submitted") {
+    return (
+      <div className="mb-6 rounded-2xl border border-blue-200 bg-blue-50 p-4 flex items-start gap-3">
+        <ShieldCheck className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+        <div>
+          <p className="text-sm font-semibold text-blue-800">Claim request submitted!</p>
+          <p className="text-xs text-blue-700 mt-0.5">
+            Our team will review your request and reach out to you via email.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Already has a pending claim
+  if (claimState === "pending") {
+    return (
+      <div className="mb-6 rounded-2xl border border-yellow-200 bg-yellow-50 p-4 flex items-start gap-3">
+        <ShieldQuestion className="w-5 h-5 text-yellow-600 shrink-0 mt-0.5" />
+        <div>
+          <p className="text-sm font-semibold text-yellow-800">Claim request pending</p>
+          <p className="text-xs text-yellow-700 mt-0.5">
+            You've already submitted a claim for this profile. Our team is reviewing it.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Not logged in
+  if (claimState === "not-logged-in") {
+    return (
+      <div className="mb-6 rounded-2xl border border-gray-200 bg-gray-50 p-4 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <ShieldQuestion className="w-5 h-5 text-gray-500 shrink-0" />
+          <p className="text-sm text-gray-700">
+            <span className="font-semibold">Is this you?</span> Press the claim button to claim this profile.
+          </p>
+        </div>
+        <button
+          onClick={() => router.push(`/loginsignup?redirectTo=/subject/${subjectId}`)}
+          className="shrink-0 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 transition"
+        >
+          Claim Profile
+        </button>
+      </div>
+    );
+  }
+
+  // Email match → auto-claim
+  if (claimState === "unclaimed-match") {
+    return (
+      <div className="mb-6 rounded-2xl border border-blue-200 bg-blue-50 p-4">
+        <div className="flex items-start gap-3">
+          <ShieldCheck className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-blue-900">Is this you?</p>
+            <p className="text-xs text-blue-700 mt-0.5">
+              Your email matches this profile. You can instantly claim it and link it to your account.
+            </p>
+          </div>
+        </div>
+        {error && (
+          <p className="mt-2 text-xs text-red-600">{error}</p>
+        )}
+        <div className="mt-3 flex gap-2">
+          <button
+            onClick={handleAutoClaim}
+            disabled={loading}
+            className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50 transition"
+          >
+            {loading ? "Claiming…" : "Claim this profile"}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // No email match → manual claim form
+  if (claimState === "unclaimed-no-match") {
+    return (
+      <div className="mb-6 rounded-2xl border border-gray-200 bg-gray-50 p-4">
+        <div className="flex items-start gap-3">
+          <ShieldQuestion className="w-5 h-5 text-gray-500 shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-gray-900">Is this you?</p>
+            <p className="text-xs text-gray-600 mt-0.5">
+              If this profile belongs to you, you can submit a claim request. Our team will verify and approve it.
+            </p>
+          </div>
+          {!showForm && (
+            <button
+              onClick={() => setShowForm(true)}
+              className="shrink-0 rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-100 transition"
+            >
+              Claim profile
+            </button>
+          )}
+        </div>
+
+        {showForm && (
+          <div className="mt-4 space-y-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                How can we verify this is you? (optional)
+              </label>
+              <textarea
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="e.g. My phone number on file is (718) 555-1234, or I work at Acme Corp in Brooklyn..."
+                rows={3}
+                className="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 resize-none"
+              />
+            </div>
+            {error && (
+              <p className="text-xs text-red-600">{error}</p>
+            )}
+            <div className="flex gap-2">
+              <button
+                onClick={handleManualClaim}
+                disabled={loading}
+                className="rounded-lg bg-gray-900 px-4 py-2 text-xs font-semibold text-white hover:bg-gray-700 disabled:opacity-50 transition"
+              >
+                {loading ? "Submitting…" : "Submit claim request"}
+              </button>
+              <button
+                onClick={() => { setShowForm(false); setNote(""); setError(null); }}
+                className="rounded-lg border px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 transition"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return null;
+}
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function SubjectProfilePage() {
   const params = useParams<{ id: string }>();
@@ -202,16 +478,13 @@ export default function SubjectProfilePage() {
   const [qrOpen, setQrOpen] = useState(false);
   const [pageUrl, setPageUrl] = useState("");
   const [qrUrl, setQrUrl] = useState("");
-
   const [copiedSocialId, setCopiedSocialId] = useState<string | null>(null);
 
-  // Filters / Sort / Pagination
   const [filters, setFilters] = useState<RecordFilters>({});
   const [sort, setSort] = useState<SortKey>(DEFAULT_SORT);
   const [pageSize, setPageSize] = useState(10);
   const [page, setPage] = useState(1);
 
-  // comments/traction per record
   const [commentCounts, setCommentCounts] = useState<Record<string, number>>({});
   const [avatarLightboxOpen, setAvatarLightboxOpen] = useState(false);
   const [subjectScores, setSubjectScores] = useState<{
@@ -222,6 +495,7 @@ export default function SubjectProfilePage() {
     overall_score: number | null;
   } | null>(null);
   const [subjectBadges, setSubjectBadges] = useState<any[]>([]);
+  const [claimRefresh, setClaimRefresh] = useState(0);
 
   const hasActiveFilters = Object.values(filters).some(Boolean);
   const hasNonDefaultSort = sort !== DEFAULT_SORT;
@@ -236,269 +510,203 @@ export default function SubjectProfilePage() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-
-    const href = window.location.href;
-    setPageUrl(href);
-
-    if (subjectId) {
-      setQrUrl(`https://www.dnounce.com/subject/${subjectId}`);
-    }
+    setPageUrl(window.location.href);
+    if (subjectId) setQrUrl(`https://www.dnounce.com/subject/${subjectId}`);
   }, [subjectId]);
 
   useEffect(() => {
     if (!subjectId) return;
-
     (async () => {
       const { data: sessionData } = await supabase.auth.getSession();
-      const authed = !!sessionData.session;
-
-      if (authed && action === "submit-record") {
+      if (!!sessionData.session && action === "submit-record") {
         router.replace(`/dashboard/submit?subject_id=${subjectId}`);
       }
     })();
   }, [subjectId, action, router]);
 
-  useEffect(() => {
+  async function loadSubject() {
     if (!subjectId) return;
+    try {
+      setLoading(true);
+      setErr(null);
 
-    (async () => {
-      try {
-        setLoading(true);
-        setErr(null);
+      const { data: subj, error: subjErr } = await supabase
+        .from("subjects")
+        .select("subject_uuid,name,nickname,organization,location,avatar_url,email,owner_auth_user_id")
+        .eq("subject_uuid", subjectId)
+        .maybeSingle();
 
-        // 1) Subject (safe fields only)
-        const { data: subj, error: subjErr } = await supabase
-          .from("subjects")
-          .select("subject_uuid,name,nickname,organization,location,avatar_url")
-          .eq("subject_uuid", subjectId)
-          .maybeSingle();
+      if (subjErr) throw subjErr;
+      if (!subj) {
+        setErr("Subject not found.");
+        setSubject(null);
+        setRecords([]);
+        setSocialLinks([]);
+        return;
+      }
 
-        if (subjErr) throw subjErr;
-        if (!subj) {
-          setErr("Subject not found.");
-          setSubject(null);
-          setRecords([]);
-          setSocialLinks([]);
-          return;
-        }
+      const { data: recs, error: recErr } = await supabase
+        .from("records")
+        .select(`
+          id, created_at, submitted_at, published_at, description,
+          credibility, ai_vendor_1_result, is_published, status,
+          voting_ends_at, rating, category, record_type, record_alias,
+          contributor_display_name, contributor_identity_preference
+        `)
+        .eq("subject_id", subjectId)
+        .in("status", ["published", "deletion_request", "debate", "voting", "decision"])
+        .order("created_at", { ascending: false })
+        .limit(250);
 
-        // 2) Records about this subject (published+ pipeline stages)
-        const { data: recs, error: recErr } = await supabase
-          .from("records")
-          .select(`
-            id,
-            created_at,
-            submitted_at,
-            published_at,
-            description,
-            credibility,
-            ai_vendor_1_result,
-            is_published,
-            status,
-            voting_ends_at,
-            rating,
-            category,
-            record_type,
-            record_alias,
-            contributor_display_name,
-            contributor_identity_preference
-          `)
-          .eq("subject_id", subjectId)
-          .in("status", ["published", "deletion_request", "debate", "voting", "decision"])
-          .order("created_at", { ascending: false })
-          .limit(250);
+      if (recErr) throw recErr;
 
-        if (recErr) throw recErr;
+      setSubject(subj);
 
-        setSubject(subj);
+      const rows: SubjectRecord[] = (recs || []) as any;
 
-        const rows: SubjectRecord[] = (recs || []) as any;
+      const rowsWithOutcome = await Promise.all(
+        rows.map(async (r) => {
+          if (r.status !== "decision") return { ...r, hide: false };
+          if (r.voting_ends_at && Date.now() < new Date(r.voting_ends_at).getTime()) return { ...r, hide: false };
+          const { data: tally } = await supabase.rpc("vote_tally", { p_record_id: r.id });
+          const t = Array.isArray(tally) ? tally[0] : tally;
+          const keep = Number(t?.keep_count ?? 0);
+          const del = Number(t?.delete_count ?? 0);
+          return { ...r, hide: del > keep };
+        })
+      );
 
-        // Keep your existing “hide if delete wins after decision” logic
-        const rowsWithOutcome = await Promise.all(
-          rows.map(async (r) => {
-            if (r.status !== "decision") return { ...r, hide: false };
+      const visible = rowsWithOutcome.filter((r: any) => !r.hide) as SubjectRecord[];
+      setRecords(visible);
 
-            if (r.voting_ends_at && Date.now() < new Date(r.voting_ends_at).getTime()) {
-              return { ...r, hide: false };
-            }
+      const counts = await Promise.all(
+        visible.map(async (r) => [r.id, await getTotalCommentCount(r.id)] as const)
+      );
+      const nextMap: Record<string, number> = {};
+      counts.forEach(([id, total]) => (nextMap[id] = total));
+      setCommentCounts(nextMap);
 
-            const { data: tally } = await supabase.rpc("vote_tally", { p_record_id: r.id });
-            const t = Array.isArray(tally) ? tally[0] : tally;
+      const { data: ownerRows } = await supabase.rpc("get_subject_owner", { p_subject_id: subjectId });
+      const ownerAuthUserId = ownerRows?.[0]?.auth_user_id;
 
-            const keep = Number(t?.keep_count ?? 0);
-            const del = Number(t?.delete_count ?? 0);
+      if (!ownerAuthUserId) {
+        setSocialLinks([]);
+      } else {
+        const { data: socials } = await supabase
+          .from("user_social_links")
+          .select("id, platform, label, url, created_at")
+          .eq("user_id", ownerAuthUserId)
+          .order("created_at", { ascending: true });
+        setSocialLinks(socials || []);
+      }
 
-            // tie => keep (your rule), so delete only when del > keep
-            const deleteWins = del > keep;
+      let { data: subjectScoreData } = await supabase
+        .from("subject_scores")
+        .select("subject_score")
+        .eq("subject_uuid", subjectId)
+        .maybeSingle();
 
-            return { ...r, hide: deleteWins };
-          })
-        );
-
-        const visible = rowsWithOutcome.filter((r: any) => !r.hide) as SubjectRecord[];
-        setRecords(visible);
-
-        // 2b) traction counts (async per record)
-        const counts = await Promise.all(
-          visible.map(async (r) => {
-            const total = await getTotalCommentCount(r.id);
-            return [r.id, total] as const;
-          })
-        );
-
-        const nextMap: Record<string, number> = {};
-        counts.forEach(([id, total]) => (nextMap[id] = total));
-        setCommentCounts(nextMap);
-
-        // 3) Social links
-        const { data: ownerRows, error: ownerErr } = await supabase.rpc("get_subject_owner", {
-          p_subject_id: subjectId,
-        });
-
-        if (ownerErr) throw ownerErr;
-
-        const ownerAuthUserId = ownerRows?.[0]?.auth_user_id;
-
-        // Social links — only if claimed
-        if (!ownerAuthUserId) {
-          setSocialLinks([]);
-        } else {
-          const { data: socials, error: socialsErr } = await supabase
-            .from("user_social_links")
-            .select("id, platform, label, url, created_at")
-            .eq("user_id", ownerAuthUserId)
-            .order("created_at", { ascending: true });
-          if (socialsErr) throw socialsErr;
-          setSocialLinks(socials || []);
-        }
-
-        // Subject score — always available, even for unclaimed profiles
-        let { data: subjectScoreData } = await supabase
+      if (!subjectScoreData) {
+        await supabase.rpc("refresh_subject_score", { p_subject_uuid: subjectId });
+        const { data: freshSubjectScore } = await supabase
           .from("subject_scores")
           .select("subject_score")
           .eq("subject_uuid", subjectId)
           .maybeSingle();
+        subjectScoreData = freshSubjectScore;
+      }
 
-        if (!subjectScoreData) {
-          await supabase.rpc("refresh_subject_score", { p_subject_uuid: subjectId });
-          const { data: freshSubjectScore } = await supabase
-            .from("subject_scores")
-            .select("subject_score")
-            .eq("subject_uuid", subjectId)
-            .maybeSingle();
-          subjectScoreData = freshSubjectScore;
-        }
+      let userScoreData = null;
+      if (ownerAuthUserId) {
+        const { data: usd } = await supabase
+          .from("user_scores")
+          .select("contributor_score,voter_score,citizen_score,overall_score")
+          .eq("user_id", ownerAuthUserId)
+          .maybeSingle();
 
-        // Other scores + badges — only if profile is claimed
-        let userScoreData = null;
-        if (ownerAuthUserId) {
-          const { data: usd } = await supabase
+        if (!usd) {
+          await supabase.rpc("refresh_user_scores", { p_user_id: ownerAuthUserId });
+          const { data: freshUsd } = await supabase
             .from("user_scores")
             .select("contributor_score,voter_score,citizen_score,overall_score")
             .eq("user_id", ownerAuthUserId)
             .maybeSingle();
-
-          if (!usd) {
-            await supabase.rpc("refresh_user_scores", { p_user_id: ownerAuthUserId });
-            const { data: freshUsd } = await supabase
-              .from("user_scores")
-              .select("contributor_score,voter_score,citizen_score,overall_score")
-              .eq("user_id", ownerAuthUserId)
-              .maybeSingle();
-            userScoreData = freshUsd;
-          } else {
-            userScoreData = usd;
-          }
-
-          const { data: badgeData } = await supabase
-            .from("badges")
-            .select("id, label, color, icon")
-            .eq("user_id", ownerAuthUserId);
-          setSubjectBadges(badgeData || []);
+          userScoreData = freshUsd;
+        } else {
+          userScoreData = usd;
         }
 
-        setSubjectScores({
-          subject_score: subjectScoreData?.subject_score ?? null,
-          contributor_score: userScoreData?.contributor_score ?? null,
-          voter_score: userScoreData?.voter_score ?? null,
-          citizen_score: userScoreData?.overall_score ?? null,
-          overall_score: userScoreData?.overall_score ?? null,
-        });
-          
-      } catch (e: any) {
-        setErr(e?.message || "Failed to load subject profile");
-        setSubject(null);
-        setRecords([]);
-        setSocialLinks([]);
-      } finally {
-        setLoading(false);
+        const { data: badgeData } = await supabase
+          .from("badges")
+          .select("id, label, color, icon")
+          .eq("user_id", ownerAuthUserId);
+        setSubjectBadges(badgeData || []);
       }
-    })();
-  }, [subjectId]);
+
+      setSubjectScores({
+        subject_score: subjectScoreData?.subject_score ?? null,
+        contributor_score: userScoreData?.contributor_score ?? null,
+        voter_score: userScoreData?.voter_score ?? null,
+        citizen_score: userScoreData?.overall_score ?? null,
+        overall_score: userScoreData?.overall_score ?? null,
+      });
+
+    } catch (e: any) {
+      setErr(e?.message || "Failed to load subject profile");
+      setSubject(null);
+      setRecords([]);
+      setSocialLinks([]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadSubject();
+  }, [subjectId, claimRefresh]);
 
   const filteredSorted = useMemo(() => {
-    const rows: SubjectRecord[] = records || [];
-  
-    let out = rows.filter((r) => {
+    let out = (records || []).filter((r) => {
       if (filters.status && (r.status || "").toLowerCase() !== filters.status) return false;
-  
       if (filters.ai_cred) {
         const bucket = normalizeCredBucket(r.ai_vendor_1_result ?? r.credibility);
         if (bucket !== filters.ai_cred) return false;
       }
-  
       if (filters.record_type) {
-        const rt = (r.record_type || "").toLowerCase();
-        if (rt !== filters.record_type) return false;
+        if ((r.record_type || "").toLowerCase() !== filters.record_type) return false;
       }
-  
       const dateRef = r.published_at || r.submitted_at || r.created_at;
       if (!withinTimeBucket(dateRef, filters.time)) return false;
-  
       return true;
     });
-  
+
     const byDate = (r: SubjectRecord) =>
       new Date(r.published_at || r.submitted_at || r.created_at || 0).getTime();
-  
+
     out = out.sort((a, b) => {
       if (sort === "Newest") return byDate(b) - byDate(a);
       if (sort === "Oldest") return byDate(a) - byDate(b);
-  
-      if (sort === "Stage: Most advanced")
-        return stageFromStatus(b.status) - stageFromStatus(a.status);
-      if (sort === "Stage: Least advanced")
-        return stageFromStatus(a.status) - stageFromStatus(b.status);
-  
+      if (sort === "Stage: Most advanced") return stageFromStatus(b.status) - stageFromStatus(a.status);
+      if (sort === "Stage: Least advanced") return stageFromStatus(a.status) - stageFromStatus(b.status);
       if (sort === "Voting ends soon") {
-        const av = a.voting_ends_at ? new Date(a.voting_ends_at).getTime() : Number.POSITIVE_INFINITY;
-        const bv = b.voting_ends_at ? new Date(b.voting_ends_at).getTime() : Number.POSITIVE_INFINITY;
+        const av = a.voting_ends_at ? new Date(a.voting_ends_at).getTime() : Infinity;
+        const bv = b.voting_ends_at ? new Date(b.voting_ends_at).getTime() : Infinity;
         return av - bv;
       }
-  
-      if (sort === "Rating: High")
-        return Number(b.rating ?? -Infinity) - Number(a.rating ?? -Infinity);
-      if (sort === "Rating: Low")
-        return Number(a.rating ?? Infinity) - Number(b.rating ?? Infinity);
-  
+      if (sort === "Rating: High") return Number(b.rating ?? -Infinity) - Number(a.rating ?? -Infinity);
+      if (sort === "Rating: Low") return Number(a.rating ?? Infinity) - Number(b.rating ?? Infinity);
       if (sort === "Most discussed") {
-        const ac = Number(commentCounts[a.id] ?? 0);
-        const bc = Number(commentCounts[b.id] ?? 0);
-        return bc - ac;
+        return Number(commentCounts[b.id] ?? 0) - Number(commentCounts[a.id] ?? 0);
       }
-  
       return byDate(b) - byDate(a);
     });
-  
+
     return out;
   }, [records, filters, sort, commentCounts]);
 
   const totalPages = Math.max(1, Math.ceil(filteredSorted.length / pageSize));
 
-  useEffect(() => {
-    setPage(1);
-  }, [filters, sort, pageSize]);
+  useEffect(() => { setPage(1); }, [filters, sort, pageSize]);
 
   const pageRows = useMemo(() => {
     const start = (page - 1) * pageSize;
@@ -517,32 +725,17 @@ export default function SubjectProfilePage() {
   }, [filteredSorted]);
 
   function contributorLabelByRules(r: SubjectRecord) {
-    // Use the SAME value you display (ai_vendor_1_result first, then credibility)
     const rawCred = credRecommendationText(r);
     const bucket = normalizeCredBucket(rawCred);
-  
     const realName = (r.contributor_display_name || "").trim();
     const alias = (r.record_alias || "").trim();
-  
-    // Decision table:
-    // Evidence-Based: contributor_identity_preference TRUE => Real Name, FALSE => Alias
-    // Unclear/Unable/Pending: Alias
-    // Opinion-Based: Real Name
     let showRealName = false;
-  
-    if (bucket === "Evidence-Based") {
-      showRealName = !!r.contributor_identity_preference;
-    } else if (bucket === "Opinion-Based") {
-      showRealName = true;
-    } else {
-      // Unclear / Unable to Verify / Pending => Alias
-      showRealName = false;
-    }
-  
+    if (bucket === "Evidence-Based") showRealName = !!r.contributor_identity_preference;
+    else if (bucket === "Opinion-Based") showRealName = true;
     if (showRealName) return realName || alias || "SuperHero123";
     return alias || realName || "SuperHero123";
   }
-  
+
   function recordTitle(r: SubjectRecord) {
     if (r.record_alias) return r.record_alias;
     const subjectName = subject?.name || "Subject";
@@ -551,45 +744,16 @@ export default function SubjectProfilePage() {
   }
 
   function credRecommendationText(r: SubjectRecord) {
-    // DISPLAY raw DB recommendation (per requirement)
     const raw = (r.ai_vendor_1_result ?? r.credibility ?? "").toString().trim();
     return raw || "Pending";
   }
 
   function credibilityBadge(cred: string) {
     const c = (cred || "").trim();
-
-    const base =
-      "inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] sm:text-xs font-medium";
-
-    if (c === "Evidence-Based") {
-      return (
-        <span className={`${base} bg-green-100 text-green-700`}>
-          <CheckCircle size={12} className="text-green-700" />
-          {c}
-        </span>
-      );
-    }
-
-    if (c === "Opinion-Based") {
-      return (
-        <span className={`${base} bg-red-100 text-red-700`}>
-          <AlertTriangle size={12} className="text-red-700" />
-          {c}
-        </span>
-      );
-    }
-
-    if (c === "Unable to Verify") {
-      return (
-        <span className={`${base} bg-yellow-100 text-yellow-700`}>
-          <CircleAlert size={12} className="text-yellow-700" />
-          {c}
-        </span>
-      );
-    }
-
-    // fallback (incl Pending / Unclear / anything else)
+    const base = "inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] sm:text-xs font-medium";
+    if (c === "Evidence-Based") return <span className={`${base} bg-green-100 text-green-700`}><CheckCircle size={12} className="text-green-700" />{c}</span>;
+    if (c === "Opinion-Based") return <span className={`${base} bg-red-100 text-red-700`}><AlertTriangle size={12} className="text-red-700" />{c}</span>;
+    if (c === "Unable to Verify") return <span className={`${base} bg-yellow-100 text-yellow-700`}><CircleAlert size={12} className="text-yellow-700" />{c}</span>;
     return <span className={`${base} bg-yellow-100 text-yellow-700`}>{c || "Pending"}</span>;
   }
 
@@ -599,12 +763,12 @@ export default function SubjectProfilePage() {
     return (
       <div className="p-8 text-center">
         <div className="font-semibold">{err || "Not available"}</div>
-        <Link className="text-blue-600 hover:underline" href="/">
-          Go Back
-        </Link>
+        <Link className="text-blue-600 hover:underline" href="/">Go Back</Link>
       </div>
     );
   }
+
+  const isUnclaimed = !subject.owner_auth_user_id;
 
   return (
     <div className="max-w-5xl mx-auto p-6">
@@ -614,6 +778,16 @@ export default function SubjectProfilePage() {
       >
         ← Back
       </button>
+
+      {/* Claim Banner */}
+      {isUnclaimed && (
+        <ClaimBanner
+          subjectId={subjectId!}
+          subjectEmail={subject.email ?? null}
+          onClaimed={() => setClaimRefresh((n) => n + 1)}
+        />
+      )}
+
       <div className="border rounded-2xl bg-white p-6">
         <div className="flex flex-col md:flex-row gap-6">
           <div className="flex-1">
@@ -621,9 +795,8 @@ export default function SubjectProfilePage() {
             <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
               {/* LEFT: Identity */}
               <div className="flex flex-col">
-                {/* Avatar + 3 lines */}
                 <div className="grid grid-cols-[72px_1fr] gap-x-4 items-start">
-                <div
+                  <div
                     className={`w-[72px] h-[72px] bg-gray-200 rounded-full flex items-center justify-center overflow-hidden ${subject.avatar_url ? "cursor-pointer hover:ring-2 hover:ring-gray-900 transition" : ""}`}
                     onClick={() => subject.avatar_url && setAvatarLightboxOpen(true)}
                   >
@@ -631,7 +804,7 @@ export default function SubjectProfilePage() {
                       <img
                         src={subject.avatar_url}
                         alt="Subject avatar"
-                        className="w-full h-full object-cover select-none pointer-events-none no-screenshot"
+                        className="w-full h-full object-cover select-none pointer-events-none"
                         style={{ WebkitUserSelect: "none", userSelect: "none" }}
                       />
                     ) : (
@@ -654,7 +827,7 @@ export default function SubjectProfilePage() {
                         <img
                           src={subject.avatar_url}
                           alt="Subject avatar"
-                          className="w-full rounded-2xl object-cover shadow-2xl select-none no-screenshot"
+                          className="w-full rounded-2xl object-cover shadow-2xl select-none"
                           style={{ WebkitUserSelect: "none", userSelect: "none" }}
                         />
                       </div>
@@ -662,15 +835,13 @@ export default function SubjectProfilePage() {
                   )}
 
                   <div className="flex flex-col gap-1 pt-0.5">
-                    <h3 className="text-xl font-semibold text-gray-900 leading-tight">
-                      {subject.name}
-                      {subject.nickname ? ` (${subject.nickname})` : ""}
-                    </h3>
-
-                    <p className="text-sm text-gray-600">
-                      {subject.organization || "Independent"}
-                    </p>
-
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-xl font-semibold text-gray-900 leading-tight">
+                        {subject.name}
+                        {subject.nickname ? ` (${subject.nickname})` : ""}
+                      </h3>
+                    </div>
+                    <p className="text-sm text-gray-600">{subject.organization || "Independent"}</p>
                     <p className="text-sm text-gray-500 flex items-center gap-1">
                       <span>📍</span> {subject.location || "Unknown"}
                     </p>
@@ -681,11 +852,9 @@ export default function SubjectProfilePage() {
                 <div className="mt-3 flex items-center gap-3 w-full">
                   <div className="flex items-center gap-2 text-xs text-gray-600 min-w-0">
                     <span className="font-semibold text-gray-800">Subject ID:</span>
-
                     <span className="font-mono truncate max-w-[220px] sm:max-w-[320px]">
                       {shortId(subject.subject_uuid)}
                     </span>
-
                     <button
                       type="button"
                       onClick={async () => {
@@ -693,11 +862,9 @@ export default function SubjectProfilePage() {
                           await navigator.clipboard.writeText(subject.subject_uuid);
                           setCopiedSubjectId(true);
                           setTimeout(() => setCopiedSubjectId(false), 1200);
-                        } catch (e) {
-                          console.error("Copy failed", e);
-                        }
+                        } catch (e) { console.error("Copy failed", e); }
                       }}
-                      className="inline-flex items-center justify-center rounded-full border p-1.5 text-gray-600 hover:bg-gray-100 active:bg-gray-200"
+                      className="inline-flex items-center justify-center rounded-full border p-1.5 text-gray-600 hover:bg-gray-100"
                       title="Copy full subject ID"
                     >
                       {copiedSubjectId ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
@@ -714,15 +881,7 @@ export default function SubjectProfilePage() {
                       <QRCodeCanvas value={qrUrl || ""} size={36} level="H" includeMargin={true} />
                       <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
                         <div className="rounded bg-white p-px">
-                          <Image
-                            src="/logo.png"
-                            alt="DNounce"
-                            width={12}
-                            height={12}
-                            className="scale-150"
-                            priority
-                            unoptimized
-                          />
+                          <Image src="/logo.png" alt="DNounce" width={12} height={12} className="scale-150" priority unoptimized />
                         </div>
                       </div>
                     </div>
@@ -733,16 +892,14 @@ export default function SubjectProfilePage() {
               {/* RIGHT: Scores */}
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 text-center">
                 {[
-                  { label: "Subject Score",      val: subjectScores?.subject_score },
-                  { label: "Overall Score",       val: subjectScores?.overall_score },
-                  { label: "Contributor Score",   val: subjectScores?.contributor_score },
-                  { label: "Voter Score",         val: subjectScores?.voter_score },
-                  { label: "Citizen Score",       val: subjectScores?.citizen_score },
+                  { label: "Subject Score", val: subjectScores?.subject_score },
+                  { label: "Overall Score", val: subjectScores?.overall_score },
+                  { label: "Contributor Score", val: subjectScores?.contributor_score },
+                  { label: "Voter Score", val: subjectScores?.voter_score },
+                  { label: "Citizen Score", val: subjectScores?.citizen_score },
                 ].map((s) => (
                   <div key={s.label}>
-                    <p className="text-xl font-bold text-gray-900">
-                      {s.val != null ? s.val : "—"}
-                    </p>
+                    <p className="text-xl font-bold text-gray-900">{s.val != null ? s.val : "—"}</p>
                     <p className="text-xs text-gray-600">{s.label}</p>
                   </div>
                 ))}
@@ -759,23 +916,16 @@ export default function SubjectProfilePage() {
                   Sign in to submit a record. This subject will be pre-selected.
                 </div>
               </div>
-
               <div className="flex justify-center sm:justify-end">
                 <button
                   type="button"
                   onClick={async () => {
                     const { data } = await supabase.auth.getSession();
-                    const authed = !!data.session;
-
                     const dashboardSubmitUrl = `/dashboard/submit?subject_id=${subjectId}`;
-
-                    if (!authed) {
-                      router.push(
-                        `/loginsignup?redirectTo=${encodeURIComponent(dashboardSubmitUrl)}`
-                      );
+                    if (!data.session) {
+                      router.push(`/loginsignup?redirectTo=${encodeURIComponent(dashboardSubmitUrl)}`);
                       return;
                     }
-
                     router.push(dashboardSubmitUrl);
                   }}
                   className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition"
@@ -788,49 +938,27 @@ export default function SubjectProfilePage() {
 
             {/* Tabs */}
             <div className="flex border-b mb-6 mt-6 text-sm font-medium">
-              <button
-                onClick={() => setActiveTab("records")}
-                className={`flex-1 text-center px-4 py-2 ${
-                  activeTab === "records"
-                    ? "text-blue-600 border-b-2 border-blue-600"
-                    : "text-gray-500 hover:text-gray-700"
-                }`}
-              >
-                Records About Me
-              </button>
-              <button
-                onClick={() => setActiveTab("reputations")}
-                className={`flex-1 text-center px-4 py-2 ${
-                  activeTab === "reputations"
-                    ? "text-blue-600 border-b-2 border-blue-600"
-                    : "text-gray-500 hover:text-gray-700"
-                }`}
-              >
-                Reputations & Badges
-              </button>
-              <button
-                onClick={() => setActiveTab("social")}
-                className={`flex-1 text-center px-4 py-2 ${
-                  activeTab === "social"
-                    ? "text-blue-600 border-b-2 border-blue-600"
-                    : "text-gray-500 hover:text-gray-700"
-                }`}
-              >
-                Social Media
-              </button>
+              {(["records", "reputations", "social"] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`flex-1 text-center px-4 py-2 ${
+                    activeTab === tab
+                      ? "text-blue-600 border-b-2 border-blue-600"
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  {tab === "records" ? "Records About Me" : tab === "reputations" ? "Reputations & Badges" : "Social Media"}
+                </button>
+              ))}
             </div>
 
             {activeTab === "records" && (
               <>
-                {/* Filter + Sort (no search) */}
+                {/* Filter + Sort */}
                 <div className="mb-5 flex flex-col gap-3">
-                  {/* All controls in one horizontal row (wraps on small screens) */}
                   <div className="flex flex-wrap items-center gap-3">
-                    <select
-                      value={sort}
-                      onChange={(e) => setSort(e.target.value as SortKey)}
-                      className="w-full sm:w-auto min-w-[210px] rounded-xl border px-3 py-2 text-sm bg-white"
-                    >
+                    <select value={sort} onChange={(e) => setSort(e.target.value as SortKey)} className="w-full sm:w-auto min-w-[210px] rounded-xl border px-3 py-2 text-sm bg-white">
                       <option>Newest</option>
                       <option>Oldest</option>
                       <option>Stage: Most advanced</option>
@@ -840,12 +968,7 @@ export default function SubjectProfilePage() {
                       <option>Rating: Low</option>
                       <option>Most discussed</option>
                     </select>
-
-                    <select
-                      value={filters.status ?? ""}
-                      onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value || undefined }))}
-                      className="w-full sm:w-auto min-w-[180px] rounded-xl border px-3 py-2 text-sm bg-white"
-                    >
+                    <select value={filters.status ?? ""} onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value || undefined }))} className="w-full sm:w-auto min-w-[180px] rounded-xl border px-3 py-2 text-sm bg-white">
                       <option value="">All stages</option>
                       <option value="published">Published</option>
                       <option value="deletion_request">Deletion Requested</option>
@@ -853,12 +976,7 @@ export default function SubjectProfilePage() {
                       <option value="voting">Voting Open</option>
                       <option value="decision">Kept</option>
                     </select>
-
-                    <select
-                      value={filters.ai_cred ?? ""}
-                      onChange={(e) => setFilters((f) => ({ ...f, ai_cred: e.target.value || undefined }))}
-                      className="w-full sm:w-auto min-w-[220px] rounded-xl border px-3 py-2 text-sm bg-white"
-                    >
+                    <select value={filters.ai_cred ?? ""} onChange={(e) => setFilters((f) => ({ ...f, ai_cred: e.target.value || undefined }))} className="w-full sm:w-auto min-w-[220px] rounded-xl border px-3 py-2 text-sm bg-white">
                       <option value="">All credibility recommendations</option>
                       <option value="Unable to Verify">Unable to Verify</option>
                       <option value="Evidence-Based">Evidence-Based</option>
@@ -866,64 +984,32 @@ export default function SubjectProfilePage() {
                       <option value="Unclear">Unclear</option>
                       <option value="Pending">Pending</option>
                     </select>
-
-                    <select
-                      value={filters.record_type ?? ""}
-                      onChange={(e) => setFilters((f) => ({ ...f, record_type: e.target.value || undefined }))}
-                      className="w-full sm:w-auto min-w-[160px] rounded-xl border px-3 py-2 text-sm bg-white"
-                    >
+                    <select value={filters.record_type ?? ""} onChange={(e) => setFilters((f) => ({ ...f, record_type: e.target.value || undefined }))} className="w-full sm:w-auto min-w-[160px] rounded-xl border px-3 py-2 text-sm bg-white">
                       <option value="">All record types</option>
                       <option value="evidence">Evidence</option>
                       <option value="opinion">Opinion</option>
                       <option value="pending">Pending</option>
                     </select>
-
-                    <select
-                      value={filters.time ?? ""}
-                      onChange={(e) => setFilters((f) => ({ ...f, time: e.target.value || undefined }))}
-                      className="w-full sm:w-auto min-w-[150px] rounded-xl border px-3 py-2 text-sm bg-white"
-                    >
+                    <select value={filters.time ?? ""} onChange={(e) => setFilters((f) => ({ ...f, time: e.target.value || undefined }))} className="w-full sm:w-auto min-w-[150px] rounded-xl border px-3 py-2 text-sm bg-white">
                       <option value="">All time</option>
                       <option value="7d">Last 7 days</option>
                       <option value="30d">Last 30 days</option>
                       <option value="6m">Last 6 months</option>
                       <option value="1y">Last year</option>
-                      <option value="all">All time</option>
                     </select>
-
                     {(hasActiveFilters || hasNonDefaultSort) && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setFilters({});
-                          setSort(DEFAULT_SORT);
-                          setPage(1);
-                        }}
-                        className="w-full sm:w-auto whitespace-nowrap rounded-xl border px-3 py-2 text-sm hover:bg-gray-50"
-                      >
+                      <button type="button" onClick={() => { setFilters({}); setSort(DEFAULT_SORT); setPage(1); }} className="w-full sm:w-auto whitespace-nowrap rounded-xl border px-3 py-2 text-sm hover:bg-gray-50">
                         Clear all
                       </button>
                     )}
                   </div>
-
-                  {/* Optional chips row (keep if you like) */}
                   {(hasActiveFilters || hasNonDefaultSort) && (
                     <div className="flex flex-wrap items-center gap-2">
-                      {filters.status ? (
-                        <span className="text-xs rounded-full border bg-gray-50 px-3 py-1">Stage: {filters.status}</span>
-                      ) : null}
-                      {filters.ai_cred ? (
-                        <span className="text-xs rounded-full border bg-gray-50 px-3 py-1">Credibility: {filters.ai_cred}</span>
-                      ) : null}
-                      {filters.record_type ? (
-                        <span className="text-xs rounded-full border bg-gray-50 px-3 py-1">Type: {filters.record_type}</span>
-                      ) : null}
-                      {filters.time ? (
-                        <span className="text-xs rounded-full border bg-gray-50 px-3 py-1">Time: {filters.time}</span>
-                      ) : null}
-                      {sort !== DEFAULT_SORT ? (
-                        <span className="text-xs rounded-full border bg-gray-50 px-3 py-1">Sort: {sort}</span>
-                      ) : null}
+                      {filters.status && <span className="text-xs rounded-full border bg-gray-50 px-3 py-1">Stage: {filters.status}</span>}
+                      {filters.ai_cred && <span className="text-xs rounded-full border bg-gray-50 px-3 py-1">Credibility: {filters.ai_cred}</span>}
+                      {filters.record_type && <span className="text-xs rounded-full border bg-gray-50 px-3 py-1">Type: {filters.record_type}</span>}
+                      {filters.time && <span className="text-xs rounded-full border bg-gray-50 px-3 py-1">Time: {filters.time}</span>}
+                      {sort !== DEFAULT_SORT && <span className="text-xs rounded-full border bg-gray-50 px-3 py-1">Sort: {sort}</span>}
                     </div>
                   )}
                 </div>
@@ -947,128 +1033,65 @@ export default function SubjectProfilePage() {
                   </div>
                 </div>
 
-                {/* Records list as clickable cards */}
+                {/* Records list */}
                 <div className="space-y-4">
                   {pageRows.map((r) => {
                     const title = recordTitle(r);
                     const stageNum = stageFromStatus(r.status);
-
-                    // Stage pill rules:
-                    // - Published (3): hidden
-                    // - Stages 4–6: shown
-                    // - Stage 7: show “Kept”
                     const showStagePill = stageNum >= 4 && stageNum <= 6;
                     const showKeptPill = stageNum === 7;
-
                     const comments = Number(commentCounts[r.id] ?? 0);
                     const dateRef = r.published_at || r.submitted_at || r.created_at;
-
                     const cred = credRecommendationText(r);
 
                     return (
-                      <div
-                        key={r.id}
-                        className="w-full rounded-2xl border bg-white p-4 hover:shadow-sm hover:border-gray-300 transition"
-                      >
-                        {/* Row 1: Title + "AI Credibility Recommendation:" on same line */}
+                      <div key={r.id} className="w-full rounded-2xl border bg-white p-4 hover:shadow-sm hover:border-gray-300 transition">
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                           <div className="min-w-0">
                             <div className="text-sm font-semibold text-gray-900 truncate">{title}</div>
                           </div>
-                    
                           <div className="flex items-center gap-2">
-                            <span className="text-[11px] text-gray-500 whitespace-nowrap">
-                              AI Credibility Recommendation:
-                            </span>
+                            <span className="text-[11px] text-gray-500 whitespace-nowrap">AI Credibility Recommendation:</span>
                             {credibilityBadge(cred)}
                           </div>
                         </div>
-                    
-                        {/* Row 2: Category/Stage/Date/Comments + actions on same line */}
                         <div className="mt-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                           <div className="flex flex-wrap items-center gap-2">
-                            {/* Category first (NOT a pill) */}
-                            {r.category ? <span className="text-xs text-gray-700">{r.category}</span> : null}
-                    
-                            {/* Stage pill AFTER category */}
-                            {showStagePill ? (
-                              <span className="text-xs rounded-full border bg-gray-50 px-2 py-1 text-gray-700">
-                                {prettyStage(r.status)}
-                              </span>
-                            ) : null}
-                    
-                            {showKeptPill ? (
-                              <span className="text-xs rounded-full border bg-gray-50 px-2 py-1 text-gray-700">
-                                Kept
-                              </span>
-                            ) : null}
-                    
-                            <span className="text-xs text-gray-500">
-                              {dateRef ? `📅 ${new Date(dateRef).toLocaleDateString()}` : ""}
-                            </span>
-                    
-                            <span className="text-xs text-gray-500">
-                              💬 {comments} {comments === 1 ? "comment" : "comments"}
-                            </span>
+                            {r.category && <span className="text-xs text-gray-700">{r.category}</span>}
+                            {showStagePill && <span className="text-xs rounded-full border bg-gray-50 px-2 py-1 text-gray-700">{prettyStage(r.status)}</span>}
+                            {showKeptPill && <span className="text-xs rounded-full border bg-gray-50 px-2 py-1 text-gray-700">Kept</span>}
+                            <span className="text-xs text-gray-500">{dateRef ? `📅 ${new Date(dateRef).toLocaleDateString()}` : ""}</span>
+                            <span className="text-xs text-gray-500">💬 {comments} {comments === 1 ? "comment" : "comments"}</span>
                           </div>
                         </div>
-                    
-                        {/* Description */}
                         {r.description ? (
-                          <div className="mt-3 text-sm text-gray-700 line-clamp-3 whitespace-pre-wrap">
-                            {r.description}
-                          </div>
+                          <div className="mt-3 text-sm text-gray-700 line-clamp-3 whitespace-pre-wrap">{r.description}</div>
                         ) : (
                           <div className="mt-3 text-sm text-gray-500 italic">No description provided.</div>
                         )}
-
-                        {/* Actions */}
                         <div className="mt-4 flex flex-wrap items-center gap-2">
+                          <button type="button" onClick={() => router.push(`/record/${r.id}`)} className="rounded-xl border px-3 py-1.5 text-xs hover:bg-gray-50">View record</button>
                           <button
                             type="button"
-                            onClick={() => router.push(`/record/${r.id}`)}
-                            className="rounded-xl border px-3 py-1.5 text-xs hover:bg-gray-50"
-                          >
-                            View record
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setExpandedRecordId((cur) => {
-                                const next = cur === r.id ? null : r.id;
-
-                                // if expanding, scroll to the inline detail
-                                if (next) {
-                                  setTimeout(() => {
-                                    document
-                                      .getElementById(`record-inline-${r.id}`)
-                                      ?.scrollIntoView({ behavior: "smooth", block: "start" });
-                                  }, 0);
-                                }
-
-                                return next;
-                              });
-                            }}
+                            onClick={() => setExpandedRecordId((cur) => {
+                              const next = cur === r.id ? null : r.id;
+                              if (next) setTimeout(() => document.getElementById(`record-inline-${r.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
+                              return next;
+                            })}
                             className="rounded-xl border px-3 py-1.5 text-xs hover:bg-gray-50"
                           >
                             {expandedRecordId === r.id ? "Collapse" : "Expand"}
                           </button>
                         </div>
-                    
-                        {/* Inline expanded detail */}
-                        {expandedRecordId === r.id ? (
+                        {expandedRecordId === r.id && (
                           <div id={`record-inline-${r.id}`} className="mt-4 border-t pt-4">
                             <RecordDetail recordId={r.id} />
                           </div>
-                        ) : null}
+                        )}
                       </div>
                     );
                   })}
-
-                  {filteredSorted.length === 0 && (
-                    <div className="text-sm text-gray-500">No matching records.</div>
-                  )}
+                  {filteredSorted.length === 0 && <div className="text-sm text-gray-500">No matching records.</div>}
                 </div>
 
                 {/* Pagination */}
@@ -1076,40 +1099,17 @@ export default function SubjectProfilePage() {
                   <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
                     <div className="flex items-center gap-2 text-sm text-gray-600">
                       <span>Rows:</span>
-                      <select
-                        value={pageSize}
-                        onChange={(e) => setPageSize(Number(e.target.value))}
-                        className="rounded-lg border px-2 py-1 bg-white"
-                      >
+                      <select value={pageSize} onChange={(e) => setPageSize(Number(e.target.value))} className="rounded-lg border px-2 py-1 bg-white">
                         <option value={5}>5</option>
                         <option value={10}>10</option>
                         <option value={25}>25</option>
                         <option value={50}>50</option>
                       </select>
                     </div>
-
                     <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setPage((p) => Math.max(1, p - 1))}
-                        disabled={page <= 1}
-                        className="rounded-lg border px-3 py-1.5 text-sm disabled:opacity-40 hover:bg-gray-50"
-                      >
-                        Prev
-                      </button>
-
-                      <div className="text-sm text-gray-700">
-                        Page <span className="font-semibold">{page}</span> / {totalPages}
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                        disabled={page >= totalPages}
-                        className="rounded-lg border px-3 py-1.5 text-sm disabled:opacity-40 hover:bg-gray-50"
-                      >
-                        Next
-                      </button>
+                      <button type="button" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1} className="rounded-lg border px-3 py-1.5 text-sm disabled:opacity-40 hover:bg-gray-50">Prev</button>
+                      <div className="text-sm text-gray-700">Page <span className="font-semibold">{page}</span> / {totalPages}</div>
+                      <button type="button" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages} className="rounded-lg border px-3 py-1.5 text-sm disabled:opacity-40 hover:bg-gray-50">Next</button>
                     </div>
                   </div>
                 )}
@@ -1124,17 +1124,13 @@ export default function SubjectProfilePage() {
                 ) : (
                   <div className="flex flex-wrap gap-3">
                     {(() => {
-                      // Count each badge label
                       const counts: Record<string, { icon: string; label: string; count: number }> = {};
                       subjectBadges.forEach((b: any) => {
                         if (!counts[b.label]) counts[b.label] = { icon: b.icon, label: b.label, count: 0 };
                         counts[b.label].count++;
                       });
                       return Object.values(counts).map((b) => (
-                        <div
-                          key={b.label}
-                          className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border bg-gray-50 text-sm font-medium text-gray-700"
-                        >
+                        <div key={b.label} className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border bg-gray-50 text-sm font-medium text-gray-700">
                           <span>{b.icon}</span>
                           <span>{b.label}</span>
                           <span className="text-gray-400 font-normal">{b.count}</span>
@@ -1149,60 +1145,33 @@ export default function SubjectProfilePage() {
             {activeTab === "social" && (
               <div>
                 <h4 className="font-medium text-gray-900 mb-3">Social Media</h4>
-
                 {socialLinks.length === 0 ? (
-                  <p className="text-gray-500 text-sm">
-                    {subject?.name || "This subject"} doesn’t have any social media on display.
-                  </p>
+                  <p className="text-gray-500 text-sm">{subject?.name || "This subject"} doesn't have any social media on display.</p>
                 ) : (
                   <div className="space-y-3">
                     {socialLinks.map((s) => {
                       const Icon = getPlatformIcon(s.platform);
                       const profileUrl = buildProfileUrl(s.platform, s.url);
-
                       return (
-                        <div
-                          key={s.id}
-                          className="flex items-center gap-4 rounded-xl border bg-white p-4"
-                        >
+                        <div key={s.id} className="flex items-center gap-4 rounded-xl border bg-white p-4">
                           <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
                             <Icon className="h-5 w-5 text-gray-700" />
                           </div>
-
                           <div className="min-w-0 flex-1">
-                            <div className="text-sm font-semibold text-gray-900 capitalize">
-                              {s.platform}
-                            </div>
-
+                            <div className="text-sm font-semibold text-gray-900 capitalize">{s.platform}</div>
                             <div className="flex items-center gap-2 mt-0.5">
                               {profileUrl ? (
-                                <a
-                                  href={profileUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-xs text-blue-600 hover:underline break-all"
-                                >
-                                  {s.url}
-                                </a>
+                                <a href={profileUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline break-all">{s.url}</a>
                               ) : (
                                 <div className="text-xs text-gray-600 break-all">{s.url}</div>
                               )}
-
                               <button
                                 type="button"
-                                onClick={async () => {
-                                  await navigator.clipboard.writeText(s.url);
-                                  setCopiedSocialId(String(s.id));
-                                  setTimeout(() => setCopiedSocialId(null), 1200);
-                                }}
-                                className="inline-flex items-center justify-center rounded-full border p-1.5 text-gray-600 hover:bg-gray-100 active:bg-gray-200"
+                                onClick={async () => { await navigator.clipboard.writeText(s.url); setCopiedSocialId(String(s.id)); setTimeout(() => setCopiedSocialId(null), 1200); }}
+                                className="inline-flex items-center justify-center rounded-full border p-1.5 text-gray-600 hover:bg-gray-100"
                                 title="Copy"
                               >
-                                {copiedSocialId === String(s.id) ? (
-                                  <Check className="h-3.5 w-3.5" />
-                                ) : (
-                                  <Copy className="h-3.5 w-3.5" />
-                                )}
+                                {copiedSocialId === String(s.id) ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
                               </button>
                             </div>
                           </div>
@@ -1217,54 +1186,27 @@ export default function SubjectProfilePage() {
         </div>
       </div>
 
+      {/* QR Modal */}
       {qrOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-          onClick={() => setQrOpen(false)}
-        >
-          <div
-            className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setQrOpen(false)}>
+          <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <div className="font-semibold text-gray-900">QR Code</div>
-              <button
-                type="button"
-                onClick={() => setQrOpen(false)}
-                className="rounded-full border p-1.5 text-gray-600 hover:bg-gray-100"
-                title="Close"
-              >
-                ✕
-              </button>
+              <button type="button" onClick={() => setQrOpen(false)} className="rounded-full border p-1.5 text-gray-600 hover:bg-gray-100" title="Close">✕</button>
             </div>
-
             <div className="relative flex items-center justify-center rounded-xl border bg-white p-6">
               <QRCodeCanvas value={qrUrl || ""} size={240} level="H" includeMargin={true} />
               <div className="absolute flex items-center justify-center">
                 <div className="relative w-[92px] h-[92px] rounded-md bg-white overflow-hidden ring-1 ring-gray-200">
-                  <Image
-                    src="/logo.png"
-                    alt="DNounce"
-                    fill
-                    priority
-                    className="object-cover scale-[1.25]"
-                  />
+                  <Image src="/logo.png" alt="DNounce" fill priority className="object-cover scale-[1.25]" />
                 </div>
               </div>
             </div>
-
             <div className="mt-4 text-xs text-gray-600 break-all">{pageUrl}</div>
-
             <div className="mt-3 flex justify-end">
               <button
                 type="button"
-                onClick={async () => {
-                  try {
-                    await navigator.clipboard.writeText(pageUrl);
-                  } catch (e) {
-                    console.error("Copy failed", e);
-                  }
-                }}
+                onClick={async () => { try { await navigator.clipboard.writeText(pageUrl); } catch (e) { console.error("Copy failed", e); } }}
                 className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
               >
                 <Copy className="h-4 w-4" />
