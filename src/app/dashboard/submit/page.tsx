@@ -445,7 +445,7 @@ export default function SubmitRecordPage() {
 
     const { data: created, error: insertError } = await supabase
       .from("contributors")
-      .insert({ user_id: user.id })
+      .insert({ user_id: user.id, auth_user_id: user.id })
       .select("id")
       .single();
 
@@ -650,7 +650,7 @@ export default function SubmitRecordPage() {
           <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 leading-snug">Submit a Record</h1>
         </div>
         <p className="text-sm sm:text-base text-gray-500 max-w-md leading-relaxed">
-          Share your verified experience or information to help maintain transparency and community accountability.
+          Share your experience and help build a more transparent, trustworthy community.
         </p>
       </div>
 

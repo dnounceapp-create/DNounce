@@ -33,6 +33,7 @@ import {
   MonitorUp,
   Info,
   LogOut,
+  Trash2,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
@@ -43,6 +44,7 @@ interface NavItem {
   icon: any;
   special?: boolean;
   special_profile?: boolean;
+  special_delete?: boolean;
 }
 
 const MAIN_NAV: NavItem[] = [
@@ -859,9 +861,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 "bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-sm";
               const normalClasses = "text-gray-700 hover:bg-gray-100";
               const logoutClasses = "text-red-600 hover:bg-red-50";
+              const deleteClasses = "text-gray-300 hover:text-gray-500 text-xs opacity-50 hover:opacity-70";
 
               const classes = item.special
                 ? `${baseClasses} ${logoutClasses}`
+                : item.special_delete
+                ? `flex items-center gap-3 px-3 py-1.5 rounded-md text-xs font-normal transition ${deleteClasses}`
                 : `${baseClasses} ${active ? activeClasses : normalClasses}`;
 
               const resolvedHref = item.special_profile && subjectId
@@ -879,6 +884,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               );
             })}
           </div>
+          {inSettings && (
+            <div className="mt-auto pt-6">
+              <Link
+                href="/dashboard/settings/account#delete"
+                className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 transition"
+              >
+                <Trash2 className="w-3 h-3" />
+                Delete Account
+              </Link>
+            </div>
+          )}
         </aside>
 
         <main className="flex-1 overflow-y-auto relative min-h-0">

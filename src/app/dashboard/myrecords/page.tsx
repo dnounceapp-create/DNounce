@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle, AlertTriangle, CircleAlert } from "lucide-react";
+import { CheckCircle, AlertTriangle, CircleAlert, Star } from "lucide-react";
 import { useMemo, useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { X } from "lucide-react";
@@ -152,6 +152,21 @@ export default function MyRecordsPage() {
   const [disputeToast, setDisputeToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
   const [disputeSuccessId, setDisputeSuccessId] = useState<string | null>(null);
 
+  const [showLifecycleSurvey, setShowLifecycleSurvey] = useState(false);
+  const [lifecycleSurveySubmitted, setLifecycleSurveySubmitted] = useState(false);
+  const [lifecycleSurveySubmitting, setLifecycleSurveySubmitting] = useState(false);
+  const [ls1Rating, setLs1Rating] = useState(0);
+  const [ls1Text, setLs1Text] = useState("");
+  const [ls2Rating, setLs2Rating] = useState(0);
+  const [ls2Text, setLs2Text] = useState("");
+  const [ls3Rating, setLs3Rating] = useState(0);
+  const [ls3Text, setLs3Text] = useState("");
+  const [ls4Rating, setLs4Rating] = useState(0);
+  const [ls4Text, setLs4Text] = useState("");
+  const [lsMissingText, setLsMissingText] = useState("");
+  const [lsEmailConsent, setLsEmailConsent] = useState(false);
+  const [lsEmail, setLsEmail] = useState("");
+
   useEffect(() => {
     async function fetchData() {
       try {
@@ -215,7 +230,45 @@ export default function MyRecordsPage() {
         setLoadingData(false);
       }
     }
+
+    async function checkLifecycleSurvey() {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user) return;
+        const userId = session.user.id;
+
+        // Check if already completed
+        const { data: existing } = await supabase
+          .from("survey_completions")
+          .select("id")
+          .eq("user_id", userId)
+          .eq("survey_type", "post_lifecycle")
+          .maybeSingle();
+
+        if (existing) return;
+
+        // Check if user has completed all 4 roles on any record
+        const [contributorRes, subjectRes, voterRes, citizenRes] = await Promise.all([
+          supabase.from("contributors").select("id").eq("auth_user_id", userId).limit(1),
+          supabase.from("subjects").select("subject_uuid").eq("owner_auth_user_id", userId).limit(1),
+          supabase.from("record_votes").select("id").eq("user_id", userId).limit(1),
+          supabase.from("record_community_statements").select("id").eq("author_user_id", userId).limit(1),
+        ]);
+
+        const hasAllRoles =
+          (contributorRes.data?.length ?? 0) > 0 &&
+          (subjectRes.data?.length ?? 0) > 0 &&
+          (voterRes.data?.length ?? 0) > 0 &&
+          (citizenRes.data?.length ?? 0) > 0;
+
+        if (hasAllRoles) setShowLifecycleSurvey(true);
+      } catch (e) {
+        console.error("Lifecycle survey check failed:", e);
+      }
+    }
+
     fetchData();
+    checkLifecycleSurvey();
   }, []);
 
   const hasActiveFilters = Object.keys(filters).length > 0;
@@ -382,6 +435,44 @@ export default function MyRecordsPage() {
       setTimeout(() => setDisputeToast(null), 4000);
     }
   };
+
+
+  async function submitLifecycleSurvey() {
+    setLifecycleSurveySubmitting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id ?? null;
+
+      await supabase.from("survey_responses").insert({
+        user_id: userId,
+        survey_type: "post_lifecycle",
+        record_id: null,
+        responses: {
+          q1_rating: ls1Rating, q1_text: ls1Text,
+          q2_rating: ls2Rating, q2_text: ls2Text,
+          q3_rating: ls3Rating, q3_text: ls3Text,
+          q4_rating: ls4Rating, q4_text: ls4Text,
+          missing_text: lsMissingText,
+        },
+        email_consent: lsEmailConsent,
+        email: lsEmailConsent ? lsEmail : null,
+      });
+
+      if (userId) {
+        await supabase.from("survey_completions").insert({
+          user_id: userId,
+          survey_type: "post_lifecycle",
+        });
+      }
+
+      setLifecycleSurveySubmitted(true);
+    } catch (e) {
+      console.error("Lifecycle survey submit failed:", e);
+      setLifecycleSurveySubmitted(true);
+    } finally {
+      setLifecycleSurveySubmitting(false);
+    }
+  }
 
   // ---- UI -------------------------------------------------------------------
   return (
@@ -776,6 +867,116 @@ export default function MyRecordsPage() {
             : "bg-red-50 text-red-800 border border-red-200"
         }`}>
           {disputeToast.msg}
+        </div>
+      )}
+
+      {/* Survey #2 Modal */}
+      {showLifecycleSurvey && !lifecycleSurveySubmitted && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setShowLifecycleSurvey(false)}>
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <div className="text-base font-semibold text-gray-900">How was your DNounce experience?</div>
+                <div className="text-xs text-gray-500">You've completed the full process — we'd love your feedback</div>
+              </div>
+              <button type="button" onClick={() => setShowLifecycleSurvey(false)} className="rounded-full border p-1.5 text-gray-500 hover:bg-gray-100">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-5">
+              {/* Q1 */}
+              <div>
+                <div className="text-sm font-medium text-gray-900 mb-1">How fair was the process?</div>
+                <div className="flex gap-1 mb-1">
+                  {[1,2,3,4,5].map((n) => (
+                    <button key={n} type="button" onClick={() => setLs1Rating(n)}>
+                      <Star className={`w-6 h-6 ${n <= ls1Rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`} />
+                    </button>
+                  ))}
+                </div>
+                <textarea value={ls1Text} onChange={(e) => setLs1Text(e.target.value)} rows={2} placeholder="Optional comment…" className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-400" />
+              </div>
+
+              {/* Q2 */}
+              <div>
+                <div className="text-sm font-medium text-gray-900 mb-1">How clear were the instructions?</div>
+                <div className="flex gap-1 mb-1">
+                  {[1,2,3,4,5].map((n) => (
+                    <button key={n} type="button" onClick={() => setLs2Rating(n)}>
+                      <Star className={`w-6 h-6 ${n <= ls2Rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`} />
+                    </button>
+                  ))}
+                </div>
+                <textarea value={ls2Text} onChange={(e) => setLs2Text(e.target.value)} rows={2} placeholder="Optional comment…" className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-400" />
+              </div>
+
+              {/* Q3 */}
+              <div>
+                <div className="text-sm font-medium text-gray-900 mb-1">Would you recommend DNounce?</div>
+                <div className="flex gap-1 mb-1">
+                  {[1,2,3,4,5].map((n) => (
+                    <button key={n} type="button" onClick={() => setLs3Rating(n)}>
+                      <Star className={`w-6 h-6 ${n <= ls3Rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`} />
+                    </button>
+                  ))}
+                </div>
+                <textarea value={ls3Text} onChange={(e) => setLs3Text(e.target.value)} rows={2} placeholder="Optional comment…" className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-400" />
+              </div>
+
+              {/* Q4 */}
+              <div>
+                <div className="text-sm font-medium text-gray-900 mb-1">Do you think DNounce is a good idea?</div>
+                <div className="flex gap-1 mb-1">
+                  {[1,2,3,4,5].map((n) => (
+                    <button key={n} type="button" onClick={() => setLs4Rating(n)}>
+                      <Star className={`w-6 h-6 ${n <= ls4Rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`} />
+                    </button>
+                  ))}
+                </div>
+                <textarea value={ls4Text} onChange={(e) => setLs4Text(e.target.value)} rows={2} placeholder="Optional comment…" className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-400" />
+              </div>
+
+              {/* Q5 */}
+              <div>
+                <div className="text-sm font-medium text-gray-900 mb-1">How can we improve?</div>
+                <textarea value={lsMissingText} onChange={(e) => setLsMissingText(e.target.value)} rows={3} placeholder="Your thoughts…" className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-400" />
+              </div>
+
+              {/* Email consent */}
+              <div>
+                <div className="text-sm font-medium text-gray-900 mb-2">Can we add you to our mailing list?</div>
+                <div className="flex gap-3">
+                  <button type="button" onClick={() => setLsEmailConsent(true)} className={`flex-1 rounded-xl border px-3 py-2 text-sm font-semibold ${lsEmailConsent ? "bg-black text-white border-black" : "bg-white text-gray-700 hover:bg-gray-50"}`}>Yes</button>
+                  <button type="button" onClick={() => { setLsEmailConsent(false); setLsEmail(""); }} className={`flex-1 rounded-xl border px-3 py-2 text-sm font-semibold ${!lsEmailConsent ? "bg-black text-white border-black" : "bg-white text-gray-700 hover:bg-gray-50"}`}>No</button>
+                </div>
+                {lsEmailConsent && (
+                  <input type="email" value={lsEmail} onChange={(e) => setLsEmail(e.target.value)} placeholder="your@email.com" className="mt-2 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-400" />
+                )}
+              </div>
+            </div>
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button type="button" onClick={() => setShowLifecycleSurvey(false)} className="rounded-xl border px-4 py-2 text-sm text-gray-600 hover:bg-gray-50">Skip</button>
+              <button type="button" onClick={submitLifecycleSurvey} disabled={lifecycleSurveySubmitting} className="rounded-xl bg-black px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
+                {lifecycleSurveySubmitting ? "Submitting…" : "Submit"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Survey #2 Thank you */}
+      {showLifecycleSurvey && lifecycleSurveySubmitted && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl text-center">
+            <div className="mx-auto inline-flex h-12 w-12 items-center justify-center rounded-full bg-green-50 border border-green-200 mb-3">
+              <CheckCircle className="h-6 w-6 text-green-600" />
+            </div>
+            <div className="font-semibold text-gray-900">Thanks for your feedback!</div>
+            <div className="text-sm text-gray-500 mt-1">It helps us make DNounce better.</div>
+            <button type="button" onClick={() => { setShowLifecycleSurvey(false); setLifecycleSurveySubmitted(false); }} className="mt-4 rounded-xl bg-black px-5 py-2 text-sm font-semibold text-white">Done</button>
+          </div>
         </div>
       )}
     </div>

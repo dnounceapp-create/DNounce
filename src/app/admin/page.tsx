@@ -64,9 +64,15 @@ export default function AdminDashboard() {
       supabase.from("admin_audit_log").select("*", { count: "exact", head: true }),
       supabase.from("voter_quality_badges").select("*", { count: "exact", head: true }).eq("is_low_quality", true),
       supabase.from("voter_quality_badges").select("*", { count: "exact", head: true }).eq("is_convicted", true),
+      // NEW
+      supabase.from("subject_claims").select("*", { count: "exact", head: true }),
+      supabase.from("subject_claims").select("*", { count: "exact", head: true }).eq("status", "pending"),
+      supabase.from("survey_responses").select("*", { count: "exact", head: true }),
+      supabase.from("survey_completions").select("*", { count: "exact", head: true }),
+      supabase.from("deleted_accounts").select("*", { count: "exact", head: true }),
     ]);
 
-    const keys = ["r_total", "r_published", "r_debate", "r_voting", "r_deletion", "r_ai", "r_decision", "u_total", "u_banned", "u_admin", "subjects", "contributors", "v_total", "v_keep", "v_delete", "reactions", "debate_msgs", "comm_stmts", "vote_replies", "comm_replies", "pinned", "follows", "notif_total", "notif_unread", "badges", "t_total", "t_open", "rep_total", "rep_open", "active_bans", "audit_total", "v_flagged", "v_convicted"];
+    const keys = ["r_total", "r_published", "r_debate", "r_voting", "r_deletion", "r_ai", "r_decision", "u_total", "u_banned", "u_admin", "subjects", "contributors", "v_total", "v_keep", "v_delete", "reactions", "debate_msgs", "comm_stmts", "vote_replies", "comm_replies", "pinned", "follows", "notif_total", "notif_unread", "badges", "t_total", "t_open", "rep_total", "rep_open", "active_bans", "audit_total", "v_flagged", "v_convicted", "claims_total", "claims_pending", "survey_responses", "survey_completions", "deleted_accounts"];
     const c: Record<string, number> = {};
     keys.forEach((k, i) => { c[k] = results[i].count ?? 0; });
     setCounts(c);
@@ -92,6 +98,7 @@ export default function AdminDashboard() {
   if (counts.r_debate > 0) alerts.push({ msg: `${counts.r_debate} record${counts.r_debate > 1 ? "s" : ""} in active debate`, href: "/admin/records", color: "orange" });
   if (counts.r_voting > 0) alerts.push({ msg: `${counts.r_voting} record${counts.r_voting > 1 ? "s" : ""} in active voting`, href: "/admin/records", color: "blue" });
   if (counts.v_flagged > 0) alerts.push({ msg: `${counts.v_flagged} flagged vote${counts.v_flagged > 1 ? "s" : ""} flagged as low quality`, href: "/admin/records", color: "yellow" });
+  if (counts.claims_pending > 0) alerts.push({ msg: `${counts.claims_pending} pending profile claim${counts.claims_pending > 1 ? "s" : ""} need review`, href: "/admin/claims", color: "orange" });
 
   return (
     <div className="space-y-8">
@@ -126,12 +133,13 @@ export default function AdminDashboard() {
         </div>
         <div>
           <h2 className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-3">Users & Accounts</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             <StatCard label="Total Users" value={counts.u_total} href="/admin/users" color="border-gray-700" />
             <StatCard label="Active Bans" value={counts.active_bans} href="/admin/users" color="border-red-900" />
             <StatCard label="Admins" value={counts.u_admin} href="/admin/users" color="border-purple-900" />
             <StatCard label="Subjects" value={counts.subjects} href="/admin/users" color="border-gray-700" />
             <StatCard label="Contributors" value={counts.contributors} href="/admin/users" color="border-gray-700" />
+            <StatCard label="Deleted Accounts" value={counts.deleted_accounts} href="/admin/users" color="border-red-900" />
           </div>
         </div>
         <div>
@@ -156,6 +164,15 @@ export default function AdminDashboard() {
             <StatCard label="Pinned Records" value={counts.pinned} href="/admin/records" />
             <StatCard label="Following Records" value={counts.follows} href="/admin/records" />
             <StatCard label="Audit Log Entries" value={counts.audit_total} href="/admin/audit" />
+          </div>
+        </div>
+        <div>
+          <h2 className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-3">Claims & Surveys</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <StatCard label="Total Claims" value={counts.claims_total} href="/admin/claims" />
+            <StatCard label="Pending Claims" value={counts.claims_pending} href="/admin/claims" color={counts.claims_pending > 0 ? "border-orange-900" : "border-gray-700"} />
+            <StatCard label="Survey Responses" value={counts.survey_responses} href="/admin/surveys" />
+            <StatCard label="Survey Completions" value={counts.survey_completions} href="/admin/surveys" />
           </div>
         </div>
         <div>

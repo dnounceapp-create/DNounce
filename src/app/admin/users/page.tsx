@@ -9,7 +9,9 @@ const LEVEL_LABELS: Record<string, string> = {"":"Regular User", support_agent:"
 const LEVEL_COLORS: Record<string, string> = {"":"bg-gray-800 text-gray-400 border-gray-700", support_agent:"bg-blue-900 text-blue-300 border-blue-700", moderator:"bg-purple-900 text-purple-300 border-purple-700", super_admin:"bg-red-900 text-red-300 border-red-700"};
 
 export default function AdminUsersPage() {
+  const [tab, setTab] = useState<"active" | "deleted">("active");
   const [users, setUsers] = useState<any[]>([]);
+  const [deletedAccounts, setDeletedAccounts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterBanned, setFilterBanned] = useState("all");
@@ -35,14 +37,15 @@ export default function AdminUsersPage() {
 
   async function load() {
     setLoading(true);
-    const [usersRes, acctsRes, adminRolesRes, scoresRes, bansRes, socialRes, prefsRes] = await Promise.all([
-      supabase.from("users").select("id,auth_user_id,is_banned,admin,created_at,onboarding_complete,personal_category,subject_id,contributor_id,updated_at").order("created_at", { ascending: false }).limit(500),
+    const [usersRes, acctsRes, adminRolesRes, scoresRes, bansRes, socialRes, prefsRes, deletedRes] = await Promise.all([
+      supabase.from("users").select("id,auth_user_id,is_banned,admin,created_at,onboarding_complete,personal_category,subject_id,contributor_id,updated_at,how_found").order("created_at", { ascending: false }).limit(500),
       supabase.from("user_accountdetails").select("user_id,first_name,last_name,job_title,organization,location,nickname,phone,email,avatar_url,created_at,updated_at"),
       supabase.from("admin_roles").select("user_id,role,created_at,assigned_by").eq("is_active", true),
       supabase.from("user_scores").select("user_id,subject_score,contributor_score,voter_score,citizen_score,overall_score,updated_at"),
       supabase.from("user_bans").select("user_id,id,reason,is_permanent,expires_at,created_at,is_active,revoked_at,banned_by").eq("is_active", true),
       supabase.from("user_social_links").select("user_id,platform,label,url,id"),
       supabase.from("user_preferences").select("user_id,language,theme,font_size,reduce_motion,notif_email,notif_push,updated_at"),
+      supabase.from("deleted_accounts").select("*").order("deleted_at", { ascending: false }).limit(500),
     ]);
     const acctMap: Record<string, any> = {}; (acctsRes.data ?? []).forEach((a: any) => { acctMap[a.user_id] = a; });
     const adminMap: Record<string, string> = {}; (adminRolesRes.data ?? []).forEach((r: any) => { adminMap[r.user_id] = r.role; });
@@ -54,7 +57,9 @@ export default function AdminUsersPage() {
       const a = acctMap[u.auth_user_id] ?? {}; const s = scoreMap[u.auth_user_id] ?? {};
       return { ...u, ...a, admin_level: adminMap[u.auth_user_id] ?? "", ...s, active_ban: banMap[u.auth_user_id] ?? null, social_links: socialMap[u.auth_user_id] ?? [], prefs: prefsMap[u.auth_user_id] ?? null };
     });
-    setUsers(merged); setLoading(false);
+    setUsers(merged);
+    setDeletedAccounts(deletedRes.data ?? []);
+    setLoading(false);
   }
 
   async function saveEdit(updated: Record<string, any>, note: string, type: string) {
@@ -69,14 +74,12 @@ export default function AdminUsersPage() {
       }).eq("user_id", updated.auth_user_id);
       if (error) throw error;
     }
-
     if (type === "account") {
       await supabase.from("users").update({
         personal_category: updated.personal_category || null,
         onboarding_complete: updated.onboarding_complete === true || updated.onboarding_complete === "true",
       }).eq("auth_user_id", updated.auth_user_id);
     }
-
     if (type === "scores") {
       const { error } = await supabase.from("user_scores").upsert({
         user_id: updated.auth_user_id,
@@ -89,7 +92,6 @@ export default function AdminUsersPage() {
       });
       if (error) throw error;
     }
-
     if (type === "preferences") {
       await supabase.from("user_preferences").upsert({
         user_id: updated.auth_user_id,
@@ -100,17 +102,14 @@ export default function AdminUsersPage() {
         updated_at: new Date().toISOString(),
       });
     }
-
     if (type === "ban") {
       const expiresAt = (updated.is_permanent === true || updated.is_permanent === "true") ? null : updated.expires_at ? new Date(updated.expires_at).toISOString() : null;
       if (!updated.reason?.trim()) throw new Error("Ban reason is required");
-      // Revoke any existing ban
       if (selected?.active_ban) await supabase.from("user_bans").update({ is_active: false, revoked_at: new Date().toISOString() }).eq("user_id", updated.auth_user_id).eq("is_active", true);
       const { error } = await supabase.from("user_bans").insert({ user_id: updated.auth_user_id, banned_by: session!.user.id, reason: updated.reason, is_permanent: updated.is_permanent === true || updated.is_permanent === "true", expires_at: expiresAt });
       if (error) throw error;
       await supabase.from("users").update({ is_banned: true }).eq("auth_user_id", updated.auth_user_id);
     }
-
     if (type === "edit_ban") {
       if (!updated.active_ban_id) throw new Error("No active ban found");
       const { error } = await supabase.from("user_bans").update({
@@ -120,12 +119,10 @@ export default function AdminUsersPage() {
       }).eq("id", updated.active_ban_id);
       if (error) throw error;
     }
-
     if (type === "unban") {
       await supabase.from("user_bans").update({ is_active: false, revoked_at: new Date().toISOString() }).eq("user_id", updated.auth_user_id).eq("is_active", true);
       await supabase.from("users").update({ is_banned: false }).eq("auth_user_id", updated.auth_user_id);
     }
-
     if (type === "admin_role") {
       if (adminLevel !== "super_admin") throw new Error("Only Super Admins can change admin roles");
       if (updated.auth_user_id === myUserId) throw new Error("You cannot change your own admin role");
@@ -134,7 +131,6 @@ export default function AdminUsersPage() {
       if (newRole) await supabase.from("admin_roles").insert({ user_id: updated.auth_user_id, role: newRole, assigned_by: session!.user.id });
       await supabase.from("users").update({ admin: !!newRole }).eq("auth_user_id", updated.auth_user_id);
     }
-
     await supabase.from("admin_audit_log").insert({ admin_user_id: session!.user.id, admin_level: adminLevel, action: `edit_user_${type}`, target_type: "users", target_id: updated.auth_user_id, new_value: { ...updated, note } });
     showToast("success", "User updated");
     await load();
@@ -146,15 +142,20 @@ export default function AdminUsersPage() {
   const filtered = users.filter(u => {
     const q = search.toLowerCase();
     const name = `${u.first_name ?? ""} ${u.last_name ?? ""}`.toLowerCase();
-    const m = !search || name.includes(q) || u.auth_user_id?.includes(q) || u.email?.toLowerCase().includes(q) || u.job_title?.toLowerCase().includes(q) || u.organization?.toLowerCase().includes(q) || u.location?.toLowerCase().includes(q);
+    const m = !search || name.includes(q) || u.auth_user_id?.includes(q) || u.email?.toLowerCase().includes(q) || u.job_title?.toLowerCase().includes(q) || u.organization?.toLowerCase().includes(q) || u.location?.toLowerCase().includes(q) || u.how_found?.toLowerCase().includes(q);
     const bMatch = filterBanned === "all" || (filterBanned === "banned" ? u.is_banned : !u.is_banned);
     const lMatch = filterLevel === "all" || String(u.admin_level) === filterLevel;
     return m && bMatch && lMatch;
   });
 
-  const csvData = filtered.map(u => ({ auth_user_id: u.auth_user_id, first_name: u.first_name ?? "", last_name: u.last_name ?? "", nickname: u.nickname ?? "", email: u.email ?? "", phone: u.phone ?? "", job_title: u.job_title ?? "", organization: u.organization ?? "", location: u.location ?? "", personal_category: u.personal_category ?? "", is_banned: u.is_banned, admin: u.admin, admin_level: u.admin_level, onboarding_complete: u.onboarding_complete, subject_score: u.subject_score ?? "", contributor_score: u.contributor_score ?? "", voter_score: u.voter_score ?? "", citizen_score: u.citizen_score ?? "", overall_score: u.overall_score ?? "", scores_updated: u.updated_at ?? "", joined: u.created_at ?? "" }));
+  const filteredDeleted = deletedAccounts.filter(d => {
+    const q = search.toLowerCase();
+    return !search || d.auth_user_id?.includes(q) || d.reason?.toLowerCase().includes(q);
+  });
 
-  // Field configs
+  const csvData = filtered.map(u => ({ auth_user_id: u.auth_user_id, first_name: u.first_name ?? "", last_name: u.last_name ?? "", nickname: u.nickname ?? "", email: u.email ?? "", phone: u.phone ?? "", job_title: u.job_title ?? "", organization: u.organization ?? "", location: u.location ?? "", personal_category: u.personal_category ?? "", how_found: u.how_found ?? "", is_banned: u.is_banned, admin: u.admin, admin_level: u.admin_level, onboarding_complete: u.onboarding_complete, subject_score: u.subject_score ?? "", contributor_score: u.contributor_score ?? "", voter_score: u.voter_score ?? "", citizen_score: u.citizen_score ?? "", overall_score: u.overall_score ?? "", scores_updated: u.updated_at ?? "", joined: u.created_at ?? "" }));
+  const csvDeletedData = filteredDeleted.map(d => ({ id: d.id, auth_user_id: d.auth_user_id ?? "", reason: d.reason ?? "", deleted_at: d.deleted_at }));
+
   const profileFields: SmartField[] = [
     { key: "auth_user_id", label: "User ID", type: "readonly" },
     { key: "first_name", label: "First Name", type: "text", required: true, section: "Name" },
@@ -167,12 +168,12 @@ export default function AdminUsersPage() {
   ];
   const accountFields: SmartField[] = [
     { key: "auth_user_id", label: "User ID", type: "readonly" },
-    { key: "personal_category", label: "Personal Category", type: "text", help: "The user's selected personal category during onboarding." },
-    { key: "onboarding_complete", label: "Onboarding Complete", type: "boolean", required: true, help: "If No, the user will see the onboarding flow on next login." },
+    { key: "personal_category", label: "Personal Category", type: "text" },
+    { key: "onboarding_complete", label: "Onboarding Complete", type: "boolean", required: true },
   ];
   const scoreFields: SmartField[] = [
     { key: "auth_user_id", label: "User ID", type: "readonly" },
-    { key: "_warn", type: "warning", label: "", help: "Manually overriding scores bypasses the automatic scoring engine. Only do this to correct an error. Document your reason carefully." },
+    { key: "_warn", type: "warning", label: "", help: "Manually overriding scores bypasses the automatic scoring engine. Only do this to correct an error." },
     { key: "subject_score", label: "Subject Score (0–100)", type: "number", section: "Scores", validate: v => v !== "" && v !== null && (Number(v) < 0 || Number(v) > 100) ? "Must be 0–100" : null },
     { key: "contributor_score", label: "Contributor Score (0–100)", type: "number", section: "Scores", validate: v => v !== "" && v !== null && (Number(v) < 0 || Number(v) > 100) ? "Must be 0–100" : null },
     { key: "voter_score", label: "Voter Score (0–100)", type: "number", section: "Scores", validate: v => v !== "" && v !== null && (Number(v) < 0 || Number(v) > 100) ? "Must be 0–100" : null },
@@ -190,9 +191,9 @@ export default function AdminUsersPage() {
   ];
   const banFields: SmartField[] = [
     { key: "auth_user_id", label: "User ID", type: "readonly" },
-    { key: "_warn", type: "warning", label: "", help: "Banning this user prevents them from logging in and using DNounce. They will be notified." },
-    { key: "reason", label: "Reason for Ban", type: "textarea", required: true, help: "Be specific. This is logged and visible to all admins and may be referenced if the user appeals." },
-    { key: "is_permanent", label: "Permanent Ban?", type: "boolean", required: true, help: "Permanent bans do not expire. Only Super Admins should issue permanent bans." },
+    { key: "_warn", type: "warning", label: "", help: "Banning this user prevents them from logging in and using DNounce." },
+    { key: "reason", label: "Reason for Ban", type: "textarea", required: true },
+    { key: "is_permanent", label: "Permanent Ban?", type: "boolean", required: true },
     { key: "expires_at", label: "Expires At (if temporary)", type: "datetime-local", showIf: f => f.is_permanent === false || f.is_permanent === "false", validate: (v, f) => !v && (f.is_permanent === false || f.is_permanent === "false") ? "Required for temporary bans" : null },
   ];
   const editBanFields: SmartField[] = [
@@ -205,52 +206,107 @@ export default function AdminUsersPage() {
   const adminRoleFields: SmartField[] = [
     { key: "auth_user_id", label: "User ID", type: "readonly" },
     { key: "_warn", type: "warning", label: "", help: "Admin role changes take effect immediately. Only Super Admins can perform this action." },
-    { key: "new_admin_role", label: "New Admin Role", type: "select", required: false, options: [{ value: "", label: "No admin access (regular user)" }, { value: "support_agent", label: "Support Agent — manage tickets and records" }, { value: "moderator", label: "Moderator — + ban users, manage badges" }, { value: "super_admin", label: "Super Admin — full access, manage other admins" }] },
+    { key: "new_admin_role", label: "New Admin Role", type: "select", required: false, options: [{ value: "", label: "No admin access (regular user)" }, { value: "support_agent", label: "Support Agent" }, { value: "moderator", label: "Moderator" }, { value: "super_admin", label: "Super Admin" }] },
   ];
 
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <div><h1 className="text-white text-2xl font-bold">Users</h1><p className="text-gray-400 text-sm mt-1">{filtered.length} of {users.length} users — click any row to view full profile and make changes</p></div>
-        <div className="flex gap-2"><CSVButton data={csvData} filename="dnounce-users" /><button onClick={load} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-800 text-gray-300 hover:text-white text-sm transition"><RefreshCw className="w-4 h-4" /> Refresh</button></div>
+        <div>
+          <h1 className="text-white text-2xl font-bold">Users</h1>
+          <p className="text-gray-400 text-sm mt-1">
+            {tab === "active" ? `${filtered.length} of ${users.length} users — click any row to view full profile and make changes` : `${filteredDeleted.length} deleted accounts`}
+          </p>
+        </div>
+        <div className="flex gap-2">
+          {tab === "active" ? <CSVButton data={csvData} filename="dnounce-users" /> : <CSVButton data={csvDeletedData} filename="dnounce-deleted-accounts" />}
+          <button onClick={load} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-800 text-gray-300 hover:text-white text-sm transition"><RefreshCw className="w-4 h-4" /> Refresh</button>
+        </div>
       </div>
+
+      {/* Tabs */}
+      <div className="flex gap-1 bg-gray-900 border border-gray-800 rounded-xl p-1 w-fit">
+        <button onClick={() => { setTab("active"); setSearch(""); setSelected(null); }} className={`px-4 py-2 rounded-lg text-sm font-medium transition ${tab === "active" ? "bg-white text-gray-900" : "text-gray-400 hover:text-white"}`}>
+          Active Users ({users.length})
+        </button>
+        <button onClick={() => { setTab("deleted"); setSearch(""); setSelected(null); }} className={`px-4 py-2 rounded-lg text-sm font-medium transition ${tab === "deleted" ? "bg-white text-gray-900" : "text-gray-400 hover:text-white"}`}>
+          Deleted Accounts ({deletedAccounts.length})
+        </button>
+      </div>
+
+      {/* Filters */}
       <div className="flex flex-wrap gap-3">
-        <div className="relative flex-1 min-w-[220px]"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" /><input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search name, email, user ID, job title, organization…" className="w-full bg-gray-900 border border-gray-700 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder-gray-500 outline-none focus:border-gray-500" /></div>
-        <select value={filterBanned} onChange={e => setFilterBanned(e.target.value)} className="bg-gray-900 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white outline-none"><option value="all">All statuses</option><option value="active">Active only</option><option value="banned">Banned only</option></select>
-        <select value={filterLevel} onChange={e => setFilterLevel(e.target.value)} className="bg-gray-900 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white outline-none"><option value="all">All roles</option><option value="">Regular Users</option><option value="support_agent">Support Agents</option><option value="moderator">Moderators</option><option value="super_admin">Super Admins</option></select>
+        <div className="relative flex-1 min-w-[220px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder={tab === "active" ? "Search name, email, user ID, job title, organization, how found…" : "Search user ID, reason…"} className="w-full bg-gray-900 border border-gray-700 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder-gray-500 outline-none focus:border-gray-500" />
+        </div>
+        {tab === "active" && <>
+          <select value={filterBanned} onChange={e => setFilterBanned(e.target.value)} className="bg-gray-900 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white outline-none"><option value="all">All statuses</option><option value="active">Active only</option><option value="banned">Banned only</option></select>
+          <select value={filterLevel} onChange={e => setFilterLevel(e.target.value)} className="bg-gray-900 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white outline-none"><option value="all">All roles</option><option value="">Regular Users</option><option value="support_agent">Support Agents</option><option value="moderator">Moderators</option><option value="super_admin">Super Admins</option></select>
+        </>}
       </div>
 
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
-        {loading ? <div className="p-8 text-center text-gray-500 text-sm animate-pulse">Loading users…</div> : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead><tr className="border-b border-gray-800 bg-gray-950">{["Name", "User ID", "Email", "Job Title", "Organization", "Admin Role", "Status", "Subject Score", "Overall Score", "Joined", ""].map(h => <th key={h} className="text-left text-gray-500 font-medium px-4 py-3 whitespace-nowrap">{h}</th>)}</tr></thead>
-              <tbody className="divide-y divide-gray-800/50">
-                {filtered.map(u => {
-                  const name = `${u.first_name ?? ""} ${u.last_name ?? ""}`.trim() || "—";
-                  return (
-                    <tr key={u.id} onClick={() => { setSelected(u); setShowHistory(false); }} className={`hover:bg-gray-800/50 transition cursor-pointer ${selected?.auth_user_id === u.auth_user_id ? "bg-gray-800/70" : ""}`}>
-                      <td className="px-4 py-3"><div className="text-white font-medium text-sm">{name}</div>{u.nickname && <div className="text-gray-500 text-[11px]">@{u.nickname}</div>}</td>
-                      <td className="px-4 py-3"><CopyID id={u.auth_user_id} /></td>
-                      <td className="px-4 py-3 text-gray-400">{u.email || "—"}</td>
-                      <td className="px-4 py-3 text-gray-300">{u.job_title || "—"}</td>
-                      <td className="px-4 py-3 text-gray-400">{u.organization || "—"}</td>
-                      <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold border ${LEVEL_COLORS[u.admin_level ?? ""]}`}>{LEVEL_LABELS[u.admin_level ?? ""]}</span></td>
-                      <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold border ${u.is_banned ? "bg-red-900 text-red-300 border-red-700" : "bg-green-900 text-green-300 border-green-700"}`}>{u.is_banned ? "Banned" : "Active"}</span></td>
-                      <td className="px-4 py-3 text-center text-white font-medium">{u.subject_score ?? "—"}</td>
-                      <td className="px-4 py-3 text-center text-white font-bold">{u.overall_score ?? "—"}</td>
-                      <td className="px-4 py-3 text-gray-400 whitespace-nowrap">{fmtDate(u.created_at)}</td>
-                      <td className="px-4 py-3"><ChevronRight className="w-4 h-4 text-gray-600" /></td>
+      {/* Active Users Table */}
+      {tab === "active" && (
+        <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
+          {loading ? <div className="p-8 text-center text-gray-500 text-sm animate-pulse">Loading users…</div> : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead><tr className="border-b border-gray-800 bg-gray-950">{["Name", "User ID", "Email", "Job Title", "Organization", "How Found", "Admin Role", "Status", "Subject Score", "Overall Score", "Joined", ""].map(h => <th key={h} className="text-left text-gray-500 font-medium px-4 py-3 whitespace-nowrap">{h}</th>)}</tr></thead>
+                <tbody className="divide-y divide-gray-800/50">
+                  {filtered.map(u => {
+                    const name = `${u.first_name ?? ""} ${u.last_name ?? ""}`.trim() || "—";
+                    return (
+                      <tr key={u.id} onClick={() => { setSelected(u); setShowHistory(false); }} className={`hover:bg-gray-800/50 transition cursor-pointer ${selected?.auth_user_id === u.auth_user_id ? "bg-gray-800/70" : ""}`}>
+                        <td className="px-4 py-3"><div className="text-white font-medium text-sm">{name}</div>{u.nickname && <div className="text-gray-500 text-[11px]">@{u.nickname}</div>}</td>
+                        <td className="px-4 py-3"><CopyID id={u.auth_user_id} /></td>
+                        <td className="px-4 py-3 text-gray-400">{u.email || "—"}</td>
+                        <td className="px-4 py-3 text-gray-300">{u.job_title || "—"}</td>
+                        <td className="px-4 py-3 text-gray-400">{u.organization || "—"}</td>
+                        <td className="px-4 py-3 text-gray-400">{u.how_found || "—"}</td>
+                        <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold border ${LEVEL_COLORS[u.admin_level ?? ""]}`}>{LEVEL_LABELS[u.admin_level ?? ""]}</span></td>
+                        <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold border ${u.is_banned ? "bg-red-900 text-red-300 border-red-700" : "bg-green-900 text-green-300 border-green-700"}`}>{u.is_banned ? "Banned" : "Active"}</span></td>
+                        <td className="px-4 py-3 text-center text-white font-medium">{u.subject_score ?? "—"}</td>
+                        <td className="px-4 py-3 text-center text-white font-bold">{u.overall_score ?? "—"}</td>
+                        <td className="px-4 py-3 text-gray-400 whitespace-nowrap">{fmtDate(u.created_at)}</td>
+                        <td className="px-4 py-3"><ChevronRight className="w-4 h-4 text-gray-600" /></td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Deleted Accounts Table */}
+      {tab === "deleted" && (
+        <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
+          {loading ? <div className="p-8 text-center text-gray-500 text-sm animate-pulse">Loading…</div> : filteredDeleted.length === 0 ? (
+            <div className="p-8 text-center text-gray-500 text-sm">No deleted accounts yet.</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead><tr className="border-b border-gray-800 bg-gray-950">{["Record ID", "Auth User ID", "Reason", "Deleted At"].map(h => <th key={h} className="text-left text-gray-500 font-medium px-4 py-3 whitespace-nowrap">{h}</th>)}</tr></thead>
+                <tbody className="divide-y divide-gray-800/50">
+                  {filteredDeleted.map(d => (
+                    <tr key={d.id} className="hover:bg-gray-800/50 transition">
+                      <td className="px-4 py-3"><CopyID id={d.id} /></td>
+                      <td className="px-4 py-3"><CopyID id={d.auth_user_id ?? ""} /></td>
+                      <td className="px-4 py-3 text-gray-400">{d.reason || "—"}</td>
+                      <td className="px-4 py-3 text-gray-400 whitespace-nowrap">{fmtDate(d.deleted_at)}</td>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
 
-      {selected && !showHistory && (
+      {/* Side Panel — active users only */}
+      {tab === "active" && selected && !showHistory && (
         <SidePanel title={`${selected.first_name ?? ""} ${selected.last_name ?? ""}`.trim() || "User Profile"} subtitle={selected.auth_user_id} onClose={() => setSelected(null)}
           actions={
             <div className="space-y-3">
@@ -295,6 +351,7 @@ export default function AdminUsersPage() {
             <DetailRow label="Organization" value={selected.organization} />
             <DetailRow label="Location" value={selected.location} />
             <DetailRow label="Personal Category" value={selected.personal_category} />
+            <DetailRow label="How Found DNounce" value={selected.how_found} />
           </DetailSection>
           <DetailSection title="Account Status">
             <DetailRow label="Admin Role" value={LEVEL_LABELS[selected.admin_level ?? ""]} />
@@ -367,7 +424,6 @@ export default function AdminUsersPage() {
             editModal.type === "admin_role" ? adminRoleFields :
             profileFields
           }
-          warning={editModal.type === "unban" ? undefined : undefined}
           danger={editModal.type === "ban" || editModal.type === "admin_role"}
           onSave={(updated, note) => saveEdit(updated, note, editModal.type)}
           onClose={() => setEditModal(null)}

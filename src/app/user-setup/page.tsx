@@ -48,6 +48,8 @@ export default function UserSetupPage() {
     organization: "",
     phone: "",
     location: "",
+    howFound: "",
+    howFoundOther: "",
   });
 
   const [locationSuggestions, setLocationSuggestions] = useState<any[]>([]);
@@ -162,7 +164,7 @@ export default function UserSetupPage() {
   }, [router]);
 
   // ---------- form handlers ----------
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
   
     if (name === "phone") {
@@ -201,6 +203,17 @@ export default function UserSetupPage() {
 
 
       if (rpcError) throw rpcError;
+
+      // Save how_found
+      if (form.howFound) {
+        const howFoundValue = form.howFound === "other" && form.howFoundOther.trim()
+          ? `other: ${form.howFoundOther.trim()}`
+          : form.howFound;
+        await supabase
+          .from("users")
+          .update({ how_found: howFoundValue })
+          .eq("auth_user_id", userId);
+      }
 
       // Create subject profile linked to this user
       const fullName = `${form.first_name.trim()} ${form.last_name.trim()}`;
@@ -570,6 +583,39 @@ export default function UserSetupPage() {
               <p className="text-xs text-gray-500 mt-1">
                 Type city name to see neighborhoods, or neighborhood to see full location.
               </p>
+            </div>
+
+            {/* How did you find DNounce */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                How did you find DNounce?
+              </label>
+              <select
+                name="howFound"
+                value={form.howFound}
+                onChange={handleChange}
+                className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+              >
+                <option value="">Select an option…</option>
+                <option value="reddit">Reddit</option>
+                <option value="instagram">Instagram</option>
+                <option value="tiktok">TikTok</option>
+                <option value="twitter">Twitter / X</option>
+                <option value="facebook">Facebook</option>
+                <option value="friend">Friend or family</option>
+                <option value="google">Google search</option>
+                <option value="news">News article</option>
+                <option value="other">Other</option>
+              </select>
+              {form.howFound === "other" && (
+                <input
+                  name="howFoundOther"
+                  value={form.howFoundOther}
+                  onChange={handleChange}
+                  placeholder="Tell us how you found us…"
+                  className="mt-2 w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+              )}
             </div>
 
             <button

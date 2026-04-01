@@ -7,7 +7,7 @@ import { supabase } from "@/lib/supabaseClient";
 import {
   LayoutDashboard, FileText, Users, Ticket, Flag,
   Bell, Award, ScrollText, LogOut, Shield, ChevronRight, Menu, X,
-  BarChart2, Search
+  BarChart2, Search, ClipboardList, Star
 } from "lucide-react";
 
 const NAV = [
@@ -16,6 +16,8 @@ const NAV = [
   { href: "/admin/search", label: "Global Search", icon: Search },
   { href: "/admin/records", label: "Records", icon: FileText },
   { href: "/admin/users", label: "Users", icon: Users },
+  { href: "/admin/claims", label: "Claims", icon: ClipboardList },
+  { href: "/admin/surveys", label: "Surveys", icon: Star },
   { href: "/admin/tickets", label: "Support Tickets", icon: Ticket },
   { href: "/admin/reports", label: "Reports", icon: Flag },
   { href: "/admin/notifications", label: "Notifications Log", icon: Bell },
@@ -64,7 +66,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         .maybeSingle();
 
       setAdminLevel(role.role);
-
       setAdminName(`${acct?.first_name ?? ""} ${acct?.last_name ?? ""}`.trim() || session.user.email || "Admin");
       setLoading(false);
     }
@@ -86,9 +87,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="min-h-screen bg-gray-950 flex">
-      {/* Sidebar */}
       <aside className={`fixed inset-y-0 left-0 z-40 w-60 bg-gray-900 border-r border-gray-800 flex flex-col transition-transform duration-200 ${menuOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}>
-        {/* Logo */}
         <div className="flex items-center gap-2.5 px-5 py-5 border-b border-gray-800">
           <div className="w-7 h-7 rounded-lg bg-white flex items-center justify-center">
             <Shield className="w-4 h-4 text-gray-900" />
@@ -99,7 +98,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
         </div>
 
-        {/* Nav */}
         <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
           {NAV.map(({ href, label, icon: Icon }) => {
             const active = href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);
@@ -109,9 +107,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 href={href}
                 onClick={() => setMenuOpen(false)}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                  active
-                    ? "bg-white text-gray-900"
-                    : "text-gray-400 hover:text-white hover:bg-gray-800"
+                  active ? "bg-white text-gray-900" : "text-gray-400 hover:text-white hover:bg-gray-800"
                 }`}
               >
                 <Icon className="w-4 h-4 shrink-0" />
@@ -122,7 +118,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           })}
         </nav>
 
-        {/* Footer */}
         <div className="px-4 py-4 border-t border-gray-800 space-y-3">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-white text-xs font-semibold">
@@ -135,24 +130,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </span>
             </div>
           </div>
-          <button
-            onClick={handleSignOut}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-gray-400 hover:text-white hover:bg-gray-800 text-sm transition"
-          >
+          <button onClick={handleSignOut} className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-gray-400 hover:text-white hover:bg-gray-800 text-sm transition">
             <LogOut className="w-4 h-4" />
             Sign out
           </button>
         </div>
       </aside>
 
-      {/* Mobile overlay */}
-      {menuOpen && (
-        <div className="fixed inset-0 z-30 bg-black/50 lg:hidden" onClick={() => setMenuOpen(false)} />
-      )}
+      {menuOpen && <div className="fixed inset-0 z-30 bg-black/50 lg:hidden" onClick={() => setMenuOpen(false)} />}
 
-      {/* Main */}
       <div className="flex-1 lg:ml-60 min-h-screen flex flex-col">
-        {/* Mobile header */}
         <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-gray-900 border-b border-gray-800">
           <div className="flex items-center gap-2">
             <Shield className="w-4 h-4 text-white" />
@@ -162,10 +149,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
         </header>
-
-        <main className="flex-1 p-4 sm:p-6 lg:p-8">
-          {children}
-        </main>
+        <main className="flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
       </div>
     </div>
   );

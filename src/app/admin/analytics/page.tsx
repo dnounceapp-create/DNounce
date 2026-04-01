@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { RefreshCw, TrendingUp, Database } from "lucide-react";
+import { RefreshCw, Database } from "lucide-react";
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
@@ -16,12 +16,13 @@ const CHART_COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#0
 const TABLE_GROUPS = [
   { label: "Records & Content", color: "blue", tables: ["records", "record_debate_messages", "record_community_statements", "record_vote_replies", "record_community_replies", "record_attachments", "record_debate_attachments"] },
   { label: "Voting", color: "purple", tables: ["record_votes", "record_vote_execution_votes", "voter_quality_badges"] },
-  { label: "Users & Identity", color: "green", tables: ["users", "user_accountdetails", "subjects", "contributors", "user_scores", "user_preferences", "reputations"] },
+  { label: "Users & Identity", color: "green", tables: ["users", "user_accountdetails", "subjects", "contributors", "user_scores", "user_preferences", "reputations", "deleted_accounts"] },
   { label: "Social", color: "orange", tables: ["reactions", "pinned_records", "record_follows", "record_participant_aliases"] },
   { label: "Notifications", color: "yellow", tables: ["notifications", "notification_queue"] },
   { label: "Badges & Scores", color: "teal", tables: ["badges", "voter_quality_badges", "subject_scores"] },
   { label: "Support", color: "red", tables: ["support_tickets", "support_ticket_responses", "user_bans"] },
   { label: "Admin", color: "gray", tables: ["admin_audit_log", "admin_roles", "admin_test_actors"] },
+  { label: "Claims & Surveys", color: "pink", tables: ["subject_claims", "survey_responses", "survey_completions"] },
   { label: "Lookup & Config", color: "indigo", tables: ["categories", "organizations", "relationship_types", "relationship_types_other", "record_roles", "record_roles_lookup"] },
 ];
 
@@ -34,25 +35,15 @@ const GROUP_COLORS: Record<string, string> = {
   teal: "border-teal-800 bg-teal-950/30",
   red: "border-red-800 bg-red-950/30",
   gray: "border-gray-700 bg-gray-800/30",
+  pink: "border-pink-800 bg-pink-950/30",
   indigo: "border-indigo-800 bg-indigo-950/30",
 };
 
 const GROUP_TEXT: Record<string, string> = {
   blue: "text-blue-400", purple: "text-purple-400", green: "text-green-400",
   orange: "text-orange-400", yellow: "text-yellow-400", teal: "text-teal-400",
-  red: "text-red-400", gray: "text-gray-400", indigo: "text-indigo-400",
+  red: "text-red-400", gray: "text-gray-400", pink: "text-pink-400", indigo: "text-indigo-400",
 };
-
-function MiniChart({ data, color }: { data: DailyCount[]; color: string }) {
-  if (!data.length) return <div className="h-10 flex items-center text-gray-600 text-xs">No data</div>;
-  return (
-    <ResponsiveContainer width="100%" height={40}>
-      <LineChart data={data}>
-        <Line type="monotone" dataKey="count" stroke={color} strokeWidth={1.5} dot={false} />
-      </LineChart>
-    </ResponsiveContainer>
-  );
-}
 
 export default function AdminAnalyticsPage() {
   const [tableCounts, setTableCounts] = useState<TableCounts>({});
@@ -98,12 +89,10 @@ export default function AdminAnalyticsPage() {
       setDailyNotifications(fmt(notifications.data ?? []));
       setDailyStatements(fmt(statements.data ?? []));
 
-      // Stage distribution
       const stageCounts: Record<string, number> = {};
       (stages.data ?? []).forEach((r: any) => { stageCounts[r.status] = (stageCounts[r.status] || 0) + 1; });
       setStageDistribution(Object.entries(stageCounts).map(([name, value]) => ({ name, value })));
 
-      // Credibility distribution
       const credCounts: Record<string, number> = {};
       (creds.data ?? []).forEach((r: any) => {
         const c = r.credibility || "Pending";
@@ -147,7 +136,6 @@ export default function AdminAnalyticsPage() {
         </div>
       </div>
 
-      {/* ── Platform activity chart ── */}
       <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5">
         <h2 className="text-white text-sm font-semibold mb-4">Platform Activity — Last {days} days</h2>
         <ResponsiveContainer width="100%" height={280}>
@@ -167,7 +155,6 @@ export default function AdminAnalyticsPage() {
         </ResponsiveContainer>
       </div>
 
-      {/* ── Distribution charts ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5">
           <h2 className="text-white text-sm font-semibold mb-4">Record Stage Distribution</h2>
@@ -195,7 +182,6 @@ export default function AdminAnalyticsPage() {
         </div>
       </div>
 
-      {/* ── All table counts ── */}
       <div>
         <div className="flex items-center gap-2 mb-4">
           <Database className="w-4 h-4 text-gray-400" />
