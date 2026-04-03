@@ -189,6 +189,21 @@ export default function UserSetupPage() {
       const { data: sessionData } = await supabase.auth.getSession();
       const userId = sessionData?.session?.user?.id;
 
+      // Check for duplicate phone
+      const { data: existingPhone } = await supabase
+        .from("user_accountdetails")
+        .select("user_id")
+        .eq("phone", cleanPhone)
+        .neq("user_id", userId)
+        .maybeSingle();
+
+      if (existingPhone) {
+        setPopup({ type: "warning", message: "This number is already associated with an account.", visible: true });
+        setTimeout(() => setPopup({ type: null, message: "", visible: false }), 3500);
+        setSaving(false);
+        return;
+      }
+
       const { error: rpcError } = await supabase.rpc("update_user_accountdetails", {
         p_user_id: userId,
         p_first_name: form.first_name.trim(),

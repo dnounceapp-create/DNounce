@@ -15,6 +15,7 @@ function isValidEmail(email: string) {
 export default function LoginSignupPage() {
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
+  const [loginIdentifier, setLoginIdentifier] = useState("");
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
   const [loginError, setLoginError] = useState<string | null>(null);
@@ -65,8 +66,36 @@ export default function LoginSignupPage() {
     setLoginError(null);
     setAuthLoading(true);
 
+    // Support phone or email login
+    let emailToUse = loginEmail;
+    if (!isValidEmail(loginEmail)) {
+      // Try phone lookup
+      const cleanPhone = loginEmail.replace(/\D/g, "");
+      const { data: accountData } = await supabase
+        .from("user_accountdetails")
+        .select("user_id")
+        .eq("phone", cleanPhone)
+        .maybeSingle();
+      if (!accountData) {
+        setAuthLoading(false);
+        setLoginError("No account found with that phone number.");
+        return;
+      }
+      const { data: authData } = await supabase
+        .from("users")
+        .select("email")
+        .eq("id", accountData.user_id)
+        .maybeSingle();
+      if (!authData?.email) {
+        setAuthLoading(false);
+        setLoginError("Could not find account email for this phone number.");
+        return;
+      }
+      emailToUse = authData.email;
+    }
+
     const { error: signInError } = await supabase.auth.signInWithPassword({
-      email: loginEmail,
+      email: emailToUse,
       password: loginPassword,
     });
 
@@ -146,7 +175,22 @@ export default function LoginSignupPage() {
     });
 
     if (res.error) {
-      setSignupError(res.error.message);
+      if (res.error.message.toLowerCase().includes("already registered") || res.error.message.toLowerCase().includes("user already exists")) {
+        // Try to log them in with same credentials
+        const { error: loginErr } = await supabase.auth.signInWithPassword({
+          email: signupEmail,
+          password: signupPassword,
+        });
+        if (!loginErr) {
+          // Password matched — seamless login
+          await afterLoginRedirect();
+          return;
+        }
+        // Password didn't match — account exists but wrong password
+        setSignupError("An account already exists with this email, but the password is incorrect. Try logging in instead.");
+      } else {
+        setSignupError(res.error.message);
+      }
       return;
     }
 
@@ -226,23 +270,16 @@ export default function LoginSignupPage() {
               <form onSubmit={handleLogin} className="space-y-4">
                 <div>
                   <input
-                    type="email"
+                    type="text"
                     inputMode="email"
                     autoComplete="email"
                     autoCapitalize="none"
                     autoCorrect="off"
-                    placeholder="Email"
-                    className={`w-full h-12 px-3 border rounded-lg text-base ${
-                      loginEmail && !isValidEmail(loginEmail)
-                        ? "border-red-400 focus:ring-red-300"
-                        : "focus:ring-blue-300"
-                    } focus:outline-none focus:ring-2`}
+                    placeholder="Email or phone number"
+                    className="w-full h-12 px-3 border rounded-lg text-base focus:ring-blue-300 focus:outline-none focus:ring-2"
                     value={loginEmail}
                     onChange={(e) => { setLoginEmail(e.target.value); setLoginError(null); }}
                   />
-                  {loginEmail && !isValidEmail(loginEmail) && (
-                    <p className="mt-1 text-xs text-red-500">Please enter a valid email address.</p>
-                  )}
                 </div>
 
                 <input
@@ -272,7 +309,7 @@ export default function LoginSignupPage() {
 
                 <button
                   type="submit"
-                  disabled={authLoading || !isValidEmail(loginEmail) || !loginPassword}
+                  disabled={authLoading || !loginEmail.trim() || !loginPassword}
                   className="w-full h-12 rounded-lg bg-blue-600 text-white text-base font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {authLoading ? "Signing in…" : "Login"}
@@ -370,7 +407,11 @@ export default function LoginSignupPage() {
                   </div>
 
                   {signupError && (
-                    <div className="flex items-center gap-2 rounded-lg bg-red-50 border border-red-200 px-3 py-2.5 text-sm text-red-700">
+                    <div className={`flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm border ${
+                      signupError.includes("already exists")
+                        ? "bg-amber-50 border-amber-200 text-amber-800"
+                        : "bg-red-50 border-red-200 text-red-700"
+                    }`}>
                       <AlertCircle className="w-4 h-4 shrink-0" />
                       {signupError}
                     </div>
