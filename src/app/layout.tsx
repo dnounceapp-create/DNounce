@@ -19,6 +19,10 @@ const geistMono = Geist_Mono({
 // ✅ Metadata for SEO, Open Graph & PWA
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.dnounce.com"),
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
+  },
 
   title: {
     default: "DNounce | Community-Moderated Reviews for Real Experiences",
