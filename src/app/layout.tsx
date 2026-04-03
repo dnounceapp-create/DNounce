@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import ServiceWorkerRegister from "./service-worker-register"; // 👈 client component
+import ServiceWorkerRegister from "./service-worker-register";
 import { Analytics } from '@vercel/analytics/react';
 
 const geistSans = Geist({
@@ -16,10 +16,76 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-// ✅ Metadata for SEO & PWA
+// ✅ Metadata for SEO, Open Graph & PWA
 export const metadata: Metadata = {
-  title: "DNounce",
-  description: "Review and Community feedback platform",
+  metadataBase: new URL("https://www.dnounce.com"),
+
+  title: {
+    default: "DNounce | Community-Moderated Reviews for Real Experiences",
+    template: "%s | DNounce",
+  },
+
+  description:
+    "DNounce is a review platform where real experiences are shared, subjects are notified, and the community helps verify what's fair. Reviews that tell the whole story.",
+
+  keywords: [
+    "review platform",
+    "community reviews",
+    "reputation records",
+    "verified reviews",
+    "experience sharing",
+    "community moderated",
+    "individual reviews",
+    "trust and transparency",
+  ],
+
+  authors: [{ name: "DNounce", url: "https://www.dnounce.com" }],
+
+  creator: "DNounce",
+  publisher: "DNounce",
+
+  alternates: {
+    canonical: "https://www.dnounce.com",
+  },
+
+  openGraph: {
+    type: "website",
+    url: "https://www.dnounce.com",
+    siteName: "DNounce",
+    title: "DNounce | Reviews that tell the whole story.",
+    description:
+      "A review platform where experiences are shared, subjects are notified, and the community helps verify what's fair.",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "DNounce — Community-moderated reviews",
+      },
+    ],
+  },
+
+  twitter: {
+    card: "summary_large_image",
+    site: "@dnounce",
+    creator: "@dnounce",
+    title: "DNounce | Reviews that tell the whole story.",
+    description:
+      "A review platform where experiences are shared, subjects are notified, and the community helps verify what's fair.",
+    images: ["/og-image.png"],
+  },
+
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+
   manifest: "/manifest.json",
 };
 
@@ -49,8 +115,8 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <ToastProvider>
           {children}
-          <ServiceWorkerRegister /> {/* 👈 injects SW registration */}
-          <Toaster /> {/* ✅ mount the toast system globally */}
+          <ServiceWorkerRegister />
+          <Toaster />
           <Analytics />
         </ToastProvider>
       </body>
