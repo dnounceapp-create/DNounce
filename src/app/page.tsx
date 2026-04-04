@@ -283,7 +283,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-white pt-20">
+    <div className="min-h-screen bg-white">
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <header className="bg-white/90 backdrop-blur-md border-b border-gray-100 fixed top-0 left-0 w-full z-50">
         <div className="max-w-6xl mx-auto px-5 py-3.5">
