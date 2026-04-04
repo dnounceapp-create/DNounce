@@ -325,7 +325,7 @@ export default function HomePage() {
       </div>
 
       {/* ── Hero ───────────────────────────────────────────────────────────── */}
-      <section className="pt-16 sm:pt-24 pb-20 px-5">
+      <section className="pb-20 px-5" style={{ paddingTop: "103px" }}>
         <div className="max-w-3xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 bg-gray-100 text-gray-600 text-xs font-medium px-3 py-1.5 rounded-full mb-8">
             <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
@@ -406,7 +406,7 @@ export default function HomePage() {
       </section>
 
       {/* ── Search ─────────────────────────────────────────────────────────── */}
-      <section id="search-section" className="bg-white py-10 sm:py-20 px-5">
+      <section id="search-section" className="bg-white py-10 sm:py-20 px-5 scroll-mt-20">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-10">
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">Search profiles</h2>

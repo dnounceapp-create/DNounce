@@ -236,7 +236,6 @@ export default function FollowingRecordsPage() {
  
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
-          <Eye className="w-5 h-5 text-green-600 fill-green-600" />
           <h1 className="text-xl font-semibold text-gray-900">Following Records</h1>
           <span className="text-sm text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">{records.length}</span>
         </div>

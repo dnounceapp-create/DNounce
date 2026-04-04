@@ -269,7 +269,10 @@ export default function RecordsSubmittedPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <main className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto">
-
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-6">
+          <h1 className="text-xl font-semibold text-gray-900">Records Submitted</h1>
+        </div>
         {/* Stats Row */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
           <div className="bg-white/90 backdrop-blur-sm shadow-sm hover:shadow-md transition rounded-2xl p-4 sm:p-6 text-center border border-gray-100">

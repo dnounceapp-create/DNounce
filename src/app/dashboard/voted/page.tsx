@@ -294,14 +294,10 @@ export default function VotedRecordsPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <main className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto">
-
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
-          <ThumbsUp className="w-5 h-5 text-blue-600 fill-blue-600" />
           <h1 className="text-xl font-semibold text-gray-900">Records I've Voted On</h1>
-          <span className="text-sm text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
-            {records.length}
-          </span>
+          <span className="text-sm text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">{records.length}</span>
         </div>
 
         {/* Filters + Sort */}
