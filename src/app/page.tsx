@@ -283,8 +283,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-white pt-16">
-
+    <div className="min-h-screen bg-white pt-20">
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <header className="bg-white/90 backdrop-blur-md border-b border-gray-100 fixed top-0 left-0 w-full z-50">
         <div className="max-w-6xl mx-auto px-5 py-3.5">
@@ -415,7 +414,7 @@ export default function HomePage() {
           </div>
 
           <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-3">
               {([
                 ["First Name", searchFirstName, setSearchFirstName, "John"],
                 ["Last Name",  searchLastName,  setSearchLastName,  "Doe"],
