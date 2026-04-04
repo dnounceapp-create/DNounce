@@ -325,7 +325,7 @@ export default function HomePage() {
       </div>
 
       {/* ── Hero ───────────────────────────────────────────────────────────── */}
-      <section className="pt-24 pb-20 px-5">
+      <section className="pt-16 sm:pt-24 pb-20 px-5">
         <div className="max-w-3xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 bg-gray-100 text-gray-600 text-xs font-medium px-3 py-1.5 rounded-full mb-8">
             <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
