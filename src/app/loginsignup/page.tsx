@@ -15,7 +15,6 @@ function isValidEmail(email: string) {
 export default function LoginSignupPage() {
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
-  const [loginIdentifier, setLoginIdentifier] = useState("");
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
   const [loginError, setLoginError] = useState<string | null>(null);
@@ -28,6 +27,20 @@ export default function LoginSignupPage() {
   const [authLoading, setAuthLoading] = useState(false);
   const [showEmailSent, setShowEmailSent] = useState(false);
 
+  // ── Redirect if already logged in ──────────────────────────────────────────
+  // Only runs once on mount — checks onboarding so we don't skip user-setup
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      const user = data.session?.user;
+      if (!user) return;
+      const onboarded = !!user.user_metadata?.onboardingComplete;
+      router.replace(onboarded ? "/dashboard/myrecords" : "/user-setup");
+    };
+    checkSession();
+  }, []); // no router dependency — runs once only
+
+  // ── After login redirect ────────────────────────────────────────────────────
   const afterLoginRedirect = async () => {
     const { data } = await supabase.auth.getUser();
     const user = data?.user;
@@ -36,16 +49,7 @@ export default function LoginSignupPage() {
     router.replace(onboarded ? "/dashboard/myrecords" : "/user-setup");
   };
 
-  useEffect(() => {
-    const checkSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      const user = data.session?.user;
-      if (user) router.replace("/dashboard/myrecords");
-    };
-    checkSession();
-  }, [router]);
-
-  // Google login
+  // ── Google login ────────────────────────────────────────────────────────────
   const handleGoogle = async () => {
     if (typeof window === "undefined") return;
     const { error } = await supabase.auth.signInWithOAuth({
@@ -55,43 +59,45 @@ export default function LoginSignupPage() {
         queryParams: { prompt: "select_account" },
       },
     });
-    if (error) {
-      setLoginError("Google login failed: " + error.message);
-    }
+    if (error) setLoginError("Google login failed: " + error.message);
   };
 
-  // Email/password login
+  // ── Email / phone login ─────────────────────────────────────────────────────
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError(null);
     setAuthLoading(true);
 
-    // Support phone or email login
-    let emailToUse = loginEmail;
-    if (!isValidEmail(loginEmail)) {
-      // Try phone lookup
-      const cleanPhone = loginEmail.replace(/\D/g, "");
+    // Resolve phone → email if needed
+    let emailToUse = loginEmail.trim();
+
+    if (!isValidEmail(emailToUse)) {
+      const cleanPhone = emailToUse.replace(/\D/g, "");
       const { data: accountData } = await supabase
         .from("user_accountdetails")
         .select("user_id")
         .eq("phone", cleanPhone)
         .maybeSingle();
+
       if (!accountData) {
         setAuthLoading(false);
         setLoginError("No account found with that phone number.");
         return;
       }
-      const { data: authData } = await supabase
+
+      const { data: userData } = await supabase
         .from("users")
         .select("email")
         .eq("id", accountData.user_id)
         .maybeSingle();
-      if (!authData?.email) {
+
+      if (!userData?.email) {
         setAuthLoading(false);
-        setLoginError("Could not find account email for this phone number.");
+        setLoginError("Could not find an email linked to that phone number.");
         return;
       }
-      emailToUse = authData.email;
+
+      emailToUse = userData.email;
     }
 
     const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -101,14 +107,27 @@ export default function LoginSignupPage() {
 
     if (signInError) {
       setAuthLoading(false);
-      setLoginError(
-        signInError.message === "Invalid login credentials"
-          ? "Incorrect email or password. Please try again."
-          : signInError.message
-      );
+
+      if (signInError.message === "Invalid login credentials") {
+        // Check if email exists in our DB to give a smarter message
+        const { data: accountExists } = await supabase
+          .from("user_accountdetails")
+          .select("user_id")
+          .eq("email", emailToUse)
+          .maybeSingle();
+
+        if (accountExists) {
+          setLoginError("Account found but the password is incorrect. Try again or reset your password.");
+        } else {
+          setLoginError("No account found with that email or phone number.");
+        }
+      } else {
+        setLoginError(signInError.message);
+      }
       return;
     }
 
+    // Check MFA
     const { data: factorsData, error: factorsError } = await supabase.auth.mfa.listFactors();
 
     if (factorsError) {
@@ -132,6 +151,7 @@ export default function LoginSignupPage() {
     await afterLoginRedirect();
   };
 
+  // ── MFA verify ──────────────────────────────────────────────────────────────
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setOtpError(null);
@@ -156,7 +176,7 @@ export default function LoginSignupPage() {
     await afterLoginRedirect();
   };
 
-  // Email/password signup
+  // ── Signup ──────────────────────────────────────────────────────────────────
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setSignupError(null);
@@ -175,19 +195,23 @@ export default function LoginSignupPage() {
     });
 
     if (res.error) {
-      if (res.error.message.toLowerCase().includes("already registered") || res.error.message.toLowerCase().includes("user already exists")) {
-        // Try to log them in with same credentials
+      const msg = res.error.message.toLowerCase();
+
+      if (msg.includes("already registered") || msg.includes("user already exists")) {
+        // Try silent login — credentials might match
         const { error: loginErr } = await supabase.auth.signInWithPassword({
           email: signupEmail,
           password: signupPassword,
         });
+
         if (!loginErr) {
-          // Password matched — seamless login
+          // Credentials matched — log them in silently
           await afterLoginRedirect();
           return;
         }
-        // Password didn't match — account exists but wrong password
-        setSignupError("An account already exists with this email, but the password is incorrect. Try logging in instead.");
+
+        // Email exists but wrong password
+        setSignupError("This email already exists. The password you entered is incorrect — try logging in instead.");
       } else {
         setSignupError(res.error.message);
       }
@@ -196,30 +220,28 @@ export default function LoginSignupPage() {
 
     const { data: { session } } = await supabase.auth.getSession();
 
-    if (session) router.replace("/user-setup");
-    else {
+    if (session) {
+      router.replace("/user-setup");
+    } else {
       setSignupPassword("");
       setShowEmailSent(true);
     }
   };
 
+  // ── UI ──────────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-[100dvh] pb-[env(safe-area-inset-bottom)] bg-gray-50 flex flex-col">
-      {/* Top nav bar */}
       <header className="flex items-center justify-between px-4 sm:px-6 md:px-10 py-4 sm:py-5 bg-white shadow-sm">
         <Link href="/" className="flex items-center gap-4">
           <Image src="/logo.png" alt="DNounce logo" width={60} height={60} />
-          <span className="text-lg sm:text-2xl md:text-3xl font-bold text-gray-900">
-            DNounce
-          </span>
+          <span className="text-lg sm:text-2xl md:text-3xl font-bold text-gray-900">DNounce</span>
         </Link>
       </header>
 
-      {/* Main content */}
       <main className="flex-1 flex items-center justify-center px-4 sm:px-6 py-8 sm:py-12">
         <div className="w-full max-w-md sm:max-w-lg bg-white shadow-xl rounded-2xl p-6 sm:p-8 md:p-10 space-y-10">
 
-          {/* Login section */}
+          {/* ── Login ── */}
           <div className="w-full bg-white shadow-md rounded-xl p-6 sm:p-8">
             <h2 className="text-2xl font-semibold text-center mb-6">
               {mfaRequired ? "Two-Factor Authentication" : "Login"}
@@ -268,19 +290,17 @@ export default function LoginSignupPage() {
               </form>
             ) : (
               <form onSubmit={handleLogin} className="space-y-4">
-                <div>
-                  <input
-                    type="text"
-                    inputMode="email"
-                    autoComplete="email"
-                    autoCapitalize="none"
-                    autoCorrect="off"
-                    placeholder="Email or phone number"
-                    className="w-full h-12 px-3 border rounded-lg text-base focus:ring-blue-300 focus:outline-none focus:ring-2"
-                    value={loginEmail}
-                    onChange={(e) => { setLoginEmail(e.target.value); setLoginError(null); }}
-                  />
-                </div>
+                <input
+                  type="text"
+                  inputMode="email"
+                  autoComplete="email"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  placeholder="Email or phone number"
+                  className="w-full h-12 px-3 border rounded-lg text-base focus:ring-blue-300 focus:outline-none focus:ring-2"
+                  value={loginEmail}
+                  onChange={(e) => { setLoginEmail(e.target.value); setLoginError(null); }}
+                />
 
                 <input
                   type="password"
@@ -292,17 +312,18 @@ export default function LoginSignupPage() {
                 />
 
                 {loginError && (
-                  <div className="flex items-center gap-2 rounded-lg bg-red-50 border border-red-200 px-3 py-2.5 text-sm text-red-700">
+                  <div className={`flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm border ${
+                    loginError.includes("password is incorrect")
+                      ? "bg-amber-50 border-amber-200 text-amber-800"
+                      : "bg-red-50 border-red-200 text-red-700"
+                  }`}>
                     <AlertCircle className="w-4 h-4 shrink-0" />
                     {loginError}
                   </div>
                 )}
 
                 <div className="text-right">
-                  <Link
-                    href="/forgot-password"
-                    className="text-sm text-blue-600 hover:underline inline-block py-2"
-                  >
+                  <Link href="/forgot-password" className="text-sm text-blue-600 hover:underline inline-block py-2">
                     Forgot password?
                   </Link>
                 </div>
@@ -329,7 +350,7 @@ export default function LoginSignupPage() {
             </div>
           </div>
 
-          {/* Signup section */}
+          {/* ── Signup ── */}
           <div className="w-full bg-white shadow-md rounded-xl p-6 sm:p-8">
             {showEmailSent ? (
               <div className="text-center space-y-4">
@@ -439,6 +460,7 @@ export default function LoginSignupPage() {
               </>
             )}
           </div>
+
         </div>
       </main>
     </div>

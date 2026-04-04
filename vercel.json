@@ -1,9 +1,12 @@
 {
-    "crons": [
-      {
-        "path": "/api/internal/record-lifecycle",
-        "schedule": "0 3 * * *"
-      }
-    ]
-  }
-  
+  "crons": [
+    {
+      "path": "/api/internal/record-lifecycle",
+      "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cleanup-ghost-users",
+      "schedule": "0 * * * *"
+    }
+  ]
+}

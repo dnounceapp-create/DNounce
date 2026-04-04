@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
+import { AlertCircle, CheckCircle2, KeyRound } from "lucide-react";
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState("");
@@ -43,100 +44,95 @@ export default function ResetPasswordPage() {
     setTimeout(() => router.push("/loginsignup"), 2000);
   };
 
-  // Google login
-  const handleGoogle = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-        queryParams: { prompt: "select_account" },
-      },
-    });
-    if (error) {
-      console.error("OAuth error:", error);
-      alert("Login failed: " + error.message);
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Top nav bar with logo */}
-      <header className="flex items-center justify-between px-10 py-6 bg-white shadow-sm">
+    <div className="min-h-[100dvh] bg-gray-50 flex flex-col">
+      <header className="flex items-center justify-between px-4 sm:px-6 md:px-10 py-4 sm:py-5 bg-white shadow-sm">
         <Link href="/" className="flex items-center gap-4">
           <Image src="/logo.png" alt="DNounce logo" width={60} height={60} />
-          <span className="text-lg sm:text-2xl md:text-3xl font-bold text-gray-900">
-            DNounce
-          </span>
+          <span className="text-lg sm:text-2xl md:text-3xl font-bold text-gray-900">DNounce</span>
         </Link>
       </header>
 
-      {/* Reset form */}
-      <main className="flex-1 flex items-center justify-center px-6 py-16">
-        <div className="w-full max-w-md bg-white shadow-lg rounded-xl p-8">
-          <h2 className="text-2xl font-semibold text-center mb-6">
-            Reset Password
-          </h2>
+      <main className="flex-1 flex items-center justify-center px-4 sm:px-6 py-8 sm:py-12">
+        <div className="w-full max-w-md bg-white shadow-xl rounded-2xl p-6 sm:p-8 md:p-10">
+
+          <div className="text-center mb-8">
+            <div className="w-14 h-14 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4">
+              <KeyRound className="w-7 h-7 text-green-600" />
+            </div>
+            <h2 className="text-2xl font-semibold text-gray-900">Reset your password</h2>
+            <p className="text-sm text-gray-500 mt-2">Enter a new password for your account.</p>
+          </div>
+
           <form onSubmit={handleReset} className="space-y-4">
-            <input
-              type="password"
-              placeholder="New Password"
-              className="w-full px-3 py-2 border rounded-md"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-            <input
-              type="password"
-              placeholder="Confirm Password"
-              className="w-full px-3 py-2 border rounded-md"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-            />
+            <div>
+              <input
+                type="password"
+                placeholder="New password"
+                className={`w-full h-12 px-3 border rounded-xl text-base focus:outline-none focus:ring-2 ${
+                  password && password.length < 6
+                    ? "border-red-400 focus:ring-red-300"
+                    : "focus:ring-blue-300"
+                }`}
+                value={password}
+                onChange={(e) => { setPassword(e.target.value); setError(""); }}
+              />
+              {password && password.length < 6 && (
+                <p className="mt-1 text-xs text-red-500">Password must be at least 6 characters.</p>
+              )}
+              {password && password.length >= 6 && (
+                <p className="mt-1 text-xs text-green-600 flex items-center gap-1">
+                  <CheckCircle2 className="w-3 h-3" /> Password looks good
+                </p>
+              )}
+            </div>
+
+            <div>
+              <input
+                type="password"
+                placeholder="Confirm new password"
+                className={`w-full h-12 px-3 border rounded-xl text-base focus:outline-none focus:ring-2 ${
+                  confirmPassword && confirmPassword !== password
+                    ? "border-red-400 focus:ring-red-300"
+                    : "focus:ring-blue-300"
+                }`}
+                value={confirmPassword}
+                onChange={(e) => { setConfirmPassword(e.target.value); setError(""); }}
+              />
+              {confirmPassword && confirmPassword !== password && (
+                <p className="mt-1 text-xs text-red-500">Passwords do not match.</p>
+              )}
+            </div>
+
             <button
               type="submit"
-              className="w-full py-2 rounded-md bg-green-600 text-white hover:bg-green-700"
+              disabled={!password || password.length < 6 || password !== confirmPassword}
+              className="w-full h-12 rounded-xl bg-green-600 text-white text-base font-medium hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Update Password
             </button>
           </form>
 
           {error && (
-            <p className="mt-4 text-red-600 text-sm text-center">{error}</p>
+            <div className="mt-4 flex items-center gap-2 rounded-lg bg-red-50 border border-red-200 px-3 py-2.5 text-sm text-red-700">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              {error}
+            </div>
           )}
+
           {success && (
-            <p className="mt-4 text-green-600 text-sm text-center">{success}</p>
+            <div className="mt-4 flex items-center gap-2 rounded-lg bg-green-50 border border-green-200 px-3 py-2.5 text-sm text-green-700">
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+              {success}
+            </div>
           )}
-
-          {/* Divider */}
-          <div className="w-full flex items-center justify-center my-6">
-            <div className="w-full h-px bg-gray-300" />
-          </div>
-
-          {/* Google login button */}
-          <div>
-            <button
-              type="button"
-              onClick={handleGoogle}
-              className="flex items-center justify-center w-full px-4 py-2 border rounded-md hover:bg-gray-100"
-            >
-              <Image
-                src="/googleicon.svg"
-                alt="Google"
-                width={20}
-                height={20}
-                className="mr-2 inline-block"
-              />
-              Continue with Google
-            </button>
-          </div>
 
           <div className="mt-6 text-center">
-            <Link
-              href="/loginsignup"
-              className="text-blue-600 hover:underline text-sm"
-            >
-              Back to Login
+            <Link href="/loginsignup" className="text-sm text-blue-600 hover:underline">
+              ← Back to Login
             </Link>
           </div>
+
         </div>
       </main>
     </div>
