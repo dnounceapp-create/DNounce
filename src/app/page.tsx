@@ -346,11 +346,11 @@ export default function HomePage() {
           />
 
           <p className="text-lg sm:text-xl text-gray-500 max-w-xl mx-auto leading-relaxed mb-10">
-            DNounce is a review platform where experiences are shared, subjects are notified, and the community helps verify what's fair.
+            DNounce is a review platform where someone submits a record about you — you get to share your side. The community reads both sides of the story, and decides if it stays on your profile.
           </p>
-
+          {/*
           <div className="flex justify-center">
-            <button
+            The first time<button
               onClick={() => document.getElementById("search-section")?.scrollIntoView({ behavior: "smooth" })}
               className="inline-flex items-center justify-center gap-2 bg-gray-900 hover:bg-black text-white font-semibold px-7 py-3.5 rounded-2xl transition-all text-sm"
             >
@@ -359,7 +359,7 @@ export default function HomePage() {
             </button>
           </div>
 
-          <p className="mt-6 text-sm text-gray-400">Used by people who want to share experiences and build trust.</p>
+          <p className="mt-6 text-sm text-gray-400">Used by people who want to share experiences and build trust.</p>*/}
           <div className="mt-12 flex flex-wrap justify-center gap-6 text-sm text-gray-400">
             {[
               { icon: <CheckCircle className="w-4 h-4 text-green-500" />, label: "Credibility reviewed" },
