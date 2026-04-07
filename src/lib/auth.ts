@@ -18,11 +18,7 @@ export function useAuth(options: UseAuthOptions = {}) {
   } = options;
 
   const [loading, setLoading] = useState(true);
-  const [sessionUser, setSessionUser] = useState
-    null | NonNullable
-      Awaited<ReturnType<typeof supabase.auth.getSession>>["data"]["session"]
-    >["user"]
-  >(null);
+  const [sessionUser, setSessionUser] = useState<null | NonNullable<Awaited<ReturnType<typeof supabase.auth.getSession>>["data"]["session"]>["user"]>(null);
 
   const router = useRouter();
   const pathname = usePathname();
