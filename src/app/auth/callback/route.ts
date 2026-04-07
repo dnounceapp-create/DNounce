@@ -35,18 +35,27 @@ export async function GET(request: Request) {
 
     const { data: { user } } = await supabase.auth.getUser();
 
+    console.log("AUTH CALLBACK - user:", user?.id);
+    console.log("AUTH CALLBACK - metadata:", user?.user_metadata);
+
     if (user) {
-      const { data: userRow } = await supabase
+      const { data: userRow, error: userRowError } = await supabase
         .from("users")
         .select("onboarding_complete")
         .eq("auth_user_id", user.id)
         .maybeSingle();
 
+      console.log("AUTH CALLBACK - userRow:", userRow, "error:", userRowError);
+
       const isOnboarded = userRow?.onboarding_complete || !!user.user_metadata?.onboardingComplete;
+      console.log("AUTH CALLBACK - isOnboarded:", isOnboarded, "redirecting to:", isOnboarded ? "/dashboard/myrecords" : "/user-setup");
+      
       return NextResponse.redirect(
         new URL(isOnboarded ? "/dashboard/myrecords" : "/user-setup", requestUrl.origin)
       );
     }
+
+    console.log("AUTH CALLBACK - no user found, redirecting to /loginsignup");
   }
 
   return NextResponse.redirect(new URL("/loginsignup", requestUrl.origin));
