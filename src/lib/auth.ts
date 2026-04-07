@@ -37,11 +37,20 @@ export function useAuth(options: UseAuthOptions = {}) {
 
       // 2️⃣ Redirect unauthenticated users
       if (!user) {
-        if (redirectIfUnauthed) {
-          const next = pathname ? `?next=${encodeURIComponent(pathname)}` : "";
-          router.replace(`${loginPath}${next}`);
+        // Wait briefly for session cookie to hydrate after OAuth redirect
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        const { data: retry } = await supabase.auth.getSession();
+        const retryUser = retry.session?.user ?? null;
+        if (!retryUser) {
+          if (redirectIfUnauthed) {
+            const next = pathname ? `?next=${encodeURIComponent(pathname)}` : "";
+            router.replace(`${loginPath}${next}`);
+          }
+          setSessionUser(null);
+          setLoading(false);
+          return;
         }
-        setSessionUser(null);
+        setSessionUser(retryUser);
         setLoading(false);
         return;
       }
