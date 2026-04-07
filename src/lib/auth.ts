@@ -7,7 +7,7 @@ import { supabase } from "@/lib/supabaseClient";
 type UseAuthOptions = {
   redirectIfUnauthed?: boolean;
   redirectToSetupIfFirstTime?: boolean;
-  loginPath?: string; // default /loginsignup
+  loginPath?: string;
 };
 
 export function useAuth(options: UseAuthOptions = {}) {
@@ -18,8 +18,8 @@ export function useAuth(options: UseAuthOptions = {}) {
   } = options;
 
   const [loading, setLoading] = useState(true);
-  const [sessionUser, setSessionUser] = useState<
-    null | NonNullable<
+  const [sessionUser, setSessionUser] = useState
+    null | NonNullable
       Awaited<ReturnType<typeof supabase.auth.getSession>>["data"]["session"]
     >["user"]
   >(null);
@@ -31,14 +31,40 @@ export function useAuth(options: UseAuthOptions = {}) {
     let unsub: (() => void) | undefined;
 
     const init = async () => {
-      // 1️⃣ Get current session
+      // Subscribe to auth state first, THEN check session
+      // This ensures we catch the SIGNED_IN event from OAuth redirects
+      const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
+        const u = newSession?.user ?? null;
+
+        if (!u) {
+          setSessionUser(null);
+          return;
+        }
+
+        setSessionUser(u);
+        setLoading(false);
+
+        const isOnboarded = Boolean(u.user_metadata?.onboardingComplete);
+        if (
+          redirectToSetupIfFirstTime &&
+          !isOnboarded &&
+          pathname !== "/user-setup" &&
+          pathname !== "/loginsignup" &&
+          !pathname.startsWith("/auth")
+        ) {
+          router.replace("/user-setup");
+        }
+      });
+
+      unsub = () => sub.subscription.unsubscribe();
+
+      // Then check existing session
       const { data } = await supabase.auth.getSession();
       const user = data.session?.user ?? null;
 
-      // 2️⃣ Redirect unauthenticated users
       if (!user) {
-        // Wait briefly for session cookie to hydrate after OAuth redirect
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        // Give onAuthStateChange a chance to fire with SIGNED_IN
+        await new Promise((resolve) => setTimeout(resolve, 1000));
         const { data: retry } = await supabase.auth.getSession();
         const retryUser = retry.session?.user ?? null;
         if (!retryUser) {
@@ -48,55 +74,23 @@ export function useAuth(options: UseAuthOptions = {}) {
           }
           setSessionUser(null);
           setLoading(false);
-          return;
         }
-        setSessionUser(retryUser);
-        setLoading(false);
         return;
       }
 
-      // 3️⃣ Save session user
       setSessionUser(user);
+      setLoading(false);
 
-      // 4️⃣ Redirect to /user-setup if onboarding incomplete
       const isOnboarded = Boolean(user.user_metadata?.onboardingComplete);
       if (
         redirectToSetupIfFirstTime &&
-        user && // ✅ make sure user exists first
-        isOnboarded === false &&
+        !isOnboarded &&
         pathname !== "/user-setup" &&
         !pathname.startsWith("/auth") &&
-        pathname !== "/loginsignup" // ✅ prevent loop from login/signup
+        pathname !== "/loginsignup"
       ) {
         router.replace("/user-setup");
       }
-
-      // 5️⃣ Subscribe to auth changes
-      const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
-        const u = newSession?.user ?? null;
-
-        if (!u) {
-          if (redirectIfUnauthed) router.replace(loginPath);
-          setSessionUser(null);
-          return;
-        }
-
-        setSessionUser(u);
-
-        if (
-          redirectToSetupIfFirstTime &&
-          !isOnboarded &&
-          pathname !== "/user-setup" &&
-          pathname !== "/loginsignup" && // 🧱 prevent redirect from login page
-          !pathname.startsWith("/auth")
-        ) {
-          router.replace("/user-setup");
-          return;
-        }
-      });
-
-      unsub = () => sub.subscription.unsubscribe();
-      setLoading(false); // ✅ move here to prevent premature render
     };
 
     init();
