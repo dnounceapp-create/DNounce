@@ -42,11 +42,12 @@ export async function GET(request: Request) {
         .eq("auth_user_id", user.id)
         .maybeSingle();
 
-      if (userRow?.onboarding_complete) {
-        return NextResponse.redirect(new URL("/dashboard/myrecords", requestUrl.origin));
-      }
+      const isOnboarded = userRow?.onboarding_complete || !!user.user_metadata?.onboardingComplete;
+      return NextResponse.redirect(
+        new URL(isOnboarded ? "/dashboard/myrecords" : "/user-setup", requestUrl.origin)
+      );
     }
   }
 
-  return NextResponse.redirect(new URL("/user-setup", requestUrl.origin));
+  return NextResponse.redirect(new URL("/loginsignup", requestUrl.origin));
 }
