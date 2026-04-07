@@ -74,7 +74,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [menuOpen, setMenuOpen] = useState(false);
   const { user, loading } = useAuth({
     redirectIfUnauthed: true,
-    redirectToSetupIfFirstTime: true,
+    redirectToSetupIfFirstTime: false,
     loginPath: "/loginsignup",
   });
   const inSettings = pathname.startsWith("/dashboard/settings");
