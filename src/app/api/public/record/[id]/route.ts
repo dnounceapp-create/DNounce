@@ -14,8 +14,9 @@ function normalizeCredibility(raw: any) {
     .trim()
     .toLowerCase()
     .replace(/[‐-‒–—−]/g, "-");
-  if (s.includes("evidence-based") || s.includes("evidence based")) return "Evidence-Based";
-  if (s.includes("opinion-based") || s.includes("opinion based")) return "Opinion-Based";
+  if (s.includes("evidence-based") || s.includes("evidence based") || s.includes("evidence_based")) return "Evidence-Based";
+  if (s.includes("opinion-based") || s.includes("opinion based") || s.includes("opinion_based")) return "Opinion-Based";
+  if (s.includes("unable to verify") || s.includes("unable_to_verify")) return "Unable to Verify";
   if (s.includes("unclear")) return "Unclear";
   return "Pending";
 }

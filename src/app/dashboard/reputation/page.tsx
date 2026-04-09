@@ -263,7 +263,7 @@ export default function ReputationPage() {
         const { data } = await supabase.from("records").select("id,status,category,final_outcome,credibility,ai_vendor_1_result,created_at,record_alias,contributor_display_name,contributor_identity_preference,subject:subjects(name)").eq("contributor_id", contributorId).order("created_at", { ascending: false }).limit(20);
         const mapped = (data ?? []).map((r: any) => ({ id: r.id, subject_name: r.subject?.name ?? "Unknown", contributor_alias: (() => {
   const cred = r.ai_vendor_1_result || r.credibility || "";
-  const reveal = cred === "Opinion-Based" || (cred === "Evidence-Based" && r.contributor_identity_preference === true);
+  const reveal = (cred === "Opinion-Based" || cred === "opinion_based") || ((cred === "Evidence-Based" || cred === "evidence_based") && r.contributor_identity_preference === true);
   return reveal ? (r.contributor_display_name || "Individual Contributor") : "SuperHero123";
 })(), category: r.category, status: r.status, final_outcome: r.final_outcome, credibility: r.credibility ?? null, created_at: r.created_at, comment_count: 0 }));
         const counts = await Promise.all(mapped.map(async (r) => {
@@ -279,7 +279,7 @@ records = mapped.map((r, i) => ({ ...r, comment_count: counts[i] }));
           const { data } = await supabase.from("records").select("id,status,category,final_outcome,credibility,ai_vendor_1_result,created_at,record_alias,contributor_display_name,contributor_identity_preference,subject:subjects(name)").in("id", ids);
           const mapped = (data ?? []).map((r: any) => ({ id: r.id, subject_name: r.subject?.name ?? "Unknown", contributor_alias: (() => {
   const cred = r.ai_vendor_1_result || r.credibility || "";
-  const reveal = cred === "Opinion-Based" || (cred === "Evidence-Based" && r.contributor_identity_preference === true);
+  const reveal = (cred === "Opinion-Based" || cred === "opinion_based") || ((cred === "Evidence-Based" || cred === "evidence_based") && r.contributor_identity_preference === true);
   return reveal ? (r.contributor_display_name || "Individual Contributor") : "SuperHero123";
 })(), category: r.category, status: r.status, final_outcome: r.final_outcome, credibility: r.credibility ?? null, created_at: r.created_at, comment_count: 0 }));
           const counts = await Promise.all(mapped.map(async (r) => {
@@ -296,7 +296,7 @@ records = mapped.map((r, i) => ({ ...r, comment_count: counts[i] }));
           const { data } = await supabase.from("records").select("id,status,category,final_outcome,credibility,ai_vendor_1_result,created_at,record_alias,contributor_display_name,contributor_identity_preference,subject:subjects(name)").in("id", ids);
           const mapped = (data ?? []).map((r: any) => ({ id: r.id, subject_name: r.subject?.name ?? "Unknown", contributor_alias: (() => {
   const cred = r.ai_vendor_1_result || r.credibility || "";
-  const reveal = cred === "Opinion-Based" || (cred === "Evidence-Based" && r.contributor_identity_preference === true);
+  const reveal = (cred === "Opinion-Based" || cred === "opinion_based") || ((cred === "Evidence-Based" || cred === "evidence_based") && r.contributor_identity_preference === true);
   return reveal ? (r.contributor_display_name || "Individual Contributor") : "SuperHero123";
 })(), category: r.category, status: r.status, final_outcome: r.final_outcome, credibility: r.credibility ?? null, created_at: r.created_at, comment_count: 0 }));
           const counts = await Promise.all(mapped.map(async (r) => {
@@ -312,7 +312,7 @@ records = mapped.map((r, i) => ({ ...r, comment_count: counts[i] }));
           const { data } = await supabase.from("records").select("id,status,category,final_outcome,credibility,ai_vendor_1_result,created_at,record_alias,contributor_display_name,contributor_identity_preference,subject:subjects(name)").eq("subject_id", subjectRow.subject_uuid).order("created_at", { ascending: false }).limit(20);
           const mapped = (data ?? []).map((r: any) => ({ id: r.id, subject_name: r.subject?.name ?? "Unknown", contributor_alias: (() => {
   const cred = r.ai_vendor_1_result || r.credibility || "";
-  const reveal = cred === "Opinion-Based" || (cred === "Evidence-Based" && r.contributor_identity_preference === true);
+  const reveal = (cred === "Opinion-Based" || cred === "opinion_based") || ((cred === "Evidence-Based" || cred === "evidence_based") && r.contributor_identity_preference === true);
   return reveal ? (r.contributor_display_name || "Individual Contributor") : "SuperHero123";
 })(), category: r.category, status: r.status, final_outcome: r.final_outcome, credibility: r.credibility ?? null, created_at: r.created_at, comment_count: 0 }));
           const counts = await Promise.all(mapped.map(async (r) => {

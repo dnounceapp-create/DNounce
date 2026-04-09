@@ -167,7 +167,7 @@ export default function RecordsSubmittedPage() {
           id: r.id,
           record_alias: (() => {
             const cred = r.ai_vendor_1_result || r.credibility || "";
-            const reveal = cred === "Opinion-Based" || (cred === "Evidence-Based" && r.contributor_identity_preference === true);
+            const reveal = (cred === "Opinion-Based" || cred === "opinion_based") || ((cred === "Evidence-Based" || cred === "evidence_based") && r.contributor_identity_preference === true);
             return reveal ? (r.contributor_display_name || "Individual Contributor") : "SuperHero123";
           })(),
           subject_name: r.subjects?.name || "Unknown",
