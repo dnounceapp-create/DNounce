@@ -1049,8 +1049,8 @@ export default function SubjectProfilePage() {
                           <div className="min-w-0">
                             <div className="text-sm font-semibold text-gray-900 truncate">{title}</div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-[11px] text-gray-500 whitespace-nowrap">AI Credibility Recommendation:</span>
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <span className="text-[11px] text-gray-500">AI Credibility Recommendation:</span>
                             {credibilityBadge(cred)}
                           </div>
                         </div>
