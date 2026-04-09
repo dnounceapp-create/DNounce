@@ -662,7 +662,7 @@ export default function MyRecordsPage() {
                 {/* Mobile: stacked card header */}
                 <div className="md:col-span-1">
                   <Link href={`/record/${record.id}`} className="font-medium text-gray-900 text-sm sm:text-base hover:underline">
-                    {record.contributor_alias} vs {record.subject_name}
+                    {record.contributor_alias} • {record.subject_name}
                   </Link>
                   <p className="text-[11px] sm:text-xs text-gray-500">Record ID: {String(record.id).slice(0, 8)}…</p>
 
