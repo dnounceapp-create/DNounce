@@ -647,7 +647,7 @@ export default function SubjectProfilePage() {
         subject_score: subjectScoreData?.subject_score ?? null,
         contributor_score: userScoreData?.contributor_score ?? null,
         voter_score: userScoreData?.voter_score ?? null,
-        citizen_score: userScoreData?.overall_score ?? null,
+        citizen_score: userScoreData?.citizen_score ?? null,
         overall_score: userScoreData?.overall_score ?? null,
       });
 
