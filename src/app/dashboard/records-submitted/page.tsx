@@ -432,7 +432,7 @@ export default function RecordsSubmittedPage() {
               >
                 <div className="md:col-span-1">
                   <Link href={`/record/${record.id}`} className="font-medium text-gray-900 text-sm sm:text-base hover:underline">
-                    {record.record_alias}
+                    {record.record_alias} • {record.subject_name}
                   </Link>
                   <p className="text-[11px] sm:text-xs text-gray-500 mt-0.5">
                     Subject: {record.subject_name}

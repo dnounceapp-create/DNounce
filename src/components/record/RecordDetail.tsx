@@ -4424,7 +4424,9 @@ export default function RecordDetail({
             (rec as any)?.contributor?.user_id ?? (rec as any)?.contributor?.[0]?.user_id ?? null;
 
         const reveal = shouldRevealContributorIdentity(rec);
+        console.log("🔍 reveal:", reveal, "credibility:", rec.credibility, "preference:", rec.contributor_identity_preference, "contributorUserId:", contributorUserId);
         const shouldFetchContributorProfile = !!contributorUserId && (role === "contributor" || reveal);
+        console.log("🔍 shouldFetchContributorProfile:", shouldFetchContributorProfile);
         const shouldFetchContributorBadges = !!contributorUserId;
         
         if (shouldFetchContributorProfile && contributorUserId) {

@@ -355,7 +355,7 @@ export default function FollowingRecordsPage() {
               <div key={record.follow_id} className="md:grid md:grid-cols-4 md:items-center gap-3 px-4 sm:px-6 py-4 md:py-5 border-t first:border-t-0 hover:bg-gray-50/50 transition">
                 <div className="md:col-span-1">
                   <Link href={`/record/${record.record_id}`} className="font-medium text-gray-900 text-sm sm:text-base hover:underline">
-                    {record.record_alias}
+                    {record.record_alias} • {record.subject_name}
                   </Link>
                   <p className="text-[11px] sm:text-xs text-gray-500 mt-0.5">Subject: {record.subject_name}</p>
                   <p className="text-[11px] sm:text-xs text-gray-400">ID: {String(record.record_id).slice(0, 8)}…</p>

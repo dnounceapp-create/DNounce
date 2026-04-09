@@ -455,7 +455,7 @@ export default function VotedRecordsPage() {
                     href={`/record/${record.record_id}`}
                     className="font-medium text-gray-900 text-sm sm:text-base hover:underline"
                   >
-                    {record.record_alias}
+                    {record.record_alias} • {record.subject_name}
                   </Link>
                   <p className="text-[11px] sm:text-xs text-gray-500 mt-0.5">
                     Subject: {record.subject_name}
