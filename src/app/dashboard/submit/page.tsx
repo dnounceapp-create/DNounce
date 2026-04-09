@@ -599,8 +599,8 @@ export default function SubmitRecordPage() {
           description: description.trim() || null,
           agree_terms: agreedToTerms,
           contributor_identity_preference: identityPreference === "show",
-          contributor_display_name: null,
-          contributor_avatar_url: null,
+          contributor_display_name: contributorFullName,
+          contributor_avatar_url: account?.avatar_url || null,
         })
         .select("id")
         .single();

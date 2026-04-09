@@ -125,6 +125,8 @@ export default function PinnedRecordsPage() {
             records(
               id,
               record_alias,
+              contributor_display_name,
+              contributor_identity_preference,
               submitted_at,
               status,
               final_outcome,
@@ -142,7 +144,12 @@ export default function PinnedRecordsPage() {
           pin_id: p.id,
           record_id: p.record_id,
           pinned_at: p.created_at,
-          record_alias: p.records?.record_alias || "Anonymous",
+          record_alias: (() => {
+            const r = p.records;
+            const cred = r?.ai_vendor_1_result || r?.credibility || "";
+            const reveal = cred === "Opinion-Based" || (cred === "Evidence-Based" && r?.contributor_identity_preference === true);
+            return reveal ? (r?.contributor_display_name || "Individual Contributor") : "SuperHero123";
+          })(),
           subject_name: p.records?.subjects?.name || "Unknown",
           submitted_at: p.records?.submitted_at || p.created_at,
           stage: statusToStage(p.records?.status || "ai_verification"),

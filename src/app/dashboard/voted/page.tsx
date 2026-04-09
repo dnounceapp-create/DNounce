@@ -159,7 +159,7 @@ export default function VotedRecordsPage() {
         const recordIds = votes.map((v: any) => v.record_id);
         const { data: recs } = await supabase
           .from("records")
-          .select("id, record_alias, submitted_at, status, final_outcome, credibility, ai_vendor_1_result, subject_id")
+          .select("id, record_alias, contributor_display_name, contributor_identity_preference, submitted_at, status, final_outcome, credibility, ai_vendor_1_result, subject_id")
           .in("id", recordIds);
 
         // Step 3: fetch subjects
@@ -181,7 +181,11 @@ export default function VotedRecordsPage() {
             voted_at: v.created_at,
             vote_choice: v.choice,
             vote_explanation: v.explanation || "",
-            record_alias: rec?.record_alias || "Anonymous",
+            record_alias: (() => {
+              const cred = rec?.ai_vendor_1_result || rec?.credibility || "";
+              const reveal = cred === "Opinion-Based" || (cred === "Evidence-Based" && rec?.contributor_identity_preference === true);
+              return reveal ? (rec?.contributor_display_name || "Individual Contributor") : "SuperHero123";
+            })(),
             subject_name: sub?.name || "Unknown",
             submitted_at: rec?.submitted_at || v.created_at,
             stage: statusToStage(rec?.status || "ai_verification"),

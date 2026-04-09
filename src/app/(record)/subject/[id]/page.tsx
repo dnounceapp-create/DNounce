@@ -732,8 +732,8 @@ export default function SubjectProfilePage() {
     let showRealName = false;
     if (bucket === "Evidence-Based") showRealName = !!r.contributor_identity_preference;
     else if (bucket === "Opinion-Based") showRealName = true;
-    if (showRealName) return realName || alias || "SuperHero123";
-    return alias || realName || "SuperHero123";
+    if (showRealName) return realName || "Individual Contributor";
+    return "SuperHero123";
   }
 
   function recordTitle(r: SubjectRecord) {

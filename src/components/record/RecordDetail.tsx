@@ -178,10 +178,9 @@ function shouldRevealContributorIdentity(record: any): boolean {
   const cred = normalizeCredibility(record?.credibility);
   const choseName = record?.contributor_identity_preference === true;
 
-  if (choseName) return true;
   if (cred === "Opinion-Based") return true;
-  if (cred === "Evidence-Based") return false;
-  return false;
+  if (cred === "Evidence-Based") return choseName;
+  return false; // Unable to Verify → always alias
 }
 
 function getVisibleStagesForViewer(args: { viewerRole: ViewerRole; stage: number }) {

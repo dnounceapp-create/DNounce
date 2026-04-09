@@ -125,6 +125,8 @@ export default function FollowingRecordsPage() {
             records(
               id,
               record_alias,
+              contributor_display_name,
+              contributor_identity_preference,
               submitted_at,
               status,
               final_outcome,
@@ -142,7 +144,12 @@ export default function FollowingRecordsPage() {
           follow_id: f.id,
           record_id: f.record_id,
           followed_at: f.created_at,
-          record_alias: f.records?.record_alias || "Anonymous",
+          record_alias: (() => {
+            const r = f.records;
+            const cred = r?.ai_vendor_1_result || r?.credibility || "";
+            const reveal = cred === "Opinion-Based" || (cred === "Evidence-Based" && r?.contributor_identity_preference === true);
+            return reveal ? (r?.contributor_display_name || "Individual Contributor") : "SuperHero123";
+          })(),
           subject_name: f.records?.subjects?.name || "Unknown",
           submitted_at: f.records?.submitted_at || f.created_at,
           stage: statusToStage(f.records?.status || "ai_verification"),

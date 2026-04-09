@@ -149,6 +149,8 @@ export default function RecordsSubmittedPage() {
           .select(`
             id,
             record_alias,
+            contributor_display_name,
+            contributor_identity_preference,
             submitted_at,
             status,
             final_outcome,
@@ -163,7 +165,11 @@ export default function RecordsSubmittedPage() {
 
         const mapped: RecordItem[] = rawRecords.map((r: any) => ({
           id: r.id,
-          record_alias: r.record_alias || "Anonymous",
+          record_alias: (() => {
+            const cred = r.ai_vendor_1_result || r.credibility || "";
+            const reveal = cred === "Opinion-Based" || (cred === "Evidence-Based" && r.contributor_identity_preference === true);
+            return reveal ? (r.contributor_display_name || "Individual Contributor") : "SuperHero123";
+          })(),
           subject_name: r.subjects?.name || "Unknown",
           submitted_at: r.submitted_at,
           stage: statusToStage(r.status),

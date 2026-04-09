@@ -200,6 +200,8 @@ export default function MyRecordsPage() {
             final_outcome,
             credibility,
             ai_vendor_1_result,
+            contributor_display_name,
+            contributor_identity_preference,
             subjects!inner(name)
           `)
           .eq("subject_id", subjectData.subject_uuid)
@@ -209,7 +211,11 @@ export default function MyRecordsPage() {
 
         const mapped: RecordItem[] = rawRecords.map((r: any) => ({
           id: r.id,
-          contributor_alias: r.record_alias?.split(" • ")[0] || "Anonymous",
+          contributor_alias: (() => {
+            const cred = r.ai_vendor_1_result || r.credibility || "";
+            const reveal = cred === "Opinion-Based" || (cred === "Evidence-Based" && r.contributor_identity_preference === true);
+            return reveal ? (r.contributor_display_name || "Individual Contributor") : "SuperHero123";
+          })(),
           subject_name: r.subjects?.name || "Unknown",
           submitted_at: r.submitted_at,
           stage: statusToStage(r.status),
