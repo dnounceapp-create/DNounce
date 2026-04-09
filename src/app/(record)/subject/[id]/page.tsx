@@ -732,7 +732,7 @@ export default function SubjectProfilePage() {
     let showRealName = false;
     if (bucket === "Evidence-Based") showRealName = !!r.contributor_identity_preference;
     else if (bucket === "Opinion-Based") showRealName = true;
-    if (showRealName) return realName || "Individual Contributor";
+    if (showRealName) return realName || "SuperHero123";
     return "SuperHero123";
   }
 

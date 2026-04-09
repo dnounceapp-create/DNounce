@@ -148,7 +148,7 @@ export default function PinnedRecordsPage() {
             const r = p.records;
             const cred = r?.ai_vendor_1_result || r?.credibility || "";
             const reveal = (cred === "Opinion-Based" || cred === "opinion_based") || ((cred === "Evidence-Based" || cred === "evidence_based") && r?.contributor_identity_preference === true);
-            return reveal ? (r?.contributor_display_name || "Individual Contributor") : "SuperHero123";
+            return reveal ? (r?.contributor_display_name || "SuperHero123") : "SuperHero123";
           })(),
           subject_name: p.records?.subjects?.name || "Unknown",
           submitted_at: p.records?.submitted_at || p.created_at,

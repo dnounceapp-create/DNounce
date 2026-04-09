@@ -4547,10 +4547,10 @@ export default function RecordDetail({
       : null;
 
   const contributorRealName = `${contributorProfile?.first_name ?? ""} ${contributorProfile?.last_name ?? ""}`.trim();
-  const contributorPublicName = reveal ? contributorRealName || "Individual Contributor" : "SuperHero123";
+  const contributorPublicName = reveal ? contributorRealName || "SuperHero123" : "SuperHero123";
 
   const contributorSelfName =
-    `${viewerProfile?.first_name ?? ""} ${viewerProfile?.last_name ?? ""}`.trim() || "Individual Contributor";
+    `${viewerProfile?.first_name ?? ""} ${viewerProfile?.last_name ?? ""}`.trim() || "SuperHero123";
 
   const contributorSelf = {
     name: reveal ? `${contributorSelfName} (You)` : "SuperHero123 (You)",

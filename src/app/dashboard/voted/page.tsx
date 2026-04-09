@@ -184,7 +184,7 @@ export default function VotedRecordsPage() {
             record_alias: (() => {
               const cred = rec?.ai_vendor_1_result || rec?.credibility || "";
               const reveal = (cred === "Opinion-Based" || cred === "opinion_based") || ((cred === "Evidence-Based" || cred === "evidence_based") && rec?.contributor_identity_preference === true);
-              return reveal ? (rec?.contributor_display_name || "Individual Contributor") : "SuperHero123";
+              return reveal ? (rec?.contributor_display_name || "SuperHero123") : "SuperHero123";
             })(),
             subject_name: sub?.name || "Unknown",
             submitted_at: rec?.submitted_at || v.created_at,

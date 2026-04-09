@@ -264,7 +264,7 @@ export default function ReputationPage() {
         const mapped = (data ?? []).map((r: any) => ({ id: r.id, subject_name: r.subject?.name ?? "Unknown", contributor_alias: (() => {
   const cred = r.ai_vendor_1_result || r.credibility || "";
   const reveal = (cred === "Opinion-Based" || cred === "opinion_based") || ((cred === "Evidence-Based" || cred === "evidence_based") && r.contributor_identity_preference === true);
-  return reveal ? (r.contributor_display_name || "Individual Contributor") : "SuperHero123";
+  return reveal ? (r.contributor_display_name || "SuperHero123") : "SuperHero123";
 })(), category: r.category, status: r.status, final_outcome: r.final_outcome, credibility: r.credibility ?? null, created_at: r.created_at, comment_count: 0 }));
         const counts = await Promise.all(mapped.map(async (r) => {
           const tables = ["record_comments","record_community_messages","record_community_replies","record_voting_messages","record_vote_replies","record_debate_messages"];
@@ -280,7 +280,7 @@ records = mapped.map((r, i) => ({ ...r, comment_count: counts[i] }));
           const mapped = (data ?? []).map((r: any) => ({ id: r.id, subject_name: r.subject?.name ?? "Unknown", contributor_alias: (() => {
   const cred = r.ai_vendor_1_result || r.credibility || "";
   const reveal = (cred === "Opinion-Based" || cred === "opinion_based") || ((cred === "Evidence-Based" || cred === "evidence_based") && r.contributor_identity_preference === true);
-  return reveal ? (r.contributor_display_name || "Individual Contributor") : "SuperHero123";
+  return reveal ? (r.contributor_display_name || "SuperHero123") : "SuperHero123";
 })(), category: r.category, status: r.status, final_outcome: r.final_outcome, credibility: r.credibility ?? null, created_at: r.created_at, comment_count: 0 }));
           const counts = await Promise.all(mapped.map(async (r) => {
             const tables = ["record_comments","record_community_messages","record_community_replies","record_voting_messages","record_vote_replies","record_debate_messages"];
@@ -297,7 +297,7 @@ records = mapped.map((r, i) => ({ ...r, comment_count: counts[i] }));
           const mapped = (data ?? []).map((r: any) => ({ id: r.id, subject_name: r.subject?.name ?? "Unknown", contributor_alias: (() => {
   const cred = r.ai_vendor_1_result || r.credibility || "";
   const reveal = (cred === "Opinion-Based" || cred === "opinion_based") || ((cred === "Evidence-Based" || cred === "evidence_based") && r.contributor_identity_preference === true);
-  return reveal ? (r.contributor_display_name || "Individual Contributor") : "SuperHero123";
+  return reveal ? (r.contributor_display_name || "SuperHero123") : "SuperHero123";
 })(), category: r.category, status: r.status, final_outcome: r.final_outcome, credibility: r.credibility ?? null, created_at: r.created_at, comment_count: 0 }));
           const counts = await Promise.all(mapped.map(async (r) => {
             const tables = ["record_comments","record_community_messages","record_community_replies","record_voting_messages","record_vote_replies","record_debate_messages"];
@@ -313,7 +313,7 @@ records = mapped.map((r, i) => ({ ...r, comment_count: counts[i] }));
           const mapped = (data ?? []).map((r: any) => ({ id: r.id, subject_name: r.subject?.name ?? "Unknown", contributor_alias: (() => {
   const cred = r.ai_vendor_1_result || r.credibility || "";
   const reveal = (cred === "Opinion-Based" || cred === "opinion_based") || ((cred === "Evidence-Based" || cred === "evidence_based") && r.contributor_identity_preference === true);
-  return reveal ? (r.contributor_display_name || "Individual Contributor") : "SuperHero123";
+  return reveal ? (r.contributor_display_name || "SuperHero123") : "SuperHero123";
 })(), category: r.category, status: r.status, final_outcome: r.final_outcome, credibility: r.credibility ?? null, created_at: r.created_at, comment_count: 0 }));
           const counts = await Promise.all(mapped.map(async (r) => {
             const tables = ["record_comments","record_community_messages","record_community_replies","record_voting_messages","record_vote_replies","record_debate_messages"];

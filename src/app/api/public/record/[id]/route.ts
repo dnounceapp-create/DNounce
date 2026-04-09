@@ -91,9 +91,9 @@ export async function GET(
 
   const first = profile?.first_name || "";
   const last = profile?.last_name || "";
-  const realName = `${first} ${last}`.trim() || "Individual Contributor";
+  const realName = `${first} ${last}`.trim() || "SuperHero123";
 
-  let contributorDisplayName = "Individual Contributor";
+  let contributorDisplayName = "SuperHero123";
   if (choseName) contributorDisplayName = realName;
   else if (cred === "Evidence-Based") contributorDisplayName = "SuperHero123";
   else if (cred === "Unclear") contributorDisplayName = "BeWary123";

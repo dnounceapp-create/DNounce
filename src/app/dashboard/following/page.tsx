@@ -148,7 +148,7 @@ export default function FollowingRecordsPage() {
             const r = f.records;
             const cred = r?.ai_vendor_1_result || r?.credibility || "";
             const reveal = (cred === "Opinion-Based" || cred === "opinion_based") || ((cred === "Evidence-Based" || cred === "evidence_based") && r?.contributor_identity_preference === true);
-            return reveal ? (r?.contributor_display_name || "Individual Contributor") : "SuperHero123";
+            return reveal ? (r?.contributor_display_name || "SuperHero123") : "SuperHero123";
           })(),
           subject_name: f.records?.subjects?.name || "Unknown",
           submitted_at: f.records?.submitted_at || f.created_at,
