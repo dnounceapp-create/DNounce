@@ -4324,6 +4324,8 @@ export default function RecordDetail({
             location,
             organization,
             credibility,
+            ai_vendor_1_result,
+            contributor_display_name,
             relationship,
             status,
             is_published,
@@ -4546,7 +4548,7 @@ export default function RecordDetail({
       ? `/subject/${contributorSubjectId}`
       : null;
 
-  const contributorRealName = `${contributorProfile?.first_name ?? ""} ${contributorProfile?.last_name ?? ""}`.trim();
+  const contributorRealName = (record as any)?.contributor_display_name || `${contributorProfile?.first_name ?? ""} ${contributorProfile?.last_name ?? ""}`.trim();
   const contributorPublicName = reveal ? contributorRealName || "SuperHero123" : "SuperHero123";
 
   const contributorSelfName =
