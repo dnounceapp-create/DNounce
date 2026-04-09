@@ -4797,11 +4797,11 @@ export default function RecordDetail({
           {(() => {
             const raw = (record.credibility || "").toString().trim();
 
-            const label = raw.includes("Evidence-Based")
+            const label = raw.includes("Evidence-Based") || raw.includes("evidence_based")
               ? "Evidence-Based"
-              : raw.includes("Opinion-Based")
+              : raw.includes("Opinion-Based") || raw.includes("opinion_based")
               ? "Opinion-Based"
-              : raw.includes("Unable to Verify") || raw.includes("unable")
+              : raw.includes("Unable to Verify") || raw.includes("unable_to_verify") || raw.includes("unable")
               ? "Unable to Verify"
               : raw.includes("Unclear")
               ? "Unclear"
