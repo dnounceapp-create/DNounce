@@ -468,15 +468,15 @@ export default function RecordsSubmittedPage() {
                 <div className="mt-3 md:mt-0 text-left md:text-center">
                   <span
                     className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] sm:text-xs font-medium ${
-                      record.credibility === "Evidence-Based"
+                      record.credibility === "Evidence-Based" || record.credibility === "evidence_based"
                         ? "bg-green-100 text-green-700"
-                        : record.credibility === "Opinion-Based"
+                        : record.credibility === "Opinion-Based" || record.credibility === "opinion_based"
                         ? "bg-red-100 text-red-700"
                         : "bg-yellow-100 text-yellow-700"
                     }`}
                   >
-                    {record.credibility === "Opinion-Based" && <AlertTriangle size={12} className="text-red-700" />}
-                    {record.credibility === "Unable to Verify" && <CircleAlert size={12} className="text-yellow-700" />}
+                    {(record.credibility === "Opinion-Based" || record.credibility === "opinion_based") && <AlertTriangle size={12} className="text-red-700" />}
+                    {(record.credibility === "Unable to Verify" || record.credibility === "unable_to_verify") && <CircleAlert size={12} className="text-yellow-700" />}
                     {record.credibility}
                   </span>
                 </div>
