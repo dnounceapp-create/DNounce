@@ -245,7 +245,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => {
     const hasAny = Object.values(adv).some(Boolean) || advTags.length > 0;
     if (!hasAny) { setAdvResults([]); return; }
-    const delay = setTimeout(runAdvancedSearch, 300);
+    const delay = setTimeout(runAdvancedSearch, 200);
     return () => clearTimeout(delay);
   }, [adv, advTags]);
 

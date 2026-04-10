@@ -331,6 +331,12 @@ records = mapped.map((r, i) => ({ ...r, comment_count: counts[i] }));
 
   useEffect(() => { loadData(); }, []);
 
+  useEffect(() => {
+    const handleVisibility = () => { if (document.visibilityState === "visible") loadData(); };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, []);
+
   if (loading) return <div className="p-8 text-gray-500">Loading reputation…</div>;
 
   const earnedLabels = new Set(badges.map(b => b.label));

@@ -277,6 +277,53 @@ export default function MyRecordsPage() {
     checkLifecycleSurvey();
   }, []);
 
+  useEffect(() => {
+    if (!subjectId) return;
+
+    const channel = supabase
+      .channel(`myrecords:${subjectId}`)
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "records",
+        filter: `subject_id=eq.${subjectId}`,
+      }, async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user) return;
+        const { data: rawRecords } = await supabase
+          .from("records")
+          .select(`id, record_alias, submitted_at, status, final_outcome, credibility, ai_vendor_1_result, contributor_display_name, contributor_identity_preference, subjects!inner(name)`)
+          .eq("subject_id", subjectId)
+          .order("submitted_at", { ascending: false });
+        if (!rawRecords) return;
+        const mapped = rawRecords.map((r: any) => ({
+          id: r.id,
+          contributor_alias: (() => {
+            const cred = r.ai_vendor_1_result || r.credibility || "";
+            const reveal = (cred === "Opinion-Based" || cred === "opinion_based") || ((cred === "Evidence-Based" || cred === "evidence_based") && r.contributor_identity_preference === true);
+            return reveal ? (r.contributor_display_name || "SuperHero123") : "SuperHero123";
+          })(),
+          subject_name: r.subjects?.name || "Unknown",
+          submitted_at: r.submitted_at,
+          stage: statusToStage(r.status),
+          outcome: r.final_outcome || null,
+          credibility: r.ai_vendor_1_result || r.credibility || "Pending",
+          last_activity_at: r.submitted_at,
+        }));
+        setRecords(mapped);
+        setStats({
+          my_total_records: mapped.length,
+          kept: mapped.filter((r: any) => r.outcome === "keep").length,
+          deleted: mapped.filter((r: any) => r.outcome === "delete").length,
+        });
+      })
+      .subscribe((status) => {
+        if (status === "TIMED_OUT") supabase.removeChannel(channel);
+      });
+
+    return () => { supabase.removeChannel(channel); };
+  }, [subjectId]);
+
   const hasActiveFilters = Object.keys(filters).length > 0;
   const hasNonDefaultSort = sort !== DEFAULT_SORT;
   const hasActive = hasActiveFilters || hasNonDefaultSort;

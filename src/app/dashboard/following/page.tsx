@@ -106,6 +106,7 @@ export default function FollowingRecordsPage() {
   const [filters, setFilters] = useState<FiltersState>({});
   const [sort, setSort] = useState<string>(DEFAULT_SORT);
   const [pageSize, setPageSize] = useState(10);
+  const [refetchKey, setRefetchKey] = useState(0);
   const [page, setPage] = useState(1);
   const [records, setRecords] = useState<FollowedRecord[]>([]);
   const [loadingData, setLoadingData] = useState(true);
@@ -165,7 +166,14 @@ export default function FollowingRecordsPage() {
       }
     }
     fetchData();
+  }, [refetchKey]);
+
+  useEffect(() => {
+    const handleVisibility = () => { if (document.visibilityState === "visible") setRefetchKey(k => k + 1); };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, []);
+
  
   async function unfollow(followId: string) {
     const { data: { session } } = await supabase.auth.getSession();

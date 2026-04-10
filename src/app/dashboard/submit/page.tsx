@@ -283,7 +283,7 @@ export default function SubmitRecordPage() {
       } catch {
         setSubmitLocationSuggestions([]);
       }
-    }, 300);
+    }, 200);
 
     return () => clearTimeout(id);
   }, [submitLocation]);

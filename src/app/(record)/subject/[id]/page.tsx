@@ -665,6 +665,12 @@ export default function SubjectProfilePage() {
     loadSubject();
   }, [subjectId, claimRefresh]);
 
+  useEffect(() => {
+    const handleVisibility = () => { if (document.visibilityState === "visible") loadSubject(); };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [subjectId]);
+
   const filteredSorted = useMemo(() => {
     let out = (records || []).filter((r) => {
       if (filters.status && (r.status || "").toLowerCase() !== filters.status) return false;
