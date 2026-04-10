@@ -60,6 +60,7 @@ export async function GET(
       contributor:contributors!records_contributor_id_fkey (
         id,
         user_id,
+        auth_user_id,
         profile:user_accountdetails (
           first_name,
           last_name,
@@ -91,17 +92,31 @@ export async function GET(
 
   const first = profile?.first_name || "";
   const last = profile?.last_name || "";
-  const realName = `${first} ${last}`.trim() || "SuperHero123";
+  const profileName = `${first} ${last}`.trim();
+  const realName = (data as any).contributor_display_name || profileName || "SuperHero123";
 
   let contributorDisplayName = "SuperHero123";
-  if (choseName) contributorDisplayName = realName;
-  else if (cred === "Evidence-Based") contributorDisplayName = "SuperHero123";
-  else if (cred === "Unclear") contributorDisplayName = "BeWary123";
-  else if (cred === "Opinion-Based") contributorDisplayName = realName;
+  if (cred === "Opinion-Based") contributorDisplayName = realName;
+  else if (cred === "Evidence-Based") contributorDisplayName = choseName ? realName : "SuperHero123";
+  else contributorDisplayName = "SuperHero123";
+
+  const reveal = contributorDisplayName !== "SuperHero123";
+
+  let contributorSubjectUuid = null;
+  if (reveal && contributor?.user_id) {
+    const { data: subjectRow } = await supabaseAdmin
+      .from("subjects")
+      .select("subject_uuid")
+      .eq("owner_auth_user_id", contributor.auth_user_id ?? contributor.user_id)
+      .maybeSingle();
+    contributorSubjectUuid = subjectRow?.subject_uuid ?? null;
+  }
 
   return NextResponse.json({
     ...data,
     contributorDisplayName,
+    contributor_display_name: (data as any).contributor_display_name || contributorDisplayName,
     contributorAvatarUrl: profile?.avatar_url ?? null,
+    contributorSubjectUuid,
   });
 }

@@ -392,6 +392,12 @@ function LifecycleChips({ stage, viewerRole }: { stage: number; viewerRole: View
     });
   }, [current, viewerRole]);
 
+  useEffect(() => {
+    if (activeRef.current && scrollRef.current) {
+      activeRef.current.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+    }
+  }, [current]);
+
   return (
     <div
       ref={scrollRef}
@@ -4422,11 +4428,11 @@ export default function RecordDetail({
 
         const contributorUserId =
             (rec as any)?.contributor?.user_id ?? (rec as any)?.contributor?.[0]?.user_id ?? null;
+        console.log("🔍 contributor raw:", JSON.stringify((rec as any)?.contributor));
+        console.log("🔍 contributorUserId:", contributorUserId);
 
         const reveal = shouldRevealContributorIdentity(rec);
-        console.log("🔍 reveal:", reveal, "credibility:", rec.credibility, "preference:", rec.contributor_identity_preference, "contributorUserId:", contributorUserId);
         const shouldFetchContributorProfile = !!contributorUserId && (role === "contributor" || reveal);
-        console.log("🔍 shouldFetchContributorProfile:", shouldFetchContributorProfile);
         const shouldFetchContributorBadges = !!contributorUserId;
         
         if (shouldFetchContributorProfile && contributorUserId) {
@@ -4546,11 +4552,11 @@ export default function RecordDetail({
     (record as any)?.contributor?.id ?? (record as any)?.contributor?.[0]?.id ?? null;
   const reveal = shouldRevealContributorIdentity(record);
 
-  const contributorProfileHref = reveal && contributorSubjectId
-      ? `/subject/${contributorSubjectId}`
+  const contributorProfileHref = reveal && (contributorSubjectId || (record as any)?.contributorSubjectUuid)
+      ? `/subject/${contributorSubjectId || (record as any)?.contributorSubjectUuid}`
       : null;
 
-  const contributorRealName = (record as any)?.contributor_display_name || `${contributorProfile?.first_name ?? ""} ${contributorProfile?.last_name ?? ""}`.trim();
+  const contributorRealName = (record as any)?.contributor_display_name || (record as any)?.contributorDisplayName || `${contributorProfile?.first_name ?? ""} ${contributorProfile?.last_name ?? ""}`.trim();
   const contributorPublicName = reveal ? contributorRealName || "SuperHero123" : "SuperHero123";
 
   const contributorSelfName =
@@ -4678,7 +4684,7 @@ export default function RecordDetail({
           <button
             type="button"
             onClick={() => openReport("subject", subject?.subject_uuid ?? "", subject?.name ?? "Subject")}
-            className="absolute bottom-4 right-4 inline-flex items-center gap-1 text-[11px] font-medium text-gray-400 hover:text-red-500 transition-colors"
+            className="absolute top-4 right-4 inline-flex items-center gap-1 text-[11px] font-medium text-gray-400 hover:text-red-500 transition-colors"
             title="Report subject"
           >
             <ShieldAlert className="h-3 w-3" />
@@ -4719,7 +4725,7 @@ export default function RecordDetail({
           <button
             type="button"
             onClick={() => openReport("contributor", contributorId ?? "", view.contributor.name)}
-            className="absolute bottom-4 right-4 inline-flex items-center gap-1 text-[11px] font-medium text-gray-400 hover:text-red-500 transition-colors"
+            className="absolute top-4 right-4 inline-flex items-center gap-1 text-[11px] font-medium text-gray-400 hover:text-red-500 transition-colors"
             title="Report contributor"
           >
             <ShieldAlert className="h-3 w-3" />
@@ -4779,8 +4785,8 @@ export default function RecordDetail({
                       </div>
                     )}
                     <p className="text-xs text-gray-400 mt-1">Submitted this record</p>
-                    {reveal && contributorSubjectId && (
-                      <Link href={`/subject/${contributorSubjectId}`} className="text-blue-600 hover:underline text-sm mt-1 block">
+                    {view.contributor.href && (
+                      <Link href={view.contributor.href} className="text-blue-600 hover:underline text-sm mt-1 block">
                         View Profile →
                       </Link>
                     )}
@@ -4833,8 +4839,8 @@ export default function RecordDetail({
               : "";
 
             return (
-              <div className="flex items-center gap-1.5 self-start sm:self-auto text-xs text-gray-500">
-                <span>AI Credibility Recommendation:</span>
+              <div className="flex flex-wrap items-center gap-1.5 self-start sm:self-auto text-xs text-gray-500">
+                <span className="whitespace-nowrap">AI Credibility Recommendation:</span>
                 <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium whitespace-nowrap ${badgeStyle}`}>
                   {CredibilityIcon && <CredibilityIcon size={11} className={iconColor} />}
                   {label}
@@ -4850,7 +4856,7 @@ export default function RecordDetail({
             <span className="text-gray-900">{formatMMDDYYYY(record.created_at)}</span>
           </div>
 
-          <div className="flex items-center gap-2 min-w-0">
+          <div className="flex flex-wrap items-center gap-2 min-w-0">
             <span className="font-medium text-gray-500 shrink-0">Record ID</span>
             <span className="font-mono text-[12px] text-gray-900 break-words whitespace-normal leading-tight">{shortId(record.id)}</span>
 

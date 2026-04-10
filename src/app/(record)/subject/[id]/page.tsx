@@ -770,7 +770,7 @@ export default function SubjectProfilePage() {
   const isUnclaimed = !subject.owner_auth_user_id;
 
   return (
-    <div className="max-w-5xl mx-auto p-6">
+    <div className="max-w-5xl mx-auto px-3 py-4 sm:p-6">
       <button
         onClick={() => window.history.back()}
         className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 mb-4 transition"
@@ -787,7 +787,7 @@ export default function SubjectProfilePage() {
         />
       )}
 
-      <div className="border rounded-2xl bg-white p-6">
+      <div className="border rounded-2xl bg-white p-3 sm:p-6">
         <div className="flex flex-col md:flex-row gap-6">
           <div className="flex-1">
             {/* Header + Scores */}
@@ -1083,7 +1083,7 @@ export default function SubjectProfilePage() {
                           </button>
                         </div>
                         {expandedRecordId === r.id && (
-                          <div id={`record-inline-${r.id}`} className="mt-4 border-t pt-4">
+                          <div id={`record-inline-${r.id}`} className="mt-4 border-t pt-4 -mx-3 sm:-mx-6">
                             <RecordDetail recordId={r.id} />
                           </div>
                         )}
