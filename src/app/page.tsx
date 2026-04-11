@@ -135,7 +135,7 @@ export default function HomePage() {
         else { setLocationSuggestions(data.predictions || []); }
       } catch (err) { setLocationSuggestions([]); }
     };
-    const delayDebounce = setTimeout(() => fetchSuggestions(locationInput), 200);
+    const delayDebounce = setTimeout(() => fetchSuggestions(locationInput), 100);
     return () => clearTimeout(delayDebounce);
   }, [locationInput]);
 
@@ -222,7 +222,7 @@ export default function HomePage() {
       } catch (err) { console.error("Search error:", err); }
       finally { setSearchLoading(false); }
     };
-    const delay = setTimeout(run, 200);
+    const delay = setTimeout(run, 100);
     return () => clearTimeout(delay);
   }, [searchFirstName, searchLastName, nickname, organization, location, category, searchSubjectId, searchRecordId]);
 

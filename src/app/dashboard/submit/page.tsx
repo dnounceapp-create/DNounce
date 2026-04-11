@@ -283,7 +283,7 @@ export default function SubmitRecordPage() {
       } catch {
         setSubmitLocationSuggestions([]);
       }
-    }, 200);
+    }, 100);
 
     return () => clearTimeout(id);
   }, [submitLocation]);
@@ -741,7 +741,7 @@ export default function SubmitRecordPage() {
               placeholder="e.g. Barber, Waitress, Nail Tech"
               value={submitCategory}
               onChange={setSubmitCategory}
-              helperText="Use a label that best fits how you may find this person."
+              helperText="Use a label that best fits how you may identify this person."
               required
             />
 

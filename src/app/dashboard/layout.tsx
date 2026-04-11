@@ -238,14 +238,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       }
     };
   
-    const delay = setTimeout(fetchResults, 150); 
+    const delay = setTimeout(fetchResults, 100); 
     return () => clearTimeout(delay);
   }, [query, category]);
 
   useEffect(() => {
     const hasAny = Object.values(adv).some(Boolean) || advTags.length > 0;
     if (!hasAny) { setAdvResults([]); return; }
-    const delay = setTimeout(runAdvancedSearch, 200);
+    const delay = setTimeout(runAdvancedSearch, 100);
     return () => clearTimeout(delay);
   }, [adv, advTags]);
 

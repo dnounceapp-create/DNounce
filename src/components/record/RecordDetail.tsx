@@ -4515,8 +4515,8 @@ export default function RecordDetail({
 
     const channel = supabase
       .channel(`record:${recordId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "records", filter: `id=eq.${recordId}` }, async () => {
-        await fetchRecordRef.current?.();
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "records", filter: `id=eq.${recordId}` }, (payload) => {
+        setRecord((prev: any) => prev ? { ...prev, ...payload.new } : prev);
       })
       .subscribe();
 
