@@ -2508,6 +2508,7 @@ function VotingCourtroom({
   actingAuthUserId,
   participantBadges,
   onReport,
+  isUndisputed = false,
 }: {
     record: any;
     viewerRoleUI: ViewerRole;
@@ -2517,6 +2518,7 @@ function VotingCourtroom({
     actingAuthUserId: string | null;
     participantBadges: Record<string, { label: string; icon: string }[]>;
     onReport: (target: "record" | "contributor" | "subject" | "comment", id: string, label: string) => void;
+    isUndisputed?: boolean;
 }) {
   const stage = getEffectiveStage(record, serverOffsetMs);
   const nowMs = Date.now() + (serverOffsetMs || 0);
@@ -2657,11 +2659,13 @@ function VotingCourtroom({
   const canPostCommunityStatement =
     !myCommunityStatement &&
     (
+      isUndisputed ||
       ((locked === "voter" || locked === "citizen") && (isVotingWindow || isPostVoting)) ||
       ((locked === "subject" || locked === "contributor") && isAfterSevenDayUnlock)
     );
     
   const canInteractCommunitySection =
+    isUndisputed ||
     ((locked === "voter" || locked === "citizen") && (isVotingWindow || isPostVoting)) ||
     ((locked === "subject" || locked === "contributor") && isAfterSevenDayUnlock);
 
@@ -3159,7 +3163,107 @@ function VotingCourtroom({
   }, [record?.id, sessionUserId]);
 
   // Early return AFTER all hooks — safe per React Rules of Hooks
-  if (!debateEnded) return null;
+  if (!debateEnded && !isUndisputed) return null;
+  if (isUndisputed) {
+    // For undisputed records, only show community section
+    return (
+      <CommunitySectionCard>
+        <div className="text-sm font-semibold text-gray-900">Community Section</div>
+        <div className="text-xs text-gray-500 mt-1">Please note that you are allowed only one statement.</div>
+        {(canPostCommunityStatement || !!myCommunityStatement) && (
+          <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4">
+            {myCommunityStatement ? (
+              <div className="text-sm text-gray-700">You already posted your community statement (One per record).</div>
+            ) : (
+              <>
+                <div className="text-xs font-semibold text-gray-900">Your community statement</div>
+                <MentionTextarea
+                  value={communityStatementDraft}
+                  onChange={setCommunityStatementDraft}
+                  recordId={record.id}
+                  rows={4}
+                  placeholder="Write your statement…"
+                  className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-900"
+                />
+                <div className="mt-3 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={postCommunityStatement}
+                    disabled={postingReply || communityStatementDraft.trim().length === 0}
+                    className="rounded-xl bg-black px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                  >
+                    {postingReply ? "Posting…" : "Post Statement"}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+        <div className="mt-4">
+          {communityStatements.length === 0 ? (
+            <div className="text-sm text-gray-500">No community statements yet.</div>
+          ) : (
+            communityStatements.map((s) => {
+              const replies = communityRepliesByStatement[s.id] || [];
+              return (
+                <div key={s.id} className="border-b border-gray-200 py-4 last:border-b-0 last:pb-0">
+                  <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                    <span className="text-xs font-semibold text-gray-900">{s.author_alias}</span>
+                    <div className="text-[11px] text-gray-500">{formatTimestampNoSeconds(s.created_at)}</div>
+                  </div>
+                  <div className="mt-2 text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{s.body}</div>
+                  <div className="mt-2">
+                    <AgreeDisagree targetType="record_community_statements" targetId={String(s.id)} disabled={!sessionUserId} size={26} />
+                  </div>
+                  {sessionUserId && (
+                    <button type="button" onClick={() => setReplyingToCommunity({ statementId: s.id, parentReplyId: null })} className="mt-2 text-xs font-medium text-gray-600 hover:text-gray-900">Reply</button>
+                  )}
+                  {replies.length > 0 && (
+                    <div className="mt-4 pl-3 sm:pl-4 border-l space-y-3">
+                      {replies.map((r) => (
+                        <CommunityReplyNodeComponent
+                          key={r.id}
+                          node={r}
+                          statementId={s.id}
+                          canReplyToCommunity={!!sessionUserId}
+                          canReactToCommunity={!!sessionUserId}
+                          setReplyingTo={setReplyingToCommunity}
+                          sessionUserId={sessionUserId}
+                          onEdit={editCommunityReply}
+                          onDelete={deleteCommunityReply}
+                          categoryByUser={categoryByUser}
+                          onReport={onReport}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+        {replyingToCommunity && (
+          <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4">
+            <div className="text-xs font-semibold text-gray-900">Replying…</div>
+            <MentionTextarea
+              value={communityReplyDraft}
+              onChange={setCommunityReplyDraft}
+              recordId={record.id}
+              rows={3}
+              placeholder="Write your reply…"
+              className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-900"
+            />
+            <div className="mt-3 flex justify-end gap-3">
+              <button type="button" onClick={() => { setReplyingToCommunity(null); setCommunityReplyDraft(""); }} className="text-xs text-gray-600">Cancel</button>
+              <button type="button" onClick={postCommunityReply} disabled={postingReply || communityReplyDraft.trim().length === 0} className="rounded-2xl bg-black px-4 py-3 text-sm font-semibold text-white disabled:opacity-50">
+                {postingReply ? "Posting…" : "Post Reply"}
+              </button>
+            </div>
+          </div>
+        )}
+      </CommunitySectionCard>
+    );
+  }
 
   const canVote =
   isVotingWindow &&
@@ -4922,9 +5026,11 @@ export default function RecordDetail({
           </div>
         </div>
 
-        <div className="pt-2">
-          <LifecycleChips stage={getEffectiveStage(record, serverOffsetMs)} viewerRole={effectiveViewerRole} />
-        </div>
+        {getRecordStage(record) >= 4 && (
+          <div className="pt-2">
+            <LifecycleChips stage={getEffectiveStage(record, serverOffsetMs)} viewerRole={effectiveViewerRole} />
+          </div>
+        )}
 
         <div className="flex items-center gap-1.5 text-yellow-500">
           {Array.from({ length: 10 }).map((_, i) => (
@@ -4989,7 +5095,7 @@ export default function RecordDetail({
         </div>
       </div>
 
-      <DebateCourtroom
+      {getRecordStage(record) >= 4 && <DebateCourtroom
         record={record}
         viewerRole={effectiveViewerRole}
         serverOffsetMs={serverOffsetMs}
@@ -5008,7 +5114,7 @@ export default function RecordDetail({
         isImpersonating={isImpersonating}
         actingAuthUserId={actingAuthUserId}
         participantBadges={participantBadges}
-      />
+      />}
 
       <VotingCourtroom
                 record={record}
@@ -5019,6 +5125,7 @@ export default function RecordDetail({
                 actingAuthUserId={actingAuthUserId}
                 participantBadges={participantBadges}
                 onReport={openReport}
+                isUndisputed={getRecordStage(record) < 4 && viewerRole !== "public"}
                 />
 
 {reportOpen && (
