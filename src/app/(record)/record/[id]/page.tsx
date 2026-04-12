@@ -41,7 +41,7 @@ export async function generateMetadata({
       title,
       description,
       type: "article",
-      ...(imageUrl && { images: [{ url: imageUrl, width: 1200, height: 630, alt: title }] }),
+      ...(imageUrl && { images: [{ url: `${process.env.NEXT_PUBLIC_SITE_URL}/api/og/record?id=${id}`, width: 1200, height: 630, alt: title }] }),
     },
     twitter: {
       card: imageUrl ? "summary_large_image" : "summary",

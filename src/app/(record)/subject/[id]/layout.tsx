@@ -61,7 +61,7 @@ export async function generateMetadata({
       description: fullDescription,
       type: "profile",
       ...(imageUrl && {
-        images: [{ url: imageUrl, width: 1200, height: 630, alt: title }],
+        images: [{ url: `${process.env.NEXT_PUBLIC_SITE_URL}/api/og/subject?id=${id}`, width: 1200, height: 630, alt: title }],
       }),
     },
     twitter: {
