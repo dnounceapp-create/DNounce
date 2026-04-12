@@ -41,13 +41,13 @@ export async function generateMetadata({
       title,
       description,
       type: "article",
-      ...(imageUrl && { images: [{ url: `${process.env.NEXT_PUBLIC_SITE_URL}/api/og/record?id=${id}`, width: 1200, height: 630, alt: title }] }),
+      images: [{ url: `${process.env.NEXT_PUBLIC_SITE_URL}/api/og/record?id=${id}`, width: 1200, height: 630, alt: title }],
     },
     twitter: {
-      card: imageUrl ? "summary_large_image" : "summary",
+      card: "summary_large_image",
       title,
       description,
-      ...(imageUrl && { images: [imageUrl] }),
+      images: [`${process.env.NEXT_PUBLIC_SITE_URL}/api/og/record?id=${id}`],
     },
   };
 }
