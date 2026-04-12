@@ -991,7 +991,19 @@ export default function MyRecordsPage() {
             </div>
 
             <div className="mt-5 flex justify-end gap-2">
-              <button type="button" onClick={() => setShowLifecycleSurvey(false)} className="rounded-xl border px-4 py-2 text-sm text-gray-600 hover:bg-gray-50">Skip</button>
+              <button type="button" onClick={async () => {
+                setShowLifecycleSurvey(false);
+                try {
+                  const { data: { session } } = await supabase.auth.getSession();
+                  if (!session?.user) return;
+                  await supabase.from("survey_completions").insert({
+                    user_id: session.user.id,
+                    survey_type: "post_lifecycle",
+                  });
+                } catch (e) {
+                  console.error("Survey skip failed:", e);
+                }
+              }} className="rounded-xl border px-4 py-2 text-sm text-gray-600 hover:bg-gray-50">Skip forever</button>
               <button type="button" onClick={submitLifecycleSurvey} disabled={lifecycleSurveySubmitting} className="rounded-xl bg-black px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
                 {lifecycleSurveySubmitting ? "Submitting…" : "Submit"}
               </button>

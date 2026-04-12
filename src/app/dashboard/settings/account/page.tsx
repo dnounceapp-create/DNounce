@@ -306,6 +306,7 @@ export default function AccountSecurityPage() {
     organization: "",
     phone: "",
     location: "",
+    bio: "",
   });
   const [accountDetailsDraft, setAccountDetailsDraft] = useState<any>(null);
 
@@ -563,6 +564,7 @@ export default function AccountSecurityPage() {
         job_title: accountdetails.job_title,
         organization: accountdetails.organization,
         location: accountdetails.location,
+        bio: accountdetails.bio,
       };
   
       const { error } = await supabase
@@ -1222,6 +1224,25 @@ export default function AccountSecurityPage() {
               <p className="text-xs text-gray-500 mt-1">
                 Type a city name to see neighborhoods, or neighborhood to see full location.
               </p>
+            </div>
+
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Bio
+              </label>
+              <textarea
+                disabled={!isEditing}
+                value={accountdetails.bio ?? ""}
+                onChange={(e) => {
+                  if (e.target.value.length <= 150) {
+                    setaccountDetails({ ...accountdetails, bio: e.target.value });
+                  }
+                }}
+                rows={3}
+                placeholder="Tell people a little about yourself…"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white disabled:bg-gray-100 disabled:text-gray-500 focus:ring-2 focus:ring-blue-500 resize-none"
+              />
+              <p className="text-xs text-gray-500 mt-1">{accountdetails.bio?.length ?? 0}/150</p>
             </div>
           </section>
 

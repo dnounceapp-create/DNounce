@@ -48,6 +48,7 @@ export default function UserSetupPage() {
     organization: "",
     phone: "",
     location: "",
+    bio: "",
     howFound: "",
     howFoundOther: "",
   });
@@ -213,6 +214,7 @@ export default function UserSetupPage() {
         p_organization: form.organization.trim() || null,
         p_phone: cleanPhone,
         p_location: form.location.trim(),
+        p_bio: form.bio?.trim() || null,
         p_avatar_url: avatarUrl || null,
       });
 
@@ -598,6 +600,25 @@ export default function UserSetupPage() {
               <p className="text-xs text-gray-500 mt-1">
                 Type city name to see neighborhoods, or neighborhood to see full location.
               </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Bio
+              </label>
+              <textarea
+                name="bio"
+                value={form.bio ?? ""}
+                onChange={(e) => {
+                  if (e.target.value.length <= 150) {
+                    setForm((prev) => ({ ...prev, bio: e.target.value }));
+                  }
+                }}
+                rows={3}
+                placeholder="Tell people a little about yourself…"
+                className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+              />
+              <p className="text-xs text-gray-500 mt-1">{(form.bio ?? "").length}/150</p>
             </div>
 
             {/* How did you find DNounce */}

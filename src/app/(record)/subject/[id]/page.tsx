@@ -471,6 +471,7 @@ export default function SubjectProfilePage() {
   const [subject, setSubject] = useState<any>(null);
   const [records, setRecords] = useState<SubjectRecord[]>([]);
   const [socialLinks, setSocialLinks] = useState<any[]>([]);
+  const [ownerBio, setOwnerBio] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"records" | "reputations" | "social">("records");
   const [expandedRecordId, setExpandedRecordId] = useState<string | null>(null);
 
@@ -598,6 +599,13 @@ export default function SubjectProfilePage() {
           .eq("user_id", ownerAuthUserId)
           .order("created_at", { ascending: true });
         setSocialLinks(socials || []);
+
+        const { data: bioData } = await supabase
+          .from("user_accountdetails")
+          .select("bio")
+          .eq("user_id", ownerAuthUserId)
+          .maybeSingle();
+        setOwnerBio(bioData?.bio ?? null);
       }
 
       let { data: subjectScoreData } = await supabase
@@ -850,6 +858,9 @@ export default function SubjectProfilePage() {
                     <p className="text-sm text-gray-500 flex items-center gap-1">
                       <span>📍</span> {subject.location || "Unknown"}
                     </p>
+                    {ownerBio && (
+                      <p className="text-sm text-gray-600 mt-1 leading-relaxed">{ownerBio}</p>
+                    )}
                   </div>
                 </div>
 
