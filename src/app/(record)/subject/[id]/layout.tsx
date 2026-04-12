@@ -60,15 +60,13 @@ export async function generateMetadata({
       title,
       description: fullDescription,
       type: "profile",
-      ...(imageUrl && {
-        images: [{ url: `${process.env.NEXT_PUBLIC_SITE_URL}/api/og/subject?id=${id}`, width: 1200, height: 630, alt: title }],
-      }),
+      images: [{ url: `${process.env.NEXT_PUBLIC_SITE_URL}/api/og/subject?id=${id}`, width: 1200, height: 630, alt: title }],
     },
     twitter: {
-      card: imageUrl ? "summary_large_image" : "summary",
+      card: "summary_large_image",
       title,
       description: fullDescription,
-      ...(imageUrl && { images: [imageUrl] }),
+      images: [`${process.env.NEXT_PUBLIC_SITE_URL}/api/og/subject?id=${id}`],
     },
   };
 }

@@ -12,7 +12,6 @@ const supabaseAdmin = createClient(
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
-
   if (!id) return new Response("Missing id", { status: 400 });
 
   const { data: subject } = await supabaseAdmin
@@ -41,94 +40,125 @@ export async function GET(req: NextRequest) {
     scores = scoresRes.data ?? null;
   }
 
-  const { data: subjectScoreData } = await supabaseAdmin
-    .from("subject_scores")
-    .select("subject_score")
-    .eq("subject_uuid", id)
-    .maybeSingle();
+  const [{ data: subjectScoreData }, { count: totalRecords }, { count: evidenceCount }, { count: opinionCount }] = await Promise.all([
+    supabaseAdmin.from("subject_scores").select("subject_score").eq("subject_uuid", id).maybeSingle(),
+    supabaseAdmin.from("records").select("id", { count: "exact", head: true }).eq("subject_id", id).in("status", ["published", "deletion_request", "debate", "voting", "decision"]),
+    supabaseAdmin.from("records").select("id", { count: "exact", head: true }).eq("subject_id", id).in("status", ["published", "deletion_request", "debate", "voting", "decision"]).ilike("ai_vendor_1_result", "%evidence%"),
+    supabaseAdmin.from("records").select("id", { count: "exact", head: true }).eq("subject_id", id).in("status", ["published", "deletion_request", "debate", "voting", "decision"]).ilike("ai_vendor_1_result", "%opinion%"),
+  ]);
+
+  const scoreList = [
+    { label: "Subject Score", value: subjectScoreData?.subject_score ?? null },
+    { label: "Overall Score", value: scores?.overall_score ?? null },
+    { label: "Contributor Score", value: scores?.contributor_score ?? null },
+    { label: "Voter Score", value: scores?.voter_score ?? null },
+    { label: "Citizen Score", value: scores?.citizen_score ?? null },
+  ];
 
   const logoUrl = `${process.env.NEXT_PUBLIC_SITE_URL || "https://dnounce.com"}/logo.png`;
 
   return new ImageResponse(
     (
-      <div style={{ width: 1200, height: 630, display: "flex", background: "#0A0F1E", fontFamily: "Georgia, serif", overflow: "hidden" }}>
+      <div style={{ width: 1200, height: 630, display: "flex", flexDirection: "column", background: "#F9FAFB", fontFamily: "system-ui, sans-serif", padding: "20px 28px", gap: 12 }}>
 
-        {/* Gold top bar */}
-        <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 4, background: "linear-gradient(90deg, #B8860B, #FFD700, #B8860B)", display: "flex" }} />
+        {/* Top bar */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <img src={logoUrl} style={{ width: 24, height: 24, borderRadius: 5 }} />
+            <span style={{ fontWeight: 700, fontSize: 13, color: "#111827" }}>DNounce</span>
+          </div>
+          <span style={{ fontSize: 11, color: "#9CA3AF" }}>dnounce.com</span>
+        </div>
 
-        {/* Avatar background blur */}
-        {avatarUrl && (
-          <img src={avatarUrl} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover", opacity: 0.08 }} />
-        )}
+        {/* Main white card */}
+        <div style={{ display: "flex", background: "white", borderRadius: 18, border: "1px solid #E5E7EB", padding: "20px 24px", flex: 1, flexDirection: "column", gap: 16 }}>
 
-        {/* Overlay */}
-        <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: "linear-gradient(135deg, rgba(10,15,30,0.97) 0%, rgba(15,20,45,0.93) 100%)", display: "flex" }} />
+          {/* Header: identity + scores */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 24 }}>
 
-        {/* Main layout */}
-        <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, display: "flex", padding: "48px 56px", gap: 48 }}>
-
-          {/* Left column */}
-          <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
-
-            {/* Logo row */}
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 32 }}>
-              <img src={logoUrl} style={{ width: 36, height: 36, borderRadius: 8 }} />
-              <span style={{ color: "#FFD700", fontSize: 15, fontWeight: 700, letterSpacing: "0.12em" }}>DNounce</span>
-            </div>
-
-            {/* Avatar + name */}
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 24, marginBottom: 20 }}>
+            {/* Left: avatar + info */}
+            <div style={{ display: "flex", gap: 16, alignItems: "flex-start", flex: 1 }}>
+              {/* Avatar */}
               {avatarUrl ? (
-                <img src={avatarUrl} style={{ width: 96, height: 96, borderRadius: "50%", objectFit: "cover", border: "3px solid rgba(255,215,0,0.4)", flexShrink: 0 }} />
+                <img src={avatarUrl} style={{ width: 72, height: 72, borderRadius: "50%", objectFit: "cover", border: "1px solid #E5E7EB", flexShrink: 0 }} />
               ) : (
-                <div style={{ width: 96, height: 96, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "3px solid rgba(255,215,0,0.3)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <span style={{ color: "#9CA3AF", fontSize: 40 }}>👤</span>
+                <div style={{ width: 72, height: 72, borderRadius: "50%", background: "#E5E7EB", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <svg width={36} height={36} viewBox="0 0 24 24" style={{ display: "flex" }}>
+                    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" fill="none"/>
+                    <circle cx="12" cy="7" r="4" stroke="#9CA3AF" strokeWidth="2" fill="none"/>
+                  </svg>
                 </div>
               )}
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                <div style={{ color: "#FFFFFF", fontSize: 36, fontWeight: 700, lineHeight: 1.15, letterSpacing: "-0.02em", display: "flex" }}>
+
+              {/* Name + org + location + bio */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1 }}>
+                <span style={{ fontWeight: 700, fontSize: 22, color: "#111827", lineHeight: 1.2, display: "flex" }}>
                   {subjectName}{nickname}
-                </div>
-                <div style={{ color: "#9CA3AF", fontSize: 17, display: "flex", gap: 8, alignItems: "center" }}>
-                  <span>{org}</span>
-                  {loc ? (
-                    <span style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                      <span style={{ color: "#4B5563" }}>•</span>
-                      <span>📍 {loc}</span>
-                    </span>
-                  ) : null}
-                </div>
+                </span>
+                <span style={{ fontSize: 14, color: "#4B5563" }}>{org}</span>
+                {loc ? (
+                  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                    <svg width={13} height={13} viewBox="0 0 24 24" style={{ display: "flex", flexShrink: 0 }}>
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" stroke="#9CA3AF" strokeWidth="2" fill="none"/>
+                      <circle cx="12" cy="10" r="3" stroke="#9CA3AF" strokeWidth="2" fill="none"/>
+                    </svg>
+                    <span style={{ fontSize: 13, color: "#6B7280" }}>{loc}</span>
+                  </div>
+                ) : null}
+                {bio ? (
+                  <span style={{ fontSize: 13, color: "#374151", lineHeight: 1.5, marginTop: 2 }}>{bio}</span>
+                ) : null}
               </div>
             </div>
 
-            {/* Bio */}
-            {bio && (
-              <div style={{ display: "flex", borderLeft: "3px solid #FFD700", paddingLeft: 16, marginBottom: 24 }}>
-                <span style={{ color: "#D1D5DB", fontSize: 18, lineHeight: 1.6 }}>{bio}</span>
-              </div>
-            )}
-
-            <div style={{ flex: 1, display: "flex" }} />
-
-            <span style={{ color: "#6B7280", fontSize: 14, letterSpacing: "0.05em" }}>dnounce.com</span>
+            {/* Right: scores */}
+            <div style={{ display: "flex", gap: 16, alignItems: "flex-start", flexShrink: 0 }}>
+              {scoreList.map((s) => (
+                <div key={s.label} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, minWidth: 70 }}>
+                  <span style={{ fontWeight: 700, fontSize: 22, color: "#111827" }}>{s.value != null ? s.value : "—"}</span>
+                  <span style={{ fontSize: 10, color: "#6B7280", textAlign: "center" }}>{s.label}</span>
+                </div>
+              ))}
+            </div>
           </div>
 
-          {/* Right column: scores */}
-          <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", gap: 16, minWidth: 200 }}>
-            <span style={{ color: "#FFD700", fontSize: 13, fontWeight: 700, letterSpacing: "0.1em", marginBottom: 8 }}>REPUTATION</span>
+          {/* Divider */}
+          <div style={{ height: 1, background: "#F3F4F6", display: "flex" }} />
 
-            {[
-              { label: "Subject Score", value: subjectScoreData?.subject_score ?? null },
-              { label: "Overall Score", value: scores?.overall_score ?? null },
-              { label: "Contributor", value: scores?.contributor_score ?? null },
-              { label: "Voter Score", value: scores?.voter_score ?? null },
-            ].map((s) => (
-              <div key={s.label} style={{ display: "flex", flexDirection: "column", alignItems: "center", background: "rgba(255,255,255,0.06)", borderRadius: 12, padding: "12px 20px", minWidth: 90, border: "1px solid rgba(255,215,0,0.15)" }}>
-                <span style={{ color: "#FFD700", fontSize: 26, fontWeight: 700 }}>{s.value != null ? s.value : "—"}</span>
-                <span style={{ color: "#9CA3AF", fontSize: 12, marginTop: 2 }}>{s.label}</span>
+          {/* Tabs row */}
+          <div style={{ display: "flex", borderBottom: "1px solid #E5E7EB" }}>
+            {["Records About Me", "Reputations & Badges", "Social Media"].map((tab, i) => (
+              <div key={tab} style={{ display: "flex", flex: 1, justifyContent: "center", padding: "8px 16px", fontSize: 13, fontWeight: i === 0 ? 600 : 400, color: i === 0 ? "#2563EB" : "#6B7280", borderBottom: i === 0 ? "2px solid #2563EB" : "2px solid transparent", marginBottom: -1 }}>
+                {tab}
               </div>
             ))}
           </div>
+
+          {/* Record Breakdown */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <span style={{ fontWeight: 600, fontSize: 14, color: "#111827" }}>Record Breakdown</span>
+            <div style={{ display: "flex", gap: 0 }}>
+              {[
+                { label: "Total Records", value: totalRecords ?? 0 },
+                { label: "Evidence-Based", value: evidenceCount ?? 0 },
+                { label: "Opinion-Based", value: opinionCount ?? 0 },
+              ].map((s) => (
+                <div key={s.label} style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: 1, gap: 2 }}>
+                  <span style={{ fontWeight: 700, fontSize: 28, color: "#111827" }}>{s.value}</span>
+                  <span style={{ fontSize: 12, color: "#6B7280" }}>{s.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Bottom logo watermark */}
+          <div style={{ display: "flex", flex: 1, alignItems: "flex-end", justifyContent: "center", paddingBottom: 8 }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+              <img src={logoUrl} style={{ width: 90, height: 90, borderRadius: 20 }} />
+              <span style={{ fontSize: 22, fontWeight: 800, color: "#111827", letterSpacing: "-0.02em" }}>DNounce</span>
+            </div>
+          </div>
+
         </div>
       </div>
     ),
