@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
 
       if (!userId || !planId) break;
 
-      const stripeSub = await stripe.subscriptions.retrieve(subscriptionId);
+      const stripeSub = await stripe.subscriptions.retrieve(subscriptionId) as any;
 
       await supabase
         .from("subscriptions")
