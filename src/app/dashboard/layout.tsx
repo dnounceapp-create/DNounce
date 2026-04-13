@@ -59,6 +59,7 @@ const MAIN_NAV: NavItem[] = [
 
 const SETTINGS_NAV: NavItem[] = [
   { name: "Account", href: "/dashboard/settings/account", icon: UserIcon },
+  { name: "Billing", href: "/dashboard/settings/billing", icon: Star },
   { name: "Notifications", href: "/dashboard/settings/notifications", icon: Bell },
   { name: "Language", href: "/dashboard/settings/language", icon: Globe },
   { name: "Display", href: "/dashboard/settings/display", icon: Moon },

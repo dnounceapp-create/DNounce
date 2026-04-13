@@ -111,6 +111,7 @@ export default function AccountSecurityPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const [planId, setPlanId] = useState<"standard" | "insights" | "pro">("standard");
   const btnBase =
   "inline-flex items-center justify-center rounded-2xl px-5 py-2.5 text-sm font-semibold transition-all duration-200 active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";
 
@@ -385,6 +386,13 @@ export default function AccountSecurityPage() {
         }
       }
   
+      const { data: subData } = await supabase
+        .from("subscriptions")
+        .select("plan_id")
+        .eq("user_id", currentUser.id)
+        .single();
+      if (subData?.plan_id) setPlanId(subData.plan_id as "standard" | "insights" | "pro");
+
       setLoading(false);
     };
   
@@ -954,10 +962,36 @@ export default function AccountSecurityPage() {
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 px-4 py-6 sm:p-6 lg:p-8 pb-[calc(env(safe-area-inset-bottom)+24px)]">
       <div className="max-w-3xl mx-auto">
-        <h1 className="text-3xl font-bold mb-2">Account & Security</h1>
-        <p className="text-gray-600 mb-8">
+      <h1 className="text-3xl font-bold mb-2">Account & Security</h1>
+        <p className="text-gray-600 mb-4">
           Manage your login credentials, security settings, and account details.
         </p>
+
+        {/* Plan badge */}
+        <div className="flex items-center gap-3 mb-8">
+          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${
+            planId === "pro"
+              ? "bg-indigo-50 border-indigo-200 text-indigo-700"
+              : planId === "insights"
+              ? "bg-blue-50 border-blue-200 text-blue-700"
+              : "bg-gray-100 border-gray-200 text-gray-500"
+          }`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${
+              planId === "pro" ? "bg-indigo-500" : planId === "insights" ? "bg-blue-500" : "bg-gray-400"
+            }`} />
+            {planId === "pro" ? "Pro" : planId === "insights" ? "Insights" : "Standard"}
+          </span>
+          {planId === "standard" && (
+            <a href="/dashboard/settings/billing" className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 underline underline-offset-2">
+              Upgrade plan →
+            </a>
+          )}
+          {planId !== "standard" && (
+            <a href="/dashboard/settings/billing" className="text-xs text-gray-400 hover:text-gray-600 underline underline-offset-2">
+              Manage billing →
+            </a>
+          )}
+        </div>
 
         <div className="bg-white border border-gray-200 shadow-sm rounded-2xl p-4 sm:p-6 space-y-8 transition-all">
           {/* 🖼️ Avatar Display */}
