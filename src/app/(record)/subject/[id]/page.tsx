@@ -563,6 +563,15 @@ export default function SubjectProfilePage() {
 
       setSubject(subj);
 
+      // 🔍 Track profile view
+      supabase.auth.getSession().then(({ data: sessionData }) => {
+        supabase.from("profile_views").insert({
+          subject_id: subjectId,
+          viewer_auth_user_id: sessionData?.session?.user?.id ?? null,
+          is_anonymous: !sessionData?.session?.user?.id,
+        }).then(() => {});
+      });
+
       const rows: SubjectRecord[] = (recs || []) as any;
 
       const rowsWithOutcome = await Promise.all(

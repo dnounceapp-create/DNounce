@@ -171,5 +171,18 @@ export async function GET(req: Request) {
     .map((r) => ({ ...r, _score: scoreResult(r, q, location) }))
     .sort((a, b) => b._score - a._score);
 
+  // 🔍 Track search impressions for profile results
+  const profileResults = scored.filter((r) => r.type === "profile");
+  if (profileResults.length > 0) {
+    const { data: { user } } = await supabase.auth.getUser();
+    supabase.from("search_impressions").insert(
+      profileResults.map((r) => ({
+        subject_id: r.id,
+        searcher_auth_user_id: user?.id ?? null,
+        query,
+      }))
+    ).then(() => {});
+  }
+
   return NextResponse.json({ results: scored });
 }

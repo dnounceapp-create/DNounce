@@ -34,6 +34,7 @@ import {
   Info,
   LogOut,
   Trash2,
+  BarChart2,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
@@ -55,6 +56,7 @@ const MAIN_NAV: NavItem[] = [
   { name: "Records I've Voted", href: "/dashboard/voted", icon: Vote },
   { name: "Pinned Records", href: "/dashboard/pinned", icon: Pin },
   { name: "Following Records", href: "/dashboard/following", icon: Eye },
+  { name: "Analytics", href: "/dashboard/analytics", icon: BarChart2 },
 ];
 
 const SETTINGS_NAV: NavItem[] = [
