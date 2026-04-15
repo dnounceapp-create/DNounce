@@ -784,7 +784,7 @@ export default function AnalyticsPage() {
         </div>
 
         {planId === "standard" && (
-          <div className="relative mt-2">
+          <div className="relative mt-2 min-h-[320px]">
             <StandardLockedOverlay />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 blur-sm pointer-events-none select-none">
               {["Profile Views", "Search Impressions", "Credibility Breakdown", "Category Breakdown",
