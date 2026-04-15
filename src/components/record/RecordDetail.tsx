@@ -3580,14 +3580,32 @@ function VotingCourtroom({
           </div>
 
           <div className="flex w-full sm:w-auto flex-col items-start gap-2 sm:items-end">
-            <div className="relative group max-w-full">
-              <TallyChip keepCount={keepCount} deleteCount={deleteCount} totalCount={totalCount} />
-              {Object.values(voteBadges).filter(b => b.is_convicted).length > 0 && (
-                <div className="absolute top-full right-0 mt-1 hidden group-hover:block bg-gray-800 text-white text-xs rounded-lg p-2 whitespace-nowrap z-10">
-                  {Object.values(voteBadges).filter(b => b.is_convicted).length} convicted vote(s) excluded from tally
+            {(() => {
+              const verdictAt = record?.verdict_announced_at ? new Date(record.verdict_announced_at) : null;
+              const verdictRevealed = !verdictAt || new Date() >= verdictAt;
+              if (verdictRevealed) {
+                return (
+                  <div className="relative group max-w-full">
+                    <TallyChip keepCount={keepCount} deleteCount={deleteCount} totalCount={totalCount} />
+                    {Object.values(voteBadges).filter(b => b.is_convicted).length > 0 && (
+                      <div className="absolute top-full right-0 mt-1 hidden group-hover:block bg-gray-800 text-white text-xs rounded-lg p-2 whitespace-nowrap z-10">
+                        {Object.values(voteBadges).filter(b => b.is_convicted).length} convicted vote(s) excluded from tally
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+              // Verdict not yet announced — show countdown
+              const msLeft = verdictAt.getTime() - Date.now();
+              const daysLeft = Math.floor(msLeft / (1000 * 60 * 60 * 24));
+              const hoursLeft = Math.floor((msLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+              return (
+                <div className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700">
+                  <span>⏳</span>
+                  <span>Verdict in {daysLeft > 0 ? `${daysLeft}d ${hoursLeft}h` : `${hoursLeft}h`}</span>
                 </div>
-              )}
-            </div>
+              );
+            })()}
             {record?.voting_ends_at ? (
               <VotingTimerChip votingEndsAt={record.voting_ends_at as string} serverOffsetMs={serverOffsetMs} />
             ) : null}
@@ -4445,6 +4463,7 @@ export default function RecordDetail({
             debate_ends_at,
             voting_started_at,
             voting_ends_at,
+            verdict_announced_at,
             decision_started_at,
             contributor_id,
             contributor_identity_preference,
@@ -4529,6 +4548,16 @@ export default function RecordDetail({
         setViewerRole(role);
         setRecord(rec);
         setCurrentStage(getEffectiveStage(rec, offsetMs));
+
+        // 🔍 Track record view (unique per day)
+        const subjectId = (rec as any)?.subject?.subject_uuid ?? null;
+        supabase.from("record_views").upsert({
+          record_id: recordId,
+          subject_id: subjectId,
+          viewer_auth_user_id: sessionUserId,
+          is_anonymous: false,
+          viewed_date: new Date().toISOString().split("T")[0],
+        }, { onConflict: "record_id,viewer_auth_user_id,viewed_date", ignoreDuplicates: true }).then(() => {});
 
         const contributorUserId =
             (rec as any)?.contributor?.user_id ?? (rec as any)?.contributor?.[0]?.user_id ?? null;
@@ -5029,6 +5058,12 @@ export default function RecordDetail({
         {getRecordStage(record) >= 4 && (
           <div className="pt-2">
             <LifecycleChips stage={getEffectiveStage(record, serverOffsetMs)} viewerRole={effectiveViewerRole} />
+          </div>
+        )}
+        {getRecordStage(record) === 7 && record?.verdict_announced_at && new Date() < new Date(record.verdict_announced_at) && (
+          <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700">
+            <span>⏳</span>
+            <span>Verdict announcement: {new Date(record.verdict_announced_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
           </div>
         )}
 

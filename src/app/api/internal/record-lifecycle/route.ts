@@ -132,11 +132,13 @@ export async function GET() {
 
         if (now >= votingEnd) {
           const executionEndsAt = new Date(votingEnd.getTime() + 3 * 24 * 60 * 60 * 1000);
+          const verdictAnnouncedAt = new Date(votingEnd.getTime() + 7 * 24 * 60 * 60 * 1000);
           await admin
             .from("records")
             .update({
               status: "decision",
               execution_ends_at: executionEndsAt.toISOString(),
+              verdict_announced_at: verdictAnnouncedAt.toISOString(),
             })
             .eq("id", r.id);
         }
@@ -157,6 +159,116 @@ export async function GET() {
               decision_made_at: now.toISOString(),
             })
             .eq("id", r.id);
+        }
+
+        continue;
+      }
+
+      // =====================================================
+      // VERDICT COUNTDOWN — notify 24h before announcement
+      // =====================================================
+      if (status === "decision" && r.verdict_announced_at && !r.decision_made_at) {
+        const verdictAt = new Date(r.verdict_announced_at);
+        const notifyAt = new Date(verdictAt.getTime() - 24 * 60 * 60 * 1000);
+
+        if (now >= notifyAt && now < verdictAt) {
+          // Check if we already sent this notification
+          const { data: existing } = await admin
+            .from("notifications")
+            .select("id")
+            .eq("record_id", r.id)
+            .eq("type", "verdict_countdown")
+            .maybeSingle();
+
+          if (!existing) {
+            // Notify subject
+            if (r.subject_id) {
+              const { data: subjectOwner } = await admin
+                .from("subjects")
+                .select("owner_auth_user_id")
+                .eq("subject_uuid", r.subject_id)
+                .maybeSingle();
+
+              if (subjectOwner?.owner_auth_user_id) {
+                await admin.from("notifications").insert({
+                  user_id: subjectOwner.owner_auth_user_id,
+                  title: "Verdict drops in 24 hours",
+                  body: "The community verdict on a record about you will be announced tomorrow. Come back to see the result.",
+                  type: "verdict_countdown",
+                  record_id: r.id,
+                });
+              }
+            }
+
+            // Notify contributor
+            if (r.contributor_id) {
+              const { data: contributor } = await admin
+                .from("contributors")
+                .select("auth_user_id")
+                .eq("id", r.contributor_id)
+                .maybeSingle();
+
+              if (contributor?.auth_user_id) {
+                await admin.from("notifications").insert({
+                  user_id: contributor.auth_user_id,
+                  title: "Verdict drops in 24 hours",
+                  body: "The community verdict on a record you submitted will be announced tomorrow.",
+                  type: "verdict_countdown",
+                  record_id: r.id,
+                });
+              }
+            }
+          }
+        }
+
+        // Announce verdict when verdict_announced_at passes
+        if (now >= verdictAt) {
+          const { data: existing } = await admin
+            .from("notifications")
+            .select("id")
+            .eq("record_id", r.id)
+            .eq("type", "verdict_announced")
+            .maybeSingle();
+
+          if (!existing) {
+            // Notify subject
+            if (r.subject_id) {
+              const { data: subjectOwner } = await admin
+                .from("subjects")
+                .select("owner_auth_user_id")
+                .eq("subject_uuid", r.subject_id)
+                .maybeSingle();
+
+              if (subjectOwner?.owner_auth_user_id) {
+                await admin.from("notifications").insert({
+                  user_id: subjectOwner.owner_auth_user_id,
+                  title: "The verdict is in",
+                  body: "The community has reached a decision on a record about you. See the result now.",
+                  type: "verdict_announced",
+                  record_id: r.id,
+                });
+              }
+            }
+
+            // Notify contributor
+            if (r.contributor_id) {
+              const { data: contributor } = await admin
+                .from("contributors")
+                .select("auth_user_id")
+                .eq("id", r.contributor_id)
+                .maybeSingle();
+
+              if (contributor?.auth_user_id) {
+                await admin.from("notifications").insert({
+                  user_id: contributor.auth_user_id,
+                  title: "The verdict is in",
+                  body: "The community has reached a decision on a record you submitted. See the result now.",
+                  type: "verdict_announced",
+                  record_id: r.id,
+                });
+              }
+            }
+          }
         }
 
         continue;

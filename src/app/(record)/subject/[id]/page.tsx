@@ -563,12 +563,47 @@ export default function SubjectProfilePage() {
 
       setSubject(subj);
 
-      // 🔍 Track profile view
-      supabase.auth.getSession().then(({ data: sessionData }) => {
+      // 🔍 Track profile view with geo + source + viewer role
+      supabase.auth.getSession().then(async ({ data: sessionData }) => {
+        let city = null, region = null, country = null;
+        try {
+          const geoRes = await fetch("/api/geo");
+          if (geoRes.ok) {
+            const geo = await geoRes.json();
+            city = geo.city ?? null;
+            region = geo.region ?? null;
+            country = geo.country ?? null;
+          }
+        } catch {}
+
+        // Determine source from URL params
+        const urlParams = new URLSearchParams(window.location.search);
+        const refRecord = urlParams.get("ref_record");
+        const source = refRecord ? "record_referral" : document.referrer.includes("/dashboard") ? "search" : "direct";
+
+        // Get viewer role if logged in
+        let viewerRole: string | null = null;
+        if (sessionData?.session?.user?.id) {
+          try {
+            const { data: roleData } = await supabase
+              .from("users")
+              .select("personal_category")
+              .eq("auth_user_id", sessionData.session.user.id)
+              .single();
+            viewerRole = roleData?.personal_category ?? null;
+          } catch {}
+        }
+
         supabase.from("profile_views").insert({
           subject_id: subjectId,
           viewer_auth_user_id: sessionData?.session?.user?.id ?? null,
           is_anonymous: !sessionData?.session?.user?.id,
+          city,
+          region,
+          country,
+          source,
+          referrer_record_id: refRecord ?? null,
+          viewer_role: viewerRole,
         }).then(() => {});
       });
 
@@ -947,6 +982,14 @@ export default function SubjectProfilePage() {
                   onClick={async () => {
                     const { data } = await supabase.auth.getSession();
                     const dashboardSubmitUrl = `/dashboard/submit?subject_id=${subjectId}`;
+
+                    // 🔍 Track submit click
+                    supabase.from("submit_clicks").insert({
+                      subject_id: subjectId,
+                      clicker_auth_user_id: data?.session?.user?.id ?? null,
+                      is_anonymous: !data?.session?.user?.id,
+                    }).then(() => {});
+
                     if (!data.session) {
                       router.push(`/loginsignup?redirectTo=${encodeURIComponent(dashboardSubmitUrl)}`);
                       return;
@@ -1186,7 +1229,24 @@ export default function SubjectProfilePage() {
                             <div className="text-sm font-semibold text-gray-900 capitalize">{s.platform}</div>
                             <div className="flex items-center gap-2 mt-0.5">
                               {profileUrl ? (
-                                <a href={profileUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline break-all">{s.url}</a>
+                                
+                                  href={profileUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-blue-600 hover:underline break-all"
+                                  onClick={async () => {
+                                    const { data: sessionData } = await supabase.auth.getSession();
+                                    supabase.from("social_link_clicks").insert({
+                                      subject_id: subjectId,
+                                      social_link_id: s.id,
+                                      platform: s.platform,
+                                      clicker_auth_user_id: sessionData?.session?.user?.id ?? null,
+                                      is_anonymous: !sessionData?.session?.user?.id,
+                                    }).then(() => {});
+                                  }}
+                                >
+                                  {s.url}
+                                </a>
                               ) : (
                                 <div className="text-xs text-gray-600 break-all">{s.url}</div>
                               )}
