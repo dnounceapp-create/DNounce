@@ -136,8 +136,8 @@ function LockedCard({ label }: { label: string }) {
 function StandardLockedOverlay() {
   return (
     <div className="absolute inset-0 bg-white/80 backdrop-blur-sm rounded-2xl flex flex-col items-center justify-center z-10 gap-4 p-6">
-      <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-indigo-50 flex items-center justify-center">
-        <Lock className="w-5 h-5 sm:w-7 sm:h-7 text-indigo-500" />
+      <div className="w-14 h-14 rounded-2xl bg-indigo-50 flex items-center justify-center">
+        <Lock className="w-7 h-7 text-indigo-500" />
       </div>
       <div className="text-center">
         <h3 className="text-lg font-semibold text-gray-900 mb-1">Analytics Locked</h3>
@@ -784,7 +784,7 @@ export default function AnalyticsPage() {
         </div>
 
         {planId === "standard" && (
-          <div className="relative mt-2 min-h-[320px]">
+          <div className="relative mt-2 min-h-[200px] sm:min-h-[320px]">
             <StandardLockedOverlay />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 blur-sm pointer-events-none select-none">
               {["Profile Views", "Search Impressions", "Credibility Breakdown", "Category Breakdown",
