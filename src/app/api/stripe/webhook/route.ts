@@ -40,7 +40,8 @@ export async function POST(req: NextRequest) {
 
       await supabase
         .from("subscriptions")
-        .update({
+        .upsert({
+          user_id: userId,
           plan_id: planId,
           status: "active",
           stripe_customer_id: customerId,
@@ -48,8 +49,7 @@ export async function POST(req: NextRequest) {
           current_period_start: new Date(stripeSub.current_period_start * 1000).toISOString(),
           current_period_end: new Date(stripeSub.current_period_end * 1000).toISOString(),
           updated_at: new Date().toISOString(),
-        })
-        .eq("user_id", userId);
+        }, { onConflict: "user_id" });
 
       break;
     }
