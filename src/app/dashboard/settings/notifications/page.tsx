@@ -21,6 +21,7 @@ type Prefs = {
   notif_following_outcome: boolean;
   notif_following_all_activity: boolean;
   notif_citizen_community_activity: boolean;
+  notif_verdict_announcement: boolean;
 };
 
 const DEFAULTS: Prefs = {
@@ -40,6 +41,7 @@ const DEFAULTS: Prefs = {
   notif_following_outcome: true,
   notif_following_all_activity: false,
   notif_citizen_community_activity: false,
+  notif_verdict_announcement: true,
 };
 
 function ToggleRow({
@@ -174,7 +176,7 @@ export default function NotificationsPage() {
             <ToggleRow title="Push notifications" desc="Browser or PWA alerts even when DNounce isn't open." value={prefs.notif_push} onChange={set("notif_push")} />
           </Section>
 
-          {/* ── Always On ── */}
+          {/* ── Critical Alerts ── */}
           <Section title="Critical Alerts" subtitle="These cannot be turned off. They ensure you never miss something that requires your action.">
             <ToggleRow locked title="Record stage changes" desc="Every time a record you're involved in moves to a new stage — as subject or contributor." value={true} />
             <ToggleRow locked title="Vote flagged" desc="When your vote explanation is flagged as low quality by the community." value={true} />
@@ -228,6 +230,22 @@ export default function NotificationsPage() {
             />
           </Section>
 
+          {/* ── Verdict ── */}
+          <Section title="Verdict" subtitle="For records you voted on or are following.">
+            <ToggleRow
+              title="Verdict countdown — 24 hours before"
+              desc="Get notified the day before a verdict is announced on a record you voted on or follow."
+              value={prefs.notif_verdict_announcement}
+              onChange={set("notif_verdict_announcement")}
+            />
+            <ToggleRow
+              locked
+              title="Verdict announced"
+              desc="When the verdict is officially revealed. Always sent to subject and contributor — cannot be turned off."
+              value={true}
+            />
+          </Section>
+
           {/* ── Pinned ── */}
           <Section title="Pinned Records" subtitle="Records you've pinned to your dashboard.">
             <ToggleRow
@@ -243,8 +261,8 @@ export default function NotificationsPage() {
               onChange={set("notif_pinned_voting_open")}
             />
             <ToggleRow
-              title="Outcome decided"
-              desc="When a pinned record is officially kept or deleted by the community."
+              title="Verdict announced"
+              desc="When the verdict on a pinned record is officially announced."
               value={prefs.notif_pinned_outcome}
               onChange={set("notif_pinned_outcome")}
             />
@@ -271,8 +289,8 @@ export default function NotificationsPage() {
               onChange={set("notif_following_voting_open")}
             />
             <ToggleRow
-              title="Outcome decided"
-              desc="When a followed record is officially kept or deleted by the community."
+              title="Verdict announced"
+              desc="When the verdict on a followed record is officially announced."
               value={prefs.notif_following_outcome}
               onChange={set("notif_following_outcome")}
             />
