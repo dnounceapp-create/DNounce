@@ -425,7 +425,12 @@ function ProContent({ data }: { data: AnalyticsData }) {
         <div>
           <SectionHeader title="Market Position" />
           <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
-            <p className="text-xs text-gray-500 mb-4">Your standing among <span className="font-semibold text-gray-700">{pro.marketPosition.total}</span> <span className="font-semibold text-gray-700">{pro.marketPosition.category}</span> profiles on DNounce</p>
+            <p className="text-xs text-gray-500 mb-4">
+              {pro.marketPosition.total <= 1
+                ? <>You are the first <span className="font-semibold text-gray-700">{pro.marketPosition.category}</span> on DNounce.</>
+                : <>Your standing among <span className="font-semibold text-gray-700">{pro.marketPosition.total}</span> other <span className="font-semibold text-gray-700">{pro.marketPosition.category}</span> profiles on DNounce</>
+              }
+            </p>
             <div className="grid grid-cols-3 gap-4 text-center mb-4">
               <div><p className="text-2xl font-bold text-indigo-600">#{pro.marketPosition.rank}</p><p className="text-xs text-gray-400 mt-0.5">Your Rank</p></div>
               <div><p className="text-2xl font-bold text-blue-600">Top {pro.marketPosition.topPct}%</p><p className="text-xs text-gray-400 mt-0.5">Percentile</p></div>
