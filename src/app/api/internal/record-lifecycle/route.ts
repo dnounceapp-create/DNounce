@@ -181,16 +181,17 @@ export async function GET() {
             .maybeSingle();
 
           if (!existing) {
-            // Notify subject
+            const countdownNotifs: { user_id: string; title: string; body: string; type: string; record_id: string }[] = [];
+
+            // Subject
             if (r.subject_id) {
               const { data: subjectOwner } = await admin
                 .from("subjects")
                 .select("owner_auth_user_id")
                 .eq("subject_uuid", r.subject_id)
                 .maybeSingle();
-
               if (subjectOwner?.owner_auth_user_id) {
-                await admin.from("notifications").insert({
+                countdownNotifs.push({
                   user_id: subjectOwner.owner_auth_user_id,
                   title: "Verdict drops in 24 hours",
                   body: "The community verdict on a record about you will be announced tomorrow. Come back to see the result.",
@@ -200,16 +201,15 @@ export async function GET() {
               }
             }
 
-            // Notify contributor
+            // Contributor
             if (r.contributor_id) {
               const { data: contributor } = await admin
                 .from("contributors")
                 .select("auth_user_id")
                 .eq("id", r.contributor_id)
                 .maybeSingle();
-
               if (contributor?.auth_user_id) {
-                await admin.from("notifications").insert({
+                countdownNotifs.push({
                   user_id: contributor.auth_user_id,
                   title: "Verdict drops in 24 hours",
                   body: "The community verdict on a record you submitted will be announced tomorrow.",
@@ -217,6 +217,40 @@ export async function GET() {
                   record_id: r.id,
                 });
               }
+            }
+
+            // Voters
+            const { data: voters } = await admin
+              .from("record_votes")
+              .select("user_id")
+              .eq("record_id", r.id);
+            (voters ?? []).forEach((v: any) => {
+              countdownNotifs.push({
+                user_id: v.user_id,
+                title: "Verdict drops in 24 hours",
+                body: "A record you voted on is announcing its verdict tomorrow. Come back to see the result.",
+                type: "verdict_countdown",
+                record_id: r.id,
+              });
+            });
+
+            // Followers
+            const { data: followers } = await admin
+              .from("record_follows")
+              .select("user_id")
+              .eq("record_id", r.id);
+            (followers ?? []).forEach((f: any) => {
+              countdownNotifs.push({
+                user_id: f.user_id,
+                title: "Verdict drops in 24 hours",
+                body: "A record you are following is announcing its verdict tomorrow. Come back to see the result.",
+                type: "verdict_countdown",
+                record_id: r.id,
+              });
+            });
+
+            if (countdownNotifs.length > 0) {
+              await admin.from("notifications").insert(countdownNotifs);
             }
           }
         }
@@ -231,16 +265,17 @@ export async function GET() {
             .maybeSingle();
 
           if (!existing) {
-            // Notify subject
+            const notifs: { user_id: string; title: string; body: string; type: string; record_id: string }[] = [];
+
+            // Subject
             if (r.subject_id) {
               const { data: subjectOwner } = await admin
                 .from("subjects")
                 .select("owner_auth_user_id")
                 .eq("subject_uuid", r.subject_id)
                 .maybeSingle();
-
               if (subjectOwner?.owner_auth_user_id) {
-                await admin.from("notifications").insert({
+                notifs.push({
                   user_id: subjectOwner.owner_auth_user_id,
                   title: "The verdict is in",
                   body: "The community has reached a decision on a record about you. See the result now.",
@@ -250,16 +285,15 @@ export async function GET() {
               }
             }
 
-            // Notify contributor
+            // Contributor
             if (r.contributor_id) {
               const { data: contributor } = await admin
                 .from("contributors")
                 .select("auth_user_id")
                 .eq("id", r.contributor_id)
                 .maybeSingle();
-
               if (contributor?.auth_user_id) {
-                await admin.from("notifications").insert({
+                notifs.push({
                   user_id: contributor.auth_user_id,
                   title: "The verdict is in",
                   body: "The community has reached a decision on a record you submitted. See the result now.",
@@ -267,6 +301,40 @@ export async function GET() {
                   record_id: r.id,
                 });
               }
+            }
+
+            // Voters
+            const { data: voters } = await admin
+              .from("record_votes")
+              .select("user_id")
+              .eq("record_id", r.id);
+            (voters ?? []).forEach((v: any) => {
+              notifs.push({
+                user_id: v.user_id,
+                title: "The verdict is in",
+                body: "The community has reached a decision on a record you voted on. See the result now.",
+                type: "verdict_announced",
+                record_id: r.id,
+              });
+            });
+
+            // Followers
+            const { data: followers } = await admin
+              .from("record_follows")
+              .select("user_id")
+              .eq("record_id", r.id);
+            (followers ?? []).forEach((f: any) => {
+              notifs.push({
+                user_id: f.user_id,
+                title: "The verdict is in",
+                body: "A record you are following has reached a verdict. See the result now.",
+                type: "verdict_announced",
+                record_id: r.id,
+              });
+            });
+
+            if (notifs.length > 0) {
+              await admin.from("notifications").insert(notifs);
             }
           }
         }

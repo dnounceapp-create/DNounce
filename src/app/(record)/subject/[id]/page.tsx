@@ -1228,8 +1228,8 @@ export default function SubjectProfilePage() {
                           <div className="min-w-0 flex-1">
                             <div className="text-sm font-semibold text-gray-900 capitalize">{s.platform}</div>
                             <div className="flex items-center gap-2 mt-0.5">
-                              {profileUrl ? (
-                                
+                            {profileUrl ? (
+                                <a
                                   href={profileUrl}
                                   target="_blank"
                                   rel="noopener noreferrer"
