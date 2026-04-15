@@ -788,7 +788,9 @@ export default function AnalyticsPage() {
             <StandardLockedOverlay />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 blur-sm pointer-events-none select-none">
               {["Profile Views", "Search Impressions", "Credibility Breakdown", "Category Breakdown",
-                "Most Active Record", "Dispute Resolution", "Contributor Success Rate", "Comparison"].map((label) => (
+                "Most Active Record", "Dispute Resolution", "Contributor Success Rate", "Comparison"]
+                .slice(0, typeof window !== "undefined" && window.innerWidth < 640 ? 3 : 8)
+                .map((label) => (
                 <LockedCard key={label} label={label} />
               ))}
             </div>
