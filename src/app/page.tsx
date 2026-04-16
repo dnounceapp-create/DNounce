@@ -113,6 +113,21 @@ export default function HomePage() {
   const [searchMessage, setSearchMessage] = useState("");
   const [showResults, setShowResults] = useState(false);
 
+  const [fromDemo, setFromDemo] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      setFromDemo(params.get("from") === "demo");
+      const section = params.get("section") || window.location.hash.replace("#", "");
+      if (section) {
+        setTimeout(() => {
+          document.getElementById(section)?.scrollIntoView({ behavior: "smooth" });
+        }, 200);
+      }
+    }
+  }, []);
+
   useEffect(() => {
     const handleScroll = () => {
       const scrollTop = window.scrollY;
@@ -294,13 +309,16 @@ export default function HomePage() {
             </div>
 
             <nav className="hidden md:flex items-center gap-8">
-              <button onClick={() => document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" })} className="text-sm text-gray-500 hover:text-gray-900 transition-colors">How it works</button>
-              <button onClick={() => document.getElementById("voting-section")?.scrollIntoView({ behavior: "smooth" })} className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Community</button>
-              <button onClick={() => document.getElementById("guidelines-section")?.scrollIntoView({ behavior: "smooth" })} className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Guidelines</button>
-              <button onClick={() => document.getElementById("legal-section")?.scrollIntoView({ behavior: "smooth" })} className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Legal</button>
+              <button onClick={() => { window.history.replaceState(null, "", fromDemo ? "/?from=demo&section=how-it-works" : "/?section=how-it-works"); document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" }); }} className="text-sm text-gray-500 hover:text-gray-900 transition-colors">How it works</button>
+              <button onClick={() => { window.history.replaceState(null, "", fromDemo ? "/?from=demo&section=voting-section" : "/?section=voting-section"); document.getElementById("voting-section")?.scrollIntoView({ behavior: "smooth" }); }} className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Community</button>
+              <button onClick={() => { window.history.replaceState(null, "", fromDemo ? "/?from=demo&section=guidelines-section" : "/?section=guidelines-section"); document.getElementById("guidelines-section")?.scrollIntoView({ behavior: "smooth" }); }} className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Guidelines</button>
+              <button onClick={() => { window.history.replaceState(null, "", fromDemo ? "/?from=demo&section=legal-section" : "/?section=legal-section"); document.getElementById("legal-section")?.scrollIntoView({ behavior: "smooth" }); }} className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Legal</button>
             </nav>
 
             <div className="flex items-center gap-3">
+              {fromDemo && (
+                <button onClick={() => router.push("/demo")} className="hidden md:block text-sm text-gray-500 hover:text-gray-900 transition-colors">← Back to demo</button>
+              )}
               <button onClick={() => router.push("/loginsignup")} className="hidden md:block text-sm text-gray-600 hover:text-gray-900 transition-colors">Log in</button>
               <button onClick={() => router.push("/loginsignup")} className="bg-gray-900 hover:bg-black text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors">Get started</button>
               <button id="menu-button" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100">
@@ -312,12 +330,24 @@ export default function HomePage() {
           {mobileMenuOpen && (
             <div id="mobile-menu" className="md:hidden pt-4 pb-2 space-y-1 border-t border-gray-100 mt-3">
               {[["How it works","how-it-works"],["Community","voting-section"],["Guidelines","guidelines-section"],["Legal","legal-section"]].map(([label, id]) => (
-                <button key={id} onClick={() => { document.getElementById(id)?.scrollIntoView({ behavior: "smooth" }); setMobileMenuOpen(false); }} className="block w-full text-left px-3 py-2.5 text-sm text-gray-600 hover:bg-gray-50 rounded-lg">{label}</button>
+                <button key={id} onClick={() => { window.history.replaceState(null, "", fromDemo ? `/?from=demo&section=${id}` : `/?section=${id}`); document.getElementById(id)?.scrollIntoView({ behavior: "smooth" }); setMobileMenuOpen(false); }} className="block w-full text-left px-3 py-2.5 text-sm text-gray-600 hover:bg-gray-50 rounded-lg">{label}</button>
               ))}
             </div>
           )}
         </div>
       </header>
+
+      {/* ── Back to demo button (only when coming from demo) ── */}
+      {fromDemo && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+          <button
+            onClick={() => router.push("/demo")}
+            className="inline-flex items-center gap-2 bg-white border border-gray-200 shadow-lg rounded-full px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-all"
+          >
+            ← Back to demo
+          </button>
+        </div>
+      )}
 
       {/* ── Scroll Progress Bar ─────────────────────────────────────────────── */}
       <div className="fixed left-0 w-full h-[2px] bg-transparent" style={{ top: "6.1rem", zIndex: 60, position: "fixed" }}>
@@ -374,7 +404,7 @@ export default function HomePage() {
       </section>
 
       {/* ── How It Works ───────────────────────────────────────────────────── */}
-      <section id="how-it-works" className="bg-gray-50 py-20 px-5">
+      <section id="how-it-works" className="bg-gray-50 py-20 px-5 scroll-mt-20">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-14">
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">How it works</h2>
@@ -659,7 +689,7 @@ export default function HomePage() {
       </section>
 
       {/* ── Community Review ───────────────────────────────────────────────── */}
-      <section id="voting-section" className="bg-gray-50 py-20 px-5">
+      <section id="voting-section" className="bg-gray-50 py-20 px-5 scroll-mt-20">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-10">
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">Community review</h2>
@@ -716,7 +746,7 @@ export default function HomePage() {
       </section>
 
       {/* ── Guidelines ─────────────────────────────────────────────────────── */}
-      <section id="guidelines-section" className="bg-white py-20 px-5">
+      <section id="guidelines-section" className="bg-white py-20 px-5 scroll-mt-20">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-10">
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">Submission guidelines</h2>
@@ -776,7 +806,7 @@ export default function HomePage() {
       </section>
 
       {/* ── Legal ──────────────────────────────────────────────────────────── */}
-      <section id="legal-section" className="bg-gray-50 py-20 px-5">
+      <section id="legal-section" className="bg-gray-50 py-20 px-5 scroll-mt-20">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-10">
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">Legal framework</h2>

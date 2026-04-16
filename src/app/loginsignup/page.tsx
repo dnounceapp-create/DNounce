@@ -21,6 +21,11 @@ export default function LoginSignupPage() {
   const [signupError, setSignupError] = useState<string | null>(null);
   const [otpError, setOtpError] = useState<string | null>(null);
   const router = useRouter();
+  const [fromDemo, setFromDemo] = useState(false);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setFromDemo(params.get("from") === "demo");
+  }, []);
   const [mfaRequired, setMfaRequired] = useState(false);
   const [otp, setOtp] = useState("");
   const [factorId, setFactorId] = useState<string | null>(null);
@@ -239,7 +244,17 @@ export default function LoginSignupPage() {
       </header>
 
       <main className="flex-1 flex items-center justify-center px-4 sm:px-6 py-8 sm:py-12">
-        <div className="w-full max-w-md sm:max-w-lg bg-white shadow-xl rounded-2xl p-6 sm:p-8 md:p-10 space-y-10">
+        <div className="w-full max-w-md sm:max-w-lg">
+          {fromDemo && (
+            <button
+              type="button"
+              onClick={() => router.push("/demo")}
+              className="mb-4 text-sm text-gray-500 hover:text-gray-900 transition-colors flex items-center gap-1"
+            >
+              ← Back to demo
+            </button>
+          )}
+          <div className="bg-white shadow-xl rounded-2xl p-6 sm:p-8 md:p-10 space-y-10">
 
           {/* ── Login ── */}
           <div className="w-full bg-white shadow-md rounded-xl p-6 sm:p-8">
@@ -460,7 +475,7 @@ export default function LoginSignupPage() {
               </>
             )}
           </div>
-
+        </div>
         </div>
       </main>
     </div>

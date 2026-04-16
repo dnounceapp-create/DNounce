@@ -19,6 +19,8 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 /* ─── Static fake data ─────────────────────────────── */
 
@@ -313,9 +315,28 @@ function DebateCard({
 /* ─── Main page ─────────────────────────────────────── */
 
 export default function DemoPage() {
+  const router = useRouter();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [fileRecordOpen, setFileRecordOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
+
+  // close mobile menu on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      const menu = document.getElementById("demo-mobile-menu");
+      const button = document.getElementById("demo-menu-button");
+      if (
+        menu && !menu.contains(event.target as Node) &&
+        button && !button.contains(event.target as Node)
+      ) {
+        setMobileMenuOpen(false);
+      }
+    }
+    if (mobileMenuOpen) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [mobileMenuOpen]);
 
   // votes
   const [userVotes, setUserVotes] = useState<VoteRow[]>([]);
@@ -520,7 +541,60 @@ export default function DemoPage() {
   const maxChars = 1000;
 
   return (
-    <div className="mx-auto w-full max-w-3xl overflow-x-hidden px-3 py-2 sm:px-4 sm:py-4 space-y-3 sm:space-y-4">
+    <div className="min-h-screen bg-white">
+
+      {/* ── Header ── */}
+      <header className="bg-white/90 backdrop-blur-md border-b border-gray-100 fixed top-0 left-0 w-full z-50">
+        <div className="max-w-6xl mx-auto px-4 sm:px-5 py-3.5">
+          <div className="flex items-center justify-between">
+
+            {/* Logo */}
+            <div className="flex items-center gap-2 cursor-pointer" onClick={() => router.push("/")}>
+              <Image src="/logo.png" alt="DNounce Logo" width={52} height={52} priority className="w-[52px] h-[52px] sm:w-[74px] sm:h-[74px]" />
+              <span className="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">DNounce</span>
+            </div>
+
+            {/* Desktop nav */}
+            <nav className="hidden md:flex items-center gap-8">
+              <a href="/?from=demo&section=how-it-works" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">How it works</a>
+              <a href="/?from=demo&section=voting-section" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Community</a>
+              <a href="/?from=demo&section=guidelines-section" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Guidelines</a>
+              <a href="/?from=demo&section=legal-section" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Legal</a>
+            </nav>
+
+            {/* Right actions */}
+            <div className="flex items-center gap-2 sm:gap-3">
+              <button onClick={() => router.push("/loginsignup")} className="hidden md:block text-sm text-gray-600 hover:text-gray-900 transition-colors">Log in</button>
+              <button onClick={() => router.push("/loginsignup")} className="bg-gray-900 hover:bg-black text-white text-xs sm:text-sm font-medium px-3 sm:px-4 py-2 rounded-xl transition-colors">Get started</button>
+              {/* Hamburger — mobile only */}
+              <button
+                id="demo-menu-button"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="md:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100"
+                aria-label="Open menu"
+              >
+                <div className="w-4 h-0.5 bg-current mb-1" />
+                <div className="w-4 h-0.5 bg-current mb-1" />
+                <div className="w-4 h-0.5 bg-current" />
+              </button>
+            </div>
+          </div>
+
+          {/* Mobile dropdown */}
+          {mobileMenuOpen && (
+            <div id="demo-mobile-menu" className="md:hidden pt-4 pb-2 space-y-1 border-t border-gray-100 mt-3">
+              <a href="/?from=demo&section=how-it-works" onClick={() => setMobileMenuOpen(false)} className="block w-full text-left px-3 py-2.5 text-sm text-gray-600 hover:bg-gray-50 rounded-lg">How it works</a>
+              <a href="/?from=demo&section=voting-section" onClick={() => setMobileMenuOpen(false)} className="block w-full text-left px-3 py-2.5 text-sm text-gray-600 hover:bg-gray-50 rounded-lg">Community</a>
+              <a href="/?from=demo&section=guidelines-section" onClick={() => setMobileMenuOpen(false)} className="block w-full text-left px-3 py-2.5 text-sm text-gray-600 hover:bg-gray-50 rounded-lg">Guidelines</a>
+              <a href="/?from=demo&section=legal-section" onClick={() => setMobileMenuOpen(false)} className="block w-full text-left px-3 py-2.5 text-sm text-gray-600 hover:bg-gray-50 rounded-lg">Legal</a>
+              <button onClick={() => { setMobileMenuOpen(false); router.push("/loginsignup"); }} className="block w-full text-left px-3 py-2.5 text-sm text-gray-600 hover:bg-gray-50 rounded-lg">Log in</button>
+            </div>
+          )}
+        </div>
+      </header>
+
+      {/* ── Page content ── */}
+      <div className="mx-auto w-full max-w-3xl overflow-x-hidden px-3 pt-24 pb-4 sm:px-4 space-y-3 sm:space-y-4">
 
       {/* Header */}
       <div className="flex items-center gap-2 mb-1 px-1">
@@ -698,7 +772,7 @@ export default function DemoPage() {
             <div className="text-sm font-semibold text-gray-900">Debate Section</div>
             <div className="text-[11px] text-gray-500">Anything cannot be modified once posted.</div>
           </div>
-          <div className="inline-flex items-center gap-2 rounded-full border bg-white px-3 py-1 text-xs font-semibold text-gray-700">
+          <div className="inline-flex items-center gap-2 rounded-full border bg-white px-3 py-1 text-xs font-semibold text-gray-700 shrink-0">
             <span className="h-2 w-2 rounded-full bg-gray-400" />
             Debate ended
           </div>
@@ -729,7 +803,7 @@ export default function DemoPage() {
       <section className="border border-gray-200 rounded-2xl p-4 sm:p-5 bg-white">
         <div className="flex items-center justify-between gap-3 mb-4">
           <div className="text-sm font-semibold text-gray-900">Voting</div>
-          <div className="inline-flex items-center gap-2 rounded-full border bg-white px-3 py-1 text-xs font-semibold text-gray-700">
+          <div className="inline-flex items-center gap-2 rounded-full border bg-white px-3 py-1 text-xs font-semibold text-gray-700 shrink-0">
             <span className="h-2 w-2 rounded-full bg-blue-500" />
             Voting open
           </div>
@@ -778,7 +852,7 @@ export default function DemoPage() {
                 <div className="text-xs font-semibold text-gray-900">Cast your vote</div>
                 <div className="text-[11px] text-gray-500">This will be permanent once submitted.</div>
               </div>
-              <div className="text-[11px] text-gray-500 rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1">No edits</div>
+              <div className="text-[11px] text-gray-500 rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 shrink-0">No edits</div>
             </div>
 
             <div className="mt-3 flex flex-col sm:flex-row gap-2">
@@ -812,7 +886,7 @@ export default function DemoPage() {
               placeholder="Write your reason (required)…"
             />
 
-            <div className="mt-2 flex items-center justify-between gap-3">
+            <div className="mt-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div className="text-[11px] text-gray-500">{reason.trim().length}/{maxChars}</div>
               <button
                 type="button"
@@ -837,14 +911,16 @@ export default function DemoPage() {
               const rx = getReaction(v.id, v);
               return (
                 <div key={v.id} className="border-b border-gray-200 pb-5 last:border-b-0 last:pb-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs font-semibold text-gray-900">
-                      {v.alias}
-                      {v.jobTitle && <span className="ml-1 font-normal text-gray-400">({v.jobTitle})</span>}
-                    </span>
-                    <span className="text-[11px] text-gray-400">{formatTimestamp(v.created_at)}</span>
+                  <div className="flex items-start gap-2 flex-wrap">
+                    <div className="flex-1 min-w-0">
+                      <span className="text-xs font-semibold text-gray-900 break-all">
+                        {v.alias}
+                        {v.jobTitle && <span className="ml-1 font-normal text-gray-400">({v.jobTitle})</span>}
+                      </span>
+                      <div className="text-[11px] text-gray-400 mt-0.5">{formatTimestamp(v.created_at)}</div>
+                    </div>
                     <span className={[
-                      "ml-auto inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold",
+                      "inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold shrink-0",
                       v.choice === "keep" ? "text-green-700 border-green-200 bg-green-50" : "text-red-700 border-red-200 bg-red-50",
                     ].join(" ")}>
                       {v.choice.toUpperCase()}
@@ -867,64 +943,16 @@ export default function DemoPage() {
         </div>
       </section>
 
-      {/* Community section */}
-      <section className="border border-gray-200 rounded-2xl p-4 sm:p-5 bg-white">
-        <div className="text-sm font-semibold text-gray-900 mb-1">Community</div>
-        <div className="text-[11px] text-gray-500 mb-4">Public discussion. Be respectful and accurate.</div>
-
-        <div className="mt-2">
-          <textarea
-            value={communityBody}
-            onChange={(e) => setCommunityBody(e.target.value)}
-            rows={3}
-            className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-900 outline-none focus:border-gray-900 resize-none"
-            placeholder="Share your perspective on this record…"
-          />
-          <div className="mt-2 flex justify-end">
-            <button
-              type="button"
-              onClick={postCommunity}
-              disabled={postingCommunity || !communityBody.trim()}
-              className="inline-flex items-center gap-2 rounded-xl bg-black px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
-            >
-              {postingCommunity ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageSquare className="h-4 w-4" />}
-              {postingCommunity ? "Posting…" : "Post Statement"}
-            </button>
-          </div>
-        </div>
-
-        <div className="mt-4">
-          {communityPosts.length === 0 ? (
-            <div className="text-sm text-gray-500">No community statements yet.</div>
-          ) : (
-            communityPosts.map((s) => (
-              <div key={s.id} className="border-b border-gray-200 py-4 last:border-b-0 last:pb-0">
-                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                  <span className="text-xs font-semibold text-gray-900">{s.alias}</span>
-                  <div className="text-[11px] text-gray-500">{formatTimestamp(s.ts)}</div>
-                </div>
-                <div className="mt-2 text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{s.body}</div>
-                <div className="mt-2">
-                  <AgreeDisagree agreeCount={s.agree} disagreeCount={s.disagree} myDir={s.mine} onToggle={() => {}} size={26} />
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </section>
-
       {/* CTA banner */}
       <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-4 sm:p-5 text-center">
         <div className="text-sm font-semibold text-indigo-900 mb-1">Think someone deserves a record?</div>
         <div className="text-xs text-indigo-700 mb-3">DNounce gives every professional a fair, structured dispute process — community moderated.</div>
-        <a
-          href="https://dnounce.com"
-          target="_blank"
-          rel="noopener noreferrer"
+        <button
+          onClick={() => router.push("/loginsignup?from=demo")}
           className="inline-flex items-center gap-2 rounded-full bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 transition"
         >
-          File a record at dnounce.com
-        </a>
+          File a record
+        </button>
       </div>
 
       {/* Attachment modal */}
@@ -1012,6 +1040,7 @@ export default function DemoPage() {
           </div>
         </div>
       )}
+    </div>
     </div>
   );
 }
