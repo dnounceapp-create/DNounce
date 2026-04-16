@@ -91,6 +91,7 @@ const SEED_VOTES: VoteRow[] = [
     disagreeCount: 1,
   },
   {
+    id: "v4",
     alias: "qlnx@dnounce_29",
     jobTitle: "Brand Strategist",
     choice: "keep",
