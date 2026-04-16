@@ -534,10 +534,12 @@ function AttachmentSection({
   title = "Attachments",
   attachments,
   getNumberForPath,
+  sessionUserId,
 }: {
   title?: string;
   attachments: AttachmentRow[];
   getNumberForPath: (path: string) => number | null;
+  sessionUserId: string | null;
 }) {
   const [openId, setOpenId] = useState<string | null>(null);
 
@@ -566,8 +568,8 @@ function AttachmentSection({
           const n = getNumberForPath(a.path) ?? idx + 1;
 
           return (
+            <div key={a.id}>
             <button
-              key={a.id}
               type="button"
               onClick={() => setOpenId(a.id)}
               className="group flex w-full items-center gap-3 rounded-2xl border border-gray-200 bg-white px-3 py-3 hover:bg-gray-50 active:bg-gray-100"
@@ -578,6 +580,15 @@ function AttachmentSection({
               </span>
               <span className="text-sm font-semibold text-gray-900">{`Attachment #${n}`}</span>
             </button>
+            <div className="px-1">
+              <AgreeDisagree
+                targetType="record_attachments"
+                targetId={a.id}
+                disabled={!sessionUserId}
+                size={26}
+              />
+            </div>
+            </div>
           );
         })}
       </div>
@@ -5108,7 +5119,7 @@ export default function RecordDetail({
 
         {unifiedAttachments.length > 0 ? (
           view.canViewAttachments ? (
-            <AttachmentSection title="Attachments" attachments={unifiedAttachments} getNumberForPath={getNumberForPath} />
+            <AttachmentSection title="Attachments" attachments={unifiedAttachments} getNumberForPath={getNumberForPath} sessionUserId={sessionUserId} />
           ) : (
             <div className="pt-4 border-t text-sm text-gray-700">
               <span className="font-semibold">Attachments:</span> {unifiedAttachments.length} file(s)
