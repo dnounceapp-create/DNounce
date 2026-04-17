@@ -243,6 +243,8 @@ function AgreeDisagree({
 /* ─── LifecycleChips ────────────────────────────────── */
 
 const STAGES = [
+  { id: 1, label: "AI Verification" },
+  { id: 2, label: "Subject Notified" },
   { id: 3, label: "Record Published" },
   { id: 4, label: "Record in Dispute" },
   { id: 5, label: "Debate Phase" },
@@ -251,14 +253,25 @@ const STAGES = [
 ];
 
 function LifecycleChips({ current }: { current: number }) {
+  const scrollRef = React.useRef<HTMLDivElement | null>(null);
+  const activeRef = React.useRef<HTMLDivElement | null>(null);
+
+  React.useEffect(() => {
+    if (!scrollRef.current || !activeRef.current) return;
+    const container = scrollRef.current;
+    const active = activeRef.current;
+    const targetScrollLeft = Math.max(0, active.offsetLeft - container.clientWidth / 2 + active.offsetWidth / 2);
+    container.scrollTo({ left: targetScrollLeft, behavior: "smooth" });
+  }, [current]);
+
   return (
-    <div className="w-full rounded-2xl border border-gray-200 bg-gray-50/60 p-2 overflow-x-auto">
+    <div ref={scrollRef} className="w-full rounded-2xl border border-gray-200 bg-gray-50/60 p-2 overflow-x-auto">
       <div className="flex flex-nowrap items-stretch gap-2 min-w-max">
         {STAGES.map((s, idx) => {
           const isActive = s.id === current;
           const isDone = s.id < current;
           return (
-            <div key={s.id} className="flex items-stretch min-w-0">
+            <div key={s.id} ref={isActive ? activeRef : null} className="flex items-stretch min-w-0">
               <div
                 className={[
                   "min-w-[88px] sm:min-w-[96px] rounded-2xl border px-2 py-2 text-center flex items-center justify-center h-11",
