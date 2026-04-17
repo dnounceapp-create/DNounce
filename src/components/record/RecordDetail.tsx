@@ -867,6 +867,7 @@ function EvidenceChips({
 function ReplyBubble({
   node,
   canPost,
+  canReplyAsObserver,
   sessionUserId,
   replyOpenFor,
   setReplyOpenFor,
@@ -887,6 +888,7 @@ function ReplyBubble({
   node: DebateMsgNode;
 
   canPost: boolean;
+  canReplyAsObserver?: boolean;
   sessionUserId: string | null;
 
   replyOpenFor: string | null;
@@ -971,7 +973,7 @@ function ReplyBubble({
             <AgreeDisagree
                 targetType="record_debate_messages"
                 targetId={String(node.id)}
-                disabled={!sessionUserId}  // or viewerRole === "public"
+                disabled={!sessionUserId || (!canPost && !canReplyAsObserver)}
                 size={26}
             />
           </div>
@@ -1152,6 +1154,7 @@ function ReplyBubble({
                       key={r.id}
                       node={r}
                       canPost={canPost}
+                      canReplyAsObserver={canReplyAsObserver}
                       sessionUserId={sessionUserId}
                       replyOpenFor={replyOpenFor}
                       setReplyOpenFor={setReplyOpenFor}
@@ -1183,6 +1186,7 @@ function ReplyBubble({
 function StatementCard({
   node,
   canPost,
+  canReplyAsObserver,
   sessionUserId,
   replyOpenFor,
   setReplyOpenFor,
@@ -1206,6 +1210,7 @@ function StatementCard({
   node: DebateMsgNode;
 
   canPost: boolean;
+  canReplyAsObserver?: boolean;
   sessionUserId: string | null;
 
   replyOpenFor: string | null;
@@ -1278,11 +1283,11 @@ function StatementCard({
             <AgreeDisagree
                 targetType="record_debate_messages"
                 targetId={String(node.id)}
-                disabled={!sessionUserId}
+                disabled={!sessionUserId || (!canPost && !canReplyAsObserver)}
             />
         </div>
 
-        {canPost ? (
+        {(canPost || canReplyAsObserver) ? (
           <div className="mt-3 flex items-center gap-2">
             <button
               type="button"
@@ -1299,7 +1304,7 @@ function StatementCard({
           </div>
         ) : null}
 
-        {canPost && replyOpenFor === node.id ? (
+        {(canPost || canReplyAsObserver) && replyOpenFor === node.id ? (
           <div className="mt-3">
             <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
               <div className="flex items-start justify-between gap-2">
@@ -1459,6 +1464,7 @@ function StatementCard({
                   key={r.id}
                   node={r}
                   canPost={canPost}
+                  canReplyAsObserver={canReplyAsObserver}
                   sessionUserId={sessionUserId}
                   replyOpenFor={replyOpenFor}
                   setReplyOpenFor={setReplyOpenFor}
@@ -1688,6 +1694,11 @@ function DebateCourtroom({
     const canPost =
     isCurrentlyDebating && (viewerRole === "subject" || viewerRole === "contributor");
 
+  // Voters can reply after debate ends (stage >= 6), citizens after voting ends (stage >= 7)
+  const canReplyAsObserver =
+    (viewerRole === "voter" && stage >= 6) ||
+    (viewerRole === "citizen" && stage >= 7);
+
   // ✅ the signed-in author's role for DB writes
   const authorRole: "subject" | "contributor" | null =
     viewerRole === "subject" ? "subject" : viewerRole === "contributor" ? "contributor" : null;
@@ -1866,7 +1877,9 @@ function DebateCourtroom({
     after: () => void;
     expandParentIfNeeded?: string | null;
   }) {
-    if (!canPost || !authorRole) return;
+    const isObserverReply = canReplyAsObserver && !!opts.parentMessageId;
+    if (!canPost && !isObserverReply) return;
+    if (!authorRole && !isObserverReply) return;
 
     const text = opts.text.trim();
     if (!text) return;
@@ -1891,7 +1904,7 @@ function DebateCourtroom({
         .insert({
           record_id: record.id,
           author_user_id: actorId,
-          author_role: authorRole,
+          author_role: authorRole ?? viewerRole,
           body: text,
           parent_message_id: opts.parentMessageId,
         })
@@ -1901,7 +1914,7 @@ function DebateCourtroom({
       if (msgErr) throw msgErr;
       if (!msg?.id) throw new Error("Message insert failed.");
 
-      if (opts.files.length) {
+      if (opts.files.length && authorRole) {
         await uploadDebateAttachments({
           recordId: record.id,
           messageId: msg.id,
@@ -1952,6 +1965,7 @@ function DebateCourtroom({
                 key={root.id}
                 node={root}
                 canPost={canPost}
+                canReplyAsObserver={canReplyAsObserver}
                 sessionUserId={sessionUserId}
                 replyOpenFor={replyOpenFor}
                 setReplyOpenFor={setReplyOpenFor}
@@ -2652,9 +2666,9 @@ function VotingCourtroom({
 
   const canInteractVotingSection =
     locked === "voter"
-      ? (isVotingWindow || isPostVoting)
+      ? (isVotingWindow || isPostVoting)  // voters: during or after voting
       : locked === "citizen"
-      ? isPostVoting
+      ? isPostVoting                       // citizens: after voting ends only
       : (locked === "subject" || locked === "contributor")
       ? isAfterSevenDayUnlock
       : false;
@@ -2671,13 +2685,15 @@ function VotingCourtroom({
     !myCommunityStatement &&
     (
       isUndisputed ||
-      ((locked === "voter" || locked === "citizen") && (isVotingWindow || isPostVoting)) ||
+      (locked === "voter" && (isVotingWindow || isPostVoting)) ||
+      (locked === "citizen" && isPostVoting) ||
       ((locked === "subject" || locked === "contributor") && isAfterSevenDayUnlock)
     );
     
   const canInteractCommunitySection =
     isUndisputed ||
-    ((locked === "voter" || locked === "citizen") && (isVotingWindow || isPostVoting)) ||
+    (locked === "voter" && (isVotingWindow || isPostVoting)) ||
+    (locked === "citizen" && isPostVoting) ||
     ((locked === "subject" || locked === "contributor") && isAfterSevenDayUnlock);
 
   async function loadMyFlags(recordId: string, userId: string) {

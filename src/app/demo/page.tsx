@@ -33,7 +33,7 @@ const RECORD = {
   rating: 1.5,
   credibility: "Opinion-Based",
   description:
-    "Hired this freelance graphic designer for a full logo package. Paid $650 and was promised vector files, proper color codes, and a commercially licensed font. What I received was pixelated JPEGs, wrong hex codes from the brief, and a font that wasn't licensed for commercial use. When I flagged the issues, they said \"you approved the mockup so the work is complete\" and went completely unresponsive. No revisions, no refund, no communication. Had to dispute the charge with my bank.",
+    "I hired Alex to design a landing page for my startup. We agreed on $800 upfront, which I paid because they had a decent portfolio. At first, communication was fine, but after a few days, responses got slower. When I finally got the design back, it honestly didn’t match what we discussed at all. The layout was messy, and key sections we talked about weren’t even included. I asked for revisions, but the changes were minimal and didn’t address the core issues. After that, communication basically stopped. I ended up hiring someone else to redo everything. I’m not saying they’re a scammer, but this felt really unprofessional and not worth the money.",
   status: "voting",
 };
 
@@ -43,29 +43,39 @@ const CONTRIBUTOR = { name: "Taylor V." };
 
 const DEBATE_POSTS = [
   {
-    id: "d1",
-    role: "contributor" as const,
-    name: "Taylor V.",
-    body: "I have email receipts (Attachment #1) showing the agreed deliverables: vector files, brand hex codes, and a licensed font. None of these were delivered. The mockup approval was for concept direction — not final file format or licensing.",
-    created_at: "2026-04-07T14:22:00Z",
-  },
-  {
     id: "d2",
     role: "subject" as const,
     name: "Marcus Reid",
-    body: "The client approved the final mockup without raising any format concerns at the time. Revisions were not included in the quoted price. The bank dispute was fraudulent — I delivered exactly what was presented and agreed upon.",
+    body: "I think this is a really unfair representation of what happened. The initial scope was very loosely defined, and I asked multiple times for clarification on certain sections but didn't get clear answers. I delivered based on the information I had at the time. When revisions were requested, I did make updates, but the requests started going beyond what we originally agreed on. Also, after delivering the first version, there was a long delay in feedback, which made the timeline difficult to manage. I didn't \"disappear\" — I just didn't continue working beyond the agreed scope without further discussion.",
+    created_at: "2026-04-07T14:22:00Z",
+    parentId: null,
+  },
+  {
+    id: "d3",
+    role: "contributor" as const,
+    name: "Taylor V.",
+    body: "I disagree with that.\nThe scope was clearly outlined in our messages, including examples of what I wanted.\nThe issues weren't about \"extra features\" — it was about the basics not being done right.\nAlso, the delays only started after the first delivery, not before.\nI wasn't expecting perfection, just something usable, which it wasn't.",
+    created_at: "2026-04-08T09:00:00Z",
+    parentId: "d2",
+  },
+  {
+    id: "d4",
+    role: "subject" as const,
+    name: "Marcus Reid",
+    body: "I understand you weren't satisfied, but calling the work unusable is subjective. From my perspective, I delivered a draft based on the brief provided, and further refinement would have required clearer direction and additional iterations. I don't think it's fair to frame this as me not delivering.",
     created_at: "2026-04-08T09:41:00Z",
+    parentId: null,
   },
 ];
 
 const SEED_VOTES: VoteRow[] = [
-    {
-      id: "v1",
-      alias: "kxr@dnounce_312",
-      jobTitle: "Freelance Designer",
-      choice: "keep",
+  {
+    id: "v1",
+    alias: "kxr@dnounce_312",
+    jobTitle: "Freelance Designer",
+    choice: "keep",
     explanation:
-      "Deliverables were explicitly listed in the contract. \"You approved the mockup\" doesn't override a written spec sheet. The poster has receipts. Record should stand.",
+      "The poster has the message thread as evidence. If the scope was really that unclear, the designer should have gotten written sign-off before starting. \"I didn't have enough info\" isn't a reason to deliver something unusable — it's a reason to pause and ask. Record should stand.",
     created_at: "2026-04-10T11:04:00Z",
     agreeCount: 14,
     disagreeCount: 2,
@@ -76,7 +86,7 @@ const SEED_VOTES: VoteRow[] = [
     jobTitle: "Creative Director",
     choice: "delete",
     explanation:
-      "I'm a designer and scope disputes happen all the time — clients often interpret approvals differently. Without seeing the actual contract language I can't fully side with the poster. Too much ambiguity to let this stand.",
+      "Scope disputes are incredibly common in freelance design. Without seeing the actual message thread, I can't confirm the brief was as clear as the poster claims. The designer's account of delayed feedback and vague direction is plausible. Too much ambiguity here to let this stand.",
     created_at: "2026-04-11T08:17:00Z",
     agreeCount: 6,
     disagreeCount: 9,
@@ -84,24 +94,24 @@ const SEED_VOTES: VoteRow[] = [
   {
     id: "v3",
     alias: "tjf@dnounce_541",
-    jobTitle: "IP Attorney",
+    jobTitle: "UX Consultant",
     choice: "keep",
     explanation:
-      "An unlicensed commercial font is a legal liability regardless of anything else in this dispute. That single deliverable failure alone makes this record valid.",
+      "What stands out to me is that communication broke down after delivery rather than before. A professional who genuinely believed they'd fulfilled the scope would engage with the feedback, not go quiet. That pattern matters regardless of how clear the brief was.",
     created_at: "2026-04-12T16:55:00Z",
-    agreeCount: 21,
-    disagreeCount: 1,
+    agreeCount: 19,
+    disagreeCount: 3,
   },
   {
     id: "v4",
     alias: "qlnx@dnounce_29",
     jobTitle: "Brand Strategist",
-    choice: "keep",
+    choice: "delete",
     explanation:
-      "The designer ghosting after being confronted is the biggest red flag here. Even if there was ambiguity on the mockup, a professional handles it with communication, not silence.",
+      "Both sides agree the deliverable didn't match expectations — they just disagree on why. But without seeing the actual brief or message thread, I can't confidently say the designer was fully in the wrong. Ambiguous scopes cut both ways. Not enough here to keep this on the record.",
     created_at: "2026-04-13T10:30:00Z",
-    agreeCount: 18,
-    disagreeCount: 3,
+    agreeCount: 17,
+    disagreeCount: 4,
   },
 ];
 
@@ -127,8 +137,10 @@ const DEMO_ATTACHMENTS = [
 ];
 
 const SEED_DEBATE_REACTIONS: Record<string, { agree: number; disagree: number; mine: 1 | -1 | null }> = {
-  d1: { agree: 22, disagree: 5, mine: null },
-  d2: { agree: 9, disagree: 17, mine: null },
+  d1: { agree: 18, disagree: 3, mine: null },
+  d2: { agree: 11, disagree: 19, mine: null },
+  d3: { agree: 24, disagree: 6, mine: null },
+  d4: { agree: 7, disagree: 14, mine: null },
 };
 
 /* ─── Helpers ───────────────────────────────────────── */
@@ -276,18 +288,27 @@ function DebateCard({
   disagree,
   myDir,
   onToggle,
+  replies = [],
+  replyReactions,
+  onReplyToggle,
 }: {
   post: typeof DEBATE_POSTS[0];
   agree: number;
   disagree: number;
   myDir: 1 | -1 | null;
   onToggle: (d: 1 | -1) => void;
+  replies?: typeof DEBATE_POSTS;
+  replyReactions?: Record<string, { agree: number; disagree: number; mine: 1 | -1 | null }>;
+  onReplyToggle?: (id: string, d: 1 | -1) => void;
 }) {
   const isSubject = post.role === "subject";
+  const [expandedReplies, setExpandedReplies] = useState(false);
+
   return (
-    <div className={["relative overflow-hidden border-b bg-white", "border-gray-200"].join(" ")}>
+    <div className="relative overflow-hidden border-b border-gray-200 bg-white">
       <div className={["absolute left-0 top-0 bottom-0 w-1.5", isSubject ? "bg-gray-300" : "bg-gray-400"].join(" ")} />
       <div className="px-4 py-4 pl-5 sm:px-5 sm:py-5 sm:pl-6">
+        {/* Avatar + name row */}
         <div className="flex items-start gap-3 min-w-0">
           <div className="h-9 w-9 rounded-full overflow-hidden border bg-white flex items-center justify-center shrink-0">
             <User className="h-4 w-4 text-gray-700" />
@@ -299,14 +320,67 @@ function DebateCard({
             </div>
           </div>
         </div>
+
+        {/* Body */}
         <div className="mt-3 text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{post.body}</div>
+
+        {/* Reactions — read-only, debate is closed */}
         <div className="mt-2">
-          <AgreeDisagree agreeCount={agree} disagreeCount={disagree} myDir={myDir} onToggle={onToggle} size={26} />
+          <AgreeDisagree agreeCount={agree} disagreeCount={disagree} myDir={myDir} onToggle={onToggle} disabled size={26} />
         </div>
-        <div className="mt-3 flex items-center gap-1 text-xs text-gray-500">
-          <ChevronRight className="h-4 w-4" />
-          No replies
-        </div>
+
+        {/* Replies toggle */}
+        {replies.length > 0 ? (
+          <div className="mt-3">
+            <button
+              type="button"
+              onClick={() => setExpandedReplies(!expandedReplies)}
+              className="inline-flex items-center gap-1 text-xs text-gray-600 hover:text-gray-900"
+            >
+              {expandedReplies ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+              {replies.length} repl{replies.length === 1 ? "y" : "ies"}
+            </button>
+
+            {expandedReplies && (
+              <div className="mt-3 space-y-3 pl-3 sm:pl-5 border-l border-gray-200">
+                {replies.map((reply) => {
+                  const rx = replyReactions?.[reply.id] ?? { agree: 0, disagree: 0, mine: null as null | 1 | -1 };
+                  return (
+                    <div key={reply.id} className="py-1">
+                      <div className="flex gap-3">
+                        <div className="h-7 w-7 rounded-full overflow-hidden border bg-white flex items-center justify-center shrink-0">
+                          <User className="h-3.5 w-3.5 text-gray-700" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-xs font-semibold text-gray-900">{reply.name}</div>
+                          <div className="text-[11px] text-gray-500">
+                            {reply.role === "subject" ? "Subject" : "Poster"} · {formatTimestamp(reply.created_at)}
+                          </div>
+                          <div className="mt-1 text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{reply.body}</div>
+                          <div className="mt-2">
+                            <AgreeDisagree
+                              agreeCount={rx.agree}
+                              disagreeCount={rx.disagree}
+                              myDir={rx.mine}
+                              onToggle={(d) => onReplyToggle?.(reply.id, d)}
+                              disabled
+                              size={22}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="mt-3 flex items-center gap-1 text-xs text-gray-500">
+            <ChevronRight className="h-4 w-4" />
+            No replies
+          </div>
+        )}
       </div>
     </div>
   );
@@ -587,7 +661,6 @@ export default function DemoPage() {
               <a href="/?from=demo&section=voting-section" onClick={() => setMobileMenuOpen(false)} className="block w-full text-left px-3 py-2.5 text-sm text-gray-600 hover:bg-gray-50 rounded-lg">Community</a>
               <a href="/?from=demo&section=guidelines-section" onClick={() => setMobileMenuOpen(false)} className="block w-full text-left px-3 py-2.5 text-sm text-gray-600 hover:bg-gray-50 rounded-lg">Guidelines</a>
               <a href="/?from=demo&section=legal-section" onClick={() => setMobileMenuOpen(false)} className="block w-full text-left px-3 py-2.5 text-sm text-gray-600 hover:bg-gray-50 rounded-lg">Legal</a>
-              <button onClick={() => { setMobileMenuOpen(false); router.push("/loginsignup"); }} className="block w-full text-left px-3 py-2.5 text-sm text-gray-600 hover:bg-gray-50 rounded-lg">Log in</button>
             </div>
           )}
         </div>
@@ -778,9 +851,10 @@ export default function DemoPage() {
           </div>
         </div>
 
-        <div className="mt-4 space-y-0 rounded-2xl border border-gray-200 overflow-hidden">
-          {DEBATE_POSTS.map((p) => {
+        <div className="mt-4 rounded-2xl border border-gray-200 overflow-hidden">
+          {DEBATE_POSTS.filter((p) => !p.parentId).map((p) => {
             const rx = debateReactions[p.id] ?? SEED_DEBATE_REACTIONS[p.id] ?? { agree: 0, disagree: 0, mine: null };
+            const replies = DEBATE_POSTS.filter((r) => r.parentId === p.id);
             return (
               <DebateCard
                 key={p.id}
@@ -789,6 +863,9 @@ export default function DemoPage() {
                 disagree={rx.disagree}
                 myDir={rx.mine}
                 onToggle={(d) => toggleDebateReaction(p.id, d)}
+                replies={replies}
+                replyReactions={debateReactions}
+                onReplyToggle={(id, d) => toggleDebateReaction(id, d)}
               />
             );
           })}
@@ -810,7 +887,7 @@ export default function DemoPage() {
         </div>
 
         {/* Tally */}
-        <div className="mb-4">
+        <div className="mt-5 mb-4">
           <div className="inline-flex flex-wrap items-center gap-x-2 gap-y-1 rounded-2xl border bg-white px-3 py-2 text-xs font-semibold text-gray-700 shadow-none mb-2">
             <span><span className="font-semibold">Keep:</span> {keepCount}</span>
             <span className="text-gray-300 hidden sm:inline">•</span>
@@ -902,15 +979,15 @@ export default function DemoPage() {
         ) : null}
 
         {/* Vote statements */}
-        <div className="mt-2">
-          <div className="text-sm font-semibold text-gray-900 mb-4">Vote Statements</div>
+        <div className="mt-6 pt-6 border-t border-gray-100">
+          <div className="text-sm font-semibold text-gray-900 mb-5">Vote Statements</div>
           {allVotes.length === 0 ? (
             <div className="text-sm text-gray-500">No votes yet.</div>
           ) : (
             [...allVotes].reverse().map((v) => {
               const rx = getReaction(v.id, v);
               return (
-                <div key={v.id} className="border-b border-gray-200 pb-5 last:border-b-0 last:pb-0">
+                <div key={v.id} className="border-b border-gray-200 py-6 first:pt-0 last:border-b-0 last:pb-0">
                   <div className="flex items-start gap-2 flex-wrap">
                     <div className="flex-1 min-w-0">
                       <span className="text-xs font-semibold text-gray-900 break-all">
