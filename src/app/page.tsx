@@ -126,6 +126,17 @@ export default function HomePage() {
         }, 200);
       }
     }
+
+    // 🔍 Track home/demo page view
+    supabase.auth.getSession().then(({ data: sessionData }) => {
+      const isDemo = new URLSearchParams(window.location.search).get("from") === "demo" || window.location.pathname === "/demo";
+      supabase.from("page_views").insert({
+        page_type: isDemo ? "demo" : "home",
+        page_id: null,
+        viewer_auth_user_id: sessionData?.session?.user?.id ?? null,
+        is_anonymous: !sessionData?.session?.user?.id,
+      }).then(() => {});
+    });
   }, []);
 
   useEffect(() => {

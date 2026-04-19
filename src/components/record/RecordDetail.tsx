@@ -4586,6 +4586,14 @@ export default function RecordDetail({
           viewed_date: new Date().toISOString().split("T")[0],
         }, { onConflict: "record_id,viewer_auth_user_id,viewed_date", ignoreDuplicates: true }).then(() => {});
 
+        // 🔍 Track page view for admin analytics
+        supabase.from("page_views").insert({
+          page_type: "record",
+          page_id: recordId,
+          viewer_auth_user_id: sessionUserId,
+          is_anonymous: false,
+        }).then(() => {});
+
         const contributorUserId =
             (rec as any)?.contributor?.user_id ?? (rec as any)?.contributor?.[0]?.user_id ?? null;
         console.log("🔍 contributor raw:", JSON.stringify((rec as any)?.contributor));

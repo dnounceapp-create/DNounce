@@ -64,15 +64,34 @@ export default function AdminDashboard() {
       supabase.from("admin_audit_log").select("*", { count: "exact", head: true }),
       supabase.from("voter_quality_badges").select("*", { count: "exact", head: true }).eq("is_low_quality", true),
       supabase.from("voter_quality_badges").select("*", { count: "exact", head: true }).eq("is_convicted", true),
-      // NEW
       supabase.from("subject_claims").select("*", { count: "exact", head: true }),
       supabase.from("subject_claims").select("*", { count: "exact", head: true }).eq("status", "pending"),
       supabase.from("survey_responses").select("*", { count: "exact", head: true }),
       supabase.from("survey_completions").select("*", { count: "exact", head: true }),
       supabase.from("deleted_accounts").select("*", { count: "exact", head: true }),
+      supabase.from("page_views").select("*", { count: "exact", head: true }).eq("page_type", "home"),
+      supabase.from("page_views").select("*", { count: "exact", head: true }).eq("page_type", "demo"),
+      supabase.from("page_views").select("*", { count: "exact", head: true }).eq("page_type", "record"),
+      supabase.from("page_views").select("*", { count: "exact", head: true }).eq("page_type", "subject"),
+      supabase.from("profile_views").select("*", { count: "exact", head: true }),
+      supabase.from("submit_clicks").select("*", { count: "exact", head: true }),
+      supabase.from("social_link_clicks").select("*", { count: "exact", head: true }),
+      supabase.from("subscriptions").select("*", { count: "exact", head: true }).eq("plan_id", "insights").eq("status", "active"),
+      supabase.from("subscriptions").select("*", { count: "exact", head: true }).eq("plan_id", "pro").eq("status", "active"),
     ]);
 
-    const keys = ["r_total", "r_published", "r_debate", "r_voting", "r_deletion", "r_ai", "r_decision", "u_total", "u_banned", "u_admin", "subjects", "contributors", "v_total", "v_keep", "v_delete", "reactions", "debate_msgs", "comm_stmts", "vote_replies", "comm_replies", "pinned", "follows", "notif_total", "notif_unread", "badges", "t_total", "t_open", "rep_total", "rep_open", "active_bans", "audit_total", "v_flagged", "v_convicted", "claims_total", "claims_pending", "survey_responses", "survey_completions", "deleted_accounts"];
+    const keys = [
+      "r_total", "r_published", "r_debate", "r_voting", "r_deletion", "r_ai", "r_decision",
+      "u_total", "u_banned", "u_admin", "subjects", "contributors",
+      "v_total", "v_keep", "v_delete", "reactions", "debate_msgs", "comm_stmts", "vote_replies", "comm_replies",
+      "pinned", "follows", "notif_total", "notif_unread", "badges",
+      "t_total", "t_open", "rep_total", "rep_open", "active_bans", "audit_total",
+      "v_flagged", "v_convicted", "claims_total", "claims_pending",
+      "survey_responses", "survey_completions", "deleted_accounts",
+      "pv_home", "pv_demo", "pv_record", "pv_subject",
+      "profile_views", "submit_clicks", "social_clicks",
+      "insights_subs", "pro_subs",
+    ];
     const c: Record<string, number> = {};
     keys.forEach((k, i) => { c[k] = results[i].count ?? 0; });
     setCounts(c);
@@ -97,19 +116,29 @@ export default function AdminDashboard() {
   if (counts.rep_open > 0) alerts.push({ msg: `${counts.rep_open} open report${counts.rep_open > 1 ? "s" : ""} need review`, href: "/admin/reports", color: "red" });
   if (counts.r_debate > 0) alerts.push({ msg: `${counts.r_debate} record${counts.r_debate > 1 ? "s" : ""} in active debate`, href: "/admin/records", color: "orange" });
   if (counts.r_voting > 0) alerts.push({ msg: `${counts.r_voting} record${counts.r_voting > 1 ? "s" : ""} in active voting`, href: "/admin/records", color: "blue" });
-  if (counts.v_flagged > 0) alerts.push({ msg: `${counts.v_flagged} flagged vote${counts.v_flagged > 1 ? "s" : ""} flagged as low quality`, href: "/admin/records", color: "yellow" });
+  if (counts.v_flagged > 0) alerts.push({ msg: `${counts.v_flagged} vote${counts.v_flagged > 1 ? "s" : ""} flagged as low quality`, href: "/admin/records", color: "yellow" });
   if (counts.claims_pending > 0) alerts.push({ msg: `${counts.claims_pending} pending profile claim${counts.claims_pending > 1 ? "s" : ""} need review`, href: "/admin/claims", color: "orange" });
+
+  const mrr = Math.round(counts.insights_subs * 9.99 + counts.pro_subs * 24.99);
 
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <div><h1 className="text-white text-2xl font-bold">Dashboard</h1><p className="text-gray-400 text-sm mt-1">Live platform overview — all counts are real-time</p></div>
-        <button onClick={load} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-800 text-gray-300 hover:text-white text-sm transition"><RefreshCw className="w-4 h-4" /> Refresh All</button>
+        <div>
+          <h1 className="text-white text-2xl font-bold">Dashboard</h1>
+          <p className="text-gray-400 text-sm mt-1">Live platform overview — all counts are real-time</p>
+        </div>
+        <button onClick={load} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-800 text-gray-300 hover:text-white text-sm transition">
+          <RefreshCw className="w-4 h-4" /> Refresh All
+        </button>
       </div>
 
       {alerts.length > 0 && (
         <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4 space-y-2">
-          <div className="flex items-center gap-2 mb-2"><AlertTriangle className="w-4 h-4 text-yellow-400" /><span className="text-white text-sm font-semibold">Needs Attention ({alerts.length})</span></div>
+          <div className="flex items-center gap-2 mb-2">
+            <AlertTriangle className="w-4 h-4 text-yellow-400" />
+            <span className="text-white text-sm font-semibold">Needs Attention ({alerts.length})</span>
+          </div>
           {alerts.map((a, i) => (
             <Link key={i} href={a.href} className={`flex items-center justify-between px-3 py-2.5 rounded-xl border transition text-sm ${a.color === "red" ? "bg-red-950/40 border-red-800 text-red-300" : a.color === "orange" ? "bg-orange-950/40 border-orange-800 text-orange-300" : a.color === "blue" ? "bg-blue-950/40 border-blue-800 text-blue-300" : "bg-yellow-950/40 border-yellow-800 text-yellow-300"}`}>
               <span>{a.msg}</span><span className="text-xs opacity-70">View →</span>
@@ -119,98 +148,145 @@ export default function AdminDashboard() {
       )}
 
       <div className="space-y-4">
+
+        <div>
+          <h2 className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-3">Revenue</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <StatCard label="Monthly Revenue (MRR)" value={mrr} sub="Insights + Pro subscribers" href="/admin/analytics" color="border-green-900" />
+            <StatCard label="Paying Subscribers" value={counts.insights_subs + counts.pro_subs} sub="Insights + Pro" href="/admin/analytics" color="border-green-900" />
+            <StatCard label="Insights Plan ($9.99/mo)" value={counts.insights_subs} href="/admin/analytics" color="border-blue-900" />
+            <StatCard label="Pro Plan ($24.99/mo)" value={counts.pro_subs} href="/admin/analytics" color="border-purple-900" />
+          </div>
+        </div>
+
+        <div>
+          <h2 className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-3">Site Visits</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+            <StatCard label="Home Page Visits" value={counts.pv_home} sub="dnounce.com" href="/admin/analytics" color="border-blue-900" />
+            <StatCard label="Demo Page Visits" value={counts.pv_demo} sub="dnounce.com/demo" href="/admin/analytics" color="border-purple-900" />
+            <StatCard label="Record Page Visits" value={counts.pv_record} sub="dnounce.com/record/..." href="/admin/analytics" color="border-indigo-900" />
+            <StatCard label="Profile Page Visits" value={counts.pv_subject} sub="dnounce.com/subject/..." href="/admin/analytics" color="border-teal-900" />
+            <StatCard label="Subject Profile Views" value={counts.profile_views} sub="All subject profile loads" href="/admin/analytics" />
+            <StatCard label="Submit Record Clicks" value={counts.submit_clicks} sub="Clicked Submit A Record" href="/admin/analytics" color="border-orange-900" />
+            <StatCard label="Social Link Clicks" value={counts.social_clicks} sub="Outbound social clicks" href="/admin/analytics" />
+          </div>
+        </div>
+
         <div>
           <h2 className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-3">Records by Stage</h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
             <StatCard label="Total Records" value={counts.r_total} href="/admin/records" color="border-gray-700" />
-            <StatCard label="AI Verification" value={counts.r_ai} href="/admin/records" color="border-gray-700" />
+            <StatCard label="Under AI Review" value={counts.r_ai} href="/admin/records" color="border-gray-700" />
             <StatCard label="Published" value={counts.r_published} href="/admin/records" color="border-green-900" />
-            <StatCard label="Deletion Requests" value={counts.r_deletion} href="/admin/records" color="border-red-900" />
-            <StatCard label="In Debate" value={counts.r_debate} sub="Active window" href="/admin/records" color="border-orange-900" />
-            <StatCard label="In Voting" value={counts.r_voting} sub="Votes open" href="/admin/records" color="border-blue-900" />
-            <StatCard label="Decided" value={counts.r_decision} href="/admin/records" color="border-purple-900" />
+            <StatCard label="Disputed" value={counts.r_deletion} href="/admin/records" color="border-red-900" />
+            <StatCard label="In Debate" value={counts.r_debate} sub="Active debate window" href="/admin/records" color="border-orange-900" />
+            <StatCard label="In Voting" value={counts.r_voting} sub="Votes currently open" href="/admin/records" color="border-blue-900" />
+            <StatCard label="Verdict Pending" value={counts.r_decision} sub="Awaiting announcement" href="/admin/records" color="border-purple-900" />
           </div>
         </div>
+
         <div>
           <h2 className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-3">Users & Accounts</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             <StatCard label="Total Users" value={counts.u_total} href="/admin/users" color="border-gray-700" />
             <StatCard label="Active Bans" value={counts.active_bans} href="/admin/users" color="border-red-900" />
-            <StatCard label="Admins" value={counts.u_admin} href="/admin/users" color="border-purple-900" />
-            <StatCard label="Subjects" value={counts.subjects} href="/admin/users" color="border-gray-700" />
-            <StatCard label="Contributors" value={counts.contributors} href="/admin/users" color="border-gray-700" />
+            <StatCard label="Admin Users" value={counts.u_admin} href="/admin/users" color="border-purple-900" />
+            <StatCard label="Subject Profiles" value={counts.subjects} href="/admin/users" color="border-gray-700" />
+            <StatCard label="Record Submitters" value={counts.contributors} href="/admin/users" color="border-gray-700" />
             <StatCard label="Deleted Accounts" value={counts.deleted_accounts} href="/admin/users" color="border-red-900" />
           </div>
         </div>
+
         <div>
           <h2 className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-3">Community Engagement</h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
-            <StatCard label="Total Votes" value={counts.v_total} sub={`${counts.v_keep} keep / ${counts.v_delete} del`} href="/admin/records" />
-            <StatCard label="Flagged Votes" value={counts.v_flagged} sub="Low quality" href="/admin/records" color="border-yellow-900" />
-            <StatCard label="Convicted Votes" value={counts.v_convicted} sub="Disqualified" href="/admin/records" color="border-red-900" />
+            <StatCard label="Total Votes Cast" value={counts.v_total} sub={`${counts.v_keep} keep / ${counts.v_delete} delete`} href="/admin/records" />
+            <StatCard label="Low Quality Votes" value={counts.v_flagged} sub="Flagged by community" href="/admin/records" color="border-yellow-900" />
+            <StatCard label="Disqualified Votes" value={counts.v_convicted} sub="Removed from tally" href="/admin/records" color="border-red-900" />
             <StatCard label="Reactions" value={counts.reactions} href="/admin/records" />
-            <StatCard label="Debate Messages" value={counts.debate_msgs} href="/admin/records" />
-            <StatCard label="Community Stmts" value={counts.comm_stmts} href="/admin/records" />
+            <StatCard label="Debate Statements" value={counts.debate_msgs} href="/admin/records" />
+            <StatCard label="Community Statements" value={counts.comm_stmts} href="/admin/records" />
             <StatCard label="Vote Replies" value={counts.vote_replies} href="/admin/records" />
             <StatCard label="Community Replies" value={counts.comm_replies} href="/admin/records" />
           </div>
         </div>
+
         <div>
-          <h2 className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-3">Notifications, Badges & Social</h2>
+          <h2 className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-3">Notifications, Badges & Saves</h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
-            <StatCard label="Total Notifications" value={counts.notif_total} href="/admin/notifications" />
+            <StatCard label="Total Notifications Sent" value={counts.notif_total} href="/admin/notifications" />
             <StatCard label="Unread Notifications" value={counts.notif_unread} href="/admin/notifications" color="border-yellow-900" />
-            <StatCard label="Total Badges" value={counts.badges} href="/admin/badges" />
+            <StatCard label="Badges Earned" value={counts.badges} href="/admin/badges" />
             <StatCard label="Pinned Records" value={counts.pinned} href="/admin/records" />
-            <StatCard label="Following Records" value={counts.follows} href="/admin/records" />
-            <StatCard label="Audit Log Entries" value={counts.audit_total} href="/admin/audit" />
+            <StatCard label="Followed Records" value={counts.follows} href="/admin/records" />
+            <StatCard label="Admin Actions Logged" value={counts.audit_total} href="/admin/audit" />
           </div>
         </div>
+
         <div>
-          <h2 className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-3">Claims & Surveys</h2>
+          <h2 className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-3">Profile Claims & Surveys</h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <StatCard label="Total Claims" value={counts.claims_total} href="/admin/claims" />
-            <StatCard label="Pending Claims" value={counts.claims_pending} href="/admin/claims" color={counts.claims_pending > 0 ? "border-orange-900" : "border-gray-700"} />
+            <StatCard label="Total Profile Claims" value={counts.claims_total} href="/admin/claims" />
+            <StatCard label="Claims Awaiting Review" value={counts.claims_pending} href="/admin/claims" color={counts.claims_pending > 0 ? "border-orange-900" : "border-gray-700"} />
             <StatCard label="Survey Responses" value={counts.survey_responses} href="/admin/surveys" />
-            <StatCard label="Survey Completions" value={counts.survey_completions} href="/admin/surveys" />
+            <StatCard label="Surveys Completed" value={counts.survey_completions} href="/admin/surveys" />
           </div>
         </div>
+
         <div>
           <h2 className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-3">Support</h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <StatCard label="Total Tickets" value={counts.t_total} href="/admin/tickets" />
-            <StatCard label="Open Tickets" value={counts.t_open} href="/admin/tickets" color={counts.t_open > 0 ? "border-yellow-900" : "border-gray-700"} />
+            <StatCard label="Total Support Tickets" value={counts.t_total} href="/admin/tickets" />
+            <StatCard label="Open Support Tickets" value={counts.t_open} href="/admin/tickets" color={counts.t_open > 0 ? "border-yellow-900" : "border-gray-700"} />
             <StatCard label="Total Reports" value={counts.rep_total} href="/admin/reports" />
             <StatCard label="Open Reports" value={counts.rep_open} href="/admin/reports" color={counts.rep_open > 0 ? "border-red-900" : "border-gray-700"} />
           </div>
         </div>
+
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-5">
         <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4">
-          <div className="flex items-center justify-between mb-3"><h3 className="text-white text-sm font-semibold">Recent Records</h3><Link href="/admin/records" className="text-gray-500 hover:text-white text-xs transition">All →</Link></div>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-white text-sm font-semibold">Recent Records</h3>
+            <Link href="/admin/records" className="text-gray-500 hover:text-white text-xs transition">All →</Link>
+          </div>
           <div className="space-y-1.5">
             {recentRecords.map(r => (
               <Link key={r.id} href="/admin/records" className="flex items-center justify-between gap-2 hover:bg-gray-800 rounded-xl px-2 py-2 transition">
-                <div className="min-w-0"><div className="text-white text-xs font-medium truncate">{(r.subject as any)?.name ?? "—"}</div><div className="text-gray-500 text-[11px]">{r.category ?? "—"} • {fmtDate(r.created_at)}</div></div>
+                <div className="min-w-0">
+                  <div className="text-white text-xs font-medium truncate">{(r.subject as any)?.name ?? "—"}</div>
+                  <div className="text-gray-500 text-[11px]">{r.category ?? "—"} • {fmtDate(r.created_at)}</div>
+                </div>
                 <StatusBadge status={r.status} />
               </Link>
             ))}
           </div>
         </div>
+
         <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4">
-          <div className="flex items-center justify-between mb-3"><h3 className="text-white text-sm font-semibold">Recent Tickets</h3><Link href="/admin/tickets" className="text-gray-500 hover:text-white text-xs transition">All →</Link></div>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-white text-sm font-semibold">Recent Support Tickets</h3>
+            <Link href="/admin/tickets" className="text-gray-500 hover:text-white text-xs transition">All →</Link>
+          </div>
           <div className="space-y-1.5">
             {recentTickets.map(t => (
               <Link key={t.id} href="/admin/tickets" className="flex items-center justify-between gap-2 hover:bg-gray-800 rounded-xl px-2 py-2 transition">
-                <div className="min-w-0"><div className="text-white text-xs font-medium truncate">{t.topic}</div><div className="text-gray-500 text-[11px]">{t.priority} priority • {fmtDate(t.created_at)}</div></div>
+                <div className="min-w-0">
+                  <div className="text-white text-xs font-medium truncate">{t.topic}</div>
+                  <div className="text-gray-500 text-[11px]">{t.priority} priority • {fmtDate(t.created_at)}</div>
+                </div>
                 <span className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${t.status === "open" ? "bg-yellow-900 text-yellow-300 border-yellow-700" : "bg-gray-800 text-gray-400 border-gray-700"}`}>{t.status}</span>
               </Link>
             ))}
           </div>
         </div>
+
         <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4">
-          <div className="flex items-center justify-between mb-3"><h3 className="text-white text-sm font-semibold">Recent Admin Actions</h3><Link href="/admin/audit" className="text-gray-500 hover:text-white text-xs transition">All →</Link></div>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-white text-sm font-semibold">Recent Admin Actions</h3>
+            <Link href="/admin/audit" className="text-gray-500 hover:text-white text-xs transition">All →</Link>
+          </div>
           <div className="space-y-1.5">
             {recentAudit.map(a => (
               <Link key={a.id} href="/admin/audit" className="flex flex-col hover:bg-gray-800 rounded-xl px-2 py-2 transition">
@@ -220,12 +296,19 @@ export default function AdminDashboard() {
             ))}
           </div>
         </div>
+
         <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4">
-          <div className="flex items-center justify-between mb-3"><h3 className="text-white text-sm font-semibold">Recent Notifications</h3><Link href="/admin/notifications" className="text-gray-500 hover:text-white text-xs transition">All →</Link></div>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-white text-sm font-semibold">Recent Notifications</h3>
+            <Link href="/admin/notifications" className="text-gray-500 hover:text-white text-xs transition">All →</Link>
+          </div>
           <div className="space-y-1.5">
             {recentNotifs.map(n => (
               <Link key={n.id} href="/admin/notifications" className="flex items-center justify-between gap-2 hover:bg-gray-800 rounded-xl px-2 py-2 transition">
-                <div className="min-w-0"><div className="text-white text-xs font-medium truncate">{n.title}</div><div className="text-gray-500 text-[11px] font-mono">{n.type}</div></div>
+                <div className="min-w-0">
+                  <div className="text-white text-xs font-medium truncate">{n.title}</div>
+                  <div className="text-gray-500 text-[11px]">{n.type}</div>
+                </div>
                 <span className={`shrink-0 text-[10px] px-1.5 py-0.5 rounded-full border ${n.read ? "bg-gray-800 text-gray-500 border-gray-700" : "bg-blue-900 text-blue-300 border-blue-700"}`}>{n.read ? "Read" : "New"}</span>
               </Link>
             ))}

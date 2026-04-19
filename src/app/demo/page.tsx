@@ -21,6 +21,7 @@ import {
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabaseClient";
 
 /* ─── Static fake data ─────────────────────────────── */
 
@@ -410,6 +411,18 @@ export default function DemoPage() {
   const [shareCopied, setShareCopied] = useState(false);
 
   // close mobile menu on outside click
+  useEffect(() => {
+    // 🔍 Track demo page view
+    supabase.auth.getSession().then(({ data: sessionData }) => {
+      supabase.from("page_views").insert({
+        page_type: "demo",
+        page_id: null,
+        viewer_auth_user_id: sessionData?.session?.user?.id ?? null,
+        is_anonymous: !sessionData?.session?.user?.id,
+      }).then(() => {});
+    });
+  }, []);
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       const menu = document.getElementById("demo-mobile-menu");

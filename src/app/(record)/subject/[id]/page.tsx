@@ -605,6 +605,14 @@ export default function SubjectProfilePage() {
           referrer_record_id: refRecord ?? null,
           viewer_role: viewerRole,
         }).then(() => {});
+
+        // 🔍 Track page view for admin analytics
+        supabase.from("page_views").insert({
+          page_type: "subject",
+          page_id: subjectId,
+          viewer_auth_user_id: sessionData?.session?.user?.id ?? null,
+          is_anonymous: !sessionData?.session?.user?.id,
+        }).then(() => {});
       });
 
       const rows: SubjectRecord[] = (recs || []) as any;
