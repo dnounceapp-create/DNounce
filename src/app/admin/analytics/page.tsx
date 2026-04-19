@@ -298,12 +298,15 @@ export default function AdminAnalyticsPage() {
       setPendingVerdicts(allRecordsData.filter((r: any) => r.status === "decision" && !r.decision_made_at).length);
 
       const subsData = subscriptions.data ?? [];
-      const active = subsData.filter((s: any) => s.status === "active");
+      const active = subsData.filter((s: any) => 
+        s.status === "active" && 
+        s.stripe_subscription_id !== null &&
+        (s.plan_id === "insights" || s.plan_id === "pro")
+      );
       const planCounts = { standard: 0, insights: 0, pro: 0 };
       active.forEach((s: any) => {
         if (s.plan_id === "pro") planCounts.pro++;
         else if (s.plan_id === "insights") planCounts.insights++;
-        else planCounts.standard++;
       });
       setSubscriberCounts(planCounts);
       setPlanDistribution([

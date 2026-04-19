@@ -76,8 +76,8 @@ export default function AdminDashboard() {
       supabase.from("profile_views").select("*", { count: "exact", head: true }),
       supabase.from("submit_clicks").select("*", { count: "exact", head: true }),
       supabase.from("social_link_clicks").select("*", { count: "exact", head: true }),
-      supabase.from("subscriptions").select("*", { count: "exact", head: true }).eq("plan_id", "insights").eq("status", "active"),
-      supabase.from("subscriptions").select("*", { count: "exact", head: true }).eq("plan_id", "pro").eq("status", "active"),
+      supabase.from("subscriptions").select("*", { count: "exact", head: true }).eq("plan_id", "insights").eq("status", "active").not("stripe_subscription_id", "is", null),
+      supabase.from("subscriptions").select("*", { count: "exact", head: true }).eq("plan_id", "pro").eq("status", "active").not("stripe_subscription_id", "is", null),
     ]);
 
     const keys = [
