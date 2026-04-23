@@ -130,13 +130,14 @@ export default function LoginSignupPage() {
           .eq("email", emailToUse)
           .maybeSingle();
 
-          if (accountExists) {
-            setLoginError("Account found but password is incorrect. If you signed up with Google, use the Google button below instead.");
-          } else {
-            setLoginError("No account found with that email. If you signed up with Google, use the Google button below instead.");
-          }
-        return;
+          // Auto-trigger Google sign in — works for both Google users and wrong password
+          await handleGoogle();
+          return;
+      } else {
+        setLoginError(signInError.message);
       }
+      return;
+    }
 
     // Check MFA
     const { data: factorsData, error: factorsError } = await supabase.auth.mfa.listFactors();
