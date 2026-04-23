@@ -33,17 +33,19 @@ export default function LoginSignupPage() {
   const [showEmailSent, setShowEmailSent] = useState(false);
 
   // ── Redirect if already logged in ──────────────────────────────────────────
-  // Only runs once on mount — checks onboarding so we don't skip user-setup
   useEffect(() => {
     const checkSession = async () => {
       const { data } = await supabase.auth.getSession();
       const user = data.session?.user;
       if (!user) return;
       const onboarded = !!user.user_metadata?.onboardingComplete;
-      router.replace(onboarded ? "/dashboard/myrecords" : "/user-setup");
+      if (!onboarded) { router.replace("/user-setup"); return; }
+      const params = new URLSearchParams(window.location.search);
+      const redirectTo = params.get("redirectTo");
+      router.replace(redirectTo || "/dashboard/myrecords");
     };
     checkSession();
-  }, []); // no router dependency — runs once only
+  }, []);
 
   // ── After login redirect ────────────────────────────────────────────────────
   const afterLoginRedirect = async () => {
@@ -51,7 +53,10 @@ export default function LoginSignupPage() {
     const user = data?.user;
     if (!user) return;
     const onboarded = !!user.user_metadata?.onboardingComplete;
-    router.replace(onboarded ? "/dashboard/myrecords" : "/user-setup");
+    if (!onboarded) { router.replace("/user-setup"); return; }
+    const params = new URLSearchParams(window.location.search);
+    const redirectTo = params.get("redirectTo");
+    router.replace(redirectTo || "/dashboard/myrecords");
   };
 
   // ── Google login ────────────────────────────────────────────────────────────

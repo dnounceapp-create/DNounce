@@ -80,7 +80,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
               <Button
                 size="sm"
                 className="bg-blue-600 hover:bg-blue-700 text-white"
-                onClick={() => router.push("/loginsignup")}
+                onClick={() => router.push(`/loginsignup?redirectTo=${encodeURIComponent(window.location.pathname)}`)}
               >
                 Login / Sign Up
               </Button>
@@ -145,7 +145,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
               <Button
                 size="sm"
                 className="bg-blue-600 hover:bg-blue-700 text-white mt-2"
-                onClick={() => router.push("/loginsignup")}
+                onClick={() => router.push(`/loginsignup?redirectTo=${encodeURIComponent(window.location.pathname)}`)}
               >
                 Login / Sign Up
               </Button>
