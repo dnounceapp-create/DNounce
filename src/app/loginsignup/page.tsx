@@ -130,13 +130,16 @@ export default function LoginSignupPage() {
           .eq("email", emailToUse)
           .maybeSingle();
 
-        if (accountExists) {
-          setLoginError("Account found but password is incorrect. If you signed up with Google, use the Google button below instead.");
+          if (accountExists) {
+            setLoginError("Account found but password is incorrect. If you signed up with Google, use the Google button below instead.");
+          } else {
+            setLoginError("No account found with that email or phone number.");
+          }
         } else {
-          setLoginError("No account found with that email or phone number.");
+          setLoginError(signInError.message);
         }
-      return;
-    }
+        return;
+      }
 
     // Check MFA
     const { data: factorsData, error: factorsError } = await supabase.auth.mfa.listFactors();
