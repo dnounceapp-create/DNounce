@@ -731,7 +731,7 @@ export default function AnalyticsPage() {
     const load = async () => {
       const { data: sessionData } = await supabase.auth.getSession();
       const user = sessionData?.session?.user;
-      if (!user) { router.replace("/loginsignup"); return; }
+      if (!user) { router.replace(`/loginsignup?redirectTo=/dashboard/analytics`); return; }
 
       const { data: sub } = await supabase
         .from("subscriptions")

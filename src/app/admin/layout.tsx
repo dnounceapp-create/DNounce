@@ -48,7 +48,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   useEffect(() => {
     async function check() {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) { router.push("/loginsignup"); return; }
+      if (!session?.user) { router.push(`/loginsignup?redirectTo=/admin`); return; }
 
       const { data: role } = await supabase
         .from("admin_roles")
@@ -74,7 +74,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   async function handleSignOut() {
     await supabase.auth.signOut();
-    router.push("/loginsignup");
+    router.push(`/loginsignup?redirectTo=/admin`);
   }
 
   if (loading) {
