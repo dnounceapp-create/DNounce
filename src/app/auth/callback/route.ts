@@ -50,9 +50,11 @@ export async function GET(request: Request) {
       const isOnboarded = userRow?.onboarding_complete || !!user.user_metadata?.onboardingComplete;
       console.log("AUTH CALLBACK - isOnboarded:", isOnboarded, "redirecting to:", isOnboarded ? "/dashboard/myrecords" : "/user-setup");
       
-      return NextResponse.redirect(
-        new URL(isOnboarded ? "/dashboard/myrecords" : "/user-setup", requestUrl.origin)
-      );
+      const redirectTo = requestUrl.searchParams.get("redirectTo");
+      const destination = !isOnboarded
+        ? "/user-setup"
+        : redirectTo || "/dashboard/myrecords";
+      return NextResponse.redirect(new URL(destination, requestUrl.origin));
     }
 
     console.log("AUTH CALLBACK - no user found, redirecting to /loginsignup");

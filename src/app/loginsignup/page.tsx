@@ -62,10 +62,15 @@ export default function LoginSignupPage() {
   // ── Google login ────────────────────────────────────────────────────────────
   const handleGoogle = async () => {
     if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const redirectTo = params.get("redirectTo");
+    const callbackUrl = redirectTo
+      ? `${window.location.origin}/auth/callback?redirectTo=${encodeURIComponent(redirectTo)}`
+      : `${window.location.origin}/auth/callback`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: callbackUrl,
         queryParams: { prompt: "select_account" },
       },
     });
@@ -119,7 +124,6 @@ export default function LoginSignupPage() {
       setAuthLoading(false);
 
       if (signInError.message === "Invalid login credentials") {
-        // Check if email exists in our DB to give a smarter message
         const { data: accountExists } = await supabase
           .from("user_accountdetails")
           .select("user_id")
@@ -127,13 +131,10 @@ export default function LoginSignupPage() {
           .maybeSingle();
 
         if (accountExists) {
-          setLoginError("Account found but the password is incorrect. Try again or reset your password.");
+          setLoginError("Account found but password is incorrect. If you signed up with Google, use the Google button below instead.");
         } else {
           setLoginError("No account found with that email or phone number.");
         }
-      } else {
-        setLoginError(signInError.message);
-      }
       return;
     }
 
