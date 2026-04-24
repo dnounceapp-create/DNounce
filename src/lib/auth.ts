@@ -17,7 +17,7 @@ export function useAuth(options: UseAuthOptions = {}) {
     loginPath = "/loginsignup",
   } = options;
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [sessionUser, setSessionUser] = useState<null | NonNullable<Awaited<ReturnType<typeof supabase.auth.getSession>>["data"]["session"]>["user"]>(null);
 
   const router = useRouter();
