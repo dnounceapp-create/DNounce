@@ -822,7 +822,7 @@ export default function SubjectProfilePage() {
     return <span className={`${base} bg-yellow-100 text-yellow-700`}>{c || "Pending"}</span>;
   }
 
-  if (loading) return <div className="p-8">Loading…</div>;
+  // loading removed
 
   if (err || !subject) {
     return (

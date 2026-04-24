@@ -280,15 +280,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (menuOpen) setMenuOpen(false);
   }, [pathname]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen grid place-items-center text-sm text-gray-500">
-        Checking your session…
-      </div>
-    );
-  }
-
-  if (!user) return null;
+  if (!loading && !user) return null;
 
   return (
     <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">

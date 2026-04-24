@@ -635,13 +635,7 @@ export default function AccountSecurityPage() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-gray-500">
-        Loading your account...
-      </div>
-    );
-  }
+  if (loading) return null;
 
   // Step 1: Send identity code to current email
   const handleSendIdentityCode = async () => {

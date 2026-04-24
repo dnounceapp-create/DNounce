@@ -16,13 +16,7 @@ export default function RecordRootLayout({ children }: { children: React.ReactNo
 
   // While auth is still checking, don't render the auth layout (it redirects).
   // Keep it simple to avoid flicker/redirect races.
-  if (loading) {
-    return (
-      <div className="min-h-screen grid place-items-center text-sm text-gray-500">
-        Loading…
-      </div>
-    );
-  }
+  if (!loading && !user) return null;
 
   // Signed in → dashboard shell
   if (user) {

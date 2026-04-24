@@ -337,7 +337,7 @@ records = mapped.map((r, i) => ({ ...r, comment_count: counts[i] }));
     return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, []);
 
-  if (loading) return <div className="p-8 text-gray-500">Loading reputation…</div>;
+  // loading removed
 
   const earnedLabels = new Set(badges.map(b => b.label));
   const badgeCounts: Record<string, number> = {};

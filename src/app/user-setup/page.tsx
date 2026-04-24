@@ -277,14 +277,7 @@ export default function UserSetupPage() {
   };
 
   // ---------- UI ----------
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-gray-500">
-        <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-gray-400 mr-2" />
-        Loading your session...
-      </div>
-    );
-  }
+  if (loading) return null;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

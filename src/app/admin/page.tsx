@@ -109,7 +109,7 @@ export default function AdminDashboard() {
     setLoading(false);
   }
 
-  if (loading) return <div className="p-8 text-gray-400 text-sm animate-pulse">Loading dashboard…</div>;
+  // loading removed
 
   const alerts = [];
   if (counts.t_open > 0) alerts.push({ msg: `${counts.t_open} open support ticket${counts.t_open > 1 ? "s" : ""} need attention`, href: "/admin/tickets", color: "yellow" });

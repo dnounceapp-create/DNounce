@@ -77,13 +77,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     router.push(`/loginsignup?redirectTo=/admin`);
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-        <div className="text-gray-400 text-sm animate-pulse">Verifying access…</div>
-      </div>
-    );
-  }
+  if (loading) return null;
 
   return (
     <div className="min-h-screen bg-gray-950 flex">

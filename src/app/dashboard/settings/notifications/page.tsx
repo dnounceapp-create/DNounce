@@ -157,7 +157,7 @@ export default function NotificationsPage() {
     }
   }
 
-  if (loading) return <div className="p-8 text-gray-500">Loading…</div>;
+  // loading removed
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 p-4 sm:p-6 lg:p-8">

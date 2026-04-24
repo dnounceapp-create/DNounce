@@ -157,13 +157,7 @@ export default function BillingPage() {
   const formatDate = (iso: string) =>
     new Date(iso).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
+  if (loading) return null;
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 px-4 py-6 sm:p-6 lg:p-8 pb-[calc(env(safe-area-inset-bottom)+24px)]">

@@ -63,7 +63,7 @@ function SearchResultsContent() {
     fetchResults();
   }, [searchParams]);
 
-  if (loading) return <p className="p-6">Loading search results...</p>;
+  // loading removed
 
   return (
     <div className="max-w-4xl mx-auto p-6">
