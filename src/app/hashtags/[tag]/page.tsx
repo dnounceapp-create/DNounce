@@ -30,7 +30,7 @@ export default function HashtagPage() {
     }
   }, [tag]);
 
-  // loading removed
+  if (loading) return null;
   if (error) return <p className="p-4 text-red-500">Error: {error}</p>;
 
   return (

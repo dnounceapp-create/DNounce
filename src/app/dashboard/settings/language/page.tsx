@@ -54,7 +54,7 @@ export default function LanguageSettingsPage() {
 
   const preview = LANGUAGES.find((l) => l.value === language)?.preview || "";
 
-  // loading removed
+  if (loading) return null;
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 p-4 sm:p-6 lg:p-8">

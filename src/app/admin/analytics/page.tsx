@@ -358,7 +358,7 @@ export default function AdminAnalyticsPage() {
   const paidSubscribers = subscriberCounts.insights + subscriberCounts.pro;
   const conversionRate = totalUsers > 0 ? ((paidSubscribers / totalUsers) * 100).toFixed(1) : "0";
 
-  // loading removed
+  if (loading) return null;
 
   return (
     <div className="space-y-10">

@@ -109,7 +109,7 @@ export default function AdminDashboard() {
     setLoading(false);
   }
 
-  // loading removed
+  if (loading) return null;
 
   const alerts = [];
   if (counts.t_open > 0) alerts.push({ msg: `${counts.t_open} open support ticket${counts.t_open > 1 ? "s" : ""} need attention`, href: "/admin/tickets", color: "yellow" });

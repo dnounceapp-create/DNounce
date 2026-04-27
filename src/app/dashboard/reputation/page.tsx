@@ -337,7 +337,7 @@ records = mapped.map((r, i) => ({ ...r, comment_count: counts[i] }));
     return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, []);
 
-  // loading removed
+  if (loading) return null;
 
   const earnedLabels = new Set(badges.map(b => b.label));
   const badgeCounts: Record<string, number> = {};
