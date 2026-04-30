@@ -30,7 +30,7 @@ export const metadata: Metadata = {
   },
 
   description:
-    "DNounce is a review platform where real experiences are shared, subjects are notified, and the community helps verify what's fair. Reviews that tell the whole story.",
+    "DNounce is a platform for real reviews, customer experiences, and service provider feedback. People share what happened, you can respond, and the community helps others see both sides before deciding who to trust.",
 
   keywords: [
     "review platform",
@@ -58,7 +58,7 @@ export const metadata: Metadata = {
     siteName: "DNounce",
     title: "DNounce | Reviews that tell the whole story.",
     description:
-      "A review platform where experiences are shared, subjects are notified, and the community helps verify what's fair.",
+      "DNounce is a platform for real reviews and service provider feedback. Share your experience, add your perspective, and see what others think before deciding who to trust.",
     images: [
       {
         url: "/og-image.png",
@@ -75,7 +75,7 @@ export const metadata: Metadata = {
     creator: "@dnounce",
     title: "DNounce | Reviews that tell the whole story.",
     description:
-      "A review platform where experiences are shared, subjects are notified, and the community helps verify what's fair.",
+      "DNounce is a platform for real reviews and service provider feedback. Share your experience, add your perspective, and see what others think before deciding who to trust.",
     images: ["/og-image.png"],
   },
 
