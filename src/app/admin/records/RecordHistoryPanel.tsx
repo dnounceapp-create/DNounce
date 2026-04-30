@@ -149,15 +149,15 @@ export default function RecordHistoryPanel({ recordId, onClose }: Props) {
               {tab === "votes" && (
                 <div className="space-y-3">
                   <div className="flex gap-4 text-sm text-gray-400">
-                    <span>Keep: <span className="text-green-400 font-semibold">{data.votes.filter((v: any) => v.choice === "keep").length}</span></span>
-                    <span>Delete: <span className="text-red-400 font-semibold">{data.votes.filter((v: any) => v.choice === "delete").length}</span></span>
+                    <span>Contributor: <span className="text-blue-400 font-semibold">{data.votes.filter((v: any) => v.choice === "side_with_contributor").length}</span></span>
+                    <span>Subject: <span className="text-indigo-400 font-semibold">{data.votes.filter((v: any) => v.choice === "side_with_subject").length}</span></span>
                     <span>Replies: <span className="text-white font-semibold">{data.voteReplies.length}</span></span>
                   </div>
                   {data.votes.map((v: any) => (
                     <div key={v.id} className="bg-gray-800 rounded-xl p-3 space-y-1">
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-semibold text-gray-300">{v.author_alias ?? "Anonymous"}</span>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${v.choice === "keep" ? "bg-green-900 text-green-400" : "bg-red-900 text-red-400"}`}>{v.choice?.toUpperCase()}</span>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${v.choice === "side_with_contributor" ? "bg-blue-900 text-blue-400" : "bg-indigo-900 text-indigo-400"}`}>{v.choice?.toUpperCase()}</span>
                         <span className="text-gray-500 text-[11px] ml-auto">{new Date(v.created_at).toLocaleString()}</span>
                       </div>
                       <div className="text-gray-300 text-xs whitespace-pre-wrap">{v.explanation}</div>

@@ -368,7 +368,7 @@ const STAGE_CONFIG: Record<string, {
   },
   voting: {
     label: "Open Community Voting", color: "blue",
-    desc: "The community voting window opens. Citizens and voters can now vote to keep or delete the record.",
+    desc: "The community voting window opens. Citizens and voters can now side with the contributor or subject.",
     fields: [
       { key: "voting_started_at", label: "Voting Starts", type: "datetime-local", required: true },
       { key: "voting_ends_at", label: "Voting Ends", type: "datetime-local", required: true, help: "Standard is 48 hours from start date." },
@@ -380,7 +380,7 @@ const STAGE_CONFIG: Record<string, {
     desc: "Voting is closed and the final outcome is recorded. This determines whether the record is kept or deleted.",
     fields: [
       { key: "_warn", type: "warning", label: "", help: "This is permanent. Once a decision is recorded, the record enters the execution stage." },
-      { key: "final_outcome", label: "Final Outcome", type: "select", required: true, options: [{ value: "keep", label: "✅ Keep — community voted to keep the record" }, { value: "delete", label: "🗑️ Delete — community voted to delete the record" }] },
+      { key: "final_outcome", label: "Final Outcome", type: "select", required: true, options: [{ value: "sided_with_contributor", label: "✅ Sided with Contributor" }, { value: "sided_with_subject", label: "🔵 Sided with Subject" }] },
       { key: "decision_started_at", label: "Decision Made At", type: "datetime-local", required: true },
       { key: "finalized_at", label: "Finalized At", type: "datetime-local", required: true },
       { key: "note", label: "Notes", type: "textarea", required: false },

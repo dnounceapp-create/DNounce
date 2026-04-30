@@ -107,7 +107,7 @@ export const stageConfig: Record<number, StageConfig> = {
       contributor: [
         "✅ Can view submission in “Records Submitted”.",
         "❌ Cannot edit during AI review.",
-        "🗑️ Can delete record if desired.",
+        "🗑️ Can request record removal if desired.",
       ],
       voter: ["🚫 Not applicable — voters not active yet."],
       citizen: ["🚫 Not visible."],
@@ -147,7 +147,7 @@ export const stageConfig: Record<number, StageConfig> = {
       subject: [
         "⚖️ Can Dispute Record or Comment under moderation rules.",
       ],
-      contributor: ["🗑️ Can delete their own record if desired."],
+      contributor: ["🗑️ Can request removal of their own record if desired."],
       voter: ["🚫 Not active unless the record is escalated."],
       citizen: [
         "💬 Can interact normally (comment, react, flag) as a public participant until escalation.",
@@ -196,7 +196,7 @@ export const stageConfig: Record<number, StageConfig> = {
   6: {
     label: "Voting in Progress",
     happens:
-      "The record enters community voting — users decide whether to keep or delete based on debate outcomes.",
+      "The record enters community voting — the community sides with either the contributor or the subject.",
     timeline: {
       summary: "48h (starts when debate ends)",
       start: "onDebateEnd",
@@ -207,7 +207,7 @@ export const stageConfig: Record<number, StageConfig> = {
       subject: ["⏳ Can view progress but not interact."],
       contributor: ["⏳ Can observe voting results but cannot intervene."],
       voter: [
-        "✅ Can vote (keep/delete) and must add short reasoning.",
+        "✅ Can side with contributor or subject and must add short reasoning.",
         "⚠ 5+ downvotes → 'Low-Quality Voter'.",
         "🧨 ≥33% voter flags + ≥50% public approval → 'CONVICTED Lost Voting Right'.",
       ],
@@ -255,11 +255,11 @@ export interface OutcomeLabel {
 
 export const outcomeLabels: OutcomeLabel[] = [
   {
-    label: "Kept on page",
+    label: "Community sided with contributor",
     color: "bg-green-100 text-green-700 border border-black/30",
   },
   {
-    label: "Deleted from page",
+    label: "Community sided with subject",
     color: "bg-red-100 text-red-700 border border-black/30",
   },
 ];

@@ -32,7 +32,7 @@ const faqs = [
   },
   {
     q: "How does the community vote work?",
-    a: "After a 72-hour debate between the contributor and subject, the community votes to keep or delete the record. Your vote explanation is also judged — poor explanations can result in a Low-Quality Voter badge.",
+    a: "After a 72-hour debate between the contributor and subject, the community sides with either the contributor or the subject. Your vote explanation is also judged — poor explanations can result in a Low-Quality Voter badge.",
   },
   {
     q: "I think a record about me is false. What can I do?",

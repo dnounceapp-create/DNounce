@@ -16,14 +16,14 @@ type RecordItem = {
   subject_name: string;
   submitted_at: string;
   stage: number | null;
-  outcome: "keep" | "delete" | null;
+  outcome: "side_with_contributor" | "side_with_subject" | null;
   credibility: "Evidence-Based" | "Opinion-Based" | "Unable to Verify" | string;
   last_activity_at: string;
 };
 
 const outcomeLabels: Record<string, { label: string; color: string }> = {
-  keep: { label: "Kept on page", color: "bg-green-200 text-green-800" },
-  delete: { label: "Deleted from page", color: "bg-red-200 text-red-800" },
+  side_with_contributor: { label: "Community sided with contributor", color: "bg-green-200 text-green-800" },
+  side_with_subject: { label: "Community sided with subject", color: "bg-red-200 text-red-800" },
 };
 
 // Human labels for chips
@@ -144,7 +144,7 @@ export default function MyRecordsPage() {
   const [pageSize, setPageSize] = useState(10);
   const [page, setPage] = useState(1);
   const [records, setRecords] = useState<RecordItem[]>([]);
-  const [stats, setStats] = useState({ my_total_records: 0, kept: 0, deleted: 0 });
+  const [stats, setStats] = useState({ my_total_records: 0, sided_contributor: 0, sided_subject: 0 });
   const [loadingData, setLoadingData] = useState(true);
   const [subjectId, setSubjectId] = useState<string | null>(null);
   const [disputeConfirmId, setDisputeConfirmId] = useState<string | null>(null);
@@ -227,8 +227,8 @@ export default function MyRecordsPage() {
         setRecords(mapped);
         setStats({
           my_total_records: mapped.length,
-          kept: mapped.filter((r) => r.outcome === "keep").length,
-          deleted: mapped.filter((r) => r.outcome === "delete").length,
+          sided_contributor: mapped.filter((r) => r.outcome === "side_with_contributor").length,
+          sided_subject: mapped.filter((r) => r.outcome === "side_with_subject").length,
         });
       } catch (err) {
         console.error("Failed to fetch records:", err);
@@ -320,8 +320,8 @@ export default function MyRecordsPage() {
       Debate: (record) => record.stage === 5,
       Voting: (record) => record.stage === 6,
       Anonymity: (record) => record.stage === 7,
-      Kept: (record) => record.outcome === "keep",
-      Deleted: (record) => record.outcome === "delete",
+"Sided with Contributor": (record) => record.outcome === "side_with_contributor",
+"Sided with Subject": (record) => record.outcome === "side_with_subject",
     };
     return map[status] ?? (() => true);
   };
@@ -524,14 +524,14 @@ export default function MyRecordsPage() {
           <div className="bg-white/90 backdrop-blur-sm shadow-sm hover:shadow-md transition rounded-2xl p-4 sm:p-6 text-center border border-gray-100">
             <p className="text-xs sm:text-sm font-medium text-gray-600">Kept Records</p>
             <p className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
-              {stats.kept}
+              {stats.sided_contributor}
             </p>
           </div>
 
           <div className="bg-white/90 backdrop-blur-sm shadow-sm hover:shadow-md transition rounded-2xl p-4 sm:p-6 text-center border border-gray-100">
             <p className="text-xs sm:text-sm font-medium text-gray-600">Deleted Records</p>
             <p className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
-              {stats.deleted}
+              {stats.sided_subject}
             </p>
           </div>
         </div>
@@ -558,8 +558,8 @@ export default function MyRecordsPage() {
               <option>Debate</option>
               <option>Voting</option>
               <option>Anonymity</option>
-              <option>Kept</option>
-              <option>Deleted</option>
+              <option value="Sided with Contributor">Sided with Contributor</option>
+              <option value="Sided with Subject">Sided with Subject</option>
             </select>
 
             <select
@@ -880,7 +880,7 @@ export default function MyRecordsPage() {
               <ul className="mt-1.5 space-y-1 text-orange-600 text-xs list-disc list-inside">
                 <li>The contributor reviews and may respond</li>
                 <li>Both parties can debate the record</li>
-                <li>Community votes on Keep or Delete</li>
+                <li>Community sides with contributor or subject</li>
                 <li>A final decision is issued</li>
               </ul>
             </div>

@@ -370,12 +370,12 @@ export default function HomePage() {
         <div className="max-w-3xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 bg-gray-100 text-gray-600 text-xs font-medium px-3 py-1.5 rounded-full mb-8">
             <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-            Community-moderated reviews
+            Real Experiences. Both Sides.
           </div>
 
           <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold text-gray-900 leading-[1.05] tracking-tight mb-8">
-            Reviews that tell<br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-violet-600">the full story.</span>
+            Don't Trust Just One<br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-violet-600">Side of the Story.</span>
           </h1>
 
           <Image
@@ -386,8 +386,9 @@ export default function HomePage() {
             className="mx-auto mb-8"
           />
 
-          <p className="text-lg sm:text-xl text-gray-500 max-w-xl mx-auto leading-relaxed mb-10">
-            DNounce is a review platform where someone submits a record about you — you get to share your side. The community reads both sides of the story, and decides if it stays on your profile.
+          <p className="text-lg sm:text-xl text-black-500 max-w-xl mx-auto leading-relaxed mb-6">
+            People share what actually happened—good, bad, and everything in between. See both perspectives and decide who you trust.<br /><br />
+            <span className="italic text-gray-400">Check DNounce before you trust someone.</span>
           </p>
           {/*
           <div className="flex justify-center">
@@ -403,10 +404,10 @@ export default function HomePage() {
           <p className="mt-6 text-sm text-gray-400">Used by people who want to share experiences and build trust.</p>*/}
           <div className="mt-12 flex flex-wrap justify-center gap-6 text-sm text-gray-400">
             {[
-              { icon: <CheckCircle className="w-4 h-4 text-green-500" />, label: "Credibility reviewed" },
-              { icon: <Clock className="w-4 h-4 text-amber-500" />, label: "72-hour review window" },
-              { icon: <Users className="w-4 h-4 text-blue-500" />, label: "Community moderated" },
-              { icon: <MessageSquare className="w-4 h-4 text-violet-500" />, label: "Subject response portal" },
+              { icon: <CheckCircle className="w-4 h-4 text-green-500" />, label: "Both sides shown" },
+              { icon: <Clock className="w-4 h-4 text-amber-500" />, label: "Real experiences" },
+              { icon: <Users className="w-4 h-4 text-blue-500" />, label: "Community verdict" },
+              { icon: <MessageSquare className="w-4 h-4 text-violet-500" />, label: "Right to respond" },
             ].map((item) => (
               <div key={item.label} className="flex items-center gap-1.5">{item.icon}<span>{item.label}</span></div>
             ))}
@@ -703,14 +704,14 @@ export default function HomePage() {
       <section id="voting-section" className="bg-gray-50 py-20 px-5 scroll-mt-20">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-10">
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">Community review</h2>
-            <p className="text-gray-500">The community decides what stays visible.</p>
+            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">Community Perspective</h2>
+            <p className="text-gray-500">Your input helps others understand how to interpret this situation.</p>
           </div>
 
           <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-4">
             <div className="flex items-center gap-2 mb-4">
               <MessageSquare className="h-5 w-5 text-blue-500" />
-              <h3 className="font-semibold text-gray-900">Should this record be deleted?</h3>
+              <h3 className="font-semibold text-gray-900">How should this be viewed?</h3>
             </div>
             <p className="text-sm text-gray-500 mb-6">The subject has requested deletion and completed the debate process. You decide.</p>
 
@@ -718,24 +719,22 @@ export default function HomePage() {
               <div className="bg-green-50 border border-green-200 rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <CheckCircle className="h-4 w-4 text-green-600" />
-                  <span className="text-sm font-semibold text-green-800">Keep published</span>
+                  <span className="text-sm font-semibold text-green-800">Leans credible</span>
                 </div>
-                <ul className="space-y-1.5 text-xs text-gray-600">
-                  <li>· Evidence appears credible</li>
-                  <li>· Record provides community value</li>
-                  <li>· Public has right to be informed</li>
-                  <li>· Could help others in similar situations</li>
+                <ul className="space-y-5 text-xs text-gray-600">
+                  <li>· The situation feels accurate</li>
+                  <li>· The context seems fair</li>
+                  <li>· This could help others understand similar experiences</li>
                 </ul>
               </div>
               <div className="bg-red-50 border border-red-200 rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <AlertTriangle className="h-4 w-4 text-red-600" />
-                  <span className="text-sm font-semibold text-red-800">Grant deletion</span>
+                  <span className="text-sm font-semibold text-red-800">Leans unfair</span>
                 </div>
-                <ul className="space-y-1.5 text-xs text-gray-600">
-                  <li>· Evidence is weak or insufficient</li>
+                <ul className="space-y-5 text-xs text-gray-600">
+                  <li>· The intent seems negative or exaggerated</li>
                   <li>· Record appears vindictive</li>
-                  <li>· Violates community standards</li>
                   <li>· Keeping it causes unjust harm</li>
                 </ul>
               </div>
@@ -748,7 +747,7 @@ export default function HomePage() {
               <h3 className="font-semibold text-gray-900">Voter quality matters</h3>
             </div>
             <div className="space-y-3 text-sm text-gray-600">
-              <p><span className="font-medium text-gray-900">20% downvotes</span> on your explanation → <span className="text-amber-600">⚠ Low-Quality Voter</span> badge for the life of that record.</p>
+              <p><span className="font-medium text-gray-900">20% downvotes</span> on your explanation → <span className="text-amber-600">⚠ Low-Quality Voter</span> badge for the record.</p>
               <p><span className="font-medium text-gray-900">33% voter flags + 50% public approval</span> → <span className="text-red-600 font-semibold">Convicted</span> — voting right removed for that record.</p>
               <p className="text-gray-400">Poor explanations permanently lower your Voter Score. Write thoughtful, detailed reasoning.</p>
             </div>

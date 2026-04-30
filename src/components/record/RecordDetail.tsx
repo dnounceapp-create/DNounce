@@ -656,7 +656,7 @@ type VoteRow = {
   id: string; // ✅ treat bigint IDs as string
   record_id: string;
   user_id: string;
-  choice: "keep" | "delete";
+  choice: "side_with_contributor" | "side_with_subject";
   explanation: string;
   created_at: string;
   author_alias: string | null;
@@ -1622,20 +1622,35 @@ function VotingTimerChip({ votingEndsAt, serverOffsetMs }: { votingEndsAt: strin
   );
 }
 
-function TallyChip({ keepCount, deleteCount, totalCount }: { keepCount: number; deleteCount: number; totalCount: number }) {
+function TallyChip({ contributorCount, subjectCount, totalCount, contributorName, subjectName }: { contributorCount: number; subjectCount: number; totalCount: number; contributorName: string; subjectName: string }) {
+  const total = contributorCount + subjectCount;
+  const contributorPct = total > 0 ? Math.round((contributorCount / total) * 100) : 0;
+  const subjectPct = total > 0 ? Math.round((subjectCount / total) * 100) : 0;
+  const isSplit = Math.abs(contributorPct - subjectPct) <= 10;
+  const verdict = isSplit
+    ? "Community is split"
+    : contributorPct > subjectPct
+    ? `Leans ${contributorName}`
+    : `Leans ${subjectName}`;
+
   return (
-    <div className="inline-flex max-w-full flex-wrap items-center gap-x-2 gap-y-1 rounded-2xl border bg-white px-3 py-2 text-xs font-semibold text-gray-700 shadow-none">
-      <span className="whitespace-nowrap">
-        <span className="font-semibold">Keep:</span> {keepCount}
-      </span>
-      <span className="text-gray-300 hidden sm:inline">•</span>
-      <span className="whitespace-nowrap">
-        <span className="font-semibold">Delete:</span> {deleteCount}
-      </span>
-      <span className="text-gray-300 hidden sm:inline">•</span>
-      <span className="whitespace-nowrap">
-        <span className="font-semibold">Total:</span> {totalCount}
-      </span>
+    <div className="w-full max-w-xs rounded-2xl border bg-white px-3 py-2 text-xs font-semibold text-gray-700 shadow-none space-y-1.5">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-gray-900">{verdict}</span>
+        <span className="text-gray-400 font-normal">{totalCount} votes</span>
+      </div>
+      {total > 0 && (
+        <>
+          <div className="w-full h-1.5 rounded-full bg-gray-100 overflow-hidden flex">
+            <div className="h-full bg-blue-500 transition-all" style={{ width: `${contributorPct}%` }} />
+            <div className="h-full bg-indigo-400 transition-all" style={{ width: `${subjectPct}%` }} />
+          </div>
+          <div className="flex items-center justify-between text-[11px] font-normal text-gray-500">
+            <span><span className="font-semibold text-blue-600">{contributorPct}%</span> {contributorName}</span>
+            <span>{subjectName} <span className="font-semibold text-indigo-600">{subjectPct}%</span></span>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -2534,6 +2549,7 @@ function VotingCourtroom({
   participantBadges,
   onReport,
   isUndisputed = false,
+  contributorDisplayName,
 }: {
     record: any;
     viewerRoleUI: ViewerRole;
@@ -2544,6 +2560,7 @@ function VotingCourtroom({
     participantBadges: Record<string, { label: string; icon: string }[]>;
     onReport: (target: "record" | "contributor" | "subject" | "comment", id: string, label: string) => void;
     isUndisputed?: boolean;
+    contributorDisplayName: string;
 }) {
   const stage = getEffectiveStage(record, serverOffsetMs);
   const nowMs = Date.now() + (serverOffsetMs || 0);
@@ -2592,15 +2609,15 @@ function VotingCourtroom({
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
-  const [myVote, setMyVote] = useState<null | { choice: "keep" | "delete"; explanation: string; created_at: string }>(null)
+  const [myVote, setMyVote] = useState<null | { choice: "side_with_contributor" | "side_with_subject"; explanation: string; created_at: string }>(null)
   const [voteBadges, setVoteBadges] = useState<Record<string, { is_low_quality: boolean; is_convicted: boolean }>>({});
   const [myFlags, setMyFlags] = useState<Set<string>>(new Set());
 
-  const [choice, setChoice] = useState<"keep" | "delete" | "">("");
+  const [choice, setChoice] = useState<"side_with_contributor" | "side_with_subject" | "">("");
   const [reason, setReason] = useState("");
 
-  const [keepCount, setKeepCount] = useState(0);
-  const [deleteCount, setDeleteCount] = useState(0);
+  const [contributorCount, setContributorCount] = useState(0);
+  const [subjectCount, setSubjectCount] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
 
   // Build reply tree grouped by vote_id
@@ -2802,8 +2819,8 @@ function VotingCourtroom({
     const { data: tally } = await supabase.rpc("vote_tally", { p_record_id: recordId });
     const t = Array.isArray(tally) ? tally[0] : tally;
   
-    setKeepCount(Number(t?.keep_count ?? 0));
-    setDeleteCount(Number(t?.delete_count ?? 0));
+    setContributorCount(Number(t?.contributor_count ?? 0));
+    setSubjectCount(Number(t?.subject_count ?? 0));
     setTotalCount(Number(t?.total_count ?? 0));
   }
   
@@ -3301,7 +3318,7 @@ function VotingCourtroom({
     if (!canVote) return;
 
     if (!choice) {
-      alert("Please choose Keep or Delete.");
+      alert("Please choose a side.");
       return;
     }
     const trimmed = reason.trim();
@@ -3602,18 +3619,18 @@ function VotingCourtroom({
           <div>
             <div className="text-sm font-semibold text-gray-900">Voting Section</div>
             <div className="text-[11px] text-gray-500">
-              Vote to keep or delete this record. A reason is required.
+              To side with a party, a reason is required.
             </div>
           </div>
 
           <div className="flex w-full sm:w-auto flex-col items-start gap-2 sm:items-end">
             {(() => {
               const verdictAt = record?.verdict_announced_at ? new Date(record.verdict_announced_at) : null;
-              const verdictRevealed = !verdictAt || new Date() >= verdictAt;
+              const verdictRevealed = !isVotingWindow && (!verdictAt || new Date() >= verdictAt);
               if (verdictRevealed) {
                 return (
                   <div className="relative group max-w-full">
-                    <TallyChip keepCount={keepCount} deleteCount={deleteCount} totalCount={totalCount} />
+                    <TallyChip contributorCount={contributorCount} subjectCount={subjectCount} totalCount={totalCount} contributorName={contributorDisplayName} subjectName={record?.subject?.name ?? "Subject"} />
                     {Object.values(voteBadges).filter(b => b.is_convicted).length > 0 && (
                       <div className="absolute top-full right-0 mt-1 hidden group-hover:block bg-gray-800 text-white text-xs rounded-lg p-2 whitespace-nowrap z-10">
                         {Object.values(voteBadges).filter(b => b.is_convicted).length} convicted vote(s) excluded from tally
@@ -3623,6 +3640,7 @@ function VotingCourtroom({
                 );
               }
               // Verdict not yet announced — show countdown
+              if (!verdictAt) return null;
               const msLeft = verdictAt.getTime() - Date.now();
               const daysLeft = Math.floor(msLeft / (1000 * 60 * 60 * 24));
               const hoursLeft = Math.floor((msLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
@@ -3646,8 +3664,8 @@ function VotingCourtroom({
             <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
               <div className="text-xs font-semibold text-gray-900">Your vote</div>
               <div className="mt-2 inline-flex items-center gap-2 rounded-full border bg-white px-3 py-1 text-xs font-semibold">
-                <span className={myVote!.choice === "keep" ? "text-green-700" : "text-red-700"}>
-                  {myVote!.choice.toUpperCase()}
+                <span className={myVote!.choice === "side_with_contributor" ? "text-blue-700" : "text-indigo-700"}>
+                {myVote!.choice === "side_with_contributor" ? `Sided with ${contributorDisplayName}` : `Sided with ${record?.subject?.name ?? "Subject"}`}
                 </span>
                 <span className="text-gray-400">•</span>
                 <span className="text-gray-600">{formatTimestampNoSeconds(myVote!.created_at)}</span>
@@ -3672,28 +3690,28 @@ function VotingCourtroom({
               <div className="mt-3 flex flex-col sm:flex-row gap-2">
                 <button
                   type="button"
-                  onClick={() => setChoice("keep")}
+                  onClick={() => setChoice("side_with_contributor")}
                   className={[
                     "flex-1 rounded-full border px-4 py-3 text-sm font-semibold",
-                    choice === "keep"
-                      ? "bg-green-600 text-white border-green-600"
+                    choice === "side_with_contributor"
+                      ? "bg-blue-600 text-white border-blue-600"
                       : "bg-white text-gray-800 hover:bg-gray-50",
                   ].join(" ")}
                 >
-                  KEEP
+                  Side with {contributorDisplayName}
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => setChoice("delete")}
+                  onClick={() => setChoice("side_with_subject")}
                   className={[
                     "flex-1 rounded-full border px-4 py-3 text-sm font-semibold",
-                    choice === "delete"
-                      ? "bg-red-600 text-white border-red-600"
+                    choice === "side_with_subject"
+                      ? "bg-indigo-600 text-white border-indigo-600"
                       : "bg-white text-gray-800 hover:bg-gray-50",
                   ].join(" ")}
                 >
-                  DELETE
+                  Side with {record?.subject?.name ?? "Subject"}
                 </button>
               </div>
 
@@ -3760,11 +3778,11 @@ function VotingCourtroom({
                     <span className="text-[11px] text-gray-400">{formatTimestampNoSeconds(v.created_at)}</span>
                     <span className={[
                       "ml-auto inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold",
-                      v.choice === "keep"
-                        ? "text-green-700 border-green-200 bg-green-50"
-                        : "text-red-700 border-red-200 bg-red-50",
+                      v.choice === "side_with_contributor"
+                        ? "text-blue-700 border-blue-200 bg-blue-50"
+                        : "text-indigo-700 border-indigo-200 bg-indigo-50",
                     ].join(" ")}>
-                      {v.choice.toUpperCase()}
+                      {v.choice === "side_with_contributor" ? `With ${contributorDisplayName}` : `With ${record?.subject?.name ?? "Subject"}`}
                     </span>
                   </div>
 
@@ -5190,6 +5208,7 @@ export default function RecordDetail({
                 participantBadges={participantBadges}
                 onReport={openReport}
                 isUndisputed={getRecordStage(record) < 4 && viewerRole !== "public"}
+                contributorDisplayName={contributorPublicName}
                 />
 
 {reportOpen && (

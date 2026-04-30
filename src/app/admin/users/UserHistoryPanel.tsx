@@ -165,7 +165,7 @@ export default function UserHistoryPanel({ userId, onClose }: Props) {
                     <div key={v.id} className="bg-gray-800 rounded-xl p-3 space-y-1">
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-gray-400">{v.author_alias ?? "—"}</span>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${v.choice === "keep" ? "bg-green-900 text-green-400" : "bg-red-900 text-red-400"}`}>{v.choice?.toUpperCase()}</span>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${v.choice === "side_with_contributor" ? "bg-blue-900 text-blue-400" : "bg-indigo-900 text-indigo-400"}`}>{v.choice?.toUpperCase()}</span>
                         <span className="text-gray-500 text-[11px] ml-auto">{new Date(v.created_at).toLocaleString()}</span>
                       </div>
                       <div className="text-gray-400 text-xs">{v.explanation?.slice(0, 120)}…</div>

@@ -115,7 +115,7 @@ export const community_reviews = pgTable('community_reviews', {
   id: uuid('id').primaryKey().defaultRandom(),
   recordId: uuid('record_id').notNull(),
   reviewerId: uuid('reviewer_id').notNull(),
-  decision: text('decision').notNull(), // keep or delete
+  decision: text('decision').notNull(), // side_with_contributor or side_with_subject
   explanation: text('explanation'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });

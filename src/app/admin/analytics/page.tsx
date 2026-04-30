@@ -179,8 +179,8 @@ export default function AdminAnalyticsPage() {
   const [totalRecords, setTotalRecords] = useState(0);
   const [activeDisputes, setActiveDisputes] = useState(0);
   const [totalVerdicts, setTotalVerdicts] = useState(0);
-  const [keepCount, setKeepCount] = useState(0);
-  const [deleteCount, setDeleteCount] = useState(0);
+  const [contributorCount, setKeepCount] = useState(0);
+  const [subjectCount, setDeleteCount] = useState(0);
   const [disputeRate, setDisputeRate] = useState<number | null>(null);
   const [avgTimeToVerdict, setAvgTimeToVerdict] = useState<number | null>(null);
   const [totalProfileViews, setTotalProfileViews] = useState(0);
@@ -286,8 +286,8 @@ export default function AdminAnalyticsPage() {
       setActiveDisputes(disputed.filter((r: any) => !r.decision_made_at).length);
       const verdicts = allRecordsData.filter((r: any) => r.final_outcome);
       setTotalVerdicts(verdicts.length);
-      setKeepCount(verdicts.filter((r: any) => r.final_outcome === "keep").length);
-      setDeleteCount(verdicts.filter((r: any) => r.final_outcome === "delete").length);
+      setKeepCount(verdicts.filter((r: any) => r.final_outcome === "sided_with_contributor").length);
+      setDeleteCount(verdicts.filter((r: any) => r.final_outcome === "sided_with_subject").length);
       if (published.length > 0) setDisputeRate(Math.round((disputed.length / published.length) * 100));
       const completedWithDates = verdicts.filter((r: any) => r.created_at && r.decision_made_at);
       if (completedWithDates.length > 0) {
@@ -354,7 +354,7 @@ export default function AdminAnalyticsPage() {
   const momGrowth = newUsersLastMonth > 0
     ? Math.round(((newUsersThisMonth - newUsersLastMonth) / newUsersLastMonth) * 100)
     : newUsersThisMonth > 0 ? 100 : 0;
-  const keepDeleteRatio = keepCount + deleteCount > 0 ? `${Math.round((keepCount / (keepCount + deleteCount)) * 100)}% kept` : "—";
+  const keepDeleteRatio = contributorCount + subjectCount > 0 ? `${Math.round((contributorCount / (contributorCount + subjectCount)) * 100)}% kept` : "—";
   const paidSubscribers = subscriberCounts.insights + subscriberCounts.pro;
   const conversionRate = totalUsers > 0 ? ((paidSubscribers / totalUsers) * 100).toFixed(1) : "0";
 
@@ -392,7 +392,7 @@ export default function AdminAnalyticsPage() {
           <StatBox label="Dispute Rate" value={disputeRate !== null ? `${disputeRate}%` : "—"} sub="% of published records disputed" color="orange" />
           <StatBox label="Avg. Days to Verdict" value={avgTimeToVerdict !== null ? `${avgTimeToVerdict} days` : "—"} sub="From submission to final decision" color="teal" />
           <StatBox label="Verdicts Awaiting Announcement" value={pendingVerdicts} sub="Voting ended, verdict not yet revealed" color="yellow" />
-          <StatBox label="Keep vs Delete Ratio" value={keepDeleteRatio} sub={`${keepCount} kept · ${deleteCount} deleted`} color="green" />
+          <StatBox label="Contributor vs Subject Ratio" value={keepDeleteRatio} sub={`${contributorCount} kept · ${subjectCount} deleted`} color="green" />
           <StatBox label="Low Quality Voter Rate" value={lowQualityVoterPct !== null ? `${lowQualityVoterPct}%` : "—"} sub="% of votes flagged or disqualified" color={lowQualityVoterPct !== null && lowQualityVoterPct > 20 ? "red" : "green"} />
         </div>
       </section>

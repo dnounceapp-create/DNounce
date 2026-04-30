@@ -17,13 +17,13 @@ type FollowedRecord = {
   subject_name: string;
   submitted_at: string;
   stage: number | null;
-  outcome: "keep" | "delete" | null;
+  outcome: "side_with_contributor" | "side_with_subject" | null;
   credibility: string;
 };
  
 const outcomeLabels: Record<string, { label: string; color: string }> = {
-  keep: { label: "Kept on page", color: "bg-green-200 text-green-800" },
-  delete: { label: "Deleted from page", color: "bg-red-200 text-red-800" },
+  side_with_contributor: { label: "Community sided with contributor", color: "bg-green-200 text-green-800" },
+  side_with_subject: { label: "Community sided with subject", color: "bg-red-200 text-red-800" },
 };
  
 const filterLabels: Record<string, string> = {
@@ -196,8 +196,8 @@ export default function FollowingRecordsPage() {
       Debate: (r) => r.stage === 5,
       Voting: (r) => r.stage === 6,
       Anonymity: (r) => r.stage === 7,
-      Kept: (r) => r.outcome === "keep",
-      Deleted: (r) => r.outcome === "delete",
+"Sided with Contributor": (r) => r.outcome === "side_with_contributor",
+"Sided with Subject": (r) => r.outcome === "side_with_subject",
     };
     return map[status] ?? (() => true);
   };
@@ -274,8 +274,8 @@ export default function FollowingRecordsPage() {
               <option>Debate</option>
               <option>Voting</option>
               <option>Anonymity</option>
-              <option>Kept</option>
-              <option>Deleted</option>
+              <option value="Sided with Contributor">Sided with Contributor</option>
+              <option value="Sided with Subject">Sided with Subject</option>
             </select>
  
             <select

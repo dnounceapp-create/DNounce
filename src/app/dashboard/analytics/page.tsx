@@ -31,21 +31,19 @@ interface AnalyticsData {
   topLocations: { location: string; count: number }[];
   totalImpressions: number;
   topKeywords: { keyword: string; count: number }[];
-  kept: number;
-  deleted: number;
+  sided_contributor: number;
+  sided_subject: number;
   pending: number;
-  pctKept: number;
-  pctDeleted: number;
+  pctSidedContributor: number;
+  pctSidedSubject: number;
   pctPending: number;
   credibilityBreakdown: { label: string; count: number }[];
   categoryBreakdown: { label: string; count: number }[];
   mostActiveRecord: { id: string; category: string; votes: number; statements: number; totalActivity: number } | null;
-  mostControversialRecord: { id: string; category: string; keep: number; delete: number } | null;
+  mostControversialRecord: { id: string; category: string; contributor: number; subject: number } | null;
   longestDebateRecord: { id: string; category: string; messageCount: number } | null;
   disputeResolutionRate: number | null;
   avgVotingDays: number | null;
-  upheld: number;
-  invalidated: number;
   contributorSuccessRate: number | null;
   mostActiveRole: string | null;
   roleActivity: Record<string, number>;
@@ -290,7 +288,7 @@ function InsightsContent({ data }: { data: AnalyticsData }) {
                 <p className="text-xs font-semibold text-gray-700">Most Controversial Record</p>
               </div>
               <p className="text-sm font-bold text-gray-900">{data.mostControversialRecord.category}</p>
-              <p className="text-xs text-gray-400 mt-1">{data.mostControversialRecord.keep} keep · {data.mostControversialRecord.delete} delete</p>
+              <p className="text-xs text-gray-400 mt-1">{data.mostControversialRecord.contributor} with contributor · {data.mostControversialRecord.subject} delete</p>
               <Link href={`/record/${data.mostControversialRecord.id}`} className="mt-2 inline-flex items-center gap-1 text-xs text-blue-600 hover:underline">View record <ArrowRight className="w-3 h-3" /></Link>
             </div>
           ) : (
@@ -352,7 +350,7 @@ function InsightsContent({ data }: { data: AnalyticsData }) {
       <div>
         <SectionHeader title="Contributor & Subject Success" />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <StatCard icon={<Target className="w-5 h-5" />} label="Contributor Success Rate" value={data.contributorSuccessRate !== null ? `${data.contributorSuccessRate}%` : "—"} sub={`${data.upheld} kept · ${data.invalidated} deleted`} color="green" />
+          <StatCard icon={<Target className="w-5 h-5" />} label="Contributor Success Rate" value={data.contributorSuccessRate !== null ? `${data.contributorSuccessRate}%` : "—"} sub={`${data.sided_contributor} with contributor · ${data.sided_subject} with subject`} color="green" />
           <StatCard icon={<ShieldCheck className="w-5 h-5" />} label="Subject Success Rate" value={data.disputeResolutionRate !== null ? `${data.disputeResolutionRate}%` : "—"} sub="Disputes about you resolved in your favor" color="blue" />
         </div>
       </div>
@@ -663,7 +661,7 @@ function ProContent({ data }: { data: AnalyticsData }) {
       <div>
         <SectionHeader title="Contributor & Subject Success" />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <StatCard icon={<Target className="w-5 h-5" />} label="Contributor Success Rate" value={data.contributorSuccessRate !== null ? `${data.contributorSuccessRate}%` : "—"} sub={`${data.upheld} kept · ${data.invalidated} deleted`} color="green" />
+          <StatCard icon={<Target className="w-5 h-5" />} label="Contributor Success Rate" value={data.contributorSuccessRate !== null ? `${data.contributorSuccessRate}%` : "—"} sub={`${data.sided_contributor} with contributor · ${data.sided_subject} with subject`} color="green" />
           <StatCard icon={<ShieldCheck className="w-5 h-5" />} label="Subject Success Rate" value={data.disputeResolutionRate !== null ? `${data.disputeResolutionRate}%` : "—"} sub="Disputes about you resolved in your favor" color="blue" />
         </div>
       </div>

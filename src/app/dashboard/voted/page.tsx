@@ -13,19 +13,19 @@ type VotedRecord = {
   vote_id: number;
   record_id: string;
   voted_at: string;
-  vote_choice: "keep" | "delete";
+  vote_choice: "side_with_contributor" | "side_with_subject";
   vote_explanation: string;
   record_alias: string;
   subject_name: string;
   submitted_at: string;
   stage: number | null;
-  outcome: "keep" | "delete" | null;
+  outcome: "side_with_contributor" | "side_with_subject" | null;
   credibility: string;
 };
 
 const outcomeLabels: Record<string, { label: string; color: string }> = {
-  keep: { label: "Kept on page", color: "bg-green-200 text-green-800" },
-  delete: { label: "Deleted from page", color: "bg-red-200 text-red-800" },
+  side_with_contributor: { label: "Community sided with contributor", color: "bg-green-200 text-green-800" },
+  side_with_subject: { label: "Community sided with subject", color: "bg-red-200 text-red-800" },
 };
 
 const filterLabels: Record<string, string> = {
@@ -228,8 +228,8 @@ export default function VotedRecordsPage() {
       Debate: (r) => r.stage === 5,
       Voting: (r) => r.stage === 6,
       Anonymity: (r) => r.stage === 7,
-      Kept: (r) => r.outcome === "keep",
-      Deleted: (r) => r.outcome === "delete",
+"Sided with Contributor": (r) => r.outcome === "side_with_contributor",
+"Sided with Subject": (r) => r.outcome === "side_with_subject",
     };
     return map[status] ?? (() => true);
   };
@@ -333,8 +333,8 @@ export default function VotedRecordsPage() {
               <option>Debate</option>
               <option>Voting</option>
               <option>Anonymity</option>
-              <option>Kept</option>
-              <option>Deleted</option>
+              <option value="Sided with Contributor">Sided with Contributor</option>
+              <option value="Sided with Subject">Sided with Subject</option>
             </select>
 
             <select
@@ -360,8 +360,8 @@ export default function VotedRecordsPage() {
               }
             >
               <option value="">My Vote</option>
-              <option value="keep">Voted Keep</option>
-              <option value="delete">Voted Delete</option>
+              <option value="side_with_contributor">Sided with Contributor</option>
+              <option value="side_with_subject">Sided with Subject</option>
             </select>
 
             {hasActiveFilters && (
@@ -535,15 +535,15 @@ export default function VotedRecordsPage() {
                 <div className="mt-3 md:mt-0 flex md:justify-center items-center gap-2 flex-wrap">
                   <span
                     className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-semibold ${
-                      record.vote_choice === "keep"
+                      record.vote_choice === "side_with_contributor"
                         ? "bg-green-100 text-green-700"
                         : "bg-red-100 text-red-700"
                     }`}
                   >
                     <ThumbsUp
-                      className={`h-3 w-3 ${record.vote_choice === "delete" ? "rotate-180" : ""}`}
+                      className={`h-3 w-3 ${record.vote_choice === "side_with_subject" ? "rotate-180" : ""}`}
                     />
-                    {record.vote_choice === "keep" ? "Keep" : "Delete"}
+                    {record.vote_choice === "side_with_contributor" ? "With Contributor" : "With Subject"}
                   </span>
                 </div>
               </div>

@@ -28,42 +28,42 @@ import { supabase } from "@/lib/supabaseClient";
 const RECORD = {
   id: "ac3d9478-5143-4313-9730-c470b97fd1bb",
   created_at: "2026-04-02T19:57:12.655Z",
-  category: "Graphic Designer",
-  location: "New York, NY",
+  category: "Realtor",
+  location: "Miami, FL",
   relationship: "Client",
-  rating: 1.5,
+  rating: 2,
   credibility: "Opinion-Based",
   description:
-    "I hired Alex to design a landing page for my startup. We agreed on $800 upfront, which I paid because they had a decent portfolio. At first, communication was fine, but after a few days, responses got slower. When I finally got the design back, it honestly didn’t match what we discussed at all. The layout was messy, and key sections we talked about weren’t even included. I asked for revisions, but the changes were minimal and didn’t address the core issues. After that, communication basically stopped. I ended up hiring someone else to redo everything. I’m not saying they’re a scammer, but this felt really unprofessional and not worth the money.",
+    "I felt pressured by my realtor to make an offer on a property I wasn't fully comfortable with. Every time I expressed hesitation, the response was about how fast the market was moving and how I'd lose it if I waited. I ultimately made an offer I regretted. I'm not saying the property was bad — I'm saying I never felt like I had space to think. My concerns were consistently minimized in favor of moving fast.",
   status: "voting",
 };
 
-const SUBJECT = { name: "Marcus Reid", organization: "Independent", location: "New York, NY" };
+const SUBJECT = { name: "Carlos V.", organization: "Palmview Realty Group", location: "Miami, FL" };
 
-const CONTRIBUTOR = { name: "Taylor V." };
+const CONTRIBUTOR = { name: "Simone A." };
 
 const DEBATE_POSTS = [
   {
     id: "d2",
     role: "subject" as const,
-    name: "Marcus Reid",
-    body: "I think this is a really unfair representation of what happened. The initial scope was very loosely defined, and I asked multiple times for clarification on certain sections but didn't get clear answers. I delivered based on the information I had at the time. When revisions were requested, I did make updates, but the requests started going beyond what we originally agreed on. Also, after delivering the first version, there was a long delay in feedback, which made the timeline difficult to manage. I didn't \"disappear\" — I just didn't continue working beyond the agreed scope without further discussion.",
+    name: "Carlos V.",
+    body: "I presented the facts of the market as they were at the time. That area was seeing multiple offers within 48 hours of listing. I gave the client all the information they needed to make their decision. I never told her she had to make an offer — I showed her what would happen if she didn't act. Ultimately, every offer submitted went through her and required her signature.",
     created_at: "2026-04-07T14:22:00Z",
     parentId: null,
   },
   {
     id: "d3",
     role: "contributor" as const,
-    name: "Taylor V.",
-    body: "I disagree with that.\nThe scope was clearly outlined in our messages, including examples of what I wanted.\nThe issues weren't about \"extra features\" — it was about the basics not being done right.\nAlso, the delays only started after the first delivery, not before.\nI wasn't expecting perfection, just something usable, which it wasn't.",
+    name: "Simone A.",
+    body: "Showing someone what happens if they don't act fast — every single time they express doubt — is pressure. I asked twice about waiting to see one more property. Both times I was told the market wouldn't support that. I signed the offer feeling rushed, not informed. There's a difference between presenting facts and steering a client toward a decision.",
     created_at: "2026-04-08T09:00:00Z",
     parentId: "d2",
   },
   {
     id: "d4",
     role: "subject" as const,
-    name: "Marcus Reid",
-    body: "I understand you weren't satisfied, but calling the work unusable is subjective. From my perspective, I delivered a draft based on the brief provided, and further refinement would have required clearer direction and additional iterations. I don't think it's fair to frame this as me not delivering.",
+    name: "Carlos V.",
+    body: "In my professional opinion, in a competitive market, hesitation has real consequences. My job is to make sure my clients understand those consequences fully. If she felt that information was pressure rather than guidance, I understand that — but I was doing my job. I always respect the final decision as the client's own.",
     created_at: "2026-04-08T09:41:00Z",
     parentId: null,
   },
@@ -73,52 +73,52 @@ const SEED_VOTES: VoteRow[] = [
   {
     id: "v1",
     alias: "kxr@dnounce_312",
-    jobTitle: "Freelance Designer",
-    choice: "keep",
+    jobTitle: "Real Estate Broker",
+    choice: "side_with_contributor",
     explanation:
-      "The poster has the message thread as evidence. If the scope was really that unclear, the designer should have gotten written sign-off before starting. \"I didn't have enough info\" isn't a reason to deliver something unusable — it's a reason to pause and ask. Record should stand.",
+      "Repeatedly citing urgency every time a client expresses doubt is a known pressure tactic in real estate. The fact that the client signed the offer feeling rushed — not informed — is the core issue. Agents should create space for hesitation, not fill it with market fear.",
     created_at: "2026-04-10T11:04:00Z",
-    agreeCount: 14,
-    disagreeCount: 2,
+    agreeCount: 16,
+    disagreeCount: 4,
   },
   {
     id: "v2",
     alias: "mbvp@dnounce_87",
-    jobTitle: "Creative Director",
-    choice: "delete",
+    jobTitle: "Property Investor",
+    choice: "side_with_subject",
     explanation:
-      "Scope disputes are incredibly common in freelance design. Without seeing the actual message thread, I can't confirm the brief was as clear as the poster claims. The designer's account of delayed feedback and vague direction is plausible. Too much ambiguity here to let this stand.",
+      "In a hot market, the agent's urgency was likely accurate. The client chose to make an offer and signed off on it. Regret after the fact doesn't necessarily mean the agent was wrong. Without knowing the specific market conditions, this reads as a legitimate difference of opinion.",
     created_at: "2026-04-11T08:17:00Z",
-    agreeCount: 6,
+    agreeCount: 11,
     disagreeCount: 9,
   },
   {
     id: "v3",
     alias: "tjf@dnounce_541",
-    jobTitle: "UX Consultant",
-    choice: "keep",
+    jobTitle: "Buyer's Advocate",
+    choice: "side_with_contributor",
     explanation:
-      "What stands out to me is that communication broke down after delivery rather than before. A professional who genuinely believed they'd fulfilled the scope would engage with the feedback, not go quiet. That pattern matters regardless of how clear the brief was.",
+      "A buyer expressing hesitation twice and being redirected both times toward urgency is a pattern. Good agents acknowledge doubt and work through it — they don't override it with market pressure. The client's emotional experience of the process matters.",
     created_at: "2026-04-12T16:55:00Z",
-    agreeCount: 19,
+    agreeCount: 20,
     disagreeCount: 3,
   },
   {
     id: "v4",
     alias: "qlnx@dnounce_29",
-    jobTitle: "Brand Strategist",
-    choice: "delete",
+    jobTitle: "Mortgage Advisor",
+    choice: "side_with_subject",
     explanation:
-      "Both sides agree the deliverable didn't match expectations — they just disagree on why. But without seeing the actual brief or message thread, I can't confidently say the designer was fully in the wrong. Ambiguous scopes cut both ways. Not enough here to keep this on the record.",
+      "Urgency is part of the job in fast markets. I've seen clients regret moving quickly and regret waiting — it cuts both ways. The agent made the offer available, explained the stakes, and the client signed. I can't call that misconduct based on this account alone.",
     created_at: "2026-04-13T10:30:00Z",
-    agreeCount: 17,
-    disagreeCount: 4,
+    agreeCount: 9,
+    disagreeCount: 14,
   },
 ];
 
 /* ─── Types ─────────────────────────────────────────── */
 
-type VoteChoice = "keep" | "delete";
+type VoteChoice = "side_with_contributor" | "side_with_subject";
 
 type VoteRow = {
   id: string;
@@ -134,14 +134,13 @@ type VoteRow = {
 const STORAGE_KEY = "dnounce_demo_user_votes_v4";
 
 const DEMO_ATTACHMENTS = [
-  { id: "a1", label: "Attachment #1", type: "image" as const, src: "/og-image.png", agree: 11, disagree: 1 },
+  { id: "a1", label: "Attachment #1", type: "image" as const, src: "/og-image.png", agree: 10, disagree: 1 },
 ];
 
 const SEED_DEBATE_REACTIONS: Record<string, { agree: number; disagree: number; mine: 1 | -1 | null }> = {
-  d1: { agree: 18, disagree: 3, mine: null },
-  d2: { agree: 11, disagree: 19, mine: null },
+  d2: { agree: 8, disagree: 19, mine: null },
   d3: { agree: 24, disagree: 6, mine: null },
-  d4: { agree: 7, disagree: 14, mine: null },
+  d4: { agree: 9, disagree: 15, mine: null },
 };
 
 /* ─── Helpers ───────────────────────────────────────── */
@@ -402,7 +401,7 @@ function DebateCard({
 
 /* ─── Main page ─────────────────────────────────────── */
 
-export default function DemoPage() {
+export default function DemoRealtorPage() {
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -455,7 +454,7 @@ export default function DemoPage() {
   const [attachmentOpen, setAttachmentOpen] = useState<string | null>(null);
   // reactions on attachments
   const [attachmentReactions, setAttachmentReactions] = useState<Record<string, { agree: number; disagree: number; mine: 1 | -1 | null }>>({});
-  const [recordReaction, setRecordReaction] = useState<{ agree: number; disagree: number; mine: 1 | -1 | null }>({ agree: 31, disagree: 8, mine: null });
+  const [recordReaction, setRecordReaction] = useState<{ agree: number; disagree: number; mine: 1 | -1 | null }>({ agree: 19, disagree: 8, mine: null });
 
   // community section
   const [communityBody, setCommunityBody] = useState("");
@@ -496,10 +495,10 @@ export default function DemoPage() {
   }
 
   const allVotes = [...SEED_VOTES, ...userVotes];
-  const keepCount = allVotes.filter((v) => v.choice === "keep").length;
-  const deleteCount = allVotes.filter((v) => v.choice === "delete").length;
+  const contributorCount = allVotes.filter((v) => v.choice === "side_with_contributor").length;
+  const subjectCount = allVotes.filter((v) => v.choice === "side_with_subject").length;
   const total = allVotes.length;
-  const keepPct = total > 0 ? Math.round((keepCount / total) * 100) : 50;
+  const contributorPct = total > 0 ? Math.round((contributorCount / total) * 100) : 50;
 
   async function submitVote() {
     if (!choice || !reason.trim()) return;
@@ -904,48 +903,39 @@ export default function DemoPage() {
 
       {/* Voting courtroom */}
       <section className="border border-gray-200 rounded-2xl p-4 sm:p-5 bg-white">
-        <div className="flex items-center justify-between gap-3 mb-4">
-          <div className="text-sm font-semibold text-gray-900">Voting</div>
-          <div className="inline-flex items-center gap-2 rounded-full border bg-white px-3 py-1 text-xs font-semibold text-gray-700 shrink-0">
-            <span className="h-2 w-2 rounded-full bg-blue-500" />
-            Voting open
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <div className="text-sm font-semibold text-gray-900">Voting Section</div>
+            <div className="text-[11px] text-gray-500">
+              To side with a party, a reason is required.
+            </div>
           </div>
+          <div className="flex w-full sm:w-auto flex-col items-start gap-2 sm:items-end">
+            <div className="inline-flex items-center gap-2 rounded-full border bg-white px-3 py-1 text-xs font-semibold text-gray-700">
+              <span className="h-2 w-2 rounded-full bg-blue-500" />
+              Voting open
+            </div>
+          </div>
+        </div>
+        <div className="mt-4">
         </div>
 
-        {/* Tally */}
-        <div className="mt-5 mb-4">
-          <div className="inline-flex flex-wrap items-center gap-x-2 gap-y-1 rounded-2xl border bg-white px-3 py-2 text-xs font-semibold text-gray-700 shadow-none mb-2">
-            <span><span className="font-semibold">Keep:</span> {keepCount}</span>
-            <span className="text-gray-300 hidden sm:inline">•</span>
-            <span><span className="font-semibold">Delete:</span> {deleteCount}</span>
-            <span className="text-gray-300 hidden sm:inline">•</span>
-            <span><span className="font-semibold">Total:</span> {total}</span>
-          </div>
-          <div className="w-full h-1.5 rounded-full bg-gray-200 overflow-hidden">
-            <div
-              className="h-full rounded-full bg-green-500 transition-all duration-500"
-              style={{ width: `${keepPct}%` }}
-            />
-          </div>
-          <div className="flex justify-between mt-1 text-[11px] text-gray-500">
-            <span>Keep {keepPct}%</span>
-            <span>Delete {100 - keepPct}%</span>
-          </div>
-        </div>
+
 
         {/* Vote form or my vote */}
         {myVote ? (
-          <div className={`rounded-xl border p-4 mb-4 ${myVote.choice === "keep" ? "bg-green-50 border-green-200" : "bg-red-50 border-red-200"}`}>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-xs font-semibold text-gray-900">Your vote</span>
-              <span className={[
-                "inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold",
-                myVote.choice === "keep" ? "text-green-700 border-green-200 bg-green-50" : "text-red-700 border-red-200 bg-red-50",
-              ].join(" ")}>
-                {myVote.choice.toUpperCase()}
+          <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+            <div className="text-xs font-semibold text-gray-900">Your vote</div>
+            <div className="mt-2 inline-flex items-center gap-2 rounded-full border bg-white px-3 py-1 text-xs font-semibold">
+              <span className={myVote.choice === "side_with_contributor" ? "text-blue-700" : "text-indigo-700"}>
+                {myVote.choice === "side_with_contributor" ? `Sided with ${CONTRIBUTOR.name}` : `Sided with ${SUBJECT.name}`}
               </span>
+              <span className="text-gray-400">•</span>
+              <span className="text-gray-600">{formatTimestamp(myVote.created_at)}</span>
             </div>
-            <div className="text-sm text-gray-800 leading-relaxed">{myVote.explanation}</div>
+            <div className="mt-3 text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
+              {myVote.explanation}
+            </div>
             <div className="mt-3 text-xs text-gray-500">Read-only. Votes cannot be edited after submission.</div>
           </div>
         ) : showVoteForm ? (
@@ -961,23 +951,23 @@ export default function DemoPage() {
             <div className="mt-3 flex flex-col sm:flex-row gap-2">
               <button
                 type="button"
-                onClick={() => setChoice("keep")}
+                onClick={() => setChoice("side_with_contributor")}
                 className={[
                   "flex-1 rounded-full border px-4 py-3 text-sm font-semibold",
-                  choice === "keep" ? "bg-green-600 text-white border-green-600" : "bg-white text-gray-800 hover:bg-gray-50",
+                  choice === "side_with_contributor" ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-800 hover:bg-gray-50",
                 ].join(" ")}
               >
-                KEEP
+                Side with {CONTRIBUTOR.name}
               </button>
               <button
                 type="button"
-                onClick={() => setChoice("delete")}
+                onClick={() => setChoice("side_with_subject")}
                 className={[
                   "flex-1 rounded-full border px-4 py-3 text-sm font-semibold",
-                  choice === "delete" ? "bg-red-600 text-white border-red-600" : "bg-white text-gray-800 hover:bg-gray-50",
+                  choice === "side_with_subject" ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-gray-800 hover:bg-gray-50",
                 ].join(" ")}
               >
-                DELETE
+                Side with {SUBJECT.name}
               </button>
             </div>
 
@@ -1024,9 +1014,9 @@ export default function DemoPage() {
                     </div>
                     <span className={[
                       "inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold shrink-0",
-                      v.choice === "keep" ? "text-green-700 border-green-200 bg-green-50" : "text-red-700 border-red-200 bg-red-50",
+                      v.choice === "side_with_contributor" ? "text-blue-700 border-blue-200 bg-blue-50" : "text-indigo-700 border-indigo-200 bg-indigo-50",
                     ].join(" ")}>
-                      {v.choice.toUpperCase()}
+                      {v.choice === "side_with_contributor" ? `With ${CONTRIBUTOR.name}` : `With ${SUBJECT.name}`}
                     </span>
                   </div>
                   <div className="mt-2 text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{v.explanation}</div>
@@ -1048,13 +1038,13 @@ export default function DemoPage() {
 
       {/* CTA banner */}
       <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-4 sm:p-5 text-center">
-        <div className="text-sm font-semibold text-indigo-900 mb-1">Think someone deserves a record?</div>
-        <div className="text-xs text-indigo-700 mb-3">DNounce gives every professional a fair, structured dispute process — community moderated.</div>
+        <div className="text-sm font-semibold text-indigo-900 mb-1">Take control of your reputation.</div>
+        <div className="text-xs text-indigo-700 mb-3">Invite people to share their experience, and respond when you want to add context.</div>
         <button
           onClick={() => router.push("/loginsignup?from=demo")}
           className="inline-flex items-center gap-2 rounded-full bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 transition"
         >
-          File a record
+          Get started
         </button>
       </div>
 

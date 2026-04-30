@@ -36,7 +36,7 @@ function computeContributorSuccessRate(
 ): number | null {
   const total = records.length;
   if (total === 0) return null;
-  const upheld = records.filter((r) => r.final_outcome === "keep").length;
+  const upheld = records.filter((r) => r.final_outcome === "sided_with_contributor").length;
   return Math.round((upheld / total) * 100);
 }
 
@@ -47,7 +47,7 @@ function computeDisputeResolutionRate(
     ["debate", "voting", "decision"].includes(r.status)
   );
   if (disputed.length === 0) return null;
-  const resolved = disputed.filter((r) => r.final_outcome === "keep").length;
+  const resolved = disputed.filter((r) => r.final_outcome === "sided_with_contributor").length;
   return Math.round((resolved / disputed.length) * 100);
 }
 
@@ -199,24 +199,24 @@ describe("computeReturningCount", () => {
 describe("computeContributorSuccessRate", () => {
   it("returns 100 when all records are kept", () => {
     const records = [
-      { final_outcome: "keep" },
-      { final_outcome: "keep" },
+      { final_outcome: "sided_with_contributor" },
+      { final_outcome: "sided_with_contributor" },
     ];
     expect(computeContributorSuccessRate(records)).toBe(100);
   });
 
   it("returns 0 when all records are deleted", () => {
     const records = [
-      { final_outcome: "delete" },
-      { final_outcome: "delete" },
+      { final_outcome: "sided_with_subject" },
+      { final_outcome: "sided_with_subject" },
     ];
     expect(computeContributorSuccessRate(records)).toBe(0);
   });
 
   it("returns 50 when half kept half deleted", () => {
     const records = [
-      { final_outcome: "keep" },
-      { final_outcome: "delete" },
+      { final_outcome: "sided_with_contributor" },
+      { final_outcome: "sided_with_subject" },
     ];
     expect(computeContributorSuccessRate(records)).toBe(50);
   });
@@ -227,7 +227,7 @@ describe("computeContributorSuccessRate", () => {
 
   it("ignores null outcomes (pending)", () => {
     const records = [
-      { final_outcome: "keep" },
+      { final_outcome: "sided_with_contributor" },
       { final_outcome: null },
     ];
     expect(computeContributorSuccessRate(records)).toBe(50);
@@ -239,15 +239,15 @@ describe("computeContributorSuccessRate", () => {
 describe("computeDisputeResolutionRate", () => {
   it("returns 100 when all disputes resolved in favor", () => {
     const records = [
-      { status: "decision", final_outcome: "keep" },
-      { status: "voting", final_outcome: "keep" },
+      { status: "decision", final_outcome: "sided_with_contributor" },
+      { status: "voting", final_outcome: "sided_with_contributor" },
     ];
     expect(computeDisputeResolutionRate(records)).toBe(100);
   });
 
   it("returns 0 when all disputes lost", () => {
     const records = [
-      { status: "decision", final_outcome: "delete" },
+      { status: "decision", final_outcome: "sided_with_subject" },
     ];
     expect(computeDisputeResolutionRate(records)).toBe(0);
   });
@@ -260,7 +260,7 @@ describe("computeDisputeResolutionRate", () => {
   it("ignores non-disputed records", () => {
     const records = [
       { status: "published", final_outcome: null },
-      { status: "decision", final_outcome: "keep" },
+      { status: "decision", final_outcome: "sided_with_contributor" },
     ];
     expect(computeDisputeResolutionRate(records)).toBe(100);
   });

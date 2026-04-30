@@ -220,7 +220,7 @@ export default function AdminRecordsPage() {
   const outcomeFields: SmartField[] = [
     { key: "id", label: "Record ID", type: "readonly" },
     { key: "_warn", type: "warning", label: "", help: "Overriding the final outcome changes what users see and may affect the subject's score. This is a significant action." },
-    { key: "final_outcome", label: "Final Outcome", type: "select", required: true, options: [{ value: "keep", label: "✅ Keep — record is kept on the platform" }, { value: "delete", label: "🗑️ Delete — record is deleted from the platform" }] },
+    { key: "final_outcome", label: "Final Outcome", type: "select", required: true, options: [{ value: "sided_with_contributor", label: "✅ Sided with Contributor" }, { value: "sided_with_subject", label: "🔵 Sided with Subject" }] },
     { key: "finalized_at", label: "Finalized At", type: "datetime-local", required: true },
   ];
 
@@ -315,7 +315,7 @@ export default function AdminRecordsPage() {
                       <td className="px-4 py-3 text-gray-400 whitespace-nowrap">{fmtDate(r.created_at)}</td>
                       <td className="px-4 py-3">
                         {r.final_outcome
-                          ? <span className={`px-2 py-0.5 rounded-full font-semibold text-[11px] border ${r.final_outcome === "keep" ? "bg-green-900 text-green-300 border-green-700" : "bg-red-900 text-red-300 border-red-700"}`}>{r.final_outcome === "keep" ? "✅ Kept" : "🗑️ Deleted"}</span>
+                          ? <span className={`px-2 py-0.5 rounded-full font-semibold text-[11px] border ${r.final_outcome === "sided_with_contributor" ? "bg-green-900 text-green-300 border-green-700" : "bg-red-900 text-red-300 border-red-700"}`}>{r.final_outcome === "sided_with_contributor" ? "✅ With Contributor" : "🔵 With Subject"}</span>
                           : <span className="text-gray-600 text-[11px]">Pending</span>}
                       </td>
                       <td className="px-4 py-3"><ChevronRight className="w-4 h-4 text-gray-600" /></td>
@@ -408,7 +408,7 @@ export default function AdminRecordsPage() {
             <DetailRow label="Description" value={selected.description} />
             <DetailRow label="Is Published" value={selected.is_published} highlight={selected.is_published ? "green" : "red"} />
             <DetailRow label="Agreed to Terms" value={selected.agree_terms} />
-            <DetailRow label="Final Outcome" value={selected.final_outcome} highlight={selected.final_outcome === "keep" ? "green" : selected.final_outcome === "delete" ? "red" : undefined} />
+            <DetailRow label="Final Outcome" value={selected.final_outcome} highlight={selected.final_outcome === "sided_with_contributor" ? "green" : selected.final_outcome === "sided_with_subject" ? "blue" : undefined} />
             <DetailRow label="Deleted At" value={fmtDate(selected.deleted_at)} highlight={selected.deleted_at ? "red" : undefined} />
           </DetailSection>
 

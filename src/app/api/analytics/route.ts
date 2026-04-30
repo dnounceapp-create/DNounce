@@ -149,8 +149,8 @@ export async function GET(req: NextRequest) {
     // ─── Record outcomes ──────────────────────────────────────────────────
 
     const totalRecordsAboutMe = recordsAboutMe.length;
-    const kept = recordsAboutMe.filter((r: any) => r.final_outcome === "keep").length;
-    const deleted = recordsAboutMe.filter((r: any) => r.final_outcome === "delete").length;
+    const kept = recordsAboutMe.filter((r: any) => r.final_outcome === "sided_with_contributor").length;
+    const deleted = recordsAboutMe.filter((r: any) => r.final_outcome === "sided_with_subject").length;
     const pending = recordsAboutMe.filter((r: any) => !r.final_outcome).length;
     const pctKept = totalRecordsAboutMe > 0 ? Math.round((kept / totalRecordsAboutMe) * 100) : 0;
     const pctDeleted = totalRecordsAboutMe > 0 ? Math.round((deleted / totalRecordsAboutMe) * 100) : 0;
@@ -201,23 +201,23 @@ export async function GET(req: NextRequest) {
       const allDebateMsgs = (debateMsgRes as any).data || [];
 
       const activityScore: Record<string, number> = {};
-      const keepCounts: Record<string, number> = {};
-      const deleteCounts: Record<string, number> = {};
+      const contributorCounts: Record<string, number> = {};
+      const subjectCounts: Record<string, number> = {};
       const debateCounts: Record<string, number> = {};
       const statementCounts: Record<string, number> = {};
 
       recordIds.forEach((id: string) => {
         activityScore[id] = 0;
-        keepCounts[id] = 0;
-        deleteCounts[id] = 0;
+        contributorCounts[id] = 0;
+        subjectCounts[id] = 0;
         debateCounts[id] = 0;
         statementCounts[id] = 0;
       });
 
       allVotes.forEach((v: any) => {
         activityScore[v.record_id] = (activityScore[v.record_id] || 0) + 1;
-        if (v.choice === "keep") keepCounts[v.record_id]++;
-        else deleteCounts[v.record_id]++;
+        if (v.choice === "side_with_contributor") contributorCounts[v.record_id]++;
+        else subjectCounts[v.record_id]++;
       });
 
       allStatements.forEach((s: any) => {
@@ -235,19 +235,19 @@ export async function GET(req: NextRequest) {
         mostActiveRecord = {
           id: mostActiveId,
           category: rec?.category ?? "Unknown",
-          votes: (keepCounts[mostActiveId] || 0) + (deleteCounts[mostActiveId] || 0),
+          votes: (contributorCounts[mostActiveId] || 0) + (subjectCounts[mostActiveId] || 0),
           statements: statementCounts[mostActiveId] || 0,
           totalActivity: activityScore[mostActiveId],
         };
       }
 
-      const controversial = Object.entries(keepCounts)
+      const controversial = Object.entries(contributorCounts)
         .map(([id, k]) => {
-          const d = deleteCounts[id] || 0;
+          const d = subjectCounts[id] || 0;
           const total = k + d;
           if (total < 2) return null;
           const diff = Math.abs(k - d);
-          return { id, keep: k, delete: d, total, diff };
+          return { id, contributor: k, subject: d, total, diff };
         })
         .filter(Boolean)
         .sort((a: any, b: any) => a.diff - b.diff);
@@ -257,8 +257,8 @@ export async function GET(req: NextRequest) {
         mostControversialRecord = {
           id: controversial[0]!.id,
           category: rec?.category ?? "Unknown",
-          keep: controversial[0]!.keep,
-          delete: controversial[0]!.delete,
+          contributor: controversial[0]!.contributor,
+          subject: controversial[0]!.subject,
         };
       }
 
@@ -276,7 +276,7 @@ export async function GET(req: NextRequest) {
     // ─── Dispute resolution ───────────────────────────────────────────────
 
     const disputed = recordsAboutMe.filter((r: any) => ["debate", "voting", "decision"].includes(r.status));
-    const resolvedInFavor = disputed.filter((r: any) => r.final_outcome === "keep").length;
+    const resolvedInFavor = disputed.filter((r: any) => r.final_outcome === "sided_with_contributor").length;
     const disputeResolutionRate = disputed.length > 0 ? Math.round((resolvedInFavor / disputed.length) * 100) : null;
 
     const decidedRecords = recordsAboutMe.filter((r: any) => r.voting_started_at && r.decision_made_at);
@@ -291,9 +291,9 @@ export async function GET(req: NextRequest) {
     // ─── Contributor success rate ──────────────────────────────────────────
 
     const totalSubmitted = recordsSubmitted.length;
-    const upheld = recordsSubmitted.filter((r: any) => r.final_outcome === "keep").length;
-    const invalidated = recordsSubmitted.filter((r: any) => r.final_outcome === "delete").length;
-    const contributorSuccessRate = totalSubmitted > 0 ? Math.round((upheld / totalSubmitted) * 100) : null;
+    const sided_contributor = recordsSubmitted.filter((r: any) => r.final_outcome === "sided_with_contributor").length;
+    const sided_subject = recordsSubmitted.filter((r: any) => r.final_outcome === "sided_with_subject").length;
+    const contributorSuccessRate = totalSubmitted > 0 ? Math.round((sided_contributor / totalSubmitted) * 100) : null;
 
     // ─── Most active role ──────────────────────────────────────────────────
 
@@ -708,8 +708,8 @@ export async function GET(req: NextRequest) {
       avgVotingDays,
 
       // Contributor
-      upheld,
-      invalidated,
+      sided_contributor,
+      sided_subject,
       contributorSuccessRate,
 
       // Role

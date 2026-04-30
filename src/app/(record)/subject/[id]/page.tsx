@@ -623,8 +623,8 @@ export default function SubjectProfilePage() {
           if (r.voting_ends_at && Date.now() < new Date(r.voting_ends_at).getTime()) return { ...r, hide: false };
           const { data: tally } = await supabase.rpc("vote_tally", { p_record_id: r.id });
           const t = Array.isArray(tally) ? tally[0] : tally;
-          const keep = Number(t?.keep_count ?? 0);
-          const del = Number(t?.delete_count ?? 0);
+          const keep = Number(t?.contributor_count ?? 0);
+          const del = Number(t?.subject_count ?? 0);
           return { ...r, hide: del > keep };
         })
       );
