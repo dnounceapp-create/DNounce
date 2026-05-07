@@ -50,6 +50,7 @@ export async function POST(req: NextRequest) {
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard/settings/billing?success=true`,
       cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard/settings/billing?canceled=true`,
+      allow_promotion_codes: true,
       metadata: { supabase_user_id: user.id, plan_id: planId },
     });
 

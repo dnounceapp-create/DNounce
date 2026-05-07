@@ -50,6 +50,9 @@ export async function GET(req: NextRequest) {
       userScoreRes,
       subjectScoreRes,
       categoryRes,
+      baseFollowsRes,
+      basePinsRes,
+      baseRecordViewsRes,
     ] = await Promise.all([
       subjectId
         ? supabase.from("profile_views").select("viewed_at, is_anonymous, viewer_auth_user_id, city, region, country, source, viewer_role").eq("subject_id", subjectId)
@@ -58,7 +61,7 @@ export async function GET(req: NextRequest) {
         ? supabase.from("search_impressions").select("appeared_at, query, searcher_auth_user_id").eq("subject_id", subjectId)
         : Promise.resolve({ data: [] }),
       subjectId
-        ? supabase.from("records").select("id, status, final_outcome, credibility, ai_vendor_1_result, category, voting_started_at, decision_made_at, debate_started_at, published_at, created_at").eq("subject_id", subjectId).in("status", ["published", "deletion_request", "debate", "voting", "decision"])
+        ? supabase.from("records").select("id, status, final_outcome, credibility, ai_vendor_1_result, category, voting_started_at, decision_made_at, debate_started_at, published_at, created_at, contributor_display_name, contributor_identity_preference, record_alias").eq("subject_id", subjectId).in("status", ["published", "deletion_request", "debate", "voting", "decision"])
         : Promise.resolve({ data: [] }),
       contributorId
         ? supabase.from("records").select("id, status, final_outcome, ai_vendor_1_result, credibility, category").eq("contributor_id", contributorId)
@@ -71,6 +74,15 @@ export async function GET(req: NextRequest) {
         ? supabase.from("subject_scores").select("subject_score").eq("subject_uuid", subjectId).single()
         : Promise.resolve({ data: null }),
       supabase.from("user_accountdetails").select("job_title").eq("user_id", user.id).single(),
+      subjectId
+        ? supabase.from("record_follows").select("record_id").eq("subject_id", subjectId)
+        : Promise.resolve({ data: [] }),
+      subjectId
+        ? supabase.from("pinned_records").select("record_id").eq("subject_id", subjectId)
+        : Promise.resolve({ data: [] }),
+      subjectId
+        ? supabase.from("record_views").select("record_id, viewed_date").eq("subject_id", subjectId)
+        : Promise.resolve({ data: [] }),
     ]);
 
     const profileViews = (profileViewsRes as any).data || [];
@@ -83,6 +95,9 @@ export async function GET(req: NextRequest) {
     const userScore = (userScoreRes as any).data;
     const subjectScore = (subjectScoreRes as any).data;
     const category = (categoryRes as any).data?.job_title ?? null;
+    const baseFollows = (baseFollowsRes as any).data || [];
+    const basePins = (basePinsRes as any).data || [];
+    const baseRecordViews = (baseRecordViewsRes as any).data || [];
 
     // ─── Profile view analytics ───────────────────────────────────────────
 
@@ -272,6 +287,48 @@ export async function GET(req: NextRequest) {
         };
       }
     }
+
+    // ─── Record engagement (Insights + Pro) ──────────────────────────────
+
+    const recordViewMap: Record<string, number> = {};
+    baseRecordViews.forEach((v: any) => {
+      recordViewMap[v.record_id] = (recordViewMap[v.record_id] || 0) + 1;
+    });
+    const followsByRecord: Record<string, number> = {};
+    baseFollows.forEach((f: any) => {
+      followsByRecord[f.record_id] = (followsByRecord[f.record_id] || 0) + 1;
+    });
+    const pinsByRecord: Record<string, number> = {};
+    basePins.forEach((p: any) => {
+      pinsByRecord[p.record_id] = (pinsByRecord[p.record_id] || 0) + 1;
+    });
+    // Get subject name for record titles
+    const { data: subjectNameData } = subjectId
+      ? await supabase.from("subjects").select("name").eq("subject_uuid", subjectId).single()
+      : { data: null };
+    const subjectName = subjectNameData?.name ?? "Subject";
+
+    const recordEngagement = recordsAboutMe.map((r: any) => {
+      const rawCred = (r.ai_vendor_1_result ?? r.credibility ?? "").toString();
+      const credBucket = rawCred.toLowerCase().includes("evidence") ? "Evidence-Based"
+        : rawCred.toLowerCase().includes("opinion") ? "Opinion-Based" : rawCred;
+      const showRealName = credBucket === "Opinion-Based" || (credBucket === "Evidence-Based" && r.contributor_identity_preference === true);
+      const contributorLabel = showRealName ? (r.contributor_display_name || "SuperHero123") : "SuperHero123";
+      return {
+        id: r.id,
+        category: r.category ?? "Unknown",
+        title: `${contributorLabel} • ${subjectName}`,
+        views: recordViewMap[r.id] || 0,
+        followers: followsByRecord[r.id] || 0,
+        pins: pinsByRecord[r.id] || 0,
+        credibility: rawCred || "Pending",
+        final_outcome: r.final_outcome ?? null,
+        submitted_at: r.created_at ?? null,
+      };
+    }).sort((a: any, b: any) => b.views - a.views).slice(0, 10);
+
+    const totalFollowers = baseFollows.length;
+    const totalPins = basePins.length;
 
     // ─── Dispute resolution ───────────────────────────────────────────────
 
@@ -604,6 +661,49 @@ export async function GET(req: NextRequest) {
         .select("*", { count: "exact", head: true })
         .in("record_id", recordsAboutMe.map((r: any) => r.id));
 
+      // ── Competitor benchmarking by zip code ──
+      let competitorBenchmark: any = null;
+      const { data: mySubjectData } = await supabase
+        .from("subjects")
+        .select("location")
+        .eq("subject_uuid", subjectId)
+        .single();
+
+      if (mySubjectData?.location) {
+        const zip = (mySubjectData.location.match(/\d{5}/) || [])[0] ?? null;
+        if (zip) {
+          const { data: nearbySubjects } = await supabase
+            .from("subjects")
+            .select("subject_uuid, owner_auth_user_id")
+            .ilike("location", `%${zip}%`)
+            .neq("subject_uuid", subjectId)
+            .limit(200);
+
+          if (nearbySubjects && nearbySubjects.length > 0) {
+            const { data: nearbyScores } = await supabase
+              .from("subject_scores")
+              .select("subject_score, subject_uuid")
+              .in("subject_uuid", nearbySubjects.map((s: any) => s.subject_uuid));
+
+            if (nearbyScores && nearbyScores.length > 0) {
+              const scores = nearbyScores.map((s: any) => Number(s.subject_score ?? 0)).sort((a, b) => b - a);
+              const myScore = Number(subjectScore?.subject_score ?? 0);
+              const avgScoreInZip = scores.reduce((a: number, b: number) => a + b, 0) / scores.length;
+              const rankInZip = scores.findIndex(s => s <= myScore) + 1;
+              const topPctInZip = Math.round((rankInZip / scores.length) * 100);
+              competitorBenchmark = {
+                zipCode: zip,
+                myScore,
+                avgScoreInZip: Math.round(avgScoreInZip * 10) / 10,
+                totalInZip: scores.length,
+                rankInZip,
+                topPctInZip,
+              };
+            }
+          }
+        }
+      }
+
       proData = {
         // Awareness
         monthlyGrowthRate,
@@ -649,6 +749,9 @@ export async function GET(req: NextRequest) {
         totalFollowers: follows.length,
         totalPins: pins.length,
         notifOptIns: notifOptIns ?? 0,
+
+        // Competitor benchmarking
+        competitorBenchmark,
       };
     }
 
@@ -718,6 +821,11 @@ export async function GET(req: NextRequest) {
 
       // Comparison
       comparisonData,
+
+      // Insights + Pro: reputation reach
+      totalFollowers,
+      totalPins,
+      recordEngagement,
 
       // Pro only
       pro: proData,

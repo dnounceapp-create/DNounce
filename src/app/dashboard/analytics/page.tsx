@@ -7,11 +7,23 @@ import {
   Lock, TrendingUp, Eye, BarChart2, Users, MapPin, Star,
   FileText, ShieldCheck, ArrowRight, Search,
   Clock, Award, Target, Zap, Flame, AlertTriangle, MessageSquare,
-  Activity, Heart, BookmarkCheck, Bell, Download,
+  Activity, Heart, BookmarkCheck, Bell, Download, Wifi, CheckCircle2,
 } from "lucide-react";
 import Link from "next/link";
 
 type PlanId = "standard" | "insights" | "pro";
+
+interface RecordEngagement {
+  id: string;
+  category: string;
+  title: string;
+  views: number;
+  followers: number;
+  pins: number;
+  credibility: string;
+  final_outcome: string | null;
+  submitted_at: string | null;
+}
 
 interface AnalyticsData {
   planId: string;
@@ -48,6 +60,9 @@ interface AnalyticsData {
   mostActiveRole: string | null;
   roleActivity: Record<string, number>;
   comparisonData: { category: string; myScore: string; avgScore: string; sampleSize: number; percentile: number } | null;
+  totalFollowers: number;
+  totalPins: number;
+  recordEngagement: RecordEngagement[];
   pro: {
     monthlyGrowthRate: number;
     thisMonthViews: number;
@@ -74,6 +89,14 @@ interface AnalyticsData {
     totalFollowers: number;
     totalPins: number;
     notifOptIns: number;
+    competitorBenchmark: {
+      zipCode: string;
+      myScore: number;
+      avgScoreInZip: number;
+      totalInZip: number;
+      rankInZip: number;
+      topPctInZip: number;
+    } | null;
   } | null;
 }
 
@@ -144,6 +167,141 @@ function StandardLockedOverlay() {
       <Link href="/dashboard/settings/billing" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 shadow-sm hover:brightness-110 transition">
         Upgrade Plan <ArrowRight className="w-4 h-4" />
       </Link>
+    </div>
+  );
+}
+
+function CredBadge({ cred }: { cred: string }) {
+  const c = (cred || "").trim();
+  const base = "inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] sm:text-xs font-medium";
+  if (c === "Evidence-Based") return <span className={`${base} bg-green-100 text-green-700`}><CheckCircle2 size={12} className="text-green-700" />{c}</span>;
+  if (c === "Opinion-Based") return <span className={`${base} bg-red-100 text-red-700`}><AlertTriangle size={12} className="text-red-700" />{c}</span>;
+  if (c === "Unable to Verify") return <span className={`${base} bg-yellow-100 text-yellow-700`}><AlertTriangle size={12} className="text-yellow-700" />{c}</span>;
+  return <span className={`${base} bg-yellow-100 text-yellow-700`}>{c || "Pending"}</span>;
+}
+
+function normalizeCredLabel(raw: string) {
+  const s = (raw || "").toLowerCase();
+  if (s.includes("evidence")) return "Evidence-Based";
+  if (s.includes("opinion")) return "Opinion-Based";
+  if (s.includes("unable")) return "Unable to Verify";
+  return "Pending";
+}
+
+type ReachSort = "views" | "followers" | "pins";
+type ReachFilter = "all" | "has_followers" | "has_pins";
+
+function ReputationReachSection({ data }: { data: AnalyticsData }) {
+  const [sort, setSort] = useState<ReachSort>("views");
+  const [filter, setFilter] = useState<ReachFilter>("all");
+
+  const records = data.recordEngagement ?? [];
+
+  const filtered = records.filter((r) => {
+    if (filter === "has_followers") return r.followers > 0;
+    if (filter === "has_pins") return r.pins > 0;
+    return true;
+  });
+
+  const sorted = [...filtered].sort((a, b) => {
+    if (sort === "views") return b.views - a.views;
+    if (sort === "followers") return b.followers - a.followers;
+    if (sort === "pins") return b.pins - a.pins;
+    return 0;
+  });
+
+  return (
+    <div>
+      <SectionHeader title="Reputation Reach" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+        <StatCard icon={<Heart className="w-5 h-5" />} label="Total Record Followers" value={data.totalFollowers} sub="People following your records" color="pink" />
+        <StatCard icon={<BookmarkCheck className="w-5 h-5" />} label="Total Record Pins" value={data.totalPins} sub="People who pinned your records" color="indigo" />
+      </div>
+
+      {records.length === 0 ? (
+        <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm text-center">
+          <Eye className="w-6 h-6 text-gray-300 mx-auto mb-2" />
+          <p className="text-xs text-gray-400">No record engagement data yet.</p>
+        </div>
+      ) : (
+        <div className="bg-white shadow rounded-xl border border-gray-100 overflow-hidden">
+          {/* Filter + Sort bar */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-100 bg-white/90 backdrop-blur-sm">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+              <span className="font-medium text-gray-700 text-sm">Filters</span>
+              <select
+                value={filter}
+                onChange={(e) => setFilter(e.target.value as ReachFilter)}
+                className="border rounded-md px-3 py-2 text-sm hover:shadow-sm"
+              >
+                <option value="all">All Records</option>
+                <option value="has_followers">Has Followers</option>
+                <option value="has_pins">Has Pins</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-gray-700 text-sm">Sort</span>
+              <select
+                value={sort}
+                onChange={(e) => setSort(e.target.value as ReachSort)}
+                className="border rounded-md px-3 py-2 text-sm hover:shadow-sm"
+              >
+                <option value="views">Most Views</option>
+                <option value="followers">Most Followers</option>
+                <option value="pins">Most Pins</option>
+              </select>
+            </div>
+          </div>
+
+          {sorted.length === 0 ? (
+            <div className="p-6 text-center text-sm text-gray-400">No records match this filter.</div>
+          ) : sorted.map((r) => {
+            const credLabel = normalizeCredLabel(r.credibility);
+            const outcomeLabel =
+              r.final_outcome === "sided_with_contributor" ? "Sided with contributor" :
+              r.final_outcome === "sided_with_subject" ? "Sided with subject" : null;
+            const dateStr = r.submitted_at
+              ? new Date(r.submitted_at).toLocaleDateString()
+              : null;
+
+            return (
+              <Link
+                key={r.id}
+                href={`/record/${r.id}`}
+                className="block w-full bg-white p-4 hover:bg-gray-50/60 transition border-t first:border-t-0 border-gray-100 cursor-pointer"
+              >
+                {/* Title + credibility badge */}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="text-sm font-semibold text-gray-900 truncate">{r.title || r.category}</div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+                    <span className="text-[11px] text-gray-500">AI Credibility Recommendation:</span>
+                    <CredBadge cred={credLabel} />
+                  </div>
+                </div>
+
+                {/* Meta: outcome + date + stats */}
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  {outcomeLabel && (
+                    <span className="text-xs rounded-full border bg-gray-50 px-2 py-1 text-gray-700">{outcomeLabel}</span>
+                  )}
+                  {dateStr && <span className="text-xs text-gray-500">📅 {dateStr}</span>}
+                  <span className="inline-flex items-center gap-1 text-xs text-blue-600 font-medium">
+                    <Eye className="w-3 h-3" />{r.views} views
+                  </span>
+                  <span className="inline-flex items-center gap-1 text-xs text-pink-600 font-medium">
+                    <Heart className="w-3 h-3" />{r.followers} followers
+                  </span>
+                  <span className="inline-flex items-center gap-1 text-xs text-indigo-600 font-medium">
+                    <BookmarkCheck className="w-3 h-3" />{r.pins} pins
+                  </span>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -280,7 +438,6 @@ function InsightsContent({ data }: { data: AnalyticsData }) {
               <p className="text-xs text-gray-400">No records with activity yet.</p>
             </div>
           )}
-
           {data.mostControversialRecord ? (
             <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
               <div className="flex items-center gap-2 mb-2">
@@ -288,7 +445,7 @@ function InsightsContent({ data }: { data: AnalyticsData }) {
                 <p className="text-xs font-semibold text-gray-700">Most Controversial Record</p>
               </div>
               <p className="text-sm font-bold text-gray-900">{data.mostControversialRecord.category}</p>
-              <p className="text-xs text-gray-400 mt-1">{data.mostControversialRecord.contributor} with contributor · {data.mostControversialRecord.subject} delete</p>
+              <p className="text-xs text-gray-400 mt-1">{data.mostControversialRecord.contributor} with contributor · {data.mostControversialRecord.subject} with subject</p>
               <Link href={`/record/${data.mostControversialRecord.id}`} className="mt-2 inline-flex items-center gap-1 text-xs text-blue-600 hover:underline">View record <ArrowRight className="w-3 h-3" /></Link>
             </div>
           ) : (
@@ -300,7 +457,6 @@ function InsightsContent({ data }: { data: AnalyticsData }) {
               <p className="text-xs text-gray-400">No contested records yet.</p>
             </div>
           )}
-
           {data.longestDebateRecord ? (
             <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
               <div className="flex items-center gap-2 mb-2">
@@ -320,7 +476,6 @@ function InsightsContent({ data }: { data: AnalyticsData }) {
               <p className="text-xs text-gray-400">No debate activity yet.</p>
             </div>
           )}
-
           <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
             <div className="flex items-center gap-2 mb-2">
               <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-500 flex items-center justify-center shrink-0"><Star className="w-4 h-4" /></div>
@@ -339,28 +494,14 @@ function InsightsContent({ data }: { data: AnalyticsData }) {
         </div>
       </div>
 
-      <div>
-        <SectionHeader title="Dispute Resolution" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <StatCard icon={<ShieldCheck className="w-5 h-5" />} label="Dispute Resolution Rate" value={data.disputeResolutionRate !== null ? `${data.disputeResolutionRate}%` : "—"} sub="Disputes resolved in your favor" color="green" />
-          <StatCard icon={<Clock className="w-5 h-5" />} label="Avg. Voting Duration" value={data.avgVotingDays !== null ? `${data.avgVotingDays}d` : "—"} sub="Days from voting open to decision" color="orange" />
-        </div>
-      </div>
-
-      <div>
-        <SectionHeader title="Contributor & Subject Success" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <StatCard icon={<Target className="w-5 h-5" />} label="Contributor Success Rate" value={data.contributorSuccessRate !== null ? `${data.contributorSuccessRate}%` : "—"} sub={`${data.sided_contributor} with contributor · ${data.sided_subject} with subject`} color="green" />
-          <StatCard icon={<ShieldCheck className="w-5 h-5" />} label="Subject Success Rate" value={data.disputeResolutionRate !== null ? `${data.disputeResolutionRate}%` : "—"} sub="Disputes about you resolved in your favor" color="blue" />
-        </div>
-      </div>
-
-      <div>
-        <SectionHeader title="Comparison vs Similar Profiles" />
-        {data.comparisonData ? (
+      {data.comparisonData ? (
+        <div>
+          <SectionHeader title="Benchmark vs. Category Average" />
           <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
-            <p className="text-xs text-gray-500 mb-4">Compared to <span className="font-semibold text-gray-700">{data.comparisonData.sampleSize}</span> other <span className="font-semibold text-gray-700">{data.comparisonData.category}</span> profiles on DNounce</p>
-            <div className="grid grid-cols-3 gap-4 text-center">
+            <p className="text-xs text-gray-500 mb-4">
+              Based on <span className="font-semibold text-gray-700">{data.comparisonData.sampleSize}</span> profiles in the <span className="font-semibold text-gray-700">{data.comparisonData.category}</span> category
+            </p>
+            <div className="grid grid-cols-3 gap-4 text-center mb-4">
               <div><p className="text-2xl font-bold text-blue-600">{data.comparisonData.myScore}</p><p className="text-xs text-gray-400 mt-0.5">Your Score</p></div>
               <div><p className="text-2xl font-bold text-gray-400">{data.comparisonData.avgScore}</p><p className="text-xs text-gray-400 mt-0.5">Category Avg</p></div>
               <div><p className="text-2xl font-bold text-indigo-600">{data.comparisonData.percentile}%</p><p className="text-xs text-gray-400 mt-0.5">Percentile</p></div>
@@ -369,13 +510,18 @@ function InsightsContent({ data }: { data: AnalyticsData }) {
               <div className="h-2 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500" style={{ width: `${data.comparisonData.percentile}%` }} />
             </div>
           </div>
-        ) : (
+        </div>
+      ) : (
+        <div>
+          <SectionHeader title="Benchmark vs. Category Average" />
           <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm text-center">
             <Award className="w-6 h-6 text-gray-300 mx-auto mb-2" />
             <p className="text-xs text-gray-400">Not enough similar profiles yet to compare. Check back as more users join.</p>
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      <ReputationReachSection data={data} />
     </div>
   );
 }
@@ -403,8 +549,9 @@ function ProContent({ data }: { data: AnalyticsData }) {
       ["Contributor Success Rate", data.contributorSuccessRate !== null ? `${data.contributorSuccessRate}%` : "—"],
       ["Streak Weeks", pro.streakWeeks],
       ["Voter Quality Score", pro.voterQualityScore !== null ? `${pro.voterQualityScore}%` : "—"],
-      ["Total Followers", pro.totalFollowers],
-      ["Total Pins", pro.totalPins],
+      ["Total Followers", data.totalFollowers],
+      ["Total Pins", data.totalPins],
+      ["Competitor Rank in Zip", pro.competitorBenchmark ? `#${pro.competitorBenchmark.rankInZip} of ${pro.competitorBenchmark.totalInZip}` : "—"],
     ];
     const csv = rows.map(r => r.join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
@@ -418,7 +565,6 @@ function ProContent({ data }: { data: AnalyticsData }) {
   return (
     <div className="space-y-8">
 
-      {/* Market Position */}
       {pro.marketPosition && (
         <div>
           <SectionHeader title="Market Position" />
@@ -441,7 +587,6 @@ function ProContent({ data }: { data: AnalyticsData }) {
         </div>
       )}
 
-      {/* Score Trajectory */}
       {pro.scoreSnapshots.length > 0 && (
         <div>
           <SectionHeader title="Score Trajectory (Last 13 Weeks)" />
@@ -464,14 +609,12 @@ function ProContent({ data }: { data: AnalyticsData }) {
         </div>
       )}
 
-      {/* Awareness / Growth */}
       <div>
         <SectionHeader title="Audience Growth" />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <StatCard icon={<TrendingUp className="w-5 h-5" />} label="Monthly Growth Rate" value={`${pro.monthlyGrowthRate > 0 ? "+" : ""}${pro.monthlyGrowthRate}%`} sub={`${pro.thisMonthViews} this month vs ${pro.lastMonthViews} last month`} color={pro.monthlyGrowthRate >= 0 ? "green" : "red"} />
           <StatCard icon={<Activity className="w-5 h-5" />} label="Repeat Visitor Rate" value={`${pro.repeatVisitorRate}%`} sub="Viewers who came back more than once" color="purple" />
         </div>
-
         {pro.peakGrowthWeek && (
           <div className="mt-4 bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
             <p className="text-xs text-gray-500 font-medium">Peak Growth Week</p>
@@ -481,7 +624,6 @@ function ProContent({ data }: { data: AnalyticsData }) {
         )}
       </div>
 
-      {/* Traffic Sources */}
       <div>
         <SectionHeader title="Traffic Source Breakdown" />
         <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
@@ -500,22 +642,6 @@ function ProContent({ data }: { data: AnalyticsData }) {
         </div>
       </div>
 
-      {/* Viewer Role Distribution */}
-      {pro.viewerRoleDistribution.length > 0 && (
-        <div>
-          <SectionHeader title="Viewer Role Distribution" />
-          <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
-            <p className="text-xs text-gray-500 mb-4">Who is visiting your profile — aggregated, no individual exposure</p>
-            <div className="space-y-3">
-              {pro.viewerRoleDistribution.map((r) => (
-                <BarRow key={r.role} label={r.role} value={r.count} max={Math.max(...pro.viewerRoleDistribution.map(x => x.count))} color="bg-indigo-400" />
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Conversion Funnel */}
       <div>
         <SectionHeader title="Conversion Funnel" />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -535,7 +661,6 @@ function ProContent({ data }: { data: AnalyticsData }) {
         </div>
       </div>
 
-      {/* Record Performance */}
       {pro.topRecordsByViews.length > 0 && (
         <div>
           <SectionHeader title="Record Performance" />
@@ -553,7 +678,6 @@ function ProContent({ data }: { data: AnalyticsData }) {
         </div>
       )}
 
-      {/* Engagement Velocity */}
       <div>
         <SectionHeader title="Engagement Velocity" />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -562,7 +686,6 @@ function ProContent({ data }: { data: AnalyticsData }) {
         </div>
       </div>
 
-      {/* Streak */}
       <div>
         <SectionHeader title="Reputation Streak" />
         <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
@@ -578,17 +701,55 @@ function ProContent({ data }: { data: AnalyticsData }) {
         </div>
       </div>
 
-      {/* Retention Signals */}
       <div>
         <SectionHeader title="Retention & Loyalty Signals" />
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <StatCard icon={<Heart className="w-5 h-5" />} label="Record Followers" value={pro.totalFollowers} sub="People following your records" color="pink" />
-          <StatCard icon={<BookmarkCheck className="w-5 h-5" />} label="Record Pins" value={pro.totalPins} sub="People who pinned your records" color="indigo" />
+          <StatCard icon={<Heart className="w-5 h-5" />} label="Record Followers" value={data.totalFollowers} sub="People following your records" color="pink" />
+          <StatCard icon={<BookmarkCheck className="w-5 h-5" />} label="Record Pins" value={data.totalPins} sub="People who pinned your records" color="indigo" />
           <StatCard icon={<Bell className="w-5 h-5" />} label="Notification Opt-ins" value={pro.notifOptIns} sub="People receiving updates about your records" color="blue" />
         </div>
       </div>
 
-      {/* Insights sections also shown in Pro */}
+      <ReputationReachSection data={data} />
+
+      <div>
+        <SectionHeader title="Local Competitor Benchmarking" />
+        {pro.competitorBenchmark ? (
+          <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
+            <p className="text-xs text-gray-500 mb-4">
+              How your Trust Score compares to other professionals in{" "}
+              <span className="font-semibold text-gray-700">{pro.competitorBenchmark.zipCode}</span> —{" "}
+              {pro.competitorBenchmark.totalInZip} total in your area
+            </p>
+            <div className="grid grid-cols-3 gap-4 text-center mb-4">
+              <div>
+                <p className="text-2xl font-bold text-indigo-600">#{pro.competitorBenchmark.rankInZip}</p>
+                <p className="text-xs text-gray-400 mt-0.5">Rank in ZIP</p>
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-blue-600">Top {pro.competitorBenchmark.topPctInZip}%</p>
+                <p className="text-xs text-gray-400 mt-0.5">In Your Area</p>
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-400">{pro.competitorBenchmark.avgScoreInZip.toFixed(1)}</p>
+                <p className="text-xs text-gray-400 mt-0.5">Avg ZIP Score</p>
+              </div>
+            </div>
+            <div className="bg-gray-100 rounded-full h-2 mb-2">
+              <div className="h-2 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500" style={{ width: `${100 - pro.competitorBenchmark.topPctInZip}%` }} />
+            </div>
+            <p className="text-xs text-gray-400 text-center">
+              Your score: <span className="font-semibold text-gray-700">{pro.competitorBenchmark.myScore.toFixed(1)}</span> · Area average: <span className="font-semibold text-gray-700">{pro.competitorBenchmark.avgScoreInZip.toFixed(1)}</span>
+            </p>
+          </div>
+        ) : (
+          <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm text-center">
+            <Wifi className="w-6 h-6 text-gray-300 mx-auto mb-2" />
+            <p className="text-xs text-gray-400">Not enough professionals in your area yet. Check back as more users join.</p>
+          </div>
+        )}
+      </div>
+
       <div>
         <SectionHeader title="Profile Views Detail" />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -702,7 +863,6 @@ function ProContent({ data }: { data: AnalyticsData }) {
         </div>
       </div>
 
-      {/* Export CSV */}
       <div>
         <SectionHeader title="Export" />
         <button

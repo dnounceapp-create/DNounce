@@ -47,6 +47,8 @@ const PLANS = [
       "Vote outcome history",
       "Score history chart",
       "Search appearance frequency",
+      "Followers & pins per record",
+      "Reputation reach per record",
     ],
   },
   {
@@ -64,6 +66,7 @@ const PLANS = [
       "Voter engagement trends",
       "Dispute resolution stats",
       "Comparison vs similar profiles",
+      "Competitor benchmarking by zip code",
       "Weekly email digest",
     ],
   },
@@ -103,6 +106,8 @@ export default function BillingPage() {
     };
     load();
   }, [router]);
+
+;
 
   const handleUpgrade = async (targetPlan: PlanId) => {
     if (targetPlan === "standard") return;
@@ -197,6 +202,8 @@ export default function BillingPage() {
           </div>
         )}
 
+
+
         {/* Plan cards */}
         <div className="grid grid-cols-1 gap-4">
           {PLANS.map((plan) => {
@@ -236,6 +243,7 @@ export default function BillingPage() {
                             Current
                           </span>
                         )}
+
                       </div>
                       <p className="text-sm text-gray-500">{plan.description}</p>
                     </div>
