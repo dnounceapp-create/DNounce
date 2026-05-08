@@ -128,13 +128,21 @@ export default function HomePage() {
     }
 
     // 🔍 Track home/demo page view
-    supabase.auth.getSession().then(({ data: sessionData }) => {
+    supabase.auth.getSession().then(async ({ data: sessionData }) => {
       const isDemo = new URLSearchParams(window.location.search).get("from") === "demo" || window.location.pathname === "/demo";
+      let city = null, region = null, country = null;
+      try {
+        const geoRes = await fetch("/api/geo");
+        if (geoRes.ok) { const geo = await geoRes.json(); city = geo.city ?? null; region = geo.region ?? null; country = geo.country ?? null; }
+      } catch {}
       supabase.from("page_views").insert({
         page_type: isDemo ? "demo" : "home",
         page_id: null,
         viewer_auth_user_id: sessionData?.session?.user?.id ?? null,
         is_anonymous: !sessionData?.session?.user?.id,
+        city,
+        region,
+        country,
       }).then(() => {});
     });
   }, []);

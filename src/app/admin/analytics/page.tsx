@@ -188,6 +188,7 @@ export default function AdminAnalyticsPage() {
   const [totalSocialClicks, setTotalSocialClicks] = useState(0);
   const [totalRecordViews, setTotalRecordViews] = useState(0);
   const [homePageViews, setHomePageViews] = useState(0);
+  const [geoBreakdown, setGeoBreakdown] = useState<{ country: string; count: number }[]>([]);
   const [demoPageViews, setDemoPageViews] = useState(0);
   const [recordPageViews, setRecordPageViews] = useState(0);
   const [subjectPageViews, setSubjectPageViews] = useState(0);
@@ -211,7 +212,7 @@ export default function AdminAnalyticsPage() {
         submitClicks, socialClicks, stages, creds,
         allRecords, allUsers, subscriptions, voteQuality,
         profileViewsRes, recordViewsRes, submitClicksRes, socialClicksRes,
-        homeViewsRes, demoViewsRes, recordPagesRes, subjectPagesRes,
+        homeViewsRes, demoViewsRes, recordPagesRes, subjectPagesRes, geoRes,
       ] = await Promise.all([
         supabase.rpc("get_all_table_counts"),
         supabase.rpc("get_daily_counts", { p_table: "records", p_days: days }),
@@ -236,6 +237,7 @@ export default function AdminAnalyticsPage() {
         supabase.from("page_views").select("id", { count: "exact", head: true }).eq("page_type", "demo"),
         supabase.from("page_views").select("id", { count: "exact", head: true }).eq("page_type", "record"),
         supabase.from("page_views").select("id", { count: "exact", head: true }).eq("page_type", "subject"),
+        supabase.from("page_views").select("country").not("country", "is", null).eq("page_type", "home"),
       ]);
 
       if (counts.data) setTableCounts(counts.data as TableCounts);
@@ -330,6 +332,17 @@ export default function AdminAnalyticsPage() {
       setDemoPageViews(demoViewsRes.count ?? 0);
       setRecordPageViews(recordPagesRes.count ?? 0);
       setSubjectPageViews(subjectPagesRes.count ?? 0);
+
+      const geoMap: Record<string, number> = {};
+      ((geoRes as any).data ?? []).forEach((r: any) => {
+        const key = r.country || "Unknown";
+        geoMap[key] = (geoMap[key] || 0) + 1;
+      });
+      const geoSorted = Object.entries(geoMap)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 15)
+        .map(([country, count]) => ({ country, count }));
+      setGeoBreakdown(geoSorted);
     } finally {
       setLoading(false);
     }
@@ -430,6 +443,33 @@ export default function AdminAnalyticsPage() {
           <StatBox label="Record Page Visits" value={recordPageViews.toLocaleString()} sub="dnounce.com/record/..." color="indigo" />
           <StatBox label="Profile Page Visits" value={subjectPageViews.toLocaleString()} sub="dnounce.com/subject/..." color="teal" />
         </div>
+      </section>
+
+      <section>
+        <SectionTitle icon={Users} title="Geographic Breakdown — dnounce.com Visitors" />
+        {geoBreakdown.length === 0 ? (
+          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5 text-gray-500 text-sm">No geographic data yet. Data will appear as visitors come to dnounce.com.</div>
+        ) : (
+          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5">
+            <h3 className="text-white text-xs font-semibold mb-4">Top Countries — Home Page Visitors</h3>
+            <div className="space-y-2">
+              {geoBreakdown.map((g, i) => {
+                const max = geoBreakdown[0].count;
+                const pct = max > 0 ? Math.round((g.count / max) * 100) : 0;
+                return (
+                  <div key={g.country} className="flex items-center gap-3">
+                    <span className="text-gray-400 text-xs w-4 text-right shrink-0">{i + 1}</span>
+                    <span className="text-gray-300 text-xs w-32 shrink-0 truncate">{g.country}</span>
+                    <div className="flex-1 bg-gray-800 rounded-full h-2">
+                      <div className="h-2 rounded-full bg-blue-500 transition-all" style={{ width: `${pct}%` }} />
+                    </div>
+                    <span className="text-white text-xs font-semibold w-8 text-right shrink-0">{g.count}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </section>
 
       <section>
