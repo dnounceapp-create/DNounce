@@ -189,7 +189,11 @@ export default function AdminAnalyticsPage() {
   const [totalRecordViews, setTotalRecordViews] = useState(0);
   const [homePageViews, setHomePageViews] = useState(0);
   const [geoBreakdown, setGeoBreakdown] = useState<{ country: string; count: number }[]>([]);
-  const [demoPageViews, setDemoPageViews] = useState(0);
+  const [demoFreelancerViews, setDemoFreelancerViews] = useState(0);
+  const [demoNailtechViews, setDemoNailtechViews] = useState(0);
+  const [demoBarberViews, setDemoBarberViews] = useState(0);
+  const [demoWaitressViews, setDemoWaitressViews] = useState(0);
+  const [demoRealtorViews, setDemoRealtorViews] = useState(0);
   const [recordPageViews, setRecordPageViews] = useState(0);
   const [subjectPageViews, setSubjectPageViews] = useState(0);
   const [subscriberCounts, setSubscriberCounts] = useState({ standard: 0, insights: 0, pro: 0 });
@@ -212,7 +216,7 @@ export default function AdminAnalyticsPage() {
         submitClicks, socialClicks, stages, creds,
         allRecords, allUsers, subscriptions, voteQuality,
         profileViewsRes, recordViewsRes, submitClicksRes, socialClicksRes,
-        homeViewsRes, demoViewsRes, recordPagesRes, subjectPagesRes, geoRes,
+        homeViewsRes, demoFreelancerRes, demoNailtechRes, demoBarberRes, demoWaitressRes, demoRealtorRes, recordPagesRes, subjectPagesRes, geoRes,
       ] = await Promise.all([
         supabase.rpc("get_all_table_counts"),
         supabase.rpc("get_daily_counts", { p_table: "records", p_days: days }),
@@ -234,7 +238,11 @@ export default function AdminAnalyticsPage() {
         supabase.from("submit_clicks").select("id", { count: "exact", head: true }),
         supabase.from("social_link_clicks").select("id", { count: "exact", head: true }),
         supabase.from("page_views").select("id", { count: "exact", head: true }).eq("page_type", "home"),
-        supabase.from("page_views").select("id", { count: "exact", head: true }).eq("page_type", "demo"),
+        supabase.from("page_views").select("id", { count: "exact", head: true }).eq("page_type", "demo_freelancer"),
+        supabase.from("page_views").select("id", { count: "exact", head: true }).eq("page_type", "demo_nailtech"),
+        supabase.from("page_views").select("id", { count: "exact", head: true }).eq("page_type", "demo_barber"),
+        supabase.from("page_views").select("id", { count: "exact", head: true }).eq("page_type", "demo_waitress"),
+        supabase.from("page_views").select("id", { count: "exact", head: true }).eq("page_type", "demo_realtor"),
         supabase.from("page_views").select("id", { count: "exact", head: true }).eq("page_type", "record"),
         supabase.from("page_views").select("id", { count: "exact", head: true }).eq("page_type", "subject"),
         supabase.from("page_views").select("country").not("country", "is", null).eq("page_type", "home"),
@@ -329,7 +337,11 @@ export default function AdminAnalyticsPage() {
       setTotalSubmitClicks(submitClicksRes.count ?? 0);
       setTotalSocialClicks(socialClicksRes.count ?? 0);
       setHomePageViews(homeViewsRes.count ?? 0);
-      setDemoPageViews(demoViewsRes.count ?? 0);
+      setDemoFreelancerViews(demoFreelancerRes.count ?? 0);
+      setDemoNailtechViews(demoNailtechRes.count ?? 0);
+      setDemoBarberViews(demoBarberRes.count ?? 0);
+      setDemoWaitressViews(demoWaitressRes.count ?? 0);
+      setDemoRealtorViews(demoRealtorRes.count ?? 0);
       setRecordPageViews(recordPagesRes.count ?? 0);
       setSubjectPageViews(subjectPagesRes.count ?? 0);
 
@@ -439,7 +451,11 @@ export default function AdminAnalyticsPage() {
         <SectionTitle icon={Users} title="Site Visits" />
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <StatBox label="Home Page Visits" value={homePageViews.toLocaleString()} sub="dnounce.com" color="blue" />
-          <StatBox label="Demo Page Visits" value={demoPageViews.toLocaleString()} sub="dnounce.com/demo" color="purple" />
+          <StatBox label="Demo: Freelancer" value={demoFreelancerViews.toLocaleString()} sub="dnounce.com/demo/freelancer" color="purple" />
+          <StatBox label="Demo: Nail Tech" value={demoNailtechViews.toLocaleString()} sub="dnounce.com/demo/nailtech" color="purple" />
+          <StatBox label="Demo: Barber" value={demoBarberViews.toLocaleString()} sub="dnounce.com/demo/barber" color="purple" />
+          <StatBox label="Demo: Waitress" value={demoWaitressViews.toLocaleString()} sub="dnounce.com/demo/waitress" color="purple" />
+          <StatBox label="Demo: Realtor" value={demoRealtorViews.toLocaleString()} sub="dnounce.com/demo/realtor" color="purple" />
           <StatBox label="Record Page Visits" value={recordPageViews.toLocaleString()} sub="dnounce.com/record/..." color="indigo" />
           <StatBox label="Profile Page Visits" value={subjectPageViews.toLocaleString()} sub="dnounce.com/subject/..." color="teal" />
         </div>

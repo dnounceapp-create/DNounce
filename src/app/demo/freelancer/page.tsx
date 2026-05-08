@@ -415,7 +415,7 @@ export default function DemoPage() {
     // 🔍 Track demo page view
     supabase.auth.getSession().then(({ data: sessionData }) => {
       supabase.from("page_views").insert({
-        page_type: "demo",
+        page_type: "demo_freelancer",
         page_id: null,
         viewer_auth_user_id: sessionData?.session?.user?.id ?? null,
         is_anonymous: !sessionData?.session?.user?.id,
