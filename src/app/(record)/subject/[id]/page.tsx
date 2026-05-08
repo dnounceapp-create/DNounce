@@ -606,13 +606,21 @@ export default function SubjectProfilePage() {
           viewer_role: viewerRole,
         }).then(() => {});
 
-        // 🔍 Track page view for admin analytics
-        supabase.from("page_views").insert({
-          page_type: "subject",
-          page_id: subjectId,
-          viewer_auth_user_id: sessionData?.session?.user?.id ?? null,
-          is_anonymous: !sessionData?.session?.user?.id,
-        }).then(() => {});
+        // 🔍 Track page view for admin analytics (skip admins)
+        const viewerId = sessionData?.session?.user?.id ?? null;
+        const doInsertSubject = async () => {
+          if (viewerId) {
+            const { data: adminCheck } = await supabase.from("admin_roles").select("user_id").eq("user_id", viewerId).eq("is_active", true).maybeSingle();
+            if (adminCheck) return;
+          }
+          supabase.from("page_views").insert({
+            page_type: "subject",
+            page_id: subjectId,
+            viewer_auth_user_id: viewerId,
+            is_anonymous: !viewerId,
+          }).then(() => {});
+        };
+        doInsertSubject();
       });
 
       const rows: SubjectRecord[] = (recs || []) as any;

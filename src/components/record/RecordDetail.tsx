@@ -4604,13 +4604,25 @@ export default function RecordDetail({
           viewed_date: new Date().toISOString().split("T")[0],
         }, { onConflict: "record_id,viewer_auth_user_id,viewed_date", ignoreDuplicates: true }).then(() => {});
 
-        // 🔍 Track page view for admin analytics
-        supabase.from("page_views").insert({
-          page_type: "record",
-          page_id: recordId,
-          viewer_auth_user_id: sessionUserId,
-          is_anonymous: false,
-        }).then(() => {});
+        // 🔍 Track page view for admin analytics (skip admins)
+        if (sessionUserId) {
+          supabase.from("admin_roles").select("user_id").eq("user_id", sessionUserId).eq("is_active", true).maybeSingle().then(({ data: adminCheck }) => {
+            if (adminCheck) return;
+            supabase.from("page_views").insert({
+              page_type: "record",
+              page_id: recordId,
+              viewer_auth_user_id: sessionUserId,
+              is_anonymous: false,
+            }).then(() => {});
+          });
+        } else {
+          supabase.from("page_views").insert({
+            page_type: "record",
+            page_id: recordId,
+            viewer_auth_user_id: null,
+            is_anonymous: true,
+          }).then(() => {});
+        }
 
         const contributorUserId =
             (rec as any)?.contributor?.user_id ?? (rec as any)?.contributor?.[0]?.user_id ?? null;

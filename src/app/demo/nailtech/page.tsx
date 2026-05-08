@@ -412,7 +412,12 @@ export default function DemoNailTechPage() {
   // close mobile menu on outside click
   useEffect(() => {
     // 🔍 Track demo page view
-    supabase.auth.getSession().then(({ data: sessionData }) => {
+    supabase.auth.getSession().then(async ({ data: sessionData }) => {
+      const userId = sessionData?.session?.user?.id ?? null;
+      if (userId) {
+        const { data: adminCheck } = await supabase.from("admin_roles").select("user_id").eq("user_id", userId).eq("is_active", true).maybeSingle();
+        if (adminCheck) return;
+      }
       supabase.from("page_views").insert({
         page_type: "demo_nailtech",
         page_id: null,

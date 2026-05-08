@@ -129,6 +129,11 @@ export default function HomePage() {
 
     // 🔍 Track home/demo page view
     supabase.auth.getSession().then(async ({ data: sessionData }) => {
+      const userId = sessionData?.session?.user?.id ?? null;
+      if (userId) {
+        const { data: adminCheck } = await supabase.from("admin_roles").select("user_id").eq("user_id", userId).eq("is_active", true).maybeSingle();
+        if (adminCheck) return;
+      }
       const isDemo = new URLSearchParams(window.location.search).get("from") === "demo" || window.location.pathname === "/demo";
       let city = null, region = null, country = null;
       try {

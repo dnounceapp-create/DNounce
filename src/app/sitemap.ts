@@ -9,7 +9,31 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 1,
     },
     {
-      url: "https://dnounce.com/demo",
+      url: "https://dnounce.com/demo/freelancer",
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
+    {
+      url: "https://dnounce.com/demo/nailtech",
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
+    {
+      url: "https://dnounce.com/demo/barber",
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
+    {
+      url: "https://dnounce.com/demo/waitress",
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
+    {
+      url: "https://dnounce.com/demo/realtor",
       lastModified: new Date(),
       changeFrequency: "weekly",
       priority: 0.9,
