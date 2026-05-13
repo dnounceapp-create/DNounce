@@ -5119,12 +5119,6 @@ export default function RecordDetail({
             <LifecycleChips stage={getEffectiveStage(record, serverOffsetMs)} viewerRole={effectiveViewerRole} />
           </div>
         )}
-        {getRecordStage(record) === 7 && record?.verdict_announced_at && new Date() < new Date(record.verdict_announced_at) && (
-          <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700">
-            <span>⏳</span>
-            <span>Verdict announcement: {new Date(record.verdict_announced_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
-          </div>
-        )}
 
         <div className="flex items-center gap-1.5 text-yellow-500">
           {Array.from({ length: 10 }).map((_, i) => (

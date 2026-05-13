@@ -381,14 +381,14 @@ export default function HomePage() {
       {/* ── Hero ───────────────────────────────────────────────────────────── */}
       <section className="pb-20 px-5" style={{ paddingTop: "103px" }}>
         <div className="max-w-3xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 bg-gray-100 text-gray-600 text-xs font-medium px-3 py-1.5 rounded-full mb-8">
+          <div className="inline-flex items-center gap-2 bg-white border border-gray-200 text-gray-500 text-xs font-medium px-4 py-2 rounded-full mb-6 shadow-sm">
             <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
             Real Experiences. Both Sides.
           </div>
 
-          <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold text-gray-900 leading-[1.05] tracking-tight mb-8">
-            Don't Trust Just One<br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-violet-600">Side of the Story.</span>
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-gray-900 leading-[1.08] tracking-tight mb-6">
+            Know Who<br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-violet-600">You're Dealing With.</span>
           </h1>
 
           <Image
@@ -399,10 +399,10 @@ export default function HomePage() {
             className="mx-auto mb-8"
           />
 
-          <p className="text-lg sm:text-xl text-black-500 max-w-xl mx-auto leading-relaxed mb-6">
-            People share what actually happened—good, bad, and everything in between. See both perspectives and decide who you trust.<br /><br />
-            <span className="italic text-gray-400">Check DNounce before you trust someone.</span>
+          <p className="text-lg text-gray-500 max-w-lg mx-auto leading-relaxed mb-4">
+            DNounce is the platform where real experiences are shared, subjects get to respond, and the community decides what's credible. Transparent. Fair. Both sides, always.
           </p>
+          <p className="text-sm text-gray-400 italic mb-8">Search a person · Share an experience · Defend your record</p>
           {/*
           <div className="flex justify-center">
             The first time<button
@@ -418,7 +418,6 @@ export default function HomePage() {
           <div className="mt-12 flex flex-wrap justify-center gap-6 text-sm text-gray-400">
             {[
               { icon: <CheckCircle className="w-4 h-4 text-green-500" />, label: "Both sides shown" },
-              { icon: <Clock className="w-4 h-4 text-amber-500" />, label: "Real experiences" },
               { icon: <Users className="w-4 h-4 text-blue-500" />, label: "Community verdict" },
               { icon: <MessageSquare className="w-4 h-4 text-violet-500" />, label: "Right to respond" },
             ].map((item) => (
