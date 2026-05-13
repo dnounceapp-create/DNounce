@@ -4723,17 +4723,42 @@ export default function RecordDetail({
     };
   }, [recordId]);
 
-  if (!loading && !record && !error) return null;
-
-  if (error || !record) {
+  if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen text-center">
+      <div className="flex flex-col items-center justify-center min-h-screen gap-4">
+        <img src="/logo.png" alt="DNounce" className="w-16 h-16 animate-pulse" />
+        <p className="text-sm text-gray-400">Loading record…</p>
+      </div>
+    );
+  }
+
+  if (!record) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen gap-6 px-5 text-center">
+        <img src="/logo.png" alt="DNounce" className="w-16 h-16" />
         <div>
-          <h1 className="text-xl font-semibold mb-3">{error}</h1>
-          <Link href="/" className="text-blue-600 hover:underline">
-            Go Back
+          <h1 className="text-xl font-semibold text-gray-900 mb-2">Sign in to view this record</h1>
+          <p className="text-sm text-gray-500 max-w-xs mx-auto">
+            This record is available to signed-in users. Create a free account or log in to view it, respond, or vote.
+          </p>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Link
+            href={`/loginsignup?redirectTo=/record/${recordId}`}
+            className="inline-flex items-center justify-center gap-2 bg-gray-900 hover:bg-black text-white font-semibold px-6 py-3 rounded-2xl transition text-sm"
+          >
+            Sign in or create account
+          </Link>
+          <Link
+            href="/"
+            className="inline-flex items-center justify-center gap-2 border border-gray-200 text-gray-700 hover:bg-gray-50 font-semibold px-6 py-3 rounded-2xl transition text-sm"
+          >
+            Go to DNounce
           </Link>
         </div>
+        {error && (
+          <p className="text-xs text-gray-400 max-w-xs">{error}</p>
+        )}
       </div>
     );
   }
@@ -5416,6 +5441,19 @@ export default function RecordDetail({
                   </div>
                 </div>
               )}
+      {viewerRole === "public" && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-lg px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p className="text-sm text-gray-700 font-medium text-center sm:text-left">
+            Sign in to respond, vote, or follow this record.
+          </p>
+          <Link
+            href={`/loginsignup?redirectTo=/record/${recordId}`}
+            className="inline-flex items-center justify-center gap-2 bg-gray-900 hover:bg-black text-white font-semibold px-5 py-2.5 rounded-2xl transition text-sm shrink-0"
+          >
+            Sign in or create account
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

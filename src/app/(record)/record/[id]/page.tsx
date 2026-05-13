@@ -1,6 +1,8 @@
 import RecordDetail from "@/components/record/RecordDetail";
 import { createClient } from "@supabase/supabase-js";
 import type { Metadata } from "next";
+import { Suspense } from "react";
+import Image from "next/image";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -52,11 +54,24 @@ export async function generateMetadata({
   };
 }
 
+function RecordSkeleton() {
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen gap-4">
+      <Image src="/logo.png" alt="DNounce" width={64} height={64} className="animate-pulse" priority />
+      <p className="text-sm text-gray-400">Loading record…</p>
+    </div>
+  );
+}
+
 export default async function RecordPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  return <RecordDetail recordId={id} embedded={false} />;
+  return (
+    <Suspense fallback={<RecordSkeleton />}>
+      <RecordDetail recordId={id} embedded={false} />
+    </Suspense>
+  );
 }
