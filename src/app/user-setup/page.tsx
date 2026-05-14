@@ -237,20 +237,16 @@ export default function UserSetupPage() {
         .eq("owner_auth_user_id", userId)
         .maybeSingle();
 
-      if (!existingSubject) {
-        const { error: subjectError } = await supabase
-          .from("subjects")
-          .insert({
-            name: fullName,
-            nickname: form.nickname.trim() || null,
-            organization: form.organization.trim() || null,
-            location: form.location.trim() || null,
-            avatar_url: avatarUrl || null,
-            owner_auth_user_id: userId,
-          });
+      const { error: subjectError } = await supabase.rpc("create_subject_if_not_exists", {
+        p_user_id: userId,
+        p_name: fullName,
+        p_nickname: form.nickname.trim() || null,
+        p_organization: form.organization.trim() || null,
+        p_location: form.location.trim() || null,
+        p_avatar_url: avatarUrl || null,
+      });
 
-        if (subjectError) throw subjectError;
-      }
+      if (subjectError) throw subjectError;
 
       // Mark onboarding complete
       const { error: updateError } = await supabase.rpc("mark_onboarding_complete", {
@@ -331,6 +327,7 @@ export default function UserSetupPage() {
       return;
     }
 
+    setShowCropModal(false);
     try {
       const imageDataUrl = await getCroppedImg(
         URL.createObjectURL(selectedImage),
