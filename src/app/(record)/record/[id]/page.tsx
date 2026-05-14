@@ -56,9 +56,10 @@ export async function generateMetadata({
 
 function RecordSkeleton() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen gap-4">
-      <Image src="/logo.png" alt="DNounce" width={64} height={64} className="animate-pulse" priority />
-      <p className="text-sm text-gray-400">Loading record…</p>
+    <div className="flex flex-col items-center justify-center min-h-screen gap-4 bg-white">
+      <img src="/logo.png" alt="DNounce" width={64} height={64} style={{ animation: "pulse 2s cubic-bezier(0.4,0,0.6,1) infinite" }} />
+      <p style={{ fontSize: "0.875rem", color: "#9ca3af" }}>Loading record…</p>
+      <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }`}</style>
     </div>
   );
 }
