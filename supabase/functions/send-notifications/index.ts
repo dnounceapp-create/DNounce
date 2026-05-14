@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
 
       const { data: record, error: recordError } = await supabase
         .from("records")
-        .select("id, record_type, relationship, contributor_display_name, contributor_identity_preference")
+        .select("id, record_type, category, contributor_display_name, contributor_identity_preference")
         .eq("id", notification.record_id)
         .single();
 
@@ -59,14 +59,15 @@ Deno.serve(async (req) => {
         : record.record_type === "opinion"
         ? "Opinion-Based"
         : "Pending Review";
-      const relationship = record.relationship || "unknown";
+      const category = record.category || "unknown";
 
       const showContributor = !isEvidence && !record.contributor_identity_preference;
       const contributorLabel = showContributor
         ? (record.contributor_display_name || "Somebody")
         : "Somebody";
 
-      const relationshipLine = `"${contributorLabel}" who labeled you as a ${relationship}`;
+      const contributorIsHidden = contributorLabel === "Somebody";
+      const relationshipLine = `"${contributorLabel}" who labeled you as a ${category}`;
 
       subject = "Action Required – DNounce Subject Alert";
 
@@ -79,7 +80,7 @@ Deno.serve(async (req) => {
           <ul style="line-height: 2;">
             <li><strong>Record ID:</strong> ${recordId}</li>
             <li><strong>Record Type:</strong> ${recordTypeLabel}</li>
-            <li><strong>Relationship Label:</strong> ${relationshipLine}</li>
+            <li><strong>Submitted by:</strong> ${relationshipLine}</li>
           </ul>
 
           <a href="${recordUrl}" style="
@@ -95,9 +96,11 @@ Deno.serve(async (req) => {
             letter-spacing: 0.01em;
           ">View Record →</a>
 
+          ${contributorIsHidden ? `
           <h3 style="color: #111; margin-top: 24px;">Why "Somebody"?</h3>
-          <p>For evidence-based records, DNounce protects the identity of the contributor by showing "somebody" instead of their real name. This ensures the focus remains on the evidence and not personal retaliation.</p>
+          <p>For evidence-based records, DNounce protects the identity of the contributor by showing "Somebody" instead of their real name. This ensures the focus remains on the evidence and not personal retaliation.</p>
           <p style="margin-top: 12px;">For opinion-based records, DNounce displays the contributor's name since the submission reflects a personal experience or viewpoint rather than hard evidence. This ensures clarity and transparency for both parties.</p>
+          ` : ""}
 
           <h3 style="color: #111; margin-top: 24px;">Your Rights and Next Steps:</h3>
           <ol style="line-height: 2;">
@@ -107,7 +110,7 @@ Deno.serve(async (req) => {
           </ol>
 
           <h3 style="color: #111; margin-top: 24px;">Transparency Note:</h3>
-          <p>If you are unsure about the legitimacy of this message, you can always go directly to <a href="https://dnounce.com">dnounce.com</a> on your terms and search up your Record ID (${recordId}) to verify this notification.</p>
+          <p>If you are unsure about the legitimacy of this message, you can always go directly to <a href="https://dnounce.com">dnounce.com</a> and search your Record ID (${recordId}) to verify this notification.</p>
 
           <p style="margin-top: 32px;">Sincerely,<br/><strong>The DNounce Team</strong></p>
 
@@ -149,13 +152,30 @@ Deno.serve(async (req) => {
         </div>
       `;
 
-    } else {
-      // Generic fallback
+    } else if (notification.type === "verdict_community_unlock" && notification.record_id) {
+      const recordUrl = `${APP_URL}/record/${notification.record_id}`;
+      subject = "You can now engage with this record";
       html = `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #333;">
           <h2 style="color: #111;">Hello ${firstName},</h2>
-          <p>${notification.body}</p>
-          ${notification.record_id ? `<a href="${APP_URL}/record/${notification.record_id}" style="display:inline-block; margin-top:12px; padding:8px 18px; background:#111; color:#fff; border-radius:999px; text-decoration:none; font-size:13px; font-weight:600;">View Record →</a>` : ""}
+          <p>The 7-day post-verdict window has passed. You can now engage with this record — post a community statement, reply to others, and participate in the discussion.</p>
+          <a href="${recordUrl}" style="display:inline-block; margin-top:16px; padding:10px 20px; background:#111; color:#fff; border-radius:999px; text-decoration:none; font-size:13px; font-weight:600;">View Record →</a>
+          <p style="margin-top: 32px;">Sincerely,<br/><strong>The DNounce Team</strong></p>
+          <p style="margin-top: 32px; font-size: 12px; color: #999;">
+            <a href="${APP_URL}/dashboard/settings" style="color: #999;">Manage notification preferences</a>
+          </p>
+        </div>
+      `;
+
+    } else {
+      // Generic fallback — uses notification title and body as-is
+      const recordUrl = notification.record_id ? `${APP_URL}/record/${notification.record_id}` : null;
+      subject = notification.title || "A DNounce update";
+      html = `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #333;">
+          <h2 style="color: #111;">Hello ${firstName},</h2>
+          <p>${notification.body || "You have a new notification on DNounce."}</p>
+          ${recordUrl ? `<a href="${recordUrl}" style="display:inline-block; margin-top:16px; padding:10px 20px; background:#111; color:#fff; border-radius:999px; text-decoration:none; font-size:13px; font-weight:600;">View Record →</a>` : ""}
           <p style="margin-top: 32px;">Sincerely,<br/><strong>The DNounce Team</strong></p>
           <p style="margin-top: 32px; font-size: 12px; color: #999;">
             <a href="${APP_URL}/dashboard/settings" style="color: #999;">Manage notification preferences</a>
