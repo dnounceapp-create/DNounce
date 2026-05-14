@@ -86,6 +86,7 @@ export default function UserSetupPage() {
       p_organization: null,
       p_phone: null,
       p_location: null,
+      p_bio: null,
       p_avatar_url: publicUrl,
     });
   
@@ -151,7 +152,7 @@ export default function UserSetupPage() {
         .from("user_accountdetails")
         .select("avatar_url")
         .eq("user_id", session.user.id)
-        .single();
+        .maybeSingle();
 
       if (accountData?.avatar_url) {
         setAvatarUrl(accountData.avatar_url);
