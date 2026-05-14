@@ -75,7 +75,7 @@ Deno.serve(async (req) => {
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #333;">
           <h2 style="color: #111;">Hello ${firstName},</h2>
 
-          <p>You are receiving this message because a record has been submitted on DNounce about you! DNounce is our transparent, AI-powered community review platform.</p>
+          <p>You are receiving this message because a record has been submitted on DNounce about you! DNounce is where real reputations are built. People share their experiences — good, bad, and everything in between — subjects respond with their side, and the community verifies what's true.</p>
 
           <ul style="line-height: 2;">
             <li><strong>Record ID:</strong> ${recordId}</li>

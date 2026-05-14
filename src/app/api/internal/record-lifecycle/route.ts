@@ -27,6 +27,7 @@ export async function GET() {
           .from("records")
           .update({
             status: "subject_notified",
+            subject_notified_at: now.toISOString(),
           })
           .eq("id", r.id);
 
@@ -34,15 +35,11 @@ export async function GET() {
       }
 
       // =====================================================
-      // STAGE 2 → STAGE 3 (Publish after required window)
+      // STAGE 2 → STAGE 3 (Publish 24h after subject notified)
       // =====================================================
-      if (status === "subject_notified" && r.ai_completed_at) {
-        const aiDone = new Date(r.ai_completed_at);
-
-        // 72h AI window + 24h buffer
-        const publishTime = new Date(
-          aiDone.getTime() + (72 + 24) * 60 * 60 * 1000
-        );
+      if (status === "subject_notified" && r.subject_notified_at) {
+        const notifiedAt = new Date(r.subject_notified_at);
+        const publishTime = new Date(notifiedAt.getTime() + 24 * 60 * 60 * 1000);
 
         if (now >= publishTime) {
           await admin
@@ -64,7 +61,7 @@ export async function GET() {
       if (status === "deletion_request" && r.dispute_started_at) {
         const start = new Date(r.dispute_started_at);
         const debateStart = new Date(
-          start.getTime() + 72 * 60 * 60 * 1000
+          start.getTime() + 24 * 60 * 60 * 1000
         );
 
         if (now >= debateStart) {
