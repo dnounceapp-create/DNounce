@@ -445,9 +445,10 @@ export default function UserSetupPage() {
 
                 {/* ✏️ Pencil Button */}
                 <button
+                  type="button"
                   onClick={() => {
                     setCrop({ x: 0, y: 0 });
-                    setZoom(1);
+                    setZoom(2);
                     if (avatarUrl) setShowAvatarOptionsModal(true);
                     else document.getElementById("avatar-upload")?.click();
                   }}
