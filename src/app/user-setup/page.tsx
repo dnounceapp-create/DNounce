@@ -28,7 +28,6 @@ export default function UserSetupPage() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [showAvatarOptionsModal, setShowAvatarOptionsModal] = useState(false);
   const [showCropModal, setShowCropModal] = useState(false);
-  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
@@ -57,26 +56,23 @@ export default function UserSetupPage() {
 
   async function uploadAvatarAndSaveUrl(file: File, userId: string) {
     const ext = file.name.split(".").pop()?.toLowerCase() || "png";
-    const path = `${userId}/avatar.${ext}`; // stable path per user
-  
-    // 1️⃣ Upload (overwrite allowed)
+    const path = `${userId}/avatar.${ext}`;
+
     const { error: uploadErr } = await supabase
       .storage
       .from("avatars")
       .upload(path, file, { upsert: true, contentType: file.type });
-  
+
     if (uploadErr) throw uploadErr;
-  
-    // 2️⃣ Get public URL
+
     const { data } = supabase.storage.from("avatars").getPublicUrl(path);
     const publicUrl = data.publicUrl;
-  
-    // 3️⃣ Ensure user_accountdetails row exists
+
+    // Ensure row exists before RPC
     await supabase
       .from("user_accountdetails")
       .upsert({ user_id: userId }, { onConflict: "user_id" });
-  
-    // 4️⃣ Save avatar via RPC (with p_user_id passed in)
+
     const { error: dbErr } = await supabase.rpc("update_user_accountdetails", {
       p_user_id: userId,
       p_first_name: null,
@@ -89,14 +85,13 @@ export default function UserSetupPage() {
       p_bio: null,
       p_avatar_url: publicUrl,
     });
-  
+
     if (dbErr) throw dbErr;
-  
+
     return publicUrl;
   }
-  
-  
-  // ✅ Fetch location suggestions from /api/location
+
+  // ✅ Fetch location suggestions
   useEffect(() => {
     const q = form.location.trim();
     if (!q) {
@@ -108,58 +103,59 @@ export default function UserSetupPage() {
       try {
         const res = await fetch(`/api/location?input=${encodeURIComponent(q)}`);
         if (!res.ok) {
-          console.warn("⚠️ Location API failed during setup:", res.status);
           setLocationSuggestions([]);
           return;
         }
-
         const data = await res.json();
         setLocationSuggestions(data.predictions || []);
       } catch (err) {
-        console.error("Location suggestions error (setup):", err);
         setLocationSuggestions([]);
       }
     };
 
-    const id = setTimeout(fetchSuggestions, 300); // debounce typing
+    const id = setTimeout(fetchSuggestions, 300);
     return () => clearTimeout(id);
   }, [form.location]);
-
 
   // ---------- Guard + pre-check ----------
   useEffect(() => {
     const run = async () => {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const session = sessionData.session;
-      if (!session) {
-        router.replace("/loginsignup");
-        return;
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const session = sessionData.session;
+        if (!session) {
+          router.replace("/loginsignup");
+          return;
+        }
+
+        // Check if already onboarded — use maybeSingle so missing row doesn't throw
+        const { data: usersRow } = await supabase
+          .from("users")
+          .select("onboarding_complete")
+          .eq("auth_user_id", session.user.id)
+          .maybeSingle();
+
+        if (usersRow?.onboarding_complete === true) {
+          router.replace("/dashboard/myrecords");
+          return;
+        }
+
+        // Load existing avatar if any — maybeSingle so missing row is fine
+        const { data: accountData } = await supabase
+          .from("user_accountdetails")
+          .select("avatar_url")
+          .eq("user_id", session.user.id)
+          .maybeSingle();
+
+        if (accountData?.avatar_url) {
+          setAvatarUrl(accountData.avatar_url);
+          setCroppedImage(accountData.avatar_url);
+        }
+      } catch (err) {
+        console.error("Setup guard error:", err);
+      } finally {
+        setLoading(false);
       }
-
-      // if already onboarded, send to dashboard
-      const { data: usersRow, error: usersErr } = await supabase
-        .from("users")
-        .select("onboarding_complete")
-        .eq("auth_user_id", session.user.id)
-        .single();
-
-      if (!usersErr && usersRow?.onboarding_complete === true) {
-        router.replace("/dashboard/myrecords");
-        return;
-      }
-
-      const { data: accountData } = await supabase
-        .from("user_accountdetails")
-        .select("avatar_url")
-        .eq("user_id", session.user.id)
-        .maybeSingle();
-
-      if (accountData?.avatar_url) {
-        setAvatarUrl(accountData.avatar_url);
-        setCroppedImage(accountData.avatar_url);
-      }
-
-      setLoading(false);
     };
 
     run();
@@ -168,7 +164,7 @@ export default function UserSetupPage() {
   // ---------- form handlers ----------
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-  
+
     if (name === "phone") {
       const formatted = formatPhoneNumber(value);
       if (formatted.length <= 14) {
@@ -190,6 +186,7 @@ export default function UserSetupPage() {
 
       const { data: sessionData } = await supabase.auth.getSession();
       const userId = sessionData?.session?.user?.id;
+      if (!userId) throw new Error("Not signed in.");
 
       // Check for duplicate phone
       const { data: existingPhone } = await supabase
@@ -219,7 +216,6 @@ export default function UserSetupPage() {
         p_avatar_url: avatarUrl || null,
       });
 
-
       if (rpcError) throw rpcError;
 
       // Save how_found
@@ -233,7 +229,7 @@ export default function UserSetupPage() {
           .eq("auth_user_id", userId);
       }
 
-      // Create subject profile linked to this user
+      // Create subject profile if none exists
       const fullName = `${form.first_name.trim()} ${form.last_name.trim()}`;
       const { data: existingSubject } = await supabase
         .from("subjects")
@@ -256,16 +252,12 @@ export default function UserSetupPage() {
         if (subjectError) throw subjectError;
       }
 
-      if (userId) {
-        console.log("👤 Current user ID before mark_onboarding_complete:", userId);
-      
-        const { error: updateError } = await supabase.rpc("mark_onboarding_complete", {
-          p_user_id: userId,
-        });
-      
-        console.log("✅ mark_onboarding_complete result:", updateError);
-        if (updateError) throw updateError;
-      }      
+      // Mark onboarding complete
+      const { error: updateError } = await supabase.rpc("mark_onboarding_complete", {
+        p_user_id: userId,
+      });
+
+      if (updateError) throw updateError;
 
       setSuccess(true);
       setTimeout(() => router.push("/dashboard/myrecords"), 1200);
@@ -277,17 +269,14 @@ export default function UserSetupPage() {
     }
   };
 
-  // ---------- UI ----------
-  if (loading) return null;
-
+  // ---------- Avatar helpers ----------
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setSelectedImage(file);
     setShowCropModal(true);
   };
-  
-  // createImage helper
+
   const createImage = (url: string): Promise<HTMLImageElement> =>
     new Promise((resolve, reject) => {
       if (typeof window === "undefined") {
@@ -301,22 +290,21 @@ export default function UserSetupPage() {
       image.onload = () => resolve(image);
       image.onerror = (error) => reject(error);
     });
-  
-  // cropper → dataURL
+
   const getCroppedImg = async (imageSrc: string, pixelCrop: any): Promise<string> => {
     const image = await createImage(imageSrc);
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
     if (!ctx) throw new Error("Failed to create canvas context");
-  
+
     const diameter = Math.min(pixelCrop.width, pixelCrop.height);
     canvas.width = diameter;
     canvas.height = diameter;
-  
+
     ctx.beginPath();
     ctx.arc(diameter / 2, diameter / 2, diameter / 2, 0, 2 * Math.PI);
     ctx.clip();
-  
+
     ctx.drawImage(
       image,
       pixelCrop.x,
@@ -328,15 +316,13 @@ export default function UserSetupPage() {
       diameter,
       diameter
     );
-  
+
     return canvas.toDataURL("image/png");
   };
-  
-  // save cropped preview (for now)
+
   const handleCropSave = async () => {
     if (!selectedImage || !croppedAreaPixels) return;
-  
-    // 1️⃣ Get user session
+
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
     if (!userId) {
@@ -344,31 +330,26 @@ export default function UserSetupPage() {
       setTimeout(() => setPopup({ type: null, message: "", visible: false }), 3000);
       return;
     }
-  
+
     try {
-      // 2️⃣ Crop the image
       const imageDataUrl = await getCroppedImg(
         URL.createObjectURL(selectedImage),
         croppedAreaPixels
       );
-  
-      // 3️⃣ Convert to File
+
       const res = await fetch(imageDataUrl);
       const blob = await res.blob();
       const file = new File([blob], "avatar.png", { type: "image/png" });
-  
-      // 4️⃣ Upload and save
+
       const publicUrl = await uploadAvatarAndSaveUrl(file, userId);
-  
-      // 5️⃣ Update UI
+
       setCroppedImage(publicUrl);
       setAvatarUrl(publicUrl);
       setShowCropModal(false);
-  
+
       setPopup({ type: "success", message: "✅ Profile picture updated!", visible: true });
       setTimeout(() => setPopup((p) => ({ ...p, visible: false })), 2200);
       setTimeout(() => setPopup({ type: null, message: "", visible: false }), 2600);
-
     } catch (err: any) {
       console.error("Avatar save error:", err);
       setPopup({
@@ -376,13 +357,22 @@ export default function UserSetupPage() {
         message: err?.message || "❌ Failed to upload avatar.",
         visible: true,
       });
-      setTimeout(() => setPopup({ type: null, message: "", visible: false }), 3000);      
+      setTimeout(() => setPopup({ type: null, message: "", visible: false }), 3000);
     }
   };
-  
+
+  // ---------- UI ----------
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-[100dvh] pb-[env(safe-area-inset-bottom)] bg-gray-50 flex flex-col">
-      {/* 🧭 Top Bar (same as Login/Signup) */}
+      {/* Top Bar */}
       <header className="flex items-center justify-between px-4 sm:px-6 md:px-10 py-4 sm:py-5 bg-white shadow-sm">
         <Link href="/" className="flex items-center gap-3">
           <Image src="/logo.png" alt="DNounce logo" width={50} height={50} />
@@ -392,11 +382,10 @@ export default function UserSetupPage() {
         </Link>
       </header>
 
-      {/* 🧱 Main Content */}
+      {/* Main Content */}
       <main className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12">
         <div className="bg-white shadow-lg rounded-2xl p-8 w-full max-w-lg border border-gray-100">
 
-          {/* Header intro */}
           <div className="text-center mb-8">
             <h1 className="text-2xl font-bold text-gray-900">
               Complete Your Account Details
@@ -408,7 +397,13 @@ export default function UserSetupPage() {
             </p>
           </div>
 
-          {/* Form */}
+          {error && (
+            <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 shrink-0" />
+              {error}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Back to sign in */}
             <div className="flex justify-start mb-3">
@@ -424,13 +419,9 @@ export default function UserSetupPage() {
             {/* Avatar */}
             <div className="flex justify-center mb-6">
               <div className="relative group">
-                {avatarUrl ? (
+                {croppedImage || avatarUrl ? (
                   <NextImage
-                    src={
-                      avatarUrl
-                        ? avatarUrl.replace("/render/image/", "/object/public/")
-                        : "/default-avatar.png"
-                    }
+                    src={(croppedImage || avatarUrl)!.replace("/render/image/", "/object/public/")}
                     alt="User Avatar"
                     width={120}
                     height={120}
@@ -443,20 +434,24 @@ export default function UserSetupPage() {
                   </div>
                 )}
 
-                {/* ✏️ Pencil Button */}
+                {/* Pencil Button — type=button so it never submits the form */}
                 <button
                   type="button"
                   onClick={() => {
                     setCrop({ x: 0, y: 0 });
-                    setZoom(2);
-                    if (avatarUrl) setShowAvatarOptionsModal(true);
-                    else document.getElementById("avatar-upload")?.click();
+                    setZoom(1);
+                    if (avatarUrl || croppedImage) {
+                      setShowAvatarOptionsModal(true);
+                    } else {
+                      document.getElementById("avatar-upload")?.click();
+                    }
                   }}
                   className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 bg-white rounded-full p-2 shadow-md opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-200 hover:scale-110"
                 >
                   <Pencil className="w-4 h-4 text-gray-600" />
                 </button>
 
+                {/* Single hidden file input — consistent ID used everywhere */}
                 <input
                   id="avatar-upload"
                   type="file"
@@ -507,8 +502,7 @@ export default function UserSetupPage() {
                 className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
               />
               <p className="text-xs text-gray-400 mt-1">
-                Your nickname gives you a recognizable identity when engaging
-                in the community.
+                Your nickname gives you a recognizable identity when engaging in the community.
               </p>
             </div>
 
@@ -525,8 +519,7 @@ export default function UserSetupPage() {
                 className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
               />
               <p className="text-xs text-gray-400 mt-1">
-                Shown when you participate in records — helps others understand
-                your professional perspective.
+                Shown when you participate in records — helps others understand your professional perspective.
               </p>
             </div>
 
@@ -553,7 +546,7 @@ export default function UserSetupPage() {
                 name="phone"
                 value={form.phone}
                 onChange={handleChange}
-                placeholder="+1 555 555 1234"
+                placeholder="(555) 555-1234"
                 className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
               />
             </div>
@@ -562,7 +555,6 @@ export default function UserSetupPage() {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Location *
               </label>
-
               <input
                 required
                 name="location"
@@ -571,7 +563,6 @@ export default function UserSetupPage() {
                 placeholder="City or neighborhood..."
                 className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
               />
-
               {locationSuggestions.length > 0 && (
                 <ul className="absolute z-50 bg-white border rounded-md w-full shadow-md mt-1 max-h-60 overflow-y-auto">
                   {locationSuggestions.map((s: any, idx: number) => (
@@ -591,7 +582,6 @@ export default function UserSetupPage() {
                   ))}
                 </ul>
               )}
-
               <p className="text-xs text-gray-500 mt-1">
                 Type city name to see neighborhoods, or neighborhood to see full location.
               </p>
@@ -616,7 +606,6 @@ export default function UserSetupPage() {
               <p className="text-xs text-gray-500 mt-1">{(form.bio ?? "").length}/150</p>
             </div>
 
-            {/* How did you find DNounce */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 How did you find DNounce?
@@ -671,18 +660,18 @@ export default function UserSetupPage() {
           </form>
 
           <p className="mt-6 text-xs text-gray-400 text-center max-w-sm mx-auto">
-            Your details are verified privately to help maintain authentic
-            participation.
+            Your details are verified privately to help maintain authentic participation.
           </p>
 
+          {/* Avatar Options Modal */}
           {showAvatarOptionsModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fadeIn">
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
               <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-sm relative border border-gray-200">
                 <button
+                  type="button"
                   onClick={() => setShowAvatarOptionsModal(false)}
                   className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition-all"
                   aria-label="Close"
-                  type="button"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -692,13 +681,15 @@ export default function UserSetupPage() {
                 </h2>
 
                 <div className="space-y-3">
-                  {avatarUrl && (
+                  {(avatarUrl || croppedImage) && (
                     <button
+                      type="button"
                       onClick={() => {
                         setShowAvatarOptionsModal(false);
                         setCrop({ x: 0, y: 0 });
                         setZoom(1);
-                        fetch(avatarUrl)
+                        const src = croppedImage || avatarUrl!;
+                        fetch(src)
                           .then((res) => res.blob())
                           .then((blob) => {
                             const file = new File([blob], "recrop.png", { type: "image/png" });
@@ -707,29 +698,29 @@ export default function UserSetupPage() {
                           });
                       }}
                       className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl px-6 py-3 text-base font-semibold shadow-md hover:shadow-lg hover:from-blue-700 hover:to-blue-800 transition-all active:scale-95"
-                      type="button"
                     >
                       Re-crop Current Picture
                     </button>
                   )}
 
                   <button
+                    type="button"
                     onClick={() => {
                       setShowAvatarOptionsModal(false);
                       setCrop({ x: 0, y: 0 });
                       setZoom(1);
-                      document.getElementById("avatar-upload-setup")?.click();
+                      // Use the single consistent input ID
+                      document.getElementById("avatar-upload")?.click();
                     }}
                     className="w-full bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800 rounded-xl px-6 py-3 text-base font-semibold border border-gray-300 shadow-sm hover:shadow-md hover:from-gray-200 hover:to-gray-300 transition-all active:scale-95"
-                    type="button"
                   >
                     Change Profile Picture
                   </button>
 
                   <button
+                    type="button"
                     onClick={() => setShowAvatarOptionsModal(false)}
                     className="w-full text-gray-600 border border-gray-300 rounded-xl px-6 py-3 text-base font-medium hover:bg-gray-50 hover:shadow-sm transition-all active:scale-95"
-                    type="button"
                   >
                     Cancel
                   </button>
@@ -738,14 +729,15 @@ export default function UserSetupPage() {
             </div>
           )}
 
+          {/* Crop Modal */}
           {showCropModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fadeIn">
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
               <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-2xl border border-gray-200 p-6 sm:p-8 w-full max-w-lg relative">
                 <button
+                  type="button"
                   className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition-all"
                   onClick={() => setShowCropModal(false)}
                   aria-label="Close"
-                  type="button"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -781,9 +773,9 @@ export default function UserSetupPage() {
                     className="w-full sm:w-2/3 accent-blue-600"
                   />
                   <button
+                    type="button"
                     onClick={handleCropSave}
                     className="w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 shadow-md hover:shadow-lg active:scale-95 transition-all"
-                    type="button"
                   >
                     Save
                   </button>
@@ -794,14 +786,11 @@ export default function UserSetupPage() {
 
         </div>
 
+        {/* Popup toast */}
         {popup.type && (
           <div
             className={`fixed top-6 left-1/2 -translate-x-1/2 rounded-xl shadow-lg border px-6 py-3 flex items-center gap-3 z-[1000]
-              ${
-                popup.visible
-                  ? "animate-fade-in-down"
-                  : "animate-fade-out-up"
-              }
+              ${popup.visible ? "animate-fade-in-down" : "animate-fade-out-up"}
               ${
                 popup.type === "success"
                   ? "bg-white border-green-200 text-green-700"
@@ -816,7 +805,6 @@ export default function UserSetupPage() {
             <span className="font-medium">{popup.message}</span>
           </div>
         )}
-
 
       </main>
     </div>
