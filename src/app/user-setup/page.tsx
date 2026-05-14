@@ -139,7 +139,7 @@ export default function UserSetupPage() {
       const { data: usersRow, error: usersErr } = await supabase
         .from("users")
         .select("onboarding_complete")
-        .eq("id", session.user.id)
+        .eq("auth_user_id", session.user.id)
         .single();
 
       if (!usersErr && usersRow?.onboarding_complete === true) {
