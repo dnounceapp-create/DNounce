@@ -302,6 +302,7 @@ function makeViewState(args: {
 
   subjectName: string;
   subjectProfileHref: string | null;
+  subjectAvatarUrl: string | null;
 
   contributorPublic: { name: string; avatarUrl: string | null; linkAllowed: boolean };
   contributorSelf: { name: string; avatarUrl: string | null };
@@ -356,7 +357,7 @@ function makeViewState(args: {
     canPostDebate,
     canViewVoting,
 
-    subject: { name: subjectName || "Subject", avatarUrl: null, href: subjectProfileHref },
+    subject: { name: subjectName || "Subject", avatarUrl: args.subjectAvatarUrl, href: subjectProfileHref },
     contributor: contributorIdentity,
 
     contributorLinkAllowedForViewer,
@@ -4335,6 +4336,7 @@ export default function RecordDetail({
   } | null>(null);
 
   const [contributorSubjectId, setContributorSubjectId] = useState<string | null>(null);
+  const [subjectAvatarUrl, setSubjectAvatarUrl] = useState<string | null>(null);
   const [contributorBadges, setContributorBadges] = useState<{ label: string; icon: string }[]>([]);
 
   const [participantBadges, setParticipantBadges] = useState<Record<string, { label: string; icon: string }[]>>({});
@@ -4657,6 +4659,17 @@ export default function RecordDetail({
           setContributorProfile(null);
           setContributorSubjectId(null);
         }
+
+        // Fetch subject avatar — always, independent of contributor reveal
+        const subjectOwnerUserId = (rec as any)?.subject?.owner_auth_user_id ?? null;
+        if (subjectOwnerUserId) {
+          const { data: subjectAcct } = await supabase
+            .from("user_accountdetails")
+            .select("avatar_url")
+            .eq("user_id", subjectOwnerUserId)
+            .maybeSingle();
+          setSubjectAvatarUrl(subjectAcct?.avatar_url ?? null);
+        }
         
         // Always fetch badges regardless of identity reveal
         if (contributorUserId) {
@@ -4792,6 +4805,7 @@ export default function RecordDetail({
 
   const subjectName = (subject?.name as string) || "Subject";
   const subjectProfileHref = subject?.subject_uuid ? `/subject/${subject.subject_uuid}` : null;
+  const resolvedSubjectAvatarUrl = subjectAvatarUrl;
 
   const contributorLinkAllowedForViewer = canShowContributorProfileLink(record);
 
@@ -4801,6 +4815,7 @@ export default function RecordDetail({
 
     subjectName,
     subjectProfileHref,
+    subjectAvatarUrl: resolvedSubjectAvatarUrl,
 
     contributorPublic,
     contributorSelf,
@@ -4909,8 +4924,13 @@ export default function RecordDetail({
           </button>
 
           <div className="flex items-start gap-4">
-            <div className="w-11 h-11 bg-gray-100 rounded-full border border-gray-200 flex items-center justify-center shrink-0">
-              <User className="w-7 h-7 text-gray-600" />
+            <div className="w-11 h-11 bg-gray-100 rounded-full border border-gray-200 flex items-center justify-center shrink-0 overflow-hidden">
+              {view.subject.avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={view.subject.avatarUrl} alt={subjectName} className="w-full h-full object-cover" />
+              ) : (
+                <User className="w-7 h-7 text-gray-600" />
+              )}
             </div>
 
             <div className="min-w-0">

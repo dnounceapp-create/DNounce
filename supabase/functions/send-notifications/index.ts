@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
         : "Somebody";
 
       const contributorIsHidden = contributorLabel === "Somebody";
-      const relationshipLine = `"${contributorLabel}" who labeled you as a ${category}`;
+      const relationshipLine = `"${contributorLabel}" labeled you as a ${category}`;
 
       subject = "Action Required – DNounce Subject Alert";
 
