@@ -15,14 +15,11 @@ export default function RecordRootLayout({ children }: { children: React.ReactNo
   });
 
   // While auth is still checking, don't render the auth layout (it redirects).
-  // Keep it simple to avoid flicker/redirect races.
-  if (!loading && !user) return null;
-
   // Signed in → dashboard shell
   if (user) {
     return <AuthUsersLayout>{children}</AuthUsersLayout>;
   }
 
-  // Not signed in → public shell
+  // Not signed in OR still loading → public shell
   return <PublicLayout>{children}</PublicLayout>;
 }
