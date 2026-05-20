@@ -660,7 +660,7 @@ export default function SubjectProfilePage() {
         setSocialLinks(socials || []);
 
         const { data: bioData } = await supabase
-          .from("user_accountdetails")
+          .from("user_public_details")
           .select("bio")
           .eq("user_id", ownerAuthUserId)
           .maybeSingle();
