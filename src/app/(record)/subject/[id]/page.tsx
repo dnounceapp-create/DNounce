@@ -533,7 +533,7 @@ export default function SubjectProfilePage() {
 
       const { data: subj, error: subjErr } = await supabase
         .from("subjects")
-        .select("subject_uuid,name,nickname,organization,location,avatar_url,email,owner_auth_user_id")
+        .select("subject_uuid,name,nickname,job_title,organization,location,avatar_url,email,owner_auth_user_id")
         .eq("subject_uuid", subjectId)
         .maybeSingle();
 
@@ -647,8 +647,7 @@ export default function SubjectProfilePage() {
       counts.forEach(([id, total]) => (nextMap[id] = total));
       setCommentCounts(nextMap);
 
-      const { data: ownerRows } = await supabase.rpc("get_subject_owner", { p_subject_id: subjectId });
-      const ownerAuthUserId = ownerRows?.[0]?.auth_user_id;
+      const ownerAuthUserId = subj?.owner_auth_user_id ?? null;
 
       if (!ownerAuthUserId) {
         setSocialLinks([]);
@@ -914,7 +913,10 @@ export default function SubjectProfilePage() {
                         {subject.nickname ? ` (${subject.nickname})` : ""}
                       </h3>
                     </div>
-                    <p className="text-sm text-gray-600">{subject.organization || "Independent"}</p>
+                    {subject.job_title && (
+                      <p className="text-sm font-semibold text-gray-800">{subject.job_title}</p>
+                    )}
+                    <p className="text-xs text-gray-500">{subject.organization || "Independent"}</p>
                     <p className="text-sm text-gray-500 flex items-center gap-1">
                       <span>📍</span> {subject.location || "Unknown"}
                     </p>
