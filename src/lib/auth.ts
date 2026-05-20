@@ -32,9 +32,23 @@ export function useAuth(options: UseAuthOptions = {}) {
       const user = data.session?.user ?? null;
 
       if (user) {
+        // Check if user exists in public.users — if not, they were deleted
+        const { data: usersRow } = await supabase
+          .from("users")
+          .select("onboarding_complete")
+          .eq("auth_user_id", user.id)
+          .maybeSingle();
+
+        if (!usersRow) {
+          // Account deleted — sign out and redirect to login
+          await supabase.auth.signOut();
+          router.replace(loginPath);
+          return;
+        }
+
         setSessionUser(user);
         setLoading(false);
-        const isOnboarded = Boolean(user.user_metadata?.onboardingComplete);
+        const isOnboarded = !!usersRow.onboarding_complete;
         if (
           redirectToSetupIfFirstTime &&
           !isOnboarded &&
@@ -48,15 +62,27 @@ export function useAuth(options: UseAuthOptions = {}) {
       }
 
       // No cached session — subscribe to catch OAuth redirects
-      const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      const { data: sub } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
         const u = newSession?.user ?? null;
         if (!u) {
           setSessionUser(null);
           return;
         }
+        const { data: usersRow } = await supabase
+          .from("users")
+          .select("onboarding_complete")
+          .eq("auth_user_id", u.id)
+          .maybeSingle();
+
+        if (!usersRow) {
+          await supabase.auth.signOut();
+          router.replace(loginPath);
+          return;
+        }
+
         setSessionUser(u);
         setLoading(false);
-        const isOnboarded = Boolean(u.user_metadata?.onboardingComplete);
+        const isOnboarded = !!usersRow.onboarding_complete;
         if (
           redirectToSetupIfFirstTime &&
           !isOnboarded &&
