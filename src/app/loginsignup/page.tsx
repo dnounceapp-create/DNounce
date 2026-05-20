@@ -157,7 +157,18 @@ export default function LoginSignupPage() {
     if (signInError) {
       setAuthLoading(false);
       if (signInError.message === "Invalid login credentials") {
-        setLoginError("Invalid email or password. Please try again.");
+        // Check if email exists to show better error
+        const { data: accountExists } = await supabase
+          .from("user_accountdetails")
+          .select("user_id")
+          .eq("email", emailToUse)
+          .maybeSingle();
+
+        if (!accountExists) {
+          setLoginError("No account found with that email. Please sign up first.");
+        } else {
+          setLoginError("Incorrect password. Please try again.");
+        }
       } else if (signInError.message.toLowerCase().includes("email not confirmed")) {
         setLoginError("Please confirm your email first. Check your inbox for a confirmation link.");
       } else {
