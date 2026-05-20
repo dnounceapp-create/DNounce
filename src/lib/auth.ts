@@ -40,9 +40,8 @@ export function useAuth(options: UseAuthOptions = {}) {
           .maybeSingle();
 
         if (!usersRow) {
-          // Account deleted — sign out and redirect to login
           await supabase.auth.signOut();
-          router.replace(loginPath);
+          router.replace("/");
           return;
         }
 
@@ -76,7 +75,7 @@ export function useAuth(options: UseAuthOptions = {}) {
 
         if (!usersRow) {
           await supabase.auth.signOut();
-          router.replace(loginPath);
+          router.replace("/");
           return;
         }
 
