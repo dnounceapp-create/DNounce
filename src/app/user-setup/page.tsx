@@ -756,6 +756,8 @@ export default function UserSetupPage() {
                       image={URL.createObjectURL(selectedImage)}
                       crop={crop}
                       zoom={zoom}
+                      minZoom={0.5}
+                      maxZoom={3}
                       aspect={1}
                       cropShape="round"
                       showGrid={false}
@@ -769,7 +771,7 @@ export default function UserSetupPage() {
                 <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
                   <input
                     type="range"
-                    min={1}
+                    min={0.5}
                     max={3}
                     step={0.1}
                     value={zoom}
