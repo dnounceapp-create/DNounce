@@ -140,6 +140,13 @@ export default function UserSetupPage() {
           return;
         }
 
+        // No users row means account was deleted — sign out and go home
+        if (!usersRow) {
+          await supabase.auth.signOut();
+          router.replace("/");
+          return;
+        }
+
         // Load existing avatar if any — maybeSingle so missing row is fine
         const { data: accountData } = await supabase
           .from("user_accountdetails")
