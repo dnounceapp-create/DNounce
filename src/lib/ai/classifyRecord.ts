@@ -1,7 +1,4 @@
-type CredibilityResult =
-  | "Evidence-Based"
-  | "Opinion-Based"
-  | "Unable to Verify";
+type AnonymityStatusResult = "Anonymity Granted" | "Anonymity Not Granted";
 
 export function classifyRecord({
   description,
@@ -11,16 +8,12 @@ export function classifyRecord({
   description: string | null;
   rating: number | null;
   hasAttachments: boolean;
-}): CredibilityResult {
-  // VERY SIMPLE LOGIC (can evolve later)
-
-  if (hasAttachments && description && description.length > 200) {
-    return "Evidence-Based";
-  }
-
+}): AnonymityStatusResult {
+  // Anonymity Not Granted submissions → Anonymity Not Granted
   if (!hasAttachments && rating && rating <= 5) {
-    return "Opinion-Based";
+    return "Anonymity Not Granted";
   }
 
-  return "Unable to Verify";
+  // Anonymity Granted or Anonymity Granted → Anonymity Granted
+  return "Anonymity Granted";
 }

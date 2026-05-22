@@ -8,15 +8,15 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-function normalizeCredibility(raw: any) {
+function normalizeAnonymityStatus(raw: any) {
   const s = (raw || "")
     .toString()
     .trim()
     .toLowerCase()
     .replace(/[‐-‒–—−]/g, "-");
-  if (s.includes("evidence-based") || s.includes("evidence based") || s.includes("evidence_based")) return "Evidence-Based";
-  if (s.includes("opinion-based") || s.includes("opinion based") || s.includes("opinion_based")) return "Opinion-Based";
-  if (s.includes("unable to verify") || s.includes("unable_to_verify")) return "Unable to Verify";
+  if (s.includes("Anonymity Granted") || s.includes("evidence based") || s.includes("anonymity_granted")) return "Anonymity Granted";
+  if (s.includes("Anonymity Not Granted") || s.includes("opinion based") || s.includes("anonymity_not_granted")) return "Anonymity Not Granted";
+  if (s.includes("Anonymity Granted") || s.includes("anonymity_granted")) return "Anonymity Granted";
   if (s.includes("unclear")) return "Unclear";
   return "Pending";
 }
@@ -87,7 +87,7 @@ export async function GET(
     ? contributor.profile[0]
     : contributor?.profile;
 
-  const cred = normalizeCredibility((data as any).credibility);
+  const cred = normalizeAnonymityStatus((data as any).credibility);
   const choseName = (data as any).contributor_identity_preference === true;
 
   const first = profile?.first_name || "";
@@ -96,8 +96,8 @@ export async function GET(
   const realName = (data as any).contributor_display_name || profileName || "SuperHero123";
 
   let contributorDisplayName = "SuperHero123";
-  if (cred === "Opinion-Based") contributorDisplayName = realName;
-  else if (cred === "Evidence-Based") contributorDisplayName = choseName ? realName : "SuperHero123";
+  if (cred === "Anonymity Not Granted") contributorDisplayName = realName;
+  else if (cred === "Anonymity Granted") contributorDisplayName = choseName ? realName : "SuperHero123";
   else contributorDisplayName = "SuperHero123";
 
   const reveal = contributorDisplayName !== "SuperHero123";

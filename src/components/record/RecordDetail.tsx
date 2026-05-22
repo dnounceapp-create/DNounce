@@ -47,16 +47,16 @@ function normalizeStatus(raw: any) {
   return (raw || "").toString().trim().toLowerCase();
 }
 
-function normalizeCredibility(raw: any) {
+function normalizeAnonymityStatus(raw: any) {
   const s = (raw || "")
     .toString()
     .trim()
     .toLowerCase()
     .replace(/[‐-‒–—−]/g, "-");
 
-  if (s.includes("evidence-based") || s.includes("evidence based") || s.includes("evidence_based")) return "Evidence-Based";
-  if (s.includes("opinion-based") || s.includes("opinion based") || s.includes("opinion_based")) return "Opinion-Based";
-  if (s.includes("unable to verify") || s.includes("unable_to_verify")) return "Unable to Verify";
+  if (s.includes("Anonymity Granted") || s.includes("evidence based") || s.includes("anonymity_granted")) return "Anonymity Granted";
+  if (s.includes("Anonymity Not Granted") || s.includes("opinion based") || s.includes("anonymity_not_granted")) return "Anonymity Not Granted";
+  if (s.includes("Anonymity Granted") || s.includes("anonymity_granted")) return "Anonymity Granted";
   if (s.includes("unclear")) return "Unclear";
   return "Pending AI Review";
 }
@@ -176,12 +176,12 @@ function shortId(id: string) {
 }
 
 function shouldRevealContributorIdentity(record: any): boolean {
-  const cred = normalizeCredibility(record?.credibility);
+  const cred = normalizeAnonymityStatus(record?.credibility);
   const choseName = record?.contributor_identity_preference === true;
 
-  if (cred === "Opinion-Based") return true;
-  if (cred === "Evidence-Based") return choseName;
-  return false; // Unable to Verify → always alias
+  if (cred === "Anonymity Not Granted") return true;
+  if (cred === "Anonymity Granted") return choseName;
+  return false; // Anonymity Granted → always alias
 }
 
 function getVisibleStagesForViewer(args: { viewerRole: ViewerRole; stage: number }) {
@@ -5042,12 +5042,12 @@ export default function RecordDetail({
           {(() => {
             const raw = (record.credibility || "").toString().trim();
 
-            const label = raw.includes("Evidence-Based") || raw.includes("evidence_based")
-              ? "Evidence-Based"
-              : raw.includes("Opinion-Based") || raw.includes("opinion_based")
-              ? "Opinion-Based"
-              : raw.includes("Unable to Verify") || raw.includes("unable_to_verify") || raw.includes("unable")
-              ? "Unable to Verify"
+            const label = raw.includes("Anonymity Granted") || raw.includes("anonymity_granted")
+              ? "Anonymity Granted"
+              : raw.includes("Anonymity Not Granted") || raw.includes("anonymity_not_granted")
+              ? "Anonymity Not Granted"
+              : raw.includes("Anonymity Granted") || raw.includes("anonymity_granted") || raw.includes("unable")
+              ? "Anonymity Granted"
               : raw.includes("Unclear")
               ? "Unclear"
               : raw
@@ -5055,31 +5055,31 @@ export default function RecordDetail({
               : "Pending AI Review";
 
             const badgeStyle =
-              label === "Evidence-Based"
+              label === "Anonymity Granted"
                 ? "bg-green-50 text-green-700 border-green-200"
-                : label === "Opinion-Based"
+                : label === "Anonymity Not Granted"
                 ? "bg-red-50 text-red-700 border-red-200"
-                : label === "Unable to Verify" || label === "Unclear"
+                : label === "Anonymity Granted" || label === "Unclear"
                 ? "bg-yellow-50 text-yellow-700 border-yellow-200"
                 : "bg-gray-50 text-gray-600 border-gray-200";
 
-            const CredibilityIcon =
-              label === "Evidence-Based" ? CheckCircle
-              : label === "Opinion-Based" ? AlertTriangle
-              : label === "Unable to Verify" || label === "Unclear" ? AlertTriangle
+            const AnonymityStatusIcon =
+              label === "Anonymity Granted" ? CheckCircle
+              : label === "Anonymity Not Granted" ? AlertTriangle
+              : label === "Anonymity Granted" || label === "Unclear" ? AlertTriangle
               : null;
 
             const iconColor =
-              label === "Evidence-Based" ? "text-green-600"
-              : label === "Opinion-Based" ? "text-red-600"
-              : label === "Unable to Verify" || label === "Unclear" ? "text-yellow-600"
+              label === "Anonymity Granted" ? "text-green-600"
+              : label === "Anonymity Not Granted" ? "text-red-600"
+              : label === "Anonymity Granted" || label === "Unclear" ? "text-yellow-600"
               : "";
 
             return (
               <div className="flex flex-wrap items-center gap-1.5 self-start sm:self-auto text-xs text-gray-500">
-                <span className="whitespace-nowrap">AI Credibility Recommendation:</span>
+                <span className="whitespace-nowrap">Anonymity Status:</span>
                 <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium whitespace-nowrap ${badgeStyle}`}>
-                  {CredibilityIcon && <CredibilityIcon size={11} className={iconColor} />}
+                  {AnonymityStatusIcon && <AnonymityStatusIcon size={11} className={iconColor} />}
                   {label}
                 </span>
               </div>

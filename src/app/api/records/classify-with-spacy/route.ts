@@ -37,6 +37,14 @@ export async function POST(req: Request) {
     try {
       json = JSON.parse(text);
     } catch {
+      // Map spaCy output to DNounce anonymity system
+      if (json.credibility === "Anonymity Granted") {
+        json.credibility = "Anonymity Granted";
+        json.ai_vendor_1_result = "Anonymity Granted";
+      } else if (json.credibility === "Anonymity Not Granted") {
+        json.credibility = "Anonymity Not Granted";
+        json.ai_vendor_1_result = "Anonymity Not Granted";
+      }
       return NextResponse.json(
         { error: "spaCy returned non-JSON", body: text },
         { status: 500 }

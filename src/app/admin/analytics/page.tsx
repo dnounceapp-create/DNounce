@@ -276,9 +276,8 @@ export default function AdminAnalyticsPage() {
       (creds.data ?? []).forEach((r: any) => {
         const raw = (r.credibility || "").toLowerCase();
         let c = "Pending";
-        if (raw.includes("evidence")) c = "Evidence-Based";
-        else if (raw.includes("opinion")) c = "Opinion-Based";
-        else if (raw.includes("unable")) c = "Unable to Verify";
+
+        if (raw.includes("unable")) c = "Anonymity Granted";
         else if (raw.includes("unclear")) c = "Unclear";
         credCounts[c] = (credCounts[c] || 0) + 1;
       });
@@ -550,7 +549,7 @@ export default function AdminAnalyticsPage() {
             </ResponsiveContainer>
           </div>
           <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5">
-            <h2 className="text-white text-sm font-semibold mb-4">AI Credibility Classification</h2>
+            <h2 className="text-white text-sm font-semibold mb-4">Anonymity Status Breakdown</h2>
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
                 <Pie data={credDistribution} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={false} labelLine={false}>
