@@ -140,8 +140,8 @@ export async function GET(req: NextRequest) {
             <div style={{ display: "flex", gap: 0 }}>
               {[
                 { label: "Total Records", value: totalRecords ?? 0 },
-                { label: "Evidence-Based", value: evidenceCount ?? 0 },
-                { label: "Opinion-Based", value: opinionCount ?? 0 },
+                { label: "Anonymity Granted", value: evidenceCount ?? 0 },
+                { label: "Anonymity Not Granted", value: opinionCount ?? 0 },
               ].map((s) => (
                 <div key={s.label} style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: 1, gap: 2 }}>
                   <span style={{ fontWeight: 700, fontSize: 28, color: "#111827" }}>{s.value}</span>

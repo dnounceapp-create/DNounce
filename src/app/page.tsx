@@ -438,9 +438,9 @@ export default function HomePage() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {[
               { step: "01", title: "Submit a record", desc: "Share your experience clearly and honestly." },
-              { step: "02", title: "Credibility review", desc: "Language analysis classifies it as evidence-based, opinion-based, or unable to verify." },
+              { step: "02", title: "Anonymity review", desc: "Our system evaluates your submission and determines whether anonymity is granted or not." },
               { step: "03", title: "Subject notified", desc: "The person receives the record and can review it." },
-              { step: "04", title: "Published", desc: "The record goes live with its credibility label." },
+              { step: "04", title: "Published", desc: "The record goes live with its anonymity status applied." },
               { step: "05", title: "Dispute & debate", desc: "The subject can dispute the record, triggering a 72-hour debate." },
               { step: "06", title: "Community votes", desc: "The community decides if record is valid." },
             ].map((item) => (
@@ -623,13 +623,13 @@ export default function HomePage() {
               {activeTab === "records" && (
                 <>
                   <div className="flex flex-wrap gap-2 mb-5">
-                    {["Newest","All stages","All credibility","All types","All time"].map((label) => (
+                    {["Newest","All stages","All anonymity","All types","All time"].map((label) => (
                       <select key={label} disabled className="rounded-xl border border-gray-100 px-3 py-1.5 text-xs bg-white text-gray-300 cursor-not-allowed"><option>{label}</option></select>
                     ))}
                   </div>
 
                   <div className="grid grid-cols-3 gap-4 mb-6 text-center">
-                    {[["8","Total"],["5","Evidence-Based"],["3","Opinion-Based"]].map(([val, label]) => (
+                    {[["8","Total"],["5","Anonymity Granted"],["3","Anonymity Not Granted"]].map(([val, label]) => (
                       <div key={label}>
                         <div className="text-2xl font-bold text-gray-900">{val}</div>
                         <div className="text-xs text-gray-400">{label}</div>
@@ -639,8 +639,8 @@ export default function HomePage() {
 
                   <div className="space-y-3">
                     {[
-                      { title: "Unresolved Repairs and Poor Communication", category: "Mechanic", date: "Dec 15, 2024", comments: 24, cred: "Evidence-Based", credColor: "text-green-700 bg-green-50 border-green-200", credIcon: <CheckCircle className="w-3 h-3" />, desc: "I've attached repair invoices and email exchanges that show how my car was kept for weeks without updates or resolution." },
-                      { title: "Average Service Experience", category: "Mechanic", date: "Dec 10, 2024", comments: 12, cred: "Opinion-Based", credColor: "text-orange-700 bg-orange-50 border-orange-200", credIcon: <AlertTriangle className="w-3 h-3" />, desc: "In my opinion, the service was just okay. Nothing terrible happened, but I expected more professionalism." },
+                      { title: "Unresolved Repairs and Poor Communication", category: "Mechanic", date: "Dec 15, 2024", comments: 24, cred: "Anonymity Granted", credColor: "text-green-700 bg-green-50 border-green-200", credIcon: <CheckCircle className="w-3 h-3" />, desc: "I've attached repair invoices and email exchanges that show how my car was kept for weeks without updates or resolution." },
+                      { title: "Average Service Experience", category: "Mechanic", date: "Dec 10, 2024", comments: 12, cred: "Anonymity Not Granted", credColor: "text-orange-700 bg-orange-50 border-orange-200", credIcon: <AlertTriangle className="w-3 h-3" />, desc: "In my opinion, the service was just okay. Nothing terrible happened, but I expected more professionalism." },
                     ].map((r) => (
                       <div key={r.title} className="rounded-2xl border border-gray-100 bg-white p-4 hover:border-gray-200 transition">
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
@@ -725,7 +725,7 @@ export default function HomePage() {
               <MessageSquare className="h-5 w-5 text-blue-500" />
               <h3 className="font-semibold text-gray-900">How should this be viewed?</h3>
             </div>
-            <p className="text-sm text-gray-500 mb-6">The subject has requested deletion and completed the debate process. You decide.</p>
+            <p className="text-sm text-gray-500 mb-6">The subject disputed the record and completed the debate process. You decide.</p>
 
             <div className="grid md:grid-cols-2 gap-4">
               <div className="bg-green-50 border border-green-200 rounded-xl p-4">
@@ -782,7 +782,7 @@ export default function HomePage() {
                 <h3 className="font-semibold text-green-800">Appropriate</h3>
               </div>
               <ul className="space-y-2.5 text-sm text-green-700">
-                {["Excellent client or customer service","Business disputes with supporting evidence","Professional relationship experiences","Patterns of reliability or accountability","First-hand experiences you can describe clearly"].map((item) => (
+                {["Excellent client or customer service","Disputes with supporting evidence","Professional relationship experiences","Patterns of reliability or accountability","First-hand experiences you can describe clearly"].map((item) => (
                   <li key={item} className="flex items-start gap-2"><span className="mt-0.5 shrink-0">✅</span><span>{item}</span></li>
                 ))}
               </ul>
@@ -803,11 +803,11 @@ export default function HomePage() {
           <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6">
             <div className="flex items-center gap-2 mb-4">
               <Shield className="h-5 w-5 text-blue-600" />
-              <h3 className="font-semibold text-blue-800">Credibility labels</h3>
+              <h3 className="font-semibold text-blue-800">Anonymity Labels</h3>
             </div>
             <div className="grid md:grid-cols-2 gap-6 text-sm text-blue-700">
               <div>
-                <div className="font-medium mb-2">Evidence-Based</div>
+                <div className="font-medium mb-2">Anonymity Granted</div>
                 <ul className="space-y-1 text-blue-600">
                   <li>· Documented proof (emails, contracts)</li>
                   <li>· Verifiable timestamps and sources</li>
@@ -815,7 +815,7 @@ export default function HomePage() {
                 </ul>
               </div>
               <div>
-                <div className="font-medium mb-2">Opinion-Based</div>
+                <div className="font-medium mb-2">Anonymity Not Granted</div>
                 <ul className="space-y-1 text-blue-600">
                   <li>· Personal accounts without documentation</li>
                   <li>· Single-perspective experiences</li>
@@ -954,17 +954,16 @@ export default function HomePage() {
                 <label className="text-xs text-gray-400">
                   I agree to the{" "}
                   <button type="button" onClick={() => document.getElementById("legal-section")?.scrollIntoView({ behavior: "smooth" })} className="text-blue-500 hover:underline">Terms of Service</button>{" "}
-                  and confirm my submission is truthful and complies with DNounce guidelines.
+                  and confirm that my submission is truthful, that I understand DNounce's anonymity determination is a structural tool only, and that I — not DNounce — bear full legal responsibility for this submission.
                 </label>
               </div>
               <div className="h-36 overflow-y-auto border border-gray-100 rounded-xl p-4 text-xs text-gray-400 bg-gray-50 leading-relaxed">
                 <p className="font-semibold mb-2 text-gray-600">Important Legal Notice</p>
-                <p className="mb-2">By submitting, you acknowledge this is a public platform and your submission may be publicly visible after credibility classification.</p>
-                <p className="mb-2">You certify your submission is truthful and based on verifiable evidence or honest personal opinion.</p>
-                <p className="mb-2">False or malicious submissions may result in account suspension and legal consequences.</p>
-                <p className="mb-2">The subject will be notified and has the right to respond through our dispute resolution process.</p>
-                <p className="mb-2">All submissions undergo credibility classification and may be reviewed by community moderators.</p>
-                <p>DNounce is not responsible for submission accuracy but provides tools for community verification and dispute resolution.</p>
+                <p className="mb-2">By submitting this record, you acknowledge that DNounce is a neutral platform operating under Section 230 of the Communications Decency Act. You — not DNounce — are solely responsible for the accuracy and legality of your submission.</p>
+                <p className="mb-2">You certify that your submission is truthful to the best of your knowledge and based on either verifiable evidence or honest personal opinion. Submitting knowingly false or malicious content may result in permanent account suspension and exposes you to legal liability.</p>
+                <p className="mb-2">Anonymity Determination: Your submission will be evaluated and assigned either Anonymity Granted or Anonymity Not Granted. This is a structural determination only — it does not mean DNounce has verified or endorsed your submission. All outcomes are decided solely by community vote.</p>
+                <p className="mb-2">The subject will be notified and has the right to respond and dispute through our structured community process.</p>
+                <p>Any attempt to use legal process to suppress this record or unmask an anonymous contributor may be treated as a SLAPP. DNounce reserves the right to oppose such actions vigorously.</p>
               </div>
             </div>
 

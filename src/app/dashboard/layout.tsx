@@ -904,7 +904,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <h4 className="text-white font-semibold mb-3">DNounce</h4>
                 <p className="text-sm leading-relaxed">
                   Verified public reputation platform for documenting real experiences
-                  through community-driven feedback and AI credibility recommendations.
+                  through community-driven feedback and Anonymity Statuss.
                 </p>
               </div>
               <div>

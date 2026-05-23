@@ -118,7 +118,7 @@ export const stageConfig: Record<number, StageConfig> = {
   2: {
     label: "Subject Notified",
     happens:
-      "The subject (person the record is about) is automatically notified of the pending record. The record remains private while both parties can view it with the AI-generated credibility label.",
+      "The subject (person the record is about) is automatically notified of the pending record. The record remains private while both parties can view it with the AI-generated anonymity labels.",
     timeline: {
       summary: "Immediately after AI completes",
       start: "onAIComplete",
@@ -136,7 +136,7 @@ export const stageConfig: Record<number, StageConfig> = {
   3: {
     label: "Record Published",
     happens:
-      "The record is published and receives an AI-recommended credibility label, becoming publicly visible on DNounce.",
+      "The record is published and receives an AI-recommended anonymity labels, becoming publicly visible on DNounce.",
     timeline: {
       summary:
         "Up to 72 hours of AI verification plus 24 hours — whichever is longer.",

@@ -51,14 +51,14 @@ function computeDisputeResolutionRate(
   return Math.round((resolved / disputed.length) * 100);
 }
 
-function computeCredibilityBreakdown(records: { ai_vendor_1_result: string | null; credibility: string | null }[]) {
+function computeAnonymity StatusBreakdown(records: { ai_vendor_1_result: string | null; credibility: string | null }[]) {
   const credMap: Record<string, number> = {};
   records.forEach((r) => {
     const raw = (r.ai_vendor_1_result || r.credibility || "Pending").toString().toLowerCase();
     let label = "Pending";
-    if (raw.includes("evidence")) label = "Evidence-Based";
-    else if (raw.includes("opinion")) label = "Opinion-Based";
-    else if (raw.includes("unable")) label = "Unable to Verify";
+    if (raw.includes("evidence")) label = "Anonymity Granted";
+    else if (raw.includes("opinion")) label = "Anonymity Not Granted";
+    else if (raw.includes("unable")) label = "Anonymity Granted";
     credMap[label] = (credMap[label] || 0) + 1;
   });
   return Object.entries(credMap).map(([label, count]) => ({ label, count }));
@@ -266,41 +266,41 @@ describe("computeDisputeResolutionRate", () => {
   });
 });
 
-// ─── computeCredibilityBreakdown ─────────────────────────────────────────────
+// ─── computeAnonymity StatusBreakdown ─────────────────────────────────────────────
 
-describe("computeCredibilityBreakdown", () => {
-  it("correctly buckets evidence-based records", () => {
-    const records = [{ ai_vendor_1_result: "Evidence-Based", credibility: null }];
-    const result = computeCredibilityBreakdown(records);
-    expect(result.find((r) => r.label === "Evidence-Based")?.count).toBe(1);
+describe("computeAnonymity StatusBreakdown", () => {
+  it("correctly buckets Anonymity Granted records", () => {
+    const records = [{ ai_vendor_1_result: "Anonymity Granted", credibility: null }];
+    const result = computeAnonymity StatusBreakdown(records);
+    expect(result.find((r) => r.label === "Anonymity Granted")?.count).toBe(1);
   });
 
-  it("correctly buckets opinion-based records", () => {
-    const records = [{ ai_vendor_1_result: "Opinion-Based", credibility: null }];
-    const result = computeCredibilityBreakdown(records);
-    expect(result.find((r) => r.label === "Opinion-Based")?.count).toBe(1);
+  it("correctly buckets Anonymity Not Granted records", () => {
+    const records = [{ ai_vendor_1_result: "Anonymity Not Granted", credibility: null }];
+    const result = computeAnonymity StatusBreakdown(records);
+    expect(result.find((r) => r.label === "Anonymity Not Granted")?.count).toBe(1);
   });
 
-  it("correctly buckets unable to verify records", () => {
-    const records = [{ ai_vendor_1_result: "Unable to Verify", credibility: null }];
-    const result = computeCredibilityBreakdown(records);
-    expect(result.find((r) => r.label === "Unable to Verify")?.count).toBe(1);
+  it("correctly buckets Anonymity Granted records", () => {
+    const records = [{ ai_vendor_1_result: "Anonymity Granted", credibility: null }];
+    const result = computeAnonymity StatusBreakdown(records);
+    expect(result.find((r) => r.label === "Anonymity Granted")?.count).toBe(1);
   });
 
   it("falls back to credibility field when ai_vendor_1_result is null", () => {
-    const records = [{ ai_vendor_1_result: null, credibility: "Evidence-Based" }];
-    const result = computeCredibilityBreakdown(records);
-    expect(result.find((r) => r.label === "Evidence-Based")?.count).toBe(1);
+    const records = [{ ai_vendor_1_result: null, credibility: "Anonymity Granted" }];
+    const result = computeAnonymity StatusBreakdown(records);
+    expect(result.find((r) => r.label === "Anonymity Granted")?.count).toBe(1);
   });
 
   it("defaults to Pending when both fields are null", () => {
     const records = [{ ai_vendor_1_result: null, credibility: null }];
-    const result = computeCredibilityBreakdown(records);
+    const result = computeAnonymity StatusBreakdown(records);
     expect(result.find((r) => r.label === "Pending")?.count).toBe(1);
   });
 
   it("returns empty array for no records", () => {
-    expect(computeCredibilityBreakdown([])).toEqual([]);
+    expect(computeAnonymity StatusBreakdown([])).toEqual([]);
   });
 });
 

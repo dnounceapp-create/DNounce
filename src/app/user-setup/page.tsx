@@ -642,11 +642,13 @@ export default function UserSetupPage() {
               )}
             </div>
 
-            <button
-              type="submit"
-              disabled={saving}
-              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold text-white bg-gradient-to-r from-blue-500 to-indigo-500 hover:opacity-90 disabled:opacity-60"
-            >
+            <p className="text-xs text-gray-400 text-center">
+              By completing setup, you agree to DNounce's{" "}
+              <a href="/legal" target="_blank" className="text-blue-500 hover:underline">Terms of Service</a>{" "}
+              and{" "}
+              <a href="/legal#privacy" target="_blank" className="text-blue-500 hover:underline">Privacy Policy</a>.
+              DNounce is a neutral platform. All community verdicts are user-generated, not editorial decisions by DNounce.
+            </p>
               {saving ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />

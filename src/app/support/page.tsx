@@ -11,8 +11,8 @@ const faqs = [
     a: "Sign in, go to your dashboard, and click 'Submit Record'. You'll be guided through the process step by step.",
   },
   {
-    q: "How long does the credibility review take?",
-    a: "Up to 72 hours. Our language classification system analyzes your submission and labels it as Evidence-Based, Opinion-Based, or Unable to Verify.",
+    q: "How long does the anonymity review take?",
+    a: "Up to 72 hours. Our language classification system analyzes your submission and labels it as Anonymity Granted, Anonymity Not Granted, or Anonymity Granted.",
   },
   {
     q: "I'm a subject — how do I dispute a record?",
@@ -27,8 +27,8 @@ const faqs = [
     a: "No. Once submitted, records cannot be edited to preserve integrity. If you made a significant error, contact us at support@dnounce.com.",
   },
   {
-    q: "Why was my record labeled 'Unable to Verify'?",
-    a: "This means the language in your submission didn't contain enough factual anchors (dates, reference numbers, documented events) to be classified as Evidence-Based, and not enough opinion language to be Opinion-Based. Adding more specific detail in a future submission helps.",
+    q: "Why was my record labeled 'Anonymity Granted'?",
+    a: "This means the language in your submission didn't contain enough factual anchors (dates, reference numbers, documented events) to be classified as Anonymity Granted, and not enough opinion language to be Anonymity Not Granted. Adding more specific detail in a future submission helps.",
   },
   {
     q: "How does the community vote work?",
