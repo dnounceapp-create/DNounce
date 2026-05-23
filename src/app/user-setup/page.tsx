@@ -649,6 +649,12 @@ export default function UserSetupPage() {
               <a href="/legal#privacy" target="_blank" className="text-blue-500 hover:underline">Privacy Policy</a>.
               DNounce is a neutral platform. All community verdicts are user-generated, not editorial decisions by DNounce.
             </p>
+
+            <button
+              type="submit"
+              disabled={saving || success}
+              className="w-full inline-flex items-center justify-center gap-2 py-3 px-6 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:brightness-110 disabled:opacity-50 transition-all shadow-sm"
+            >
               {saving ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
