@@ -37,23 +37,19 @@ export async function POST(req: Request) {
     });
 
     const ai_vendor_1_score =
-      credibility === "Evidence-Based"
-        ? 0.9
-        : credibility === "Opinion-Based"
-        ? 0.6
-        : 0.3;
+      credibility === "Anonymity Granted" ? 0.9 : 0.6;
 
     // 3) Update the record
     const { data: updated, error: updateError } = await supabaseAdmin
       .from("records")
       .update({
-        credibility,
+        anonymity_status: credibility,
         ai_vendor_1_result: credibility,
         ai_vendor_1_score,
         record_type: "classified",
       })
       .eq("id", recordId)
-      .select("id, record_type, credibility, ai_vendor_1_result, ai_vendor_1_score")
+      .select("id, record_type, anonymity_status, ai_vendor_1_result, ai_vendor_1_score")
       .single();
 
     if (updateError) {

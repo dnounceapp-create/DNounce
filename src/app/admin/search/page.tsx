@@ -46,7 +46,7 @@ export default function AdminSearchPage() {
     const [
       records, users, accts, tickets, badges, notifications, statements, votes,
     ] = await Promise.all([
-      supabase.from("records").select("id, status, category, credibility, subject:subjects(name)").or(`id.ilike.%${q}%,category.ilike.%${q}%`).limit(10),
+      supabase.from("records").select("id, status, category, anonymity_status, subject:subjects(name)").or(`id.ilike.%${q}%,category.ilike.%${q}%`).limit(10),
       supabase.from("users").select("id, auth_user_id, is_banned, created_at").limit(5),
       supabase.from("user_accountdetails").select("user_id, first_name, last_name").or(`first_name.ilike.%${q}%,last_name.ilike.%${q}%`).limit(10),
       supabase.from("support_tickets").select("id, topic, type, status, message").or(`topic.ilike.%${q}%,message.ilike.%${q}%`).limit(10),
@@ -62,7 +62,7 @@ export default function AdminSearchPage() {
         type: "record", id: r.id,
         title: (r.subject as any)?.name ?? "Unknown Subject",
         subtitle: `${r.category ?? "—"} • ${r.status}`,
-        meta: r.credibility,
+        meta: r.anonymity_status,
         href: `/admin/records?id=${r.id}`,
       });
     });

@@ -17,7 +17,7 @@ type RecordItem = {
   submitted_at: string;
   stage: number | null;
   outcome: "side_with_contributor" | "side_with_subject" | null;
-  credibility: "Evidence-Based" | "Opinion-Based" | "Unable to Verify" | string;
+  anonymity_status: "Anonymity Granted" | "Anonymity Not Granted" | "Anonymity Granted" | string;
   last_activity_at: string;
 };
 
@@ -30,10 +30,10 @@ const outcomeLabels: Record<string, { label: string; color: string }> = {
 const filterLabels: Record<string, string> = {
   status: "Status",
   time: "Time",
-  credibilityrecord: "Credibility Record",
+  anonymitystatus: "Anonymity Status",
 };
 
-type FiltersState = { status?: string; time?: string; credibilityrecord?: string };
+type FiltersState = { status?: string; time?: string; anonymitystatus?: string };
 
 function RecordMeta({ record }: { record: RecordItem }) {
   const dateRef = useRef<HTMLParagraphElement>(null);
@@ -198,7 +198,7 @@ export default function MyRecordsPage() {
             submitted_at,
             status,
             final_outcome,
-            credibility,
+            anonymity_status,
             ai_vendor_1_result,
             contributor_display_name,
             contributor_identity_preference,
@@ -212,15 +212,15 @@ export default function MyRecordsPage() {
         const mapped: RecordItem[] = rawRecords.map((r: any) => ({
           id: r.id,
           contributor_alias: (() => {
-            const cred = r.ai_vendor_1_result || r.credibility || "";
-            const reveal = (cred === "Opinion-Based" || cred === "opinion_based") || ((cred === "Evidence-Based" || cred === "evidence_based") && r.contributor_identity_preference === true);
+            const cred = r.ai_vendor_1_result || r.anonymity_status || "";
+            const reveal = (cred === "Anonymity Not Granted" || cred === "anonymity_not_granted") || ((cred === "Anonymity Granted" || cred === "anonymity_granted") && r.contributor_identity_preference === true);
             return reveal ? (r.contributor_display_name || "SuperHero123") : "SuperHero123";
           })(),
           subject_name: r.subjects?.name || "Unknown",
           submitted_at: r.submitted_at,
           stage: statusToStage(r.status),
           outcome: r.final_outcome || null,
-          credibility: r.ai_vendor_1_result || r.credibility || "Pending",
+          anonymity_status: r.ai_vendor_1_result || r.anonymity_status || "Pending",
           last_activity_at: r.submitted_at,
         }));
 
@@ -290,7 +290,7 @@ export default function MyRecordsPage() {
       }, (payload) => {
         setRecords((prev) => prev.map((r) =>
           r.id === payload.new.id
-            ? { ...r, stage: statusToStage(payload.new.status), credibility: payload.new.ai_vendor_1_result || payload.new.credibility || r.credibility }
+            ? { ...r, stage: statusToStage(payload.new.status), anonymity_status: payload.new.ai_vendor_1_result || payload.new.anonymity_status || r.anonymity_status }
             : r
         ));
       })
@@ -336,9 +336,9 @@ export default function MyRecordsPage() {
     return (record: RecordItem) => new Date(record.submitted_at).getTime() >= cutoff;
   };
 
-  const credibilityrecordToPredicate = (credibilityrecord?: string) => {
-    if (!credibilityrecord) return () => true;
-    return (record: RecordItem) => record.credibility === credibilityrecord;
+  const anonymitystatusToPredicate = (anonymitystatus?: string) => {
+    if (!anonymitystatus) return () => true;
+    return (record: RecordItem) => record.anonymity_status === anonymitystatus;
   };
 
   // ---- Sorting comparator ---------------------------------------------------
@@ -371,7 +371,7 @@ export default function MyRecordsPage() {
   const displayRecords = useMemo(() => {
     const byStatus = statusToPredicate(filters.status);
     const byTime = timeToPredicate(filters.time);
-    const byType = credibilityrecordToPredicate(filters.credibilityrecord);
+    const byType = anonymitystatusToPredicate(filters.anonymitystatus);
 
     const filtered = records.filter(
       (record) => byStatus(record) && byTime(record) && byType(record)
@@ -577,15 +577,15 @@ export default function MyRecordsPage() {
             <select
               aria-label="Filter by credibility"
               className="border rounded-md px-3 py-2 text-sm hover:shadow-sm w-full sm:w-auto"
-              value={filters.credibilityrecord || ""}
+              value={filters.anonymitystatus || ""}
               onChange={(e) =>
-                setFilters({ ...filters, credibilityrecord: e.target.value })
+                setFilters({ ...filters, anonymitystatus: e.target.value })
               }
             >
-              <option value="">Credibility Record</option>
-              <option>Evidence-Based</option>
-              <option>Opinion-Based</option>
-              <option>Unable to Verify</option>
+              <option value="">Anonymity Status</option>
+              <option>Anonymity Granted</option>
+              <option>Anonymity Not Granted</option>
+              <option>Anonymity Granted</option>
             </select>
 
             {Object.keys(filters).length > 0 && (
@@ -667,7 +667,7 @@ export default function MyRecordsPage() {
           <div className="hidden md:grid grid-cols-4 px-6 py-3 font-semibold text-gray-600 text-sm">
             <div>Record Name</div>
             <div className="text-center">Status</div>
-            <div className="text-center">Credibility Record</div>
+            <div className="text-center">Anonymity Status</div>
             <div className="flex justify-center">Dispute Record</div>
           </div>
 
@@ -730,24 +730,24 @@ export default function MyRecordsPage() {
                   )}
                 </div>
 
-                {/* Credibility */}
+                {/* Anonymity Status */}
                 <div className="mt-3 md:mt-0 text-left md:text-center">
                   <span
                     className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] sm:text-xs font-medium ${
-                      record.credibility === "Evidence-Based" || record.credibility === "evidence_based"
+                      record.anonymity_status === "Anonymity Granted" || record.anonymity_status === "anonymity_granted"
                         ? "bg-green-100 text-green-700"
-                        : record.credibility === "Opinion-Based" || record.credibility === "opinion_based"
+                        : record.anonymity_status === "Anonymity Not Granted" || record.anonymity_status === "anonymity_not_granted"
                         ? "bg-red-100 text-red-700"
                         : "bg-yellow-100 text-yellow-700"
                     }`}
                   >
-                    {(record.credibility === "Opinion-Based" || record.credibility === "opinion_based") && (
+                    {(record.anonymity_status === "Anonymity Not Granted" || record.anonymity_status === "anonymity_not_granted") && (
                       <AlertTriangle size={12} className="text-red-700" />
                     )}
-                    {(record.credibility === "Unable to Verify" || record.credibility === "unable_to_verify") && (
+                    {(record.anonymity_status === "Anonymity Granted" || record.anonymity_status === "anonymity_granted") && (
                       <CircleAlert size={12} className="text-yellow-700" />
                     )}
-                    {record.credibility}
+                    {record.anonymity_status}
                   </span>
                 </div>
 

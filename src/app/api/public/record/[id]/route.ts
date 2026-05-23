@@ -41,7 +41,7 @@ export async function GET(
       description,
       category,
       location,
-      credibility,
+      anonymity_status,
       relationship,
       status,
       is_published,
@@ -87,7 +87,7 @@ export async function GET(
     ? contributor.profile[0]
     : contributor?.profile;
 
-  const cred = normalizeAnonymityStatus((data as any).credibility);
+  const cred = normalizeAnonymityStatus((data as any).anonymity_status);
   const choseName = (data as any).contributor_identity_preference === true;
 
   const first = profile?.first_name || "";

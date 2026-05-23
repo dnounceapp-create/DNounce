@@ -32,7 +32,7 @@ const RECORD = {
   location: "New York, NY",
   relationship: "Client",
   rating: 1.5,
-  credibility: "Opinion-Based",
+  anonymity_status: "Anonymity Not Granted",
   description:
     "I hired Alex to design a landing page for my startup. We agreed on $800 upfront, which I paid because they had a decent portfolio. At first, communication was fine, but after a few days, responses got slower. When I finally got the design back, it honestly didn’t match what we discussed at all. The layout was messy, and key sections we talked about weren’t even included. I asked for revisions, but the changes were minimal and didn’t address the core issues. After that, communication basically stopped. I ended up hiring someone else to redo everything. I’m not saying they’re a scammer, but this felt really unprofessional and not worth the money.",
   status: "voting",
@@ -748,10 +748,10 @@ export default function DemoPage() {
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <h2 className="text-lg font-semibold text-gray-900">Submitted Record</h2>
           <div className="flex flex-wrap items-center gap-1.5 self-start text-xs text-gray-500">
-            <span className="whitespace-nowrap">AI Credibility Recommendation:</span>
+            <span className="whitespace-nowrap">Anonymity Status:</span>
             <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium bg-red-50 text-red-700 border-red-200 whitespace-nowrap">
               <AlertTriangle size={11} className="text-red-600" />
-              Opinion-Based
+              Anonymity Not Granted
             </span>
           </div>
         </div>

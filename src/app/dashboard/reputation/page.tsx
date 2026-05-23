@@ -39,7 +39,7 @@ type RecordRef = {
   category: string | null;
   status: string;
   final_outcome: string | null;
-  credibility: string | null;
+  anonymity_status: string | null;
   created_at: string;
   comment_count: number;
 };
@@ -118,11 +118,11 @@ function RecordRow({ record }: { record: RecordRef }) {
     : title;
 
   const credBadge = () => {
-    const c = record.credibility;
+    const c = record.anonymity_status;
     if (!c) return null;
     const base = "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium";
-    if (c === "Evidence-Based") return <span className={`${base} bg-green-100 text-green-700`}><CheckCircle size={11} className="text-green-700" /> {c}</span>;
-    if (c === "Opinion-Based") return <span className={`${base} bg-red-100 text-red-700`}><AlertTriangle size={11} className="text-red-700" /> {c}</span>;
+    if (c === "Anonymity Granted") return <span className={`${base} bg-green-100 text-green-700`}><CheckCircle size={11} className="text-green-700" /> {c}</span>;
+    if (c === "Anonymity Not Granted") return <span className={`${base} bg-red-100 text-red-700`}><AlertTriangle size={11} className="text-red-700" /> {c}</span>;
     return <span className={`${base} bg-yellow-100 text-yellow-700`}><AlertTriangle size={11} className="text-yellow-700" /> {c}</span>;
   };
 
@@ -133,7 +133,7 @@ function RecordRow({ record }: { record: RecordRef }) {
         <span className="text-sm font-semibold text-gray-900">{displayTitle}</span>
         {credBadge() && (
           <div className="flex items-center gap-1 text-xs text-gray-500">
-            <span>AI Credibility Recommendation:</span>
+            <span>Anonymity Status:</span>
             {credBadge()}
           </div>
         )}
@@ -260,12 +260,12 @@ export default function ReputationPage() {
     try {
       if (["Top Contributor", "Rising Star", "Expert"].includes(label)) {
         if (!contributorId) { setBadgeRecords(p => ({ ...p, [label]: [] })); return; }
-        const { data } = await supabase.from("records").select("id,status,category,final_outcome,credibility,ai_vendor_1_result,created_at,record_alias,contributor_display_name,contributor_identity_preference,subject:subjects(name)").eq("contributor_id", contributorId).order("created_at", { ascending: false }).limit(20);
+        const { data } = await supabase.from("records").select("id,status,category,final_outcome,anonymity_status,ai_vendor_1_result,created_at,record_alias,contributor_display_name,contributor_identity_preference,subject:subjects(name)").eq("contributor_id", contributorId).order("created_at", { ascending: false }).limit(20);
         const mapped = (data ?? []).map((r: any) => ({ id: r.id, subject_name: r.subject?.name ?? "Unknown", contributor_alias: (() => {
-  const cred = r.ai_vendor_1_result || r.credibility || "";
-  const reveal = (cred === "Opinion-Based" || cred === "opinion_based") || ((cred === "Evidence-Based" || cred === "evidence_based") && r.contributor_identity_preference === true);
+  const cred = r.ai_vendor_1_result || r.anonymity_status || "";
+  const reveal = (cred === "Anonymity Not Granted" || cred === "anonymity_not_granted") || ((cred === "Anonymity Granted" || cred === "anonymity_granted") && r.contributor_identity_preference === true);
   return reveal ? (r.contributor_display_name || "SuperHero123") : "SuperHero123";
-})(), category: r.category, status: r.status, final_outcome: r.final_outcome, credibility: r.credibility ?? null, created_at: r.created_at, comment_count: 0 }));
+})(), category: r.category, status: r.status, final_outcome: r.final_outcome, anonymity_status: r.anonymity_status ?? null, created_at: r.created_at, comment_count: 0 }));
         const counts = await Promise.all(mapped.map(async (r) => {
           const tables = ["record_comments","record_community_messages","record_community_replies","record_voting_messages","record_vote_replies","record_debate_messages"];
           const results = await Promise.all(tables.map(t => supabase.from(t as any).select("id", { count: "exact", head: true }).eq("record_id", r.id)));
@@ -276,12 +276,12 @@ records = mapped.map((r, i) => ({ ...r, comment_count: counts[i] }));
         const { data: votes } = await supabase.from("record_votes").select("record_id").eq("user_id", userId).limit(20);
         const ids = (votes ?? []).map((v: any) => v.record_id).filter(Boolean);
         if (ids.length) {
-          const { data } = await supabase.from("records").select("id,status,category,final_outcome,credibility,ai_vendor_1_result,created_at,record_alias,contributor_display_name,contributor_identity_preference,subject:subjects(name)").in("id", ids);
+          const { data } = await supabase.from("records").select("id,status,category,final_outcome,anonymity_status,ai_vendor_1_result,created_at,record_alias,contributor_display_name,contributor_identity_preference,subject:subjects(name)").in("id", ids);
           const mapped = (data ?? []).map((r: any) => ({ id: r.id, subject_name: r.subject?.name ?? "Unknown", contributor_alias: (() => {
-  const cred = r.ai_vendor_1_result || r.credibility || "";
-  const reveal = (cred === "Opinion-Based" || cred === "opinion_based") || ((cred === "Evidence-Based" || cred === "evidence_based") && r.contributor_identity_preference === true);
+  const cred = r.ai_vendor_1_result || r.anonymity_status || "";
+  const reveal = (cred === "Anonymity Not Granted" || cred === "anonymity_not_granted") || ((cred === "Anonymity Granted" || cred === "anonymity_granted") && r.contributor_identity_preference === true);
   return reveal ? (r.contributor_display_name || "SuperHero123") : "SuperHero123";
-})(), category: r.category, status: r.status, final_outcome: r.final_outcome, credibility: r.credibility ?? null, created_at: r.created_at, comment_count: 0 }));
+})(), category: r.category, status: r.status, final_outcome: r.final_outcome, anonymity_status: r.anonymity_status ?? null, created_at: r.created_at, comment_count: 0 }));
           const counts = await Promise.all(mapped.map(async (r) => {
             const tables = ["record_comments","record_community_messages","record_community_replies","record_voting_messages","record_vote_replies","record_debate_messages"];
             const results = await Promise.all(tables.map(t => supabase.from(t as any).select("id", { count: "exact", head: true }).eq("record_id", r.id)));
@@ -293,12 +293,12 @@ records = mapped.map((r, i) => ({ ...r, comment_count: counts[i] }));
         const { data: stmts } = await supabase.from("record_community_statements").select("record_id").eq("author_user_id", userId).limit(20);
         const ids = [...new Set((stmts ?? []).map((s: any) => s.record_id).filter(Boolean))];
         if (ids.length) {
-          const { data } = await supabase.from("records").select("id,status,category,final_outcome,credibility,ai_vendor_1_result,created_at,record_alias,contributor_display_name,contributor_identity_preference,subject:subjects(name)").in("id", ids);
+          const { data } = await supabase.from("records").select("id,status,category,final_outcome,anonymity_status,ai_vendor_1_result,created_at,record_alias,contributor_display_name,contributor_identity_preference,subject:subjects(name)").in("id", ids);
           const mapped = (data ?? []).map((r: any) => ({ id: r.id, subject_name: r.subject?.name ?? "Unknown", contributor_alias: (() => {
-  const cred = r.ai_vendor_1_result || r.credibility || "";
-  const reveal = (cred === "Opinion-Based" || cred === "opinion_based") || ((cred === "Evidence-Based" || cred === "evidence_based") && r.contributor_identity_preference === true);
+  const cred = r.ai_vendor_1_result || r.anonymity_status || "";
+  const reveal = (cred === "Anonymity Not Granted" || cred === "anonymity_not_granted") || ((cred === "Anonymity Granted" || cred === "anonymity_granted") && r.contributor_identity_preference === true);
   return reveal ? (r.contributor_display_name || "SuperHero123") : "SuperHero123";
-})(), category: r.category, status: r.status, final_outcome: r.final_outcome, credibility: r.credibility ?? null, created_at: r.created_at, comment_count: 0 }));
+})(), category: r.category, status: r.status, final_outcome: r.final_outcome, anonymity_status: r.anonymity_status ?? null, created_at: r.created_at, comment_count: 0 }));
           const counts = await Promise.all(mapped.map(async (r) => {
             const tables = ["record_comments","record_community_messages","record_community_replies","record_voting_messages","record_vote_replies","record_debate_messages"];
             const results = await Promise.all(tables.map(t => supabase.from(t as any).select("id", { count: "exact", head: true }).eq("record_id", r.id)));
@@ -309,12 +309,12 @@ records = mapped.map((r, i) => ({ ...r, comment_count: counts[i] }));
       } else if (label === "Top Subject") {
         const { data: subjectRow } = await supabase.from("subjects").select("subject_uuid").eq("owner_auth_user_id", userId).maybeSingle();
         if (subjectRow?.subject_uuid) {
-          const { data } = await supabase.from("records").select("id,status,category,final_outcome,credibility,ai_vendor_1_result,created_at,record_alias,contributor_display_name,contributor_identity_preference,subject:subjects(name)").eq("subject_id", subjectRow.subject_uuid).order("created_at", { ascending: false }).limit(20);
+          const { data } = await supabase.from("records").select("id,status,category,final_outcome,anonymity_status,ai_vendor_1_result,created_at,record_alias,contributor_display_name,contributor_identity_preference,subject:subjects(name)").eq("subject_id", subjectRow.subject_uuid).order("created_at", { ascending: false }).limit(20);
           const mapped = (data ?? []).map((r: any) => ({ id: r.id, subject_name: r.subject?.name ?? "Unknown", contributor_alias: (() => {
-  const cred = r.ai_vendor_1_result || r.credibility || "";
-  const reveal = (cred === "Opinion-Based" || cred === "opinion_based") || ((cred === "Evidence-Based" || cred === "evidence_based") && r.contributor_identity_preference === true);
+  const cred = r.ai_vendor_1_result || r.anonymity_status || "";
+  const reveal = (cred === "Anonymity Not Granted" || cred === "anonymity_not_granted") || ((cred === "Anonymity Granted" || cred === "anonymity_granted") && r.contributor_identity_preference === true);
   return reveal ? (r.contributor_display_name || "SuperHero123") : "SuperHero123";
-})(), category: r.category, status: r.status, final_outcome: r.final_outcome, credibility: r.credibility ?? null, created_at: r.created_at, comment_count: 0 }));
+})(), category: r.category, status: r.status, final_outcome: r.final_outcome, anonymity_status: r.anonymity_status ?? null, created_at: r.created_at, comment_count: 0 }));
           const counts = await Promise.all(mapped.map(async (r) => {
             const tables = ["record_comments","record_community_messages","record_community_replies","record_voting_messages","record_vote_replies","record_debate_messages"];
             const results = await Promise.all(tables.map(t => supabase.from(t as any).select("id", { count: "exact", head: true }).eq("record_id", r.id)));

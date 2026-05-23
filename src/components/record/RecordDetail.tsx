@@ -176,7 +176,7 @@ function shortId(id: string) {
 }
 
 function shouldRevealContributorIdentity(record: any): boolean {
-  const cred = normalizeAnonymityStatus(record?.credibility);
+  const cred = normalizeAnonymityStatus(record?.anonymity_status);
   const choseName = record?.contributor_identity_preference === true;
 
   if (cred === "Anonymity Not Granted") return true;
@@ -4498,7 +4498,7 @@ export default function RecordDetail({
             category,
             location,
             organization,
-            credibility,
+            anonymity_status,
             ai_vendor_1_result,
             contributor_display_name,
             relationship,
@@ -5040,7 +5040,7 @@ export default function RecordDetail({
           <h2 className="text-lg font-semibold text-gray-900">Submitted Record</h2>
 
           {(() => {
-            const raw = (record.credibility || "").toString().trim();
+            const raw = (record.anonymity_status || "").toString().trim();
 
             const label = raw.includes("Anonymity Granted") || raw.includes("anonymity_granted")
               ? "Anonymity Granted"

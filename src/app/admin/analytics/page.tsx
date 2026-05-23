@@ -228,7 +228,7 @@ export default function AdminAnalyticsPage() {
         supabase.rpc("get_daily_counts", { p_table: "submit_clicks", p_days: days }),
         supabase.rpc("get_daily_counts", { p_table: "social_link_clicks", p_days: days }),
         supabase.from("records").select("status").limit(2000),
-        supabase.from("records").select("credibility").limit(2000),
+        supabase.from("records").select("anonymity_status").limit(2000),
         supabase.from("records").select("id,status,final_outcome,dispute_started_at,voting_ends_at,decision_made_at,created_at").limit(2000),
         supabase.from("users").select("created_at").limit(5000),
         supabase.from("subscriptions").select("plan_id,status").limit(5000),
@@ -274,7 +274,7 @@ export default function AdminAnalyticsPage() {
 
       const credCounts: Record<string, number> = {};
       (creds.data ?? []).forEach((r: any) => {
-        const raw = (r.credibility || "").toLowerCase();
+        const raw = (r.anonymity_status || "").toLowerCase();
         let c = "Pending";
 
         if (raw.includes("unable")) c = "Anonymity Granted";

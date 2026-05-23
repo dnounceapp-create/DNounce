@@ -103,7 +103,7 @@ export default function RecordHistoryPanel({ recordId, onClose }: Props) {
                       ["Subject", (data.record.subject as any)?.name ?? "—"],
                       ["Status", data.record.status],
                       ["Category", data.record.category ?? "—"],
-                      ["Credibility", data.record.credibility ?? "—"],
+                      ["Anonymity Status", data.record.anonymity_status ?? "—"],
                       ["Created", new Date(data.record.created_at).toLocaleString()],
                       ["Published", data.record.published_at ? new Date(data.record.published_at).toLocaleString() : "—"],
                       ["Debate ends", data.record.debate_ends_at ? new Date(data.record.debate_ends_at).toLocaleString() : "—"],

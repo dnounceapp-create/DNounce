@@ -57,10 +57,10 @@ function shortId(id: string, left = 6, right = 6) {
 
 function normalizeCredBucket(raw: any) {
   const s = (raw || "").toString().toLowerCase();
-  if (s.includes("evidence")) return "Evidence-Based";
-  if (s.includes("opinion")) return "Opinion-Based";
+  if (s.includes("evidence")) return "Anonymity Granted";
+  if (s.includes("opinion")) return "Anonymity Not Granted";
   if (s.includes("unclear")) return "Unclear";
-  if (s.includes("unable")) return "Unable to Verify";
+  if (s.includes("unable")) return "Anonymity Granted";
   return "Pending";
 }
 
@@ -114,7 +114,7 @@ type SubjectRecord = any & {
   submitted_at?: string;
   published_at?: string | null;
   description?: string | null;
-  credibility?: string | null;
+  anonymity_status?: string | null;
   ai_vendor_1_result?: string | null;
   is_published?: boolean | null;
   status?: string | null;
@@ -550,7 +550,7 @@ export default function SubjectProfilePage() {
         .from("records")
         .select(`
           id, created_at, submitted_at, published_at, description,
-          credibility, ai_vendor_1_result, is_published, status,
+          anonymity_status, ai_vendor_1_result, is_published, status,
           voting_ends_at, rating, category, record_type, record_alias,
           contributor_display_name, contributor_identity_preference
         `)
@@ -742,7 +742,7 @@ export default function SubjectProfilePage() {
     let out = (records || []).filter((r) => {
       if (filters.status && (r.status || "").toLowerCase() !== filters.status) return false;
       if (filters.ai_cred) {
-        const bucket = normalizeCredBucket(r.ai_vendor_1_result ?? r.credibility);
+        const bucket = normalizeCredBucket(r.ai_vendor_1_result ?? r.anonymity_status);
         if (bucket !== filters.ai_cred) return false;
       }
       if (filters.record_type) {
@@ -789,10 +789,10 @@ export default function SubjectProfilePage() {
   const breakdown = useMemo(() => {
     const total = filteredSorted.length;
     const evidence = filteredSorted.filter(
-      (r) => normalizeCredBucket(r.ai_vendor_1_result ?? r.credibility) === "Evidence-Based"
+      (r) => normalizeCredBucket(r.ai_vendor_1_result ?? r.anonymity_status) === "Anonymity Granted"
     ).length;
     const opinion = filteredSorted.filter(
-      (r) => normalizeCredBucket(r.ai_vendor_1_result ?? r.credibility) === "Opinion-Based"
+      (r) => normalizeCredBucket(r.ai_vendor_1_result ?? r.anonymity_status) === "Anonymity Not Granted"
     ).length;
     return { total, evidence, opinion };
   }, [filteredSorted]);
@@ -803,8 +803,8 @@ export default function SubjectProfilePage() {
     const realName = (r.contributor_display_name || "").trim();
     const alias = (r.record_alias || "").trim();
     let showRealName = false;
-    if (bucket === "Evidence-Based") showRealName = !!r.contributor_identity_preference;
-    else if (bucket === "Opinion-Based") showRealName = true;
+    if (bucket === "Anonymity Granted") showRealName = !!r.contributor_identity_preference;
+    else if (bucket === "Anonymity Not Granted") showRealName = true;
     if (showRealName) return realName || "SuperHero123";
     return "SuperHero123";
   }
@@ -816,16 +816,16 @@ export default function SubjectProfilePage() {
   }
 
   function credRecommendationText(r: SubjectRecord) {
-    const raw = (r.ai_vendor_1_result ?? r.credibility ?? "").toString().trim();
+    const raw = (r.ai_vendor_1_result ?? r.anonymity_status ?? "").toString().trim();
     return raw || "Pending";
   }
 
   function credibilityBadge(cred: string) {
     const c = (cred || "").trim();
     const base = "inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] sm:text-xs font-medium";
-    if (c === "Evidence-Based") return <span className={`${base} bg-green-100 text-green-700`}><CheckCircle size={12} className="text-green-700" />{c}</span>;
-    if (c === "Opinion-Based") return <span className={`${base} bg-red-100 text-red-700`}><AlertTriangle size={12} className="text-red-700" />{c}</span>;
-    if (c === "Unable to Verify") return <span className={`${base} bg-yellow-100 text-yellow-700`}><CircleAlert size={12} className="text-yellow-700" />{c}</span>;
+    if (c === "Anonymity Granted") return <span className={`${base} bg-green-100 text-green-700`}><CheckCircle size={12} className="text-green-700" />{c}</span>;
+    if (c === "Anonymity Not Granted") return <span className={`${base} bg-red-100 text-red-700`}><AlertTriangle size={12} className="text-red-700" />{c}</span>;
+    if (c === "Anonymity Granted") return <span className={`${base} bg-yellow-100 text-yellow-700`}><CircleAlert size={12} className="text-yellow-700" />{c}</span>;
     return <span className={`${base} bg-yellow-100 text-yellow-700`}>{c || "Pending"}</span>;
   }
 
@@ -1039,10 +1039,10 @@ export default function SubjectProfilePage() {
                       <option value="decision">Kept</option>
                     </select>
                     <select value={filters.ai_cred ?? ""} onChange={(e) => setFilters((f) => ({ ...f, ai_cred: e.target.value || undefined }))} className="w-full sm:w-auto min-w-[220px] rounded-xl border px-3 py-2 text-sm bg-white">
-                      <option value="">All credibility recommendations</option>
-                      <option value="Unable to Verify">Unable to Verify</option>
-                      <option value="Evidence-Based">Evidence-Based</option>
-                      <option value="Opinion-Based">Opinion-Based</option>
+                      <option value="">All anonymity statuses</option>
+                      <option value="Anonymity Granted">Anonymity Granted</option>
+                      <option value="Anonymity Granted">Anonymity Granted</option>
+                      <option value="Anonymity Not Granted">Anonymity Not Granted</option>
                       <option value="Unclear">Unclear</option>
                       <option value="Pending">Pending</option>
                     </select>
@@ -1068,7 +1068,7 @@ export default function SubjectProfilePage() {
                   {(hasActiveFilters || hasNonDefaultSort) && (
                     <div className="flex flex-wrap items-center gap-2">
                       {filters.status && <span className="text-xs rounded-full border bg-gray-50 px-3 py-1">Stage: {filters.status}</span>}
-                      {filters.ai_cred && <span className="text-xs rounded-full border bg-gray-50 px-3 py-1">Credibility: {filters.ai_cred}</span>}
+                      {filters.ai_cred && <span className="text-xs rounded-full border bg-gray-50 px-3 py-1">Anonymity Status: {filters.ai_cred}</span>}
                       {filters.record_type && <span className="text-xs rounded-full border bg-gray-50 px-3 py-1">Type: {filters.record_type}</span>}
                       {filters.time && <span className="text-xs rounded-full border bg-gray-50 px-3 py-1">Time: {filters.time}</span>}
                       {sort !== DEFAULT_SORT && <span className="text-xs rounded-full border bg-gray-50 px-3 py-1">Sort: {sort}</span>}
@@ -1086,11 +1086,11 @@ export default function SubjectProfilePage() {
                     </div>
                     <div className="text-center">
                       <div className="text-2xl font-bold text-gray-900">{breakdown.evidence}</div>
-                      <div className="text-sm text-gray-500">Evidence-Based</div>
+                      <div className="text-sm text-gray-500">Anonymity Granted</div>
                     </div>
                     <div className="text-center">
                       <div className="text-2xl font-bold text-gray-900">{breakdown.opinion}</div>
-                      <div className="text-sm text-gray-500">Opinion-Based</div>
+                      <div className="text-sm text-gray-500">Anonymity Not Granted</div>
                     </div>
                   </div>
                 </div>
@@ -1113,7 +1113,7 @@ export default function SubjectProfilePage() {
                             <div className="text-sm font-semibold text-gray-900 truncate">{title}</div>
                           </div>
                           <div className="flex flex-wrap items-center gap-1.5">
-                            <span className="text-[11px] text-gray-500">AI Credibility Recommendation:</span>
+                            <span className="text-[11px] text-gray-500">Anonymity Status:</span>
                             {credibilityBadge(cred)}
                           </div>
                         </div>

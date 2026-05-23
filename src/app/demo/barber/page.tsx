@@ -32,7 +32,7 @@ const RECORD = {
   location: "Atlanta, GA",
   relationship: "Client",
   rating: 2,
-  credibility: "Opinion-Based",
+  anonymity_status: "Anonymity Not Granted",
   description:
     "I showed DeShawn a reference photo — a clean low fade with a hard part. What I got looked nothing like it. The fade was uneven on one side and the hard part was crooked. I pointed it out in the chair and he said it looked fine. I ended up going to another barber the next day to fix it. I'm not saying he can't cut, but for the style I asked for, this wasn't it.",
   status: "voting",
@@ -747,10 +747,10 @@ export default function DemoBarberPage() {
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <h2 className="text-lg font-semibold text-gray-900">Submitted Record</h2>
           <div className="flex flex-wrap items-center gap-1.5 self-start text-xs text-gray-500">
-            <span className="whitespace-nowrap">AI Credibility Recommendation:</span>
+            <span className="whitespace-nowrap">Anonymity Status:</span>
             <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium bg-red-50 text-red-700 border-red-200 whitespace-nowrap">
               <AlertTriangle size={11} className="text-red-600" />
-              Opinion-Based
+              Anonymity Not Granted
             </span>
           </div>
         </div>

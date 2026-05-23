@@ -20,7 +20,7 @@ interface RecordEngagement {
   views: number;
   followers: number;
   pins: number;
-  credibility: string;
+  anonymity_status: string;
   final_outcome: string | null;
   submitted_at: string | null;
 }
@@ -49,7 +49,7 @@ interface AnalyticsData {
   pctSidedContributor: number;
   pctSidedSubject: number;
   pctPending: number;
-  credibilityBreakdown: { label: string; count: number }[];
+  anonymityBreakdown: { label: string; count: number }[];
   categoryBreakdown: { label: string; count: number }[];
   mostActiveRecord: { id: string; category: string; votes: number; statements: number; totalActivity: number } | null;
   mostControversialRecord: { id: string; category: string; contributor: number; subject: number } | null;
@@ -174,17 +174,17 @@ function StandardLockedOverlay() {
 function CredBadge({ cred }: { cred: string }) {
   const c = (cred || "").trim();
   const base = "inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] sm:text-xs font-medium";
-  if (c === "Evidence-Based") return <span className={`${base} bg-green-100 text-green-700`}><CheckCircle2 size={12} className="text-green-700" />{c}</span>;
-  if (c === "Opinion-Based") return <span className={`${base} bg-red-100 text-red-700`}><AlertTriangle size={12} className="text-red-700" />{c}</span>;
-  if (c === "Unable to Verify") return <span className={`${base} bg-yellow-100 text-yellow-700`}><AlertTriangle size={12} className="text-yellow-700" />{c}</span>;
+  if (c === "Anonymity Granted") return <span className={`${base} bg-green-100 text-green-700`}><CheckCircle2 size={12} className="text-green-700" />{c}</span>;
+  if (c === "Anonymity Not Granted") return <span className={`${base} bg-red-100 text-red-700`}><AlertTriangle size={12} className="text-red-700" />{c}</span>;
+  if (c === "Anonymity Granted") return <span className={`${base} bg-yellow-100 text-yellow-700`}><AlertTriangle size={12} className="text-yellow-700" />{c}</span>;
   return <span className={`${base} bg-yellow-100 text-yellow-700`}>{c || "Pending"}</span>;
 }
 
 function normalizeCredLabel(raw: string) {
   const s = (raw || "").toLowerCase();
-  if (s.includes("evidence")) return "Evidence-Based";
-  if (s.includes("opinion")) return "Opinion-Based";
-  if (s.includes("unable")) return "Unable to Verify";
+  if (s.includes("evidence")) return "Anonymity Granted";
+  if (s.includes("opinion")) return "Anonymity Not Granted";
+  if (s.includes("unable")) return "Anonymity Granted";
   return "Pending";
 }
 
@@ -256,7 +256,7 @@ function ReputationReachSection({ data }: { data: AnalyticsData }) {
           {sorted.length === 0 ? (
             <div className="p-6 text-center text-sm text-gray-400">No records match this filter.</div>
           ) : sorted.map((r) => {
-            const credLabel = normalizeCredLabel(r.credibility);
+            const credLabel = normalizeCredLabel(r.anonymity_status);
             const outcomeLabel =
               r.final_outcome === "sided_with_contributor" ? "Sided with contributor" :
               r.final_outcome === "sided_with_subject" ? "Sided with subject" : null;
@@ -276,7 +276,7 @@ function ReputationReachSection({ data }: { data: AnalyticsData }) {
                     <div className="text-sm font-semibold text-gray-900 truncate">{r.title || r.category}</div>
                   </div>
                   <div className="flex flex-wrap items-center gap-1.5 shrink-0">
-                    <span className="text-[11px] text-gray-500">AI Credibility Recommendation:</span>
+                    <span className="text-[11px] text-gray-500">Anonymity Status:</span>
                     <CredBadge cred={credLabel} />
                   </div>
                 </div>
@@ -381,12 +381,12 @@ function InsightsContent({ data }: { data: AnalyticsData }) {
       </div>
 
       <div>
-        <SectionHeader title="Your Contributor Credibility Breakdown" />
+        <SectionHeader title="Your Anonymity Status Breakdown" />
         <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
-          <p className="text-xs text-gray-500 mb-4">Credibility classification of the records you submitted</p>
-          {data.credibilityBreakdown.length > 0 ? (
+          <p className="text-xs text-gray-500 mb-4">Anonymity status of the records you submitted</p>
+          {data.anonymityBreakdown.length > 0 ? (
             <div className="space-y-2">
-              {data.credibilityBreakdown.map((c) => (
+              {data.anonymityBreakdown.map((c) => (
                 <div key={c.label} className="flex items-center gap-2 text-sm text-gray-700">
                   <span className="font-medium">{c.label}</span>
                   <span className="text-gray-400">—</span>
@@ -394,7 +394,7 @@ function InsightsContent({ data }: { data: AnalyticsData }) {
                 </div>
               ))}
             </div>
-          ) : <p className="text-xs text-gray-400">No credibility data yet.</p>}
+          ) : <p className="text-xs text-gray-400">No anonymity data yet.</p>}
         </div>
       </div>
 
@@ -828,12 +828,12 @@ function ProContent({ data }: { data: AnalyticsData }) {
       </div>
 
       <div>
-        <SectionHeader title="Your Contributor Credibility Breakdown" />
+        <SectionHeader title="Your Anonymity Status Breakdown" />
         <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
-          <p className="text-xs text-gray-500 mb-4">Credibility classification of the records you submitted</p>
-          {data.credibilityBreakdown.length > 0 ? (
+          <p className="text-xs text-gray-500 mb-4">Anonymity status of the records you submitted</p>
+          {data.anonymityBreakdown.length > 0 ? (
             <div className="space-y-2">
-              {data.credibilityBreakdown.map((c) => (
+              {data.anonymityBreakdown.map((c) => (
                 <div key={c.label} className="flex items-center gap-2 text-sm text-gray-700">
                   <span className="font-medium">{c.label}</span>
                   <span className="text-gray-400">—</span>
@@ -841,7 +841,7 @@ function ProContent({ data }: { data: AnalyticsData }) {
                 </div>
               ))}
             </div>
-          ) : <p className="text-xs text-gray-400">No credibility data yet.</p>}
+          ) : <p className="text-xs text-gray-400">No anonymity data yet.</p>}
         </div>
       </div>
 
@@ -944,7 +944,7 @@ export default function AnalyticsPage() {
           <div className="relative mt-2 min-h-[200px] sm:min-h-[320px]">
             <StandardLockedOverlay />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 blur-sm pointer-events-none select-none">
-              {["Profile Views", "Search Impressions", "Credibility Breakdown", "Category Breakdown",
+              {["Profile Views", "Search Impressions", "Anonymity Status Breakdown", "Category Breakdown",
                 "Most Active Record", "Dispute Resolution", "Contributor Success Rate", "Comparison"]
                 .slice(0, typeof window !== "undefined" && window.innerWidth < 640 ? 3 : 8)
                 .map((label) => (

@@ -32,7 +32,7 @@ const RECORD = {
   location: "Brooklyn, NY",
   relationship: "Client",
   rating: 2,
-  credibility: "Evidence-Based",
+  anonymity_status: "Anonymity Granted",
   description:
     "I paid $120 for a full acrylic set and three nails popped off within three days. I followed the aftercare instructions I was given — no soaking, no picking. I reached out about it and was offered a free fix but no refund. That's not acceptable for a $120 service that didn't hold up. I've attached photos taken the day after the appointment and then three days later when they came off.",
   status: "voting",
@@ -747,9 +747,9 @@ export default function DemoNailTechPage() {
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <h2 className="text-lg font-semibold text-gray-900">Submitted Record</h2>
           <div className="flex flex-wrap items-center gap-1.5 self-start text-xs text-gray-500">
-            <span className="whitespace-nowrap">AI Credibility Recommendation:</span>
+            <span className="whitespace-nowrap">Anonymity Status:</span>
             <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium bg-green-50 text-green-700 border-green-200 whitespace-nowrap">
-              Evidence-Based
+              Anonymity Granted
             </span>
           </div>
         </div>

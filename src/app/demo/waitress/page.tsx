@@ -32,7 +32,7 @@ const RECORD = {
   location: "Chicago, IL",
   relationship: "Customer",
   rating: 1.5,
-  credibility: "Opinion-Based",
+  anonymity_status: "Anonymity Not Granted",
   description:
     "The server ignored our table for the first 15 minutes after we sat down. When she finally came over, she seemed annoyed that we had questions about the menu. Throughout the meal she checked on us once, and when I asked for a refill she walked away without acknowledging me. At the end she dropped the check without asking how everything was. I understand restaurants get busy but this felt intentional and dismissive the whole time.",
   status: "voting",
@@ -747,10 +747,10 @@ export default function DemoWaitressPage() {
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <h2 className="text-lg font-semibold text-gray-900">Submitted Record</h2>
           <div className="flex flex-wrap items-center gap-1.5 self-start text-xs text-gray-500">
-            <span className="whitespace-nowrap">AI Credibility Recommendation:</span>
+            <span className="whitespace-nowrap">Anonymity Status:</span>
             <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium bg-red-50 text-red-700 border-red-200 whitespace-nowrap">
               <AlertTriangle size={11} className="text-red-600" />
-              Opinion-Based
+              Anonymity Not Granted
             </span>
           </div>
         </div>

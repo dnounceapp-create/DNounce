@@ -11,8 +11,8 @@ import {
 } from "../adminUtils";
 
 const ALL_STATUSES = ["ai_verification", "subject_notified", "published", "deletion_request", "debate", "voting", "decision"];
-const CREDS = ["Evidence-Based", "Opinion-Based", "Unclear", "Pending AI Review"];
-const RECORD_TYPES = ["pending", "opinion", "evidence"];
+const CREDS = ["Anonymity Granted", "Anonymity Not Granted", "Pending"];
+const RECORD_TYPES = ["pending", "Anonymity Granted", "Anonymity Not Granted"];
 
 export default function AdminRecordsPage() {
   const [records, setRecords] = useState<any[]>([]);
@@ -43,7 +43,7 @@ export default function AdminRecordsPage() {
   async function load() {
     setLoading(true);
     const { data } = await supabase.from("records").select(`
-      id, uid, status, credibility, category, rating, description, location,
+      id, uid, status, anonymity_status, category, rating, description, location,
       organization, relationship, contributor_identity_preference, is_published,
       final_outcome, record_type, agree_terms,
       created_at, published_at, ai_completed_at, debate_started_at, debate_ends_at,
@@ -65,10 +65,10 @@ export default function AdminRecordsPage() {
     // Map form fields to DB columns with proper ISO conversion
     const dateFields = ["debate_started_at", "debate_ends_at", "voting_started_at", "voting_ends_at", "decision_started_at", "finalized_at", "published_at", "ai_completed_at", "dispute_started_at", "decision_made_at"];
     dateFields.forEach(f => { if (formData[f]) updates[f] = new Date(formData[f]).toISOString(); });
-    if (formData.credibility) updates.credibility = formData.credibility;
+    if (formData.anonymity_status) updates.anonymity_status = formData.anonymity_status;
     if (formData.final_outcome) updates.final_outcome = formData.final_outcome;
     if (targetStatus === "published") { updates.is_published = true; }
-    if (targetStatus === "ai_verification") { updates.credibility = null; updates.is_published = false; }
+    if (targetStatus === "ai_verification") { updates.anonymity_status = null; updates.is_published = false; }
 
     const { error } = await supabase.from("records").update(updates).eq("id", record.id);
     if (error) throw error;
@@ -99,7 +99,7 @@ export default function AdminRecordsPage() {
     }
     if (type === "credibility") {
       updateData = {
-        credibility: updated.credibility || null,
+        anonymity_status: updated.anonymity_status || null,
         ai_vendor_1_result: updated.ai_vendor_1_result || null,
         ai_vendor_2_result: updated.ai_vendor_2_result || null,
         ai_vendor_3_result: updated.ai_vendor_3_result || null,
@@ -165,14 +165,14 @@ export default function AdminRecordsPage() {
   const filtered = records.filter(r => {
     const q = search.toLowerCase();
     const m = !search || r.id?.toLowerCase().includes(q) || (r.subject as any)?.name?.toLowerCase().includes(q) || r.category?.toLowerCase().includes(q) || r.description?.toLowerCase().includes(q) || r.location?.toLowerCase().includes(q) || r.organization?.toLowerCase().includes(q) || (r.subject as any)?.email?.toLowerCase().includes(q) || r.record_type?.toLowerCase().includes(q);
-    return m && (statusFilter === "all" || r.status === statusFilter) && (credFilter === "all" || r.credibility === credFilter);
+    return m && (statusFilter === "all" || r.status === statusFilter) && (credFilter === "all" || r.anonymity_status === credFilter);
   });
 
   const csvData = filtered.map(r => ({
     id: r.id, uid: r.uid, subject_name: (r.subject as any)?.name ?? "", subject_uuid: (r.subject as any)?.subject_uuid ?? "",
     subject_email: (r.subject as any)?.email ?? "", subject_phone: (r.subject as any)?.phone ?? "",
     contributor_id: r.contributor_id ?? "", contributor_auth_user_id: (r.contributor as any)?.auth_user_id ?? "",
-    status: r.status, record_type: r.record_type, credibility: r.credibility ?? "",
+    status: r.status, record_type: r.record_type, anonymity_status: r.anonymity_status ?? "",
     ai_vendor_1_result: r.ai_vendor_1_result ?? "", ai_vendor_1_score: r.ai_vendor_1_score ?? "",
     ai_vendor_2_result: r.ai_vendor_2_result ?? "", ai_vendor_3_result: r.ai_vendor_3_result ?? "",
     category: r.category ?? "", rating: r.rating ?? "", description: r.description ?? "",
@@ -201,8 +201,8 @@ export default function AdminRecordsPage() {
 
   const credFields: SmartField[] = [
     { key: "id", label: "Record ID", type: "readonly" },
-    { key: "_warn", type: "warning", label: "", help: "Changing credibility affects how this record is displayed and sorted for all users. This is immediately visible." },
-    { key: "credibility", label: "Credibility Label", type: "select", required: true, section: "AI Analysis", options: CREDS.map(c => ({ value: c, label: c })) },
+    { key: "_warn", type: "warning", label: "", help: "Changing anonymity status affects how this record is displayed for all users. This is immediately visible." },
+    { key: "anonymity_status", label: "Anonymity Status", type: "select", required: true, section: "AI Analysis", options: CREDS.map(c => ({ value: c, label: c })) },
     { key: "ai_completed_at", label: "AI Review Completed At", type: "datetime-local", section: "AI Analysis" },
     { key: "ai_vendor_1_result", label: "AI Vendor 1 — Result", type: "text", section: "AI Vendor Scores" },
     { key: "ai_vendor_1_score", label: "AI Vendor 1 — Score (0–1)", type: "number", section: "AI Vendor Scores", validate: v => v !== "" && v !== null && (Number(v) < 0 || Number(v) > 1) ? "Score must be 0–1" : null },
@@ -212,7 +212,7 @@ export default function AdminRecordsPage() {
 
   const identityFields: SmartField[] = [
     { key: "id", label: "Record ID", type: "readonly" },
-    { key: "_warn", type: "warning", label: "", help: "This controls whether the contributor's real name is shown. For Evidence-Based records: 'Yes' shows their real name, 'No' shows 'Somebody'. Opinion-Based always shows real name." },
+    { key: "_warn", type: "warning", label: "", help: "This controls whether the contributor's real name is shown. Anonymity Granted: contributor's preference is respected. Anonymity Not Granted: always shows real name." },
     { key: "contributor_identity_preference", label: "Show contributor's real name", type: "boolean", required: true, help: "Yes = show real name publicly. No = show as 'Somebody'." },
     { key: "contributor_display_name", label: "Override Display Name", type: "text", help: "Optional. Leave blank to use the contributor's actual name." },
   ];
@@ -292,7 +292,7 @@ export default function AdminRecordsPage() {
               <table className="w-full text-xs">
                 <thead>
                   <tr className="border-b border-gray-800 bg-gray-950">
-                    {["Subject", "Record ID", "Stage", "Credibility", "Category", "Rating", "Location", "Deleted?", "Created", "Outcome", ""].map(h => (
+                    {["Subject", "Record ID", "Stage", "Anonymity Status", "Category", "Rating", "Location", "Deleted?", "Created", "Outcome", ""].map(h => (
                       <th key={h} className="text-left text-gray-500 font-medium px-4 py-3 whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
@@ -307,7 +307,7 @@ export default function AdminRecordsPage() {
                       </td>
                       <td className="px-4 py-3"><CopyID id={r.id} /></td>
                       <td className="px-4 py-3"><StatusBadge status={r.status} /></td>
-                      <td className="px-4 py-3"><CredBadge cred={r.credibility} /></td>
+                      <td className="px-4 py-3"><CredBadge cred={r.anonymity_status} /></td>
                       <td className="px-4 py-3 text-gray-300">{r.category || "—"}</td>
                       <td className="px-4 py-3 text-center text-white font-medium">{r.rating ?? "—"}</td>
                       <td className="px-4 py-3 text-gray-400">{r.location || "—"}</td>
@@ -340,7 +340,7 @@ export default function AdminRecordsPage() {
                 <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-2">Edit Record Data</div>
                 <div className="grid grid-cols-2 gap-2">
                   <button onClick={() => setEditModal({ record: selected, type: "content" })} className="px-3 py-2 rounded-xl bg-gray-800 text-gray-300 hover:text-white text-xs font-medium border border-gray-700 transition">✏️ Content & Category</button>
-                  <button onClick={() => setEditModal({ record: selected, type: "credibility" })} className="px-3 py-2 rounded-xl bg-gray-800 text-gray-300 hover:text-white text-xs font-medium border border-gray-700 transition">🏷️ Credibility & AI Scores</button>
+                  <button onClick={() => setEditModal({ record: selected, type: "credibility" })} className="px-3 py-2 rounded-xl bg-gray-800 text-gray-300 hover:text-white text-xs font-medium border border-gray-700 transition">🏷️ Anonymity Status & AI Scores</button>
                   <button onClick={() => setEditModal({ record: selected, type: "identity" })} className="px-3 py-2 rounded-xl bg-gray-800 text-gray-300 hover:text-white text-xs font-medium border border-gray-700 transition">👤 Identity Setting</button>
                   <button onClick={() => setEditModal({ record: { ...selected, subject_uuid: (selected.subject as any)?.subject_uuid, subject_name: (selected.subject as any)?.name, subject_nickname: (selected.subject as any)?.nickname, subject_organization: (selected.subject as any)?.organization, subject_location: (selected.subject as any)?.location, subject_email: (selected.subject as any)?.email, subject_phone: (selected.subject as any)?.phone }, type: "subject" })} className="px-3 py-2 rounded-xl bg-gray-800 text-gray-300 hover:text-white text-xs font-medium border border-gray-700 transition">🧑 Edit Subject Info</button>
                   <button onClick={() => setEditModal({ record: selected, type: "publish_toggle" })} className={`px-3 py-2 rounded-xl text-xs font-medium border transition ${selected.is_published ? "bg-yellow-900/30 text-yellow-400 border-yellow-800 hover:bg-yellow-900/60" : "bg-green-900/30 text-green-400 border-green-800 hover:bg-green-900/60"}`}>{selected.is_published ? "🔒 Unpublish" : "🌐 Publish"}</button>
@@ -399,7 +399,7 @@ export default function AdminRecordsPage() {
             <DetailRow label="UID" value={selected.uid} mono copyable />
             <DetailRow label="Record Type" value={selected.record_type} />
             <DetailRow label="Current Stage" value={STATUS_LABELS[selected.status] ?? selected.status} />
-            <DetailRow label="Credibility" value={selected.credibility} />
+            <DetailRow label="Anonymity Status" value={selected.anonymity_status} />
             <DetailRow label="Category" value={selected.category} />
             <DetailRow label="Rating (0–10)" value={selected.rating} />
             <DetailRow label="Relationship to Subject" value={selected.relationship} />
@@ -413,7 +413,7 @@ export default function AdminRecordsPage() {
           </DetailSection>
 
           <DetailSection title="AI Analysis" defaultOpen={false}>
-            <DetailRow label="Credibility Label" value={selected.credibility} />
+            <DetailRow label="Anonymity Status" value={selected.anonymity_status} />
             <DetailRow label="AI Vendor 1 — Result" value={selected.ai_vendor_1_result} />
             <DetailRow label="AI Vendor 1 — Score" value={selected.ai_vendor_1_score} />
             <DetailRow label="AI Vendor 2 — Result" value={selected.ai_vendor_2_result} />
@@ -462,7 +462,7 @@ export default function AdminRecordsPage() {
         <SmartEditModal
           title={
             editModal.type === "content" ? "Edit Record Content" :
-            editModal.type === "credibility" ? "Override Credibility & AI Scores" :
+            editModal.type === "credibility" ? "Override Anonymity Status & AI Scores" :
             editModal.type === "identity" ? "Contributor Identity Setting" :
             editModal.type === "outcome" ? "Override Final Outcome" :
             editModal.type === "publish_toggle" ? (selected?.is_published ? "Unpublish Record" : "Publish Record") :

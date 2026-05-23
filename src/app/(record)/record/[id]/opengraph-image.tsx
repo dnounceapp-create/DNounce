@@ -35,9 +35,9 @@ function CredBadge({ cred }: { cred: string }) {
   let color = "#D1D5DB";
   let label = cred;
 
-  if (c.includes("evidence")) { bg = "#065F46"; color = "#6EE7B7"; label = "Evidence-Based"; }
-  else if (c.includes("opinion")) { bg = "#7F1D1D"; color = "#FCA5A5"; label = "Opinion-Based"; }
-  else if (c.includes("unable")) { bg = "#78350F"; color = "#FDE68A"; label = "Unable to Verify"; }
+  if (c.includes("evidence")) { bg = "#065F46"; color = "#6EE7B7"; label = "Anonymity Granted"; }
+  else if (c.includes("opinion")) { bg = "#7F1D1D"; color = "#FCA5A5"; label = "Anonymity Not Granted"; }
+  else if (c.includes("unable")) { bg = "#78350F"; color = "#FDE68A"; label = "Anonymity Granted"; }
 
   return (
     <div
@@ -70,7 +70,7 @@ export default async function RecordOGImage({
     .from("records")
     .select(`
       description, category, location, relationship, rating,
-      credibility, ai_vendor_1_result,
+      anonymity_status, ai_vendor_1_result,
       subjects(name, nickname, organization, location),
       record_attachments(path, mime_type)
     `)
@@ -83,7 +83,7 @@ export default async function RecordOGImage({
   const org = record?.category || subject.organization || "Independent";
   const loc = record?.location || subject.location || "";
   const rating = Number(record?.rating ?? 0);
-  const cred = record?.ai_vendor_1_result || record?.credibility || "Pending";
+  const cred = record?.ai_vendor_1_result || record?.anonymity_status || "Pending";
   const relationship = record?.relationship || "";
   const description = (record?.description || "").slice(0, 200);
 

@@ -64,7 +64,7 @@ export function StatusBadge({ status }: { status: string }) {
   return <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border whitespace-nowrap ${STATUS_STYLES[status] ?? "bg-gray-800 text-gray-300 border-gray-600"}`}>{STATUS_LABELS[status] ?? status}</span>;
 }
 export function CredBadge({ cred }: { cred: string }) {
-  const s: Record<string, string> = { "Evidence-Based": "bg-emerald-900 text-emerald-300 border-emerald-700", "Opinion-Based": "bg-blue-900 text-blue-300 border-blue-700", "Unclear": "bg-yellow-900 text-yellow-300 border-yellow-700" };
+  const s: Record<string, string> = { "Anonymity Granted": "bg-emerald-900 text-emerald-300 border-emerald-700", "Anonymity Not Granted": "bg-blue-900 text-blue-300 border-blue-700", "Unclear": "bg-yellow-900 text-yellow-300 border-yellow-700" };
   return <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border whitespace-nowrap ${s[cred] ?? "bg-gray-800 text-gray-300 border-gray-600"}`}>{cred || "Pending"}</span>;
 }
 
@@ -324,7 +324,7 @@ const STAGE_CONFIG: Record<string, {
 }> = {
   ai_verification: {
     label: "Reset to AI Verification", color: "gray",
-    desc: "The record will be pulled from public view and sent back to the AI review queue. Credibility label will be cleared.",
+    desc: "The record will be pulled from public view and sent back to the AI review queue. Anonymity Status label will be cleared.",
     fields: [
       { key: "_warn", type: "warning", label: "", help: "This will make the record private immediately. The subject and contributor will be notified." },
       { key: "note", label: "Reason for reset", type: "textarea", required: true, help: "Be specific — this is logged and visible to all admins." },
@@ -335,7 +335,7 @@ const STAGE_CONFIG: Record<string, {
     desc: "AI verification is complete. The subject is being notified and the record enters a 7-day review window.",
     fields: [
       { key: "ai_completed_at", label: "AI Completed At", type: "datetime-local", required: true, help: "When did the AI finish reviewing this record?" },
-      { key: "credibility", label: "AI Credibility Label", type: "select", required: true, options: [{ value: "Evidence-Based", label: "Evidence-Based" }, { value: "Opinion-Based", label: "Opinion-Based" }, { value: "Unclear", label: "Unclear" }] },
+      { key: "anonymity_status", label: "Anonymity Status", type: "select", required: true, options: [{ value: "Anonymity Granted", label: "Anonymity Granted" }, { value: "Anonymity Not Granted", label: "Anonymity Not Granted" }, { value: "Unclear", label: "Unclear" }] },
       { key: "note", label: "Reason", type: "textarea", required: true },
     ],
   },
@@ -344,7 +344,7 @@ const STAGE_CONFIG: Record<string, {
     desc: "The record will be publicly visible on DNounce. This is a major action.",
     fields: [
       { key: "_warn", type: "warning", label: "", help: "Publishing makes this record visible to the entire internet. Ensure AI review is complete and credibility is correct." },
-      { key: "credibility", label: "Credibility Label", type: "select", required: true, options: [{ value: "Evidence-Based", label: "Evidence-Based" }, { value: "Opinion-Based", label: "Opinion-Based" }, { value: "Unclear", label: "Unclear" }] },
+      { key: "anonymity_status", label: "Anonymity Status", type: "select", required: true, options: [{ value: "Anonymity Granted", label: "Anonymity Granted" }, { value: "Anonymity Not Granted", label: "Anonymity Not Granted" }, { value: "Unclear", label: "Unclear" }] },
       { key: "published_at", label: "Publish Date/Time", type: "datetime-local", required: true },
       { key: "note", label: "Reason (if overriding normal flow)", type: "textarea", required: false },
     ],

@@ -84,7 +84,7 @@ export async function GET(req: NextRequest) {
     .from("records")
     .select(`
       description, category, location, relationship, rating,
-      credibility, ai_vendor_1_result, created_at,
+      anonymity_status, ai_vendor_1_result, created_at,
       contributor_display_name, contributor_identity_preference,
       subjects(name, nickname, organization, location, avatar_url)
     `)
@@ -98,20 +98,20 @@ export async function GET(req: NextRequest) {
   const subjectLoc = record?.location || subject.location || "Unknown Location";
   const subjectAvatar = subject.avatar_url ?? null;
 
-  const rawCred = record?.ai_vendor_1_result || record?.credibility || "";
+  const rawCred = record?.ai_vendor_1_result || record?.anonymity_status || "";
   const c = rawCred.toLowerCase();
   let credLabel = "Pending AI Review";
   let credBg = "#F3F4F6"; let credColor = "#6B7280"; let credBorder = "#E5E7EB";
   let credIcon: "warning" | "check" | "none" = "none";
 
   if (c.includes("evidence")) {
-    credLabel = "Evidence-Based"; credBg = "#F0FDF4"; credColor = "#15803D";
+    credLabel = "Anonymity Granted"; credBg = "#F0FDF4"; credColor = "#15803D";
     credBorder = "#BBF7D0"; credIcon = "check";
   } else if (c.includes("opinion")) {
-    credLabel = "Opinion-Based"; credBg = "#FEF2F2"; credColor = "#DC2626";
+    credLabel = "Anonymity Not Granted"; credBg = "#FEF2F2"; credColor = "#DC2626";
     credBorder = "#FECACA"; credIcon = "warning";
   } else if (c.includes("unable")) {
-    credLabel = "Unable to Verify"; credBg = "#FFFBEB"; credColor = "#D97706";
+    credLabel = "Anonymity Granted"; credBg = "#FFFBEB"; credColor = "#D97706";
     credBorder = "#FDE68A"; credIcon = "warning";
   }
 
@@ -198,7 +198,7 @@ export async function GET(req: NextRequest) {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <span style={{ fontWeight: 700, fontSize: 15, color: "#111827" }}>Submitted Record</span>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ fontSize: 11, color: "#6B7280" }}>AI Credibility Recommendation:</span>
+              <span style={{ fontSize: 11, color: "#6B7280" }}>Anonymity Status:</span>
               <div style={{ display: "flex", alignItems: "center", gap: 4, background: credBg, border: `1px solid ${credBorder}`, borderRadius: 999, padding: "2px 8px" }}>
                 {credIcon === "warning" && <WarningIcon color={credColor} />}
                 {credIcon === "check" && <CheckIcon color={credColor} />}

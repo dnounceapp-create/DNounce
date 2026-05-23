@@ -61,10 +61,10 @@ export async function GET(req: NextRequest) {
         ? supabase.from("search_impressions").select("appeared_at, query, searcher_auth_user_id").eq("subject_id", subjectId)
         : Promise.resolve({ data: [] }),
       subjectId
-        ? supabase.from("records").select("id, status, final_outcome, credibility, ai_vendor_1_result, category, voting_started_at, decision_made_at, debate_started_at, published_at, created_at, contributor_display_name, contributor_identity_preference, record_alias").eq("subject_id", subjectId).in("status", ["published", "deletion_request", "debate", "voting", "decision"])
+        ? supabase.from("records").select("id, status, final_outcome, anonymity_status, ai_vendor_1_result, category, voting_started_at, decision_made_at, debate_started_at, published_at, created_at, contributor_display_name, contributor_identity_preference, record_alias").eq("subject_id", subjectId).in("status", ["published", "deletion_request", "debate", "voting", "decision"])
         : Promise.resolve({ data: [] }),
       contributorId
-        ? supabase.from("records").select("id, status, final_outcome, ai_vendor_1_result, credibility, category").eq("contributor_id", contributorId)
+        ? supabase.from("records").select("id, status, final_outcome, ai_vendor_1_result, anonymity_status, category").eq("contributor_id", contributorId)
         : Promise.resolve({ data: [] }),
       supabase.from("record_votes").select("id, record_id, choice, created_at").eq("user_id", user.id),
       supabase.from("record_community_statements").select("id, record_id").eq("author_user_id", user.id),
@@ -171,18 +171,18 @@ export async function GET(req: NextRequest) {
     const pctDeleted = totalRecordsAboutMe > 0 ? Math.round((deleted / totalRecordsAboutMe) * 100) : 0;
     const pctPending = totalRecordsAboutMe > 0 ? Math.round((pending / totalRecordsAboutMe) * 100) : 0;
 
-    // ─── Credibility breakdown (contributor records) ──────────────────────
+    // ─── Anonymity breakdown (contributor records) ──────────────────────
 
     const credMap: Record<string, number> = {};
     recordsSubmitted.forEach((r: any) => {
-      const raw = (r.ai_vendor_1_result || r.credibility || "Pending").toString().toLowerCase();
+      const raw = (r.ai_vendor_1_result || r.anonymity_status || "Pending").toString().toLowerCase();
       let label = "Pending";
-      if (raw.includes("evidence")) label = "Evidence-Based";
-      else if (raw.includes("opinion")) label = "Opinion-Based";
-      else if (raw.includes("unable")) label = "Unable to Verify";
+      if (raw.includes("evidence")) label = "Anonymity Granted";
+      else if (raw.includes("opinion")) label = "Anonymity Not Granted";
+      else if (raw.includes("unable")) label = "Anonymity Granted";
       credMap[label] = (credMap[label] || 0) + 1;
     });
-    const credibilityBreakdown = Object.entries(credMap).map(([label, count]) => ({ label, count }));
+    const anonymityBreakdown = Object.entries(credMap).map(([label, count]) => ({ label, count }));
 
     // ─── Category breakdown ───────────────────────────────────────────────
 
@@ -309,10 +309,10 @@ export async function GET(req: NextRequest) {
     const subjectName = subjectNameData?.name ?? "Subject";
 
     const recordEngagement = recordsAboutMe.map((r: any) => {
-      const rawCred = (r.ai_vendor_1_result ?? r.credibility ?? "").toString();
-      const credBucket = rawCred.toLowerCase().includes("evidence") ? "Evidence-Based"
-        : rawCred.toLowerCase().includes("opinion") ? "Opinion-Based" : rawCred;
-      const showRealName = credBucket === "Opinion-Based" || (credBucket === "Evidence-Based" && r.contributor_identity_preference === true);
+      const rawCred = (r.ai_vendor_1_result ?? r.anonymity_status ?? "").toString();
+      const credBucket = rawCred.toLowerCase().includes("evidence") ? "Anonymity Granted"
+        : rawCred.toLowerCase().includes("opinion") ? "Anonymity Not Granted" : rawCred;
+      const showRealName = credBucket === "Anonymity Not Granted" || (credBucket === "Anonymity Granted" && r.contributor_identity_preference === true);
       const contributorLabel = showRealName ? (r.contributor_display_name || "SuperHero123") : "SuperHero123";
       return {
         id: r.id,
@@ -321,7 +321,7 @@ export async function GET(req: NextRequest) {
         views: recordViewMap[r.id] || 0,
         followers: followsByRecord[r.id] || 0,
         pins: pinsByRecord[r.id] || 0,
-        credibility: rawCred || "Pending",
+        anonymity_status: rawCred || "Pending",
         final_outcome: r.final_outcome ?? null,
         submitted_at: r.created_at ?? null,
       };
@@ -596,8 +596,8 @@ export async function GET(req: NextRequest) {
       // 40% subject score (normalized to 100), 20% dispute win rate, 20% credibility quality, 10% engagement velocity, 10% streak
       const subjectScoreNorm = Math.min(100, (Number(subjectScore?.subject_score ?? 0) / 10) * 100);
       const disputeComponent = disputeResolutionRate ?? 50;
-      const credQuality = credibilityBreakdown.find(c => c.label === "Evidence-Based")
-        ? Math.round((credibilityBreakdown.find(c => c.label === "Evidence-Based")!.count / Math.max(1, totalSubmitted)) * 100)
+      const credQuality = anonymityBreakdown.find(c => c.label === "Anonymity Granted")
+        ? Math.round((anonymityBreakdown.find(c => c.label === "Anonymity Granted")!.count / Math.max(1, totalSubmitted)) * 100)
         : 50;
       const velocityComponent = avgHoursToFirstVote !== null
         ? Math.max(0, 100 - Math.min(100, avgHoursToFirstVote / 2.4))
@@ -798,7 +798,7 @@ export async function GET(req: NextRequest) {
       pctPending,
 
       // Breakdowns
-      credibilityBreakdown,
+      anonymityBreakdown,
       categoryBreakdown,
 
       // Notable records

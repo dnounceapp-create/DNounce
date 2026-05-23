@@ -20,7 +20,7 @@ type VotedRecord = {
   submitted_at: string;
   stage: number | null;
   outcome: "side_with_contributor" | "side_with_subject" | null;
-  credibility: string;
+  anonymity_status: string;
 };
 
 const outcomeLabels: Record<string, { label: string; color: string }> = {
@@ -30,11 +30,11 @@ const outcomeLabels: Record<string, { label: string; color: string }> = {
 
 const filterLabels: Record<string, string> = {
   status: "Status",
-  credibilityrecord: "Credibility Record",
+  anonymitystatus: "Anonymity Status",
   votechoice: "My Vote",
 };
 
-type FiltersState = { status?: string; credibilityrecord?: string; votechoice?: string };
+type FiltersState = { status?: string; anonymitystatus?: string; votechoice?: string };
 
 function timeAgo(dateString: string) {
   const diff = Date.now() - new Date(dateString).getTime();
@@ -160,7 +160,7 @@ export default function VotedRecordsPage() {
         const recordIds = votes.map((v: any) => v.record_id);
         const { data: recs } = await supabase
           .from("records")
-          .select("id, record_alias, contributor_display_name, contributor_identity_preference, submitted_at, status, final_outcome, credibility, ai_vendor_1_result, subject_id")
+          .select("id, record_alias, contributor_display_name, contributor_identity_preference, submitted_at, status, final_outcome, anonymity_status, ai_vendor_1_result, subject_id")
           .in("id", recordIds);
 
         // Step 3: fetch subjects
@@ -183,15 +183,15 @@ export default function VotedRecordsPage() {
             vote_choice: v.choice,
             vote_explanation: v.explanation || "",
             record_alias: (() => {
-              const cred = rec?.ai_vendor_1_result || rec?.credibility || "";
-              const reveal = (cred === "Opinion-Based" || cred === "opinion_based") || ((cred === "Evidence-Based" || cred === "evidence_based") && rec?.contributor_identity_preference === true);
+              const cred = rec?.ai_vendor_1_result || rec?.anonymity_status || "";
+              const reveal = (cred === "Anonymity Not Granted" || cred === "anonymity_not_granted") || ((cred === "Anonymity Granted" || cred === "anonymity_granted") && rec?.contributor_identity_preference === true);
               return reveal ? (rec?.contributor_display_name || "SuperHero123") : "SuperHero123";
             })(),
             subject_name: sub?.name || "Unknown",
             submitted_at: rec?.submitted_at || v.created_at,
             stage: statusToStage(rec?.status || "ai_verification"),
             outcome: rec?.final_outcome || null,
-            credibility: rec?.ai_vendor_1_result || rec?.credibility || "Pending",
+            anonymity_status: rec?.ai_vendor_1_result || rec?.anonymity_status || "Pending",
           };
         });
 
@@ -234,9 +234,9 @@ export default function VotedRecordsPage() {
     return map[status] ?? (() => true);
   };
 
-  const credibilityToPredicate = (cred?: string) => {
+  const anonymityToPredicate = (cred?: string) => {
     if (!cred) return () => true;
-    return (r: VotedRecord) => r.credibility === cred;
+    return (r: VotedRecord) => r.anonymity_status === cred;
   };
 
   const votechoiceToPredicate = (choice?: string) => {
@@ -268,7 +268,7 @@ export default function VotedRecordsPage() {
     const filtered = records.filter(
       (r) =>
         statusToPredicate(filters.status)(r) &&
-        credibilityToPredicate(filters.credibilityrecord)(r) &&
+        anonymityToPredicate(filters.anonymitystatus)(r) &&
         votechoiceToPredicate(filters.votechoice)(r)
     );
     return [...filtered].sort(sortComparator(sort));
@@ -340,15 +340,15 @@ export default function VotedRecordsPage() {
             <select
               aria-label="Filter by credibility"
               className="border rounded-md px-3 py-2 text-sm hover:shadow-sm w-full sm:w-auto"
-              value={filters.credibilityrecord || ""}
+              value={filters.anonymitystatus || ""}
               onChange={(e) =>
-                setFilters({ ...filters, credibilityrecord: e.target.value })
+                setFilters({ ...filters, anonymitystatus: e.target.value })
               }
             >
-              <option value="">Credibility Record</option>
-              <option>Evidence-Based</option>
-              <option>Opinion-Based</option>
-              <option>Unable to Verify</option>
+              <option value="">Anonymity Status</option>
+              <option>Anonymity Granted</option>
+              <option>Anonymity Not Granted</option>
+              <option>Anonymity Granted</option>
             </select>
 
             <select
@@ -435,7 +435,7 @@ export default function VotedRecordsPage() {
           <div className="hidden md:grid md:grid-cols-5 px-6 py-3 font-semibold text-gray-600 text-sm">
             <div className="col-span-2">Record</div>
             <div className="text-center">Status</div>
-            <div className="text-center">Credibility</div>
+            <div className="text-center">Anonymity Status</div>
             <div className="text-center">My Vote</div>
           </div>
 
@@ -510,24 +510,24 @@ export default function VotedRecordsPage() {
                   )}
                 </div>
 
-                {/* Col 4: Credibility */}
+                {/* Col 4: Anonymity Status */}
                 <div className="mt-3 md:mt-0 text-left md:text-center">
                   <span
                     className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] sm:text-xs font-medium ${
-                      record.credibility === "Evidence-Based" || record.credibility === "evidence_based"
+                      record.anonymity_status === "Anonymity Granted" || record.anonymity_status === "anonymity_granted"
                         ? "bg-green-100 text-green-700"
-                        : record.credibility === "Opinion-Based" || record.credibility === "opinion_based"
+                        : record.anonymity_status === "Anonymity Not Granted" || record.anonymity_status === "anonymity_not_granted"
                         ? "bg-red-100 text-red-700"
                         : "bg-yellow-100 text-yellow-700"
                     }`}
                   >
-                    {(record.credibility === "Opinion-Based" || record.credibility === "opinion_based") && (
+                    {(record.anonymity_status === "Anonymity Not Granted" || record.anonymity_status === "anonymity_not_granted") && (
                       <AlertTriangle size={12} className="text-red-700" />
                     )}
-                    {(record.credibility === "Unable to Verify" || record.credibility === "unable_to_verify") && (
+                    {(record.anonymity_status === "Anonymity Granted" || record.anonymity_status === "anonymity_granted") && (
                       <CircleAlert size={12} className="text-yellow-700" />
                     )}
-                    {record.credibility}
+                    {record.anonymity_status}
                   </span>
                 </div>
 

@@ -32,7 +32,7 @@ const RECORD = {
   location: "Miami, FL",
   relationship: "Client",
   rating: 2,
-  credibility: "Opinion-Based",
+  anonymity_status: "Anonymity Not Granted",
   description:
     "I felt pressured by my realtor to make an offer on a property I wasn't fully comfortable with. Every time I expressed hesitation, the response was about how fast the market was moving and how I'd lose it if I waited. I ultimately made an offer I regretted. I'm not saying the property was bad — I'm saying I never felt like I had space to think. My concerns were consistently minimized in favor of moving fast.",
   status: "voting",
@@ -747,10 +747,10 @@ export default function DemoRealtorPage() {
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <h2 className="text-lg font-semibold text-gray-900">Submitted Record</h2>
           <div className="flex flex-wrap items-center gap-1.5 self-start text-xs text-gray-500">
-            <span className="whitespace-nowrap">AI Credibility Recommendation:</span>
+            <span className="whitespace-nowrap">Anonymity Status:</span>
             <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium bg-red-50 text-red-700 border-red-200 whitespace-nowrap">
               <AlertTriangle size={11} className="text-red-600" />
-              Opinion-Based
+              Anonymity Not Granted
             </span>
           </div>
         </div>

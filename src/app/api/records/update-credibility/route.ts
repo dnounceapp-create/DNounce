@@ -43,7 +43,7 @@ export async function POST(req: Request) {
     const { data, error } = await admin
       .from("records")
       .update({
-        credibility,
+        anonymity_status: credibility,
         ai_vendor_1_result: credibility,
         ai_vendor_1_score: score,
         ai_completed_at: new Date().toISOString(),
@@ -52,7 +52,7 @@ export async function POST(req: Request) {
         status: "subject_notified",
       })      
       .eq("id", recordId)
-      .select("id, record_type, credibility, ai_vendor_1_result, ai_vendor_1_score")
+      .select("id, record_type, anonymity_status, ai_vendor_1_result, ai_vendor_1_score")
       .single();
 
     if (error) {

@@ -35,14 +35,14 @@ export default function UserHistoryPanel({ userId, onClose }: Props) {
       // Load records as subject
       let subjectRecords: any[] = [];
       if (subjectRow.data?.subject_uuid) {
-        const { data: recs } = await supabase.from("records").select("id, status, category, credibility, created_at").eq("subject_id", subjectRow.data.subject_uuid).order("created_at", { ascending: false });
+        const { data: recs } = await supabase.from("records").select("id, status, category, anonymity_status, created_at").eq("subject_id", subjectRow.data.subject_uuid).order("created_at", { ascending: false });
         subjectRecords = recs ?? [];
       }
 
       // Load records as contributor
       let contributorRecords: any[] = [];
       if (contributorRow.data?.id) {
-        const { data: recs } = await supabase.from("records").select("id, status, category, credibility, created_at, subject:subjects(name)").eq("contributor_id", contributorRow.data.id).order("created_at", { ascending: false });
+        const { data: recs } = await supabase.from("records").select("id, status, category, anonymity_status, created_at, subject:subjects(name)").eq("contributor_id", contributorRow.data.id).order("created_at", { ascending: false });
         contributorRecords = recs ?? [];
       }
 
