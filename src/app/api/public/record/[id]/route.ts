@@ -14,9 +14,8 @@ function normalizeAnonymityStatus(raw: any) {
     .trim()
     .toLowerCase()
     .replace(/[‐-‒–—−]/g, "-");
-  if (s.includes("Anonymity Granted") || s.includes("evidence based") || s.includes("anonymity_granted")) return "Anonymity Granted";
-  if (s.includes("Anonymity Not Granted") || s.includes("opinion based") || s.includes("anonymity_not_granted")) return "Anonymity Not Granted";
-  if (s.includes("Anonymity Granted") || s.includes("anonymity_granted")) return "Anonymity Granted";
+  if (s.includes("anonymity not granted") || s.includes("opinion based") || s.includes("anonymity_not_granted")) return "Anonymity Not Granted";
+  if (s.includes("anonymity granted") || s.includes("evidence based") || s.includes("anonymity_granted")) return "Anonymity Granted";
   if (s.includes("unclear")) return "Unclear";
   return "Pending";
 }

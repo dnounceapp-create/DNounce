@@ -43,8 +43,8 @@ export async function GET(req: NextRequest) {
   const [{ data: subjectScoreData }, { count: totalRecords }, { count: evidenceCount }, { count: opinionCount }] = await Promise.all([
     supabaseAdmin.from("subject_scores").select("subject_score").eq("subject_uuid", id).maybeSingle(),
     supabaseAdmin.from("records").select("id", { count: "exact", head: true }).eq("subject_id", id).in("status", ["published", "deletion_request", "debate", "voting", "decision"]),
-    supabaseAdmin.from("records").select("id", { count: "exact", head: true }).eq("subject_id", id).in("status", ["published", "deletion_request", "debate", "voting", "decision"]).ilike("ai_vendor_1_result", "%evidence%"),
-    supabaseAdmin.from("records").select("id", { count: "exact", head: true }).eq("subject_id", id).in("status", ["published", "deletion_request", "debate", "voting", "decision"]).ilike("ai_vendor_1_result", "%opinion%"),
+    supabaseAdmin.from("records").select("id", { count: "exact", head: true }).eq("subject_id", id).in("status", ["published", "deletion_request", "debate", "voting", "decision"]).ilike("ai_vendor_1_result", "%Anonymity Granted%"),
+    supabaseAdmin.from("records").select("id", { count: "exact", head: true }).eq("subject_id", id).in("status", ["published", "deletion_request", "debate", "voting", "decision"]).ilike("ai_vendor_1_result", "%Anonymity Not Granted%"),
   ]);
 
   const scoreList = [

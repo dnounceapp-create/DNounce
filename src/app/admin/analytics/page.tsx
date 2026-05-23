@@ -277,7 +277,8 @@ export default function AdminAnalyticsPage() {
         const raw = (r.anonymity_status || "").toLowerCase();
         let c = "Pending";
 
-        if (raw.includes("unable")) c = "Anonymity Granted";
+        if (raw.includes("anonymity not granted") || raw.includes("opinion")) c = "Anonymity Not Granted";
+        else if (raw.includes("anonymity granted") || raw.includes("evidence") || raw.includes("unable")) c = "Anonymity Granted";
         else if (raw.includes("unclear")) c = "Unclear";
         credCounts[c] = (credCounts[c] || 0) + 1;
       });

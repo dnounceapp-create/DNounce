@@ -57,10 +57,9 @@ function shortId(id: string, left = 6, right = 6) {
 
 function normalizeCredBucket(raw: any) {
   const s = (raw || "").toString().toLowerCase();
-  if (s.includes("evidence")) return "Anonymity Granted";
-  if (s.includes("opinion")) return "Anonymity Not Granted";
+  if (s.includes("anonymity not granted") || s.includes("opinion")) return "Anonymity Not Granted";
+  if (s.includes("anonymity granted") || s.includes("evidence") || s.includes("unable")) return "Anonymity Granted";
   if (s.includes("unclear")) return "Unclear";
-  if (s.includes("unable")) return "Anonymity Granted";
   return "Pending";
 }
 

@@ -35,9 +35,8 @@ function CredBadge({ cred }: { cred: string }) {
   let color = "#D1D5DB";
   let label = cred;
 
-  if (c.includes("evidence")) { bg = "#065F46"; color = "#6EE7B7"; label = "Anonymity Granted"; }
-  else if (c.includes("opinion")) { bg = "#7F1D1D"; color = "#FCA5A5"; label = "Anonymity Not Granted"; }
-  else if (c.includes("unable")) { bg = "#78350F"; color = "#FDE68A"; label = "Anonymity Granted"; }
+  if (c.includes("anonymity not granted") || c.includes("opinion")) { bg = "#7F1D1D"; color = "#FCA5A5"; label = "Anonymity Not Granted"; }
+  else if (c.includes("anonymity granted") || c.includes("evidence") || c.includes("unable")) { bg = "#065F46"; color = "#6EE7B7"; label = "Anonymity Granted"; }
 
   return (
     <div

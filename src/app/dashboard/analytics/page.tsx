@@ -182,9 +182,8 @@ function CredBadge({ cred }: { cred: string }) {
 
 function normalizeCredLabel(raw: string) {
   const s = (raw || "").toLowerCase();
-  if (s.includes("evidence")) return "Anonymity Granted";
-  if (s.includes("opinion")) return "Anonymity Not Granted";
-  if (s.includes("unable")) return "Anonymity Granted";
+  if (s.includes("anonymity not granted") || s.includes("opinion")) return "Anonymity Not Granted";
+  if (s.includes("anonymity granted") || s.includes("evidence") || s.includes("unable")) return "Anonymity Granted";
   return "Pending";
 }
 

@@ -104,15 +104,12 @@ export async function GET(req: NextRequest) {
   let credBg = "#F3F4F6"; let credColor = "#6B7280"; let credBorder = "#E5E7EB";
   let credIcon: "warning" | "check" | "none" = "none";
 
-  if (c.includes("evidence")) {
-    credLabel = "Anonymity Granted"; credBg = "#F0FDF4"; credColor = "#15803D";
-    credBorder = "#BBF7D0"; credIcon = "check";
-  } else if (c.includes("opinion")) {
+  if (c.includes("anonymity not granted") || c.includes("opinion")) {
     credLabel = "Anonymity Not Granted"; credBg = "#FEF2F2"; credColor = "#DC2626";
     credBorder = "#FECACA"; credIcon = "warning";
-  } else if (c.includes("unable")) {
-    credLabel = "Anonymity Granted"; credBg = "#FFFBEB"; credColor = "#D97706";
-    credBorder = "#FDE68A"; credIcon = "warning";
+  } else if (c.includes("anonymity granted") || c.includes("evidence") || c.includes("unable")) {
+    credLabel = "Anonymity Granted"; credBg = "#F0FDF4"; credColor = "#15803D";
+    credBorder = "#BBF7D0"; credIcon = "check";
   }
 
   const rating = Number(record?.rating ?? 0);
@@ -124,8 +121,8 @@ export async function GET(req: NextRequest) {
 
   const c2 = rawCred.toLowerCase();
   const revealContributor =
-    c2.includes("opinion") ||
-    (c2.includes("evidence") && record?.contributor_identity_preference === true);
+    c2.includes("anonymity not granted") || c2.includes("opinion") ||
+    ((c2.includes("anonymity granted") || c2.includes("evidence") || c2.includes("unable")) && record?.contributor_identity_preference === true);
   const contributorName = revealContributor
     ? (record?.contributor_display_name || "SuperHero123")
     : "SuperHero123";

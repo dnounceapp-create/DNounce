@@ -177,9 +177,8 @@ export async function GET(req: NextRequest) {
     recordsSubmitted.forEach((r: any) => {
       const raw = (r.ai_vendor_1_result || r.anonymity_status || "Pending").toString().toLowerCase();
       let label = "Pending";
-      if (raw.includes("evidence")) label = "Anonymity Granted";
-      else if (raw.includes("opinion")) label = "Anonymity Not Granted";
-      else if (raw.includes("unable")) label = "Anonymity Granted";
+      if (raw.includes("anonymity not granted") || raw.includes("opinion")) label = "Anonymity Not Granted";
+      else if (raw.includes("anonymity granted") || raw.includes("evidence") || raw.includes("unable")) label = "Anonymity Granted";
       credMap[label] = (credMap[label] || 0) + 1;
     });
     const anonymityBreakdown = Object.entries(credMap).map(([label, count]) => ({ label, count }));
