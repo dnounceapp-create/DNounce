@@ -81,10 +81,10 @@ export const subject_locations = pgTable(
 export const records = pgTable('records', {
   id: uuid('id').primaryKey().defaultRandom(),
   subjectId: uuid('subject_id').notNull(),
-  contributorId: uuid('contributor_id').notNull(),
+  contributorId: uuid('contributor_id'),
   title: text('title').notNull(),
   description: text('description').notNull(),
-  classification: text('classification').notNull(), // evidence-based or opinion-based
+  classification: text('classification').notNull(), // Anonymity Granted or Anonymity Not Granted
   status: text('status').notNull().default('pending'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),

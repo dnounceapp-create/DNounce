@@ -34,9 +34,9 @@ export async function POST(req: Request) {
     const admin = createClient(supabaseUrl, serviceRoleKey);
 
     const score =
-      credibility === "Evidence-Based"
+      credibility === "Anonymity Granted"
         ? 0.9
-        : credibility === "Opinion-Based"
+        : credibility === "Anonymity Not Granted"
         ? 0.6
         : 0.3;
 
@@ -60,6 +60,33 @@ export async function POST(req: Request) {
         { error: error.message, details: error },
         { status: 500 }
       );
+    }
+
+    // Zero-knowledge safety net: if AG + anonymous preference, sever contributor link
+    if (credibility === "Anonymity Granted") {
+      const { data: rec } = await admin
+        .from("records")
+        .select("contributor_id, contributor_identity_preference, contributor:contributors!records_contributor_id_fkey(auth_user_id)")
+        .eq("id", recordId)
+        .maybeSingle();
+
+      if (rec?.contributor_identity_preference === false && rec?.contributor_id) {
+        const authUserId = (rec.contributor as any)?.auth_user_id;
+        if (authUserId) {
+          const msgBuffer = new TextEncoder().encode(authUserId);
+          const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
+          const hashArray = Array.from(new Uint8Array(hashBuffer));
+          const hashHex = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+
+          await admin
+            .from("records")
+            .update({
+              anon_contributor_hash: hashHex,
+              contributor_id: null,
+            })
+            .eq("id", recordId);
+        }
+      }
     }
 
     return NextResponse.json({ ok: true, record: data });

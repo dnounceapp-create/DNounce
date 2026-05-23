@@ -623,6 +623,22 @@ export default function SubmitRecordPage() {
         body: JSON.stringify({ recordId: newRecord.id, credibility }),
       }).catch(() => {});
 
+      // Zero-knowledge: sever contributor identity for anonymous AG submissions
+      if (credibility === "Anonymity Granted" && identityPreference === "hide") {
+        const msgBuffer = new TextEncoder().encode(userData.user.id);
+        const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const hashHex = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+
+        await supabase
+          .from("records")
+          .update({
+            anon_contributor_hash: hashHex,
+            contributor_id: null,
+          })
+          .eq("id", newRecord.id);
+      }
+
       try {
         await uploadEvidenceFiles(newRecordId, contributorId);
       } catch (uploadErr) {
@@ -922,7 +938,7 @@ export default function SubmitRecordPage() {
                       </div>
                       <div className="mt-1 text-sm text-gray-600 leading-relaxed">
                         Choose how your name is displayed{" "}
-                        <span className="font-semibold">if allowed</span> by the AI Credibility Recommendation.
+                        <span className="font-semibold">if allowed</span> based on your submission type.
                       </div>
                     </div>
 
@@ -976,13 +992,13 @@ export default function SubmitRecordPage() {
                       Your preference may be overridden:
                       <ul className="mt-2 list-disc pl-5 space-y-1">
                         <li>
-                          <span className="font-semibold">Evidence-Based:</span> Your choice is respected.
+                          <span className="font-semibold">Anonymity Granted:</span> Your choice is respected.
                         </li>
                         <li>
                           <span className="font-semibold">Unclear:</span> Always shows Alias.
                         </li>
                         <li>
-                          <span className="font-semibold">Opinion-Based:</span> Always shows Real Name.
+                          <span className="font-semibold">Anonymity Not Granted:</span> Always shows Real Name.
                         </li>
                       </ul>
                     </div>
@@ -1001,7 +1017,7 @@ export default function SubmitRecordPage() {
                         </span>
                         .
                         <div className="mt-2 text-xs text-gray-500">
-                          This may still be overridden depending on AI Credibility Recommendation.
+                          This may still be overridden depending on Anonymity Status.
                         </div>
                       </div>
 
@@ -1131,7 +1147,7 @@ export default function SubmitRecordPage() {
                 >
                   Terms of Service
                 </button>{" "}
-                and confirm that my submission is truthful and complies with DNounce guidelines.
+                and confirm that my submission is truthful, that I understand DNounce's AI classification is a structural tool only, and that I — not DNounce — bear full legal responsibility for this submission.
               </label>
             </div>
 
@@ -1141,15 +1157,13 @@ export default function SubmitRecordPage() {
               className="h-48 sm:h-40 overflow-y-auto border border-gray-200 rounded-lg p-3 sm:p-4 text-xs sm:text-sm text-gray-600 bg-gray-50 leading-relaxed"
             >
               <h4 className="font-semibold mb-2">Important Legal Notice:</h4>
-              <p className="mb-2">
-                By submitting this feedback, you acknowledge that DNounce is a public reputation platform and your submission may be publicly visible after AI credibility label classification.
-              </p>
-              <p className="mb-2">You certify that your submission is truthful to the best of your knowledge and based on either verifiable evidence or honest personal opinion.</p>
-              <p className="mb-2">False or malicious submissions may result in permanent account suspension and legal consequences.</p>
-              <p className="mb-2">The subject will be notified of this submission and will have the right to respond and challenge the information through our dispute resolution process.</p>
-              <p className="mb-2">All submissions undergo AI credibility label classification and may be reviewed by community moderators before publication.</p>
-              <p className="mb-2">You retain copyright of your original content but grant DNounce a license to display and distribute it as part of our platform services.</p>
-              <p className="mb-2">DNounce is not responsible for the accuracy of user submissions but provides tools for community verification and dispute resolution.</p>
+              <p className="mb-2">By submitting this record, you acknowledge that DNounce is a neutral public platform operating under Section 230 of the Communications Decency Act (47 U.S.C. § 230). DNounce is not the publisher, editor, or endorser of any user-submitted content. You — not DNounce — are solely responsible for the accuracy and legality of your submission.</p>
+              <p className="mb-2">You certify that your submission is truthful to the best of your knowledge and based on either verifiable evidence or honest personal opinion. Submitting knowingly false, fabricated, or malicious content may result in permanent account suspension and exposes you to legal liability.</p>
+              <p className="mb-2">AI Classification Disclaimer: Your submission will be analyzed by DNounce's automated AI system and assigned either Anonymity Granted or Anonymity Not Granted. This classification is a structural analysis of language patterns only. It is not a determination of truth or accuracy, and it does not represent DNounce taking any position on your submission. All outcomes are decided solely by community vote.</p>
+              <p className="mb-2">Contributor Identity: Your name will be displayed according to DNounce's contributor identity rules. Anonymity Not Granted records always display your real name. Anonymity Granted records display your real name if you chose to show it, or an alias if you chose anonymity. If you submit anonymously under the Anonymity Granted anonymous architecture, your identity is permanently and irreversibly severed from the record at the time of submission — DNounce will be structurally unable to identify you, even under legal compulsion.</p>
+              <p className="mb-2">The subject will be notified of this submission and will have the right to respond and dispute through our structured community process. You agree to engage in that process in good faith if contacted.</p>
+              <p className="mb-2">You retain copyright of your original content but grant DNounce a non-exclusive license to display and distribute it as part of our platform services. We do not sell your content to third parties.</p>
+              <p className="mb-2">Any attempt to use legal process to suppress this record or unmask an anonymous contributor rather than seek genuine redress may be treated as a Strategic Lawsuit Against Public Participation (SLAPP). DNounce reserves the right to oppose such actions vigorously.</p>
             </div>
 
             <button
