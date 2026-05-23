@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
 
       const { data: record, error: recordError } = await supabase
         .from("records")
-        .select("id, record_type, category, contributor_display_name, contributor_identity_preference")
+        .select("id, record_type, anonymity_status, category, contributor_display_name, contributor_identity_preference")
         .eq("id", notification.record_id)
         .single();
 
@@ -53,11 +53,11 @@ Deno.serve(async (req) => {
 
       const recordId = record.id;
       const recordUrl = `${APP_URL}/record/${recordId}`;
-      const isEvidence = record.record_type === "evidence";
+      const isEvidence = record.anonymity_status === "Anonymity Granted";
       const recordTypeLabel = isEvidence
-        ? "Evidence-Based"
-        : record.record_type === "opinion"
-        ? "Opinion-Based"
+        ? "Anonymity Granted"
+        : record.anonymity_status === "Anonymity Not Granted"
+        ? "Anonymity Not Granted"
         : "Pending Review";
       const category = record.category || "unknown";
 
@@ -98,8 +98,8 @@ Deno.serve(async (req) => {
 
           ${contributorIsHidden ? `
           <h3 style="color: #111; margin-top: 24px;">Why "Somebody"?</h3>
-          <p>For evidence-based records, DNounce protects the identity of the contributor by showing "Somebody" instead of their real name. This ensures the focus remains on the evidence and not personal retaliation.</p>
-          <p style="margin-top: 12px;">For opinion-based records, DNounce displays the contributor's name since the submission reflects a personal experience or viewpoint rather than hard evidence. This ensures clarity and transparency for both parties.</p>
+          <p>For Anonymity Granted records, DNounce protects the identity of the contributor by showing "Somebody" instead of their real name. This ensures the focus remains on the evidence and not personal retaliation.</p>
+          <p style="margin-top: 12px;">For Anonymity Not Granted records, DNounce displays the contributor's name since the submission reflects a personal experience or viewpoint rather than hard evidence. This ensures clarity and transparency for both parties.</p>
           ` : ""}
 
           <h3 style="color: #111; margin-top: 24px;">Your Rights and Next Steps:</h3>

@@ -129,7 +129,7 @@ ACCUSATION_TERMS = {
 }
 
 # ── Vagueness signals ────────────────────────────────────────────────────────
-# These push toward Unable to Verify
+# These push toward Anonymity Granted
 VAGUE_PHRASES = [
     "i don't know", "not sure", "i'm not sure", "i cannot say",
     "i can't explain", "hard to explain", "it's complicated",
@@ -194,13 +194,13 @@ def fetch_attachments(record_id: str) -> List[Dict[str, Any]]:
 
 def update_record_ai(record_id: str, label: str, score: float, explanation: Dict[str, Any]) -> bool:
     record_type = (
-        "evidence" if label == "Evidence-Based"
-        else "opinion" if label == "Opinion-Based"
+        "evidence" if label == "Anonymity Granted"
+        else "opinion" if label == "Anonymity Not Granted"
         else "unclear"
     )
     payload = {
         "record_type": record_type,
-        "credibility": label,
+        "anonymity_status": label,
         "ai_vendor_1_result": f"{label} ({CLASSIFIER_VERSION})",
         "ai_vendor_1_score": score,
         "ai_vendor_2_result": explanation.get("summary", ""),
@@ -326,9 +326,9 @@ def score_and_explain(f: Dict[str, Any]) -> Dict[str, Any]:
     vague_penalty = clamp01(vague / 3.0)
 
     # ── Length signal ─────────────────────────────────────────────────────
-    # Very short text = unable to verify, regardless of content
+    # Very short text = Anonymity Granted, regardless of content
     if wc < 20:
-        length_penalty = 0.8  # strong push to Unable to Verify
+        length_penalty = 0.8  # strong push to Anonymity Granted
     elif wc < 40:
         length_penalty = 0.4
     else:
@@ -344,20 +344,20 @@ def score_and_explain(f: Dict[str, Any]) -> Dict[str, Any]:
     )
 
     # ── Decision ──────────────────────────────────────────────────────────
-    # Evidence-Based: anchors must be strong — raised threshold
-    # Opinion-Based: opinion must dominate AND anchors must be weak
-    # Unable to Verify: everything else — too vague, too short, mixed signals
+    # Anonymity Granted: anchors must be strong — raised threshold
+    # Anonymity Not Granted: opinion must dominate AND anchors must be weak
+    # Anonymity Granted: everything else — too vague, too short, mixed signals
 
     if evidence_score >= 0.55 and evidence_score > opinion_score:
-        label = "Evidence-Based"
+        label = "Anonymity Granted"
         final = evidence_score
 
     elif opinion_score >= 0.40 and anchors <= 0.30 and opinion_score > unable_score:
-        label = "Opinion-Based"
+        label = "Anonymity Not Granted"
         final = opinion_score
 
     else:
-        label = "Unable to Verify"
+        label = "Anonymity Granted"
         final = clamp01(unable_score + 0.1)  # slight boost so score reflects confidence
 
     summary = (
@@ -429,9 +429,9 @@ async def webhook(req: Request, authorization: Optional[str] = Header(default=No
     text = safe_str(r.get("description"))
 
     if not text:
-        out = {"label": "Unable to Verify", "score": 0.3, "explanation": {"summary": f"{CLASSIFIER_VERSION}: missing description"}}
-        updated = update_record_ai(record_id, "Unable to Verify", 0.3, out["explanation"])
-        return {"ok": True, "record_id": record_id, "classification": "Unable to Verify", "score": 0.3, "updated_db": updated}
+        out = {"label": "Anonymity Granted", "score": 0.3, "explanation": {"summary": f"{CLASSIFIER_VERSION}: missing description"}}
+        updated = update_record_ai(record_id, "Anonymity Granted", 0.3, out["explanation"])
+        return {"ok": True, "record_id": record_id, "classification": "Anonymity Granted", "score": 0.3, "updated_db": updated}
 
     feats = compute_features(text, attachments)
     out = score_and_explain(feats)
