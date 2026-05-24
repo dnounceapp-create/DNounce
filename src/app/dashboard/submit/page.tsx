@@ -147,6 +147,46 @@ export default function SubmitRecordPage() {
   const [userResults, setUserResults] = useState<UserPreview[]>([]);
   const [externalResults, setExternalResults] = useState<ExternalSubjectPreview[]>([]);
 
+  // Persist form state across subject-profile navigation
+  useEffect(() => {
+    const saved = sessionStorage.getItem("dnounce_submit_draft");
+    if (saved) {
+      try {
+        const d = JSON.parse(saved);
+        if (d.submitPhone) setSubmitPhone(d.submitPhone);
+        if (d.submitEmail) setSubmitEmail(d.submitEmail);
+        if (d.submitFirstName) setSubmitFirstName(d.submitFirstName);
+        if (d.submitLastName) setSubmitLastName(d.submitLastName);
+        if (d.submitNickname) setSubmitNickname(d.submitNickname);
+        if (d.submitOrganization) setSubmitOrganization(d.submitOrganization);
+        if (d.submitRelationship) setSubmitRelationship(d.submitRelationship);
+        if (d.submitCategory) setSubmitCategory(d.submitCategory);
+        if (d.submitLocation) setSubmitLocation(d.submitLocation);
+        if (d.rating) setRating(d.rating);
+        if (d.description) setDescription(d.description);
+        if (d.identityPreference) setIdentityPreference(d.identityPreference);
+      } catch {}
+    }
+  }, []);
+
+  // Save form state to sessionStorage on every change
+  useEffect(() => {
+    sessionStorage.setItem("dnounce_submit_draft", JSON.stringify({
+      submitPhone,
+      submitEmail,
+      submitFirstName,
+      submitLastName,
+      submitNickname,
+      submitOrganization,
+      submitRelationship,
+      submitCategory,
+      submitLocation,
+      rating,
+      description,
+      identityPreference,
+    }));
+  }, [submitPhone, submitEmail, submitFirstName, submitLastName, submitNickname, submitOrganization, submitRelationship, submitCategory, submitLocation, rating, description, identityPreference]);
+
   const phoneDigits = submitPhone.replace(/\D/g, "");
   const emailNorm = submitEmail.trim().toLowerCase();
   const hasPhoneOrEmail = phoneDigits.length > 0 || emailNorm.length > 0;
@@ -649,6 +689,7 @@ export default function SubmitRecordPage() {
         });
       }
 
+      sessionStorage.removeItem("dnounce_submit_draft");
       router.replace(`/record-submitted/${newRecord.id}`);
     } catch (err: any) {
       console.error("Submit error:", err);
@@ -716,9 +757,9 @@ export default function SubmitRecordPage() {
             ref={subjectInfoRef}
             className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-4 sm:gap-x-6 gap-y-6 sm:gap-y-8 mb-6"
           >
-            <Field label="First Name" placeholder="e.g. John" value={submitFirstName} onChange={setSubmitFirstName} disabled={false} required />
-            <Field label="Last Name" placeholder="e.g. Doe" value={submitLastName} onChange={setSubmitLastName} disabled={false} />
-            <Field label="Also Known As" placeholder="e.g. Johnny" value={submitNickname} onChange={setSubmitNickname} disabled={false} />
+            <Field label="First Name" placeholder="e.g. John" value={submitFirstName} onChange={setSubmitFirstName} disabled={isRealSelected} required={!isRealSelected} />
+            <Field label="Last Name" placeholder="e.g. Doe" value={submitLastName} onChange={setSubmitLastName} disabled={isRealSelected} />
+            <Field label="Also Known As" placeholder="e.g. Johnny" value={submitNickname} onChange={setSubmitNickname} disabled={isRealSelected} />
             <Field label="Organization / Company" placeholder="e.g. Acme Inc." value={submitOrganization} onChange={setSubmitOrganization} disabled={false} />
 
             <div className="flex flex-col col-span-1 sm:col-span-2 lg:col-span-1">
@@ -824,6 +865,25 @@ export default function SubmitRecordPage() {
                         onSelect={(next) => {
                           setSelectedPerson(next);
                           setTempSubject(null);
+                          if (next && next.kind === "user") {
+                            const parts = (next.name || "").split(" ");
+                            setSubmitFirstName(parts[0] || "");
+                            setSubmitLastName(parts.slice(1).join(" ") || "");
+                            setSubmitNickname(next.nickname || "");
+                            setSubmitOrganization(next.organization || "");
+                            setSubmitLocation(next.location || "");
+                          } else if (next && next.kind === "external" && !next.id.startsWith("temp-")) {
+                            const parts = (next.name || "").split(" ");
+                            setSubmitFirstName(parts[0] || "");
+                            setSubmitLastName(parts.slice(1).join(" ") || "");
+                            setSubmitNickname(next.nickname || "");
+                            setSubmitOrganization(next.organization || "");
+                            setSubmitLocation(next.location || "");
+                          } else if (!next) {
+                            setSubmitFirstName("");
+                            setSubmitLastName("");
+                            setSubmitNickname("");
+                          }
                         }}
                       />
                     ))}
@@ -1294,8 +1354,6 @@ function SubjectResultCard({
         {subject.kind === "user" ? (
           <Link
             href={`/subject/${subject.subject_uuid}`}
-            target="_blank"
-            rel="noopener noreferrer"
             className="text-xs font-medium text-gray-700 hover:text-black hover:underline flex items-center justify-center gap-1 border border-gray-300 rounded-full px-3 py-1.5 sm:py-1 bg-white w-full sm:w-auto"
             onClick={(e) => e.stopPropagation()}
           >
@@ -1307,8 +1365,6 @@ function SubjectResultCard({
         ) : !subject.id.startsWith("temp-") ? (
           <Link
             href={`/subject/${subject.id}`}
-            target="_blank"
-            rel="noopener noreferrer"
             className="text-xs font-medium text-gray-700 hover:text-black hover:underline flex items-center justify-center gap-1 border border-gray-300 rounded-full px-3 py-1.5 sm:py-1 bg-white w-full sm:w-auto"
             onClick={(e) => e.stopPropagation()}
           >
