@@ -165,6 +165,7 @@ export default function SubmitRecordPage() {
         if (d.rating) setRating(d.rating);
         if (d.description) setDescription(d.description);
         if (d.identityPreference) setIdentityPreference(d.identityPreference);
+        if (d.selectedPerson) setSelectedPerson(d.selectedPerson);
       } catch {}
     }
   }, []);
@@ -184,8 +185,9 @@ export default function SubmitRecordPage() {
       rating,
       description,
       identityPreference,
+      selectedPerson,
     }));
-  }, [submitPhone, submitEmail, submitFirstName, submitLastName, submitNickname, submitOrganization, submitRelationship, submitCategory, submitLocation, rating, description, identityPreference]);
+  }, [submitPhone, submitEmail, submitFirstName, submitLastName, submitNickname, submitOrganization, submitRelationship, submitCategory, submitLocation, rating, description, identityPreference, selectedPerson]);
 
   const phoneDigits = submitPhone.replace(/\D/g, "");
   const emailNorm = submitEmail.trim().toLowerCase();
@@ -920,6 +922,9 @@ export default function SubmitRecordPage() {
                     onClick={() => {
                       setSelectedPerson(null);
                       setTempSubject(null);
+                      setSubmitFirstName("");
+                      setSubmitLastName("");
+                      setSubmitNickname("");
                     }}
                     className="text-sm text-blue-600 hover:text-blue-800 underline transition"
                   >
