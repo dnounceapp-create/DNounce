@@ -46,18 +46,8 @@ export default function RecordSubmittedPage() {
 
     (async () => {
       try {
-        const { data, error } = await supabase
-          .from("records")
-          .select("id")
-          .eq("id", recordId)
-          .maybeSingle();
-
-        if (error) {
-          setDbExists(false);
-          return;
-        }
-
-        setDbExists(!!data?.id);
+        const res = await fetch(`/api/public/record/${recordId}`);
+        setDbExists(res.ok);
       } catch {
         setDbExists(false);
       }
