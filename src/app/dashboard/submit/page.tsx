@@ -619,6 +619,7 @@ export default function SubmitRecordPage() {
           id: newRecordId,
           subject_id: subjectId,
           contributor_id: contributorId,
+          created_by: userData.user.id,
           record_type: "pending",
           email_or_phone: emailOrPhone,
           first_name: pickText(submitFirstName, selFirst),
@@ -1058,9 +1059,6 @@ export default function SubmitRecordPage() {
                       <ul className="mt-2 list-disc pl-5 space-y-1">
                         <li>
                           <span className="font-semibold">Anonymity Granted:</span> Your choice is respected.
-                        </li>
-                        <li>
-                          <span className="font-semibold">Unclear:</span> Always shows Alias.
                         </li>
                         <li>
                           <span className="font-semibold">Anonymity Not Granted:</span> Always shows Real Name.
