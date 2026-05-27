@@ -98,8 +98,7 @@ Deno.serve(async (req) => {
 
           ${contributorIsHidden ? `
           <h3 style="color: #111; margin-top: 24px;">Why "Somebody"?</h3>
-          <p>For Anonymity Granted records, DNounce protects the identity of the contributor by showing "Somebody" instead of their real name. This ensures the focus remains on the evidence and not personal retaliation.</p>
-          <p style="margin-top: 12px;">For Anonymity Not Granted records, DNounce displays the contributor's name since the submission reflects a personal experience or viewpoint rather than hard evidence. This ensures clarity and transparency for both parties.</p>
+          <p>This record was classified as Anonymity Granted, which means DNounce has structurally protected the contributor's identity. Their name is not available to DNounce, you, or anyone else — including under legal compulsion. The focus is on the content of the record, not who filed it.</p>
           ` : ""}
 
           <h3 style="color: #111; margin-top: 24px;">Your Rights and Next Steps:</h3>
@@ -163,6 +162,64 @@ Deno.serve(async (req) => {
           <p style="margin-top: 32px;">Sincerely,<br/><strong>The DNounce Team</strong></p>
           <p style="margin-top: 32px; font-size: 12px; color: #999;">
             <a href="${APP_URL}/dashboard/settings" style="color: #999;">Manage notification preferences</a>
+          </p>
+        </div>
+      `;
+
+    } else if (notification.type === "stage_4_contributor" && notification.record_id) {
+      const recordUrl = `${APP_URL}/record/${notification.record_id}`;
+      subject = "Action Required — Your Record Has Been Disputed";
+      html = `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #333;">
+          <h2 style="color: #111;">Hello ${firstName},</h2>
+          <p>The subject of a record you submitted has formally disputed it and requested deletion.</p>
+          <p>Here's what happens next:</p>
+          <ol style="line-height: 2;">
+            <li><strong>Debate opens in 24 hours.</strong> You'll have a 72-hour window to defend your record with evidence and respond to the subject's side.</li>
+            <li><strong>Community voting follows.</strong> After the debate, the community votes to keep or delete the record.</strong></li>
+            <li><strong>Verdict announced.</strong> The final outcome is announced 7 days after voting ends.</li>
+          </ol>
+          <p>We recommend reviewing your record and gathering any supporting evidence before the debate opens.</p>
+          <a href="${recordUrl}" style="display:inline-block; margin:16px 0; padding:10px 20px; background:#111; color:#fff; border-radius:999px; text-decoration:none; font-size:13px; font-weight:600;">View Record →</a>
+          <p style="margin-top: 32px;">Sincerely,<br/><strong>The DNounce Team</strong></p>
+          <p style="margin-top: 32px; font-size: 12px; color: #999;">
+            <a href="${APP_URL}/dashboard/settings/notifications" style="color: #999;">Manage notification preferences</a>
+          </p>
+        </div>
+      `;
+
+    } else if (notification.type === "claim_approved") {
+      subject = "Your Profile Claim Was Approved";
+      html = `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #333;">
+          <h2 style="color: #111;">Hello ${firstName},</h2>
+          <p>Great news — your profile claim has been approved. You now own your subject profile on DNounce.</p>
+          <p>As the profile owner you can:</p>
+          <ul style="line-height: 2;">
+            <li>Update your profile information</li>
+            <li>Respond to records submitted about you</li>
+            <li>Manage your public reputation page</li>
+          </ul>
+          <a href="${APP_URL}/dashboard/myrecords" style="display:inline-block; margin:16px 0; padding:10px 20px; background:#111; color:#fff; border-radius:999px; text-decoration:none; font-size:13px; font-weight:600;">Go to Dashboard →</a>
+          <p style="margin-top: 32px;">Sincerely,<br/><strong>The DNounce Team</strong></p>
+          <p style="margin-top: 32px; font-size: 12px; color: #999;">
+            <a href="${APP_URL}/dashboard/settings/notifications" style="color: #999;">Manage notification preferences</a>
+          </p>
+        </div>
+      `;
+
+    } else if (notification.type === "claim_rejected") {
+      subject = "Update on Your Profile Claim";
+      html = `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #333;">
+          <h2 style="color: #111;">Hello ${firstName},</h2>
+          <p>After review, we were unable to approve your profile claim at this time.</p>
+          <p><strong>Reason:</strong> ${notification.body || "No reason provided."}</p>
+          <p>If you believe this decision was made in error or you have additional documentation to support your claim, please contact our support team.</p>
+          <a href="${APP_URL}/dashboard/settings/support" style="display:inline-block; margin:16px 0; padding:10px 20px; background:#111; color:#fff; border-radius:999px; text-decoration:none; font-size:13px; font-weight:600;">Contact Support →</a>
+          <p style="margin-top: 32px;">Sincerely,<br/><strong>The DNounce Team</strong></p>
+          <p style="margin-top: 32px; font-size: 12px; color: #999;">
+            <a href="${APP_URL}/dashboard/settings/notifications" style="color: #999;">Manage notification preferences</a>
           </p>
         </div>
       `;

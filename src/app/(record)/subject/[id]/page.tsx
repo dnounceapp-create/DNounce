@@ -265,6 +265,15 @@ function ClaimBanner({
       return;
     }
 
+    await supabase.from("admin_audit_log").insert({
+      admin_user_id: user.id,
+      admin_level: 0,
+      action: "auto_claim",
+      target_type: "subject",
+      target_id: subjectId,
+      note: "Auto-claimed via email match",
+    });
+
     setClaimState("auto-claimed");
     setLoading(false);
     onClaimed();
