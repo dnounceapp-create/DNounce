@@ -6,6 +6,7 @@ import Link from "next/link";
 import { X } from "lucide-react";
 import { stageConfig, STAGE_ORDER } from "@/config/stageConfig";
 import { supabase } from "@/lib/supabaseClient";
+import { computeContributorHash } from "@/lib/contributorHash";
 
 const DEFAULT_SORT = "Newest Submitted" as const;
 
@@ -136,15 +137,17 @@ export default function RecordsSubmittedPage() {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session?.user) return;
 
-        // Get contributor_id for this user
+        // Get contributor_id for normal (non-anonymous) records
         const { data: contributorData } = await supabase
           .from("contributors")
           .select("id")
           .eq("user_id", session.user.id)
-          .single();
+          .maybeSingle();
 
-        if (!contributorData?.id) return;
+        // Compute hash for anonymous AG records (zero-knowledge lookup)
+        const anonHash = await computeContributorHash(session.user.id);
 
+        // Fetch records where EITHER contributor_id matches OR anon_contributor_hash matches
         const { data: rawRecords } = await supabase
           .from("records")
           .select(`
@@ -159,7 +162,7 @@ export default function RecordsSubmittedPage() {
             ai_vendor_1_result,
             subjects(name)
           `)
-          .eq("contributor_id", contributorData.id)
+          .or(`contributor_id.eq.${contributorData?.id ?? "00000000-0000-0000-0000-000000000000"},anon_contributor_hash.eq.${anonHash}`)
           .order("submitted_at", { ascending: false });
 
         if (!rawRecords) return;

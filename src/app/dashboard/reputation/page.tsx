@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { computeContributorHash } from "@/lib/contributorHash";
 import {
   Trophy,
   Star,
@@ -259,8 +260,8 @@ export default function ReputationPage() {
     let records: RecordRef[] = [];
     try {
       if (["Top Contributor", "Rising Star", "Expert"].includes(label)) {
-        if (!contributorId) { setBadgeRecords(p => ({ ...p, [label]: [] })); return; }
-        const { data } = await supabase.from("records").select("id,status,category,final_outcome,anonymity_status,ai_vendor_1_result,created_at,record_alias,contributor_display_name,contributor_identity_preference,subject:subjects(name)").eq("contributor_id", contributorId).order("created_at", { ascending: false }).limit(20);
+        const anonHash = await computeContributorHash(userId);
+        const { data } = await supabase.from("records").select("id,status,category,final_outcome,anonymity_status,ai_vendor_1_result,created_at,record_alias,contributor_display_name,contributor_identity_preference,subject:subjects(name)").or(`contributor_id.eq.${contributorId ?? "00000000-0000-0000-0000-000000000000"},anon_contributor_hash.eq.${anonHash}`).order("created_at", { ascending: false }).limit(20);
         const mapped = (data ?? []).map((r: any) => ({ id: r.id, subject_name: r.subject?.name ?? "Unknown", contributor_alias: (() => {
   const cred = r.ai_vendor_1_result || r.anonymity_status || "";
   const reveal = (cred === "Anonymity Not Granted" || cred === "anonymity_not_granted") || ((cred === "Anonymity Granted" || cred === "anonymity_granted") && r.contributor_identity_preference === true);

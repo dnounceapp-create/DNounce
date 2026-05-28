@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { computeContributorHash } from "@/lib/contributorHash";
 
 export async function GET(req: NextRequest) {
   try {
@@ -36,6 +37,7 @@ export async function GET(req: NextRequest) {
       .eq("auth_user_id", user.id)
       .single();
     const contributorId = contributorData?.id ?? null;
+    const anonHash = await computeContributorHash(user.id);
 
     // ─── Base queries (Insights + Pro) ───────────────────────────────────
 
@@ -63,9 +65,7 @@ export async function GET(req: NextRequest) {
       subjectId
         ? supabase.from("records").select("id, status, final_outcome, anonymity_status, ai_vendor_1_result, category, voting_started_at, decision_made_at, debate_started_at, published_at, created_at, contributor_display_name, contributor_identity_preference, record_alias").eq("subject_id", subjectId).in("status", ["published", "deletion_request", "debate", "voting", "decision"])
         : Promise.resolve({ data: [] }),
-      contributorId
-        ? supabase.from("records").select("id, status, final_outcome, ai_vendor_1_result, anonymity_status, category").eq("contributor_id", contributorId)
-        : Promise.resolve({ data: [] }),
+      supabase.from("records").select("id, status, final_outcome, ai_vendor_1_result, anonymity_status, category").or(`contributor_id.eq.${contributorId ?? "00000000-0000-0000-0000-000000000000"},anon_contributor_hash.eq.${anonHash}`),
       supabase.from("record_votes").select("id, record_id, choice, created_at").eq("user_id", user.id),
       supabase.from("record_community_statements").select("id, record_id").eq("author_user_id", user.id),
       supabase.from("record_debate_messages").select("id, record_id").eq("author_user_id", user.id),
