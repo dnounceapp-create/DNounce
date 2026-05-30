@@ -1011,16 +1011,16 @@ export default function SubmitRecordPage() {
                     <div className="shrink-0 flex flex-col items-end gap-1">
                       <div className="flex items-center gap-3">
                         <span className="text-sm font-semibold text-gray-700">
-                          {identityPreference === "show" ? "Show my name" : "Hide my name"}
+                          {identityPreference === "hide" ? "Showing as anonymous" : "Showing my real name"}
                         </span>
 
                         <button
                           type="button"
                           role="switch"
-                          aria-checked={identityPreference === "show"}
+                          aria-checked={identityPreference === "hide"}
                           className={[
                             "relative inline-flex h-7 w-12 items-center rounded-full border transition",
-                            identityPreference === "show"
+                            identityPreference === "hide"
                               ? "bg-black border-black"
                               : "bg-gray-200 border-gray-300",
                           ].join(" ")}
@@ -1042,7 +1042,7 @@ export default function SubmitRecordPage() {
                           <span
                             className={[
                               "inline-block h-5 w-5 transform rounded-full bg-white shadow transition",
-                              identityPreference === "show" ? "translate-x-6" : "translate-x-1",
+                              identityPreference === "hide" ? "translate-x-6" : "translate-x-1",
                             ].join(" ")}
                           />
                         </button>
@@ -1075,7 +1075,7 @@ export default function SubmitRecordPage() {
                       <div className="mt-2 text-sm text-gray-600 leading-relaxed">
                         You’re about to change your identity preference to{" "}
                         <span className="font-semibold">
-                          {pendingIdentity.current === "show" ? "Show my name" : "Hide my name"}
+                          {pendingIdentity.current === "hide" ? "Showing as anonymous" : "Showing my real name"}
                         </span>
                         .
                         <div className="mt-2 text-xs text-gray-500">
