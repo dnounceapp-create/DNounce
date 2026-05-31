@@ -666,10 +666,8 @@ export default function SubmitRecordPage() {
 
       // Zero-knowledge: sever contributor identity for anonymous AG submissions
       if (credibility === "Anonymity Granted" && identityPreference === "hide") {
-        const msgBuffer = new TextEncoder().encode(userData.user.id);
-        const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
-        const hashArray = Array.from(new Uint8Array(hashBuffer));
-        const hashHex = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+        const { computeContributorHash } = await import("@/lib/contributorHash");
+        const hashHex = await computeContributorHash(userData.user.id);
 
         await supabase
           .from("records")

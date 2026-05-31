@@ -73,10 +73,8 @@ export async function POST(req: Request) {
       if (rec?.contributor_identity_preference === false && rec?.contributor_id) {
         const authUserId = (rec.contributor as any)?.auth_user_id;
         if (authUserId) {
-          const msgBuffer = new TextEncoder().encode(authUserId);
-          const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
-          const hashArray = Array.from(new Uint8Array(hashBuffer));
-          const hashHex = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+          const { computeContributorHash } = await import("@/lib/contributorHash");
+          const hashHex = await computeContributorHash(authUserId);
 
           await admin
             .from("records")
