@@ -36,8 +36,8 @@ export default function AdminClaimsPage() {
     const rows = (data as any[]) ?? [];
 
     // Enrich with subject name and claimant name
-    const subjectIds = [...new Set(rows.map(r => r.subject_id).filter(Boolean))];
-    const userIds = [...new Set(rows.map(r => r.claimant_user_id).filter(Boolean))];
+    const subjectIds = [...new Set(rows.map(r => r.subject_uuid).filter(Boolean))];
+    const userIds = [...new Set(rows.map(r => r.claimant_auth_user_id).filter(Boolean))];
 
     const [subjectsRes, acctsRes] = await Promise.all([
       subjectIds.length ? supabase.from("subjects").select("subject_uuid,name").in("subject_uuid", subjectIds) : { data: [] },
@@ -52,9 +52,9 @@ export default function AdminClaimsPage() {
 
     setClaims(rows.map(r => ({
       ...r,
-      subject_name: subjectMap[r.subject_id] ?? "—",
-      claimant_name: `${acctMap[r.claimant_user_id]?.first_name ?? ""} ${acctMap[r.claimant_user_id]?.last_name ?? ""}`.trim() || "—",
-      claimant_email: acctMap[r.claimant_user_id]?.email ?? "—",
+      subject_name: subjectMap[r.subject_uuid] ?? "—",
+      claimant_name: `${acctMap[r.claimant_auth_user_id]?.first_name ?? ""} ${acctMap[r.claimant_auth_user_id]?.last_name ?? ""}`.trim() || "—",
+      claimant_email: acctMap[r.claimant_auth_user_id]?.email ?? "—",
     })));
 
     setLoading(false);
@@ -67,20 +67,20 @@ export default function AdminClaimsPage() {
     // Set owner_auth_user_id on the subject
     const { error: subjectError } = await supabase
       .from("subjects")
-      .update({ owner_auth_user_id: claim.claimant_user_id })
-      .eq("subject_uuid", claim.subject_id);
+      .update({ owner_auth_user_id: claim.claimant_auth_user_id })
+      .eq("subject_uuid", claim.subject_uuid);
     if (subjectError) throw subjectError;
 
     // Update claim status
     const { error: claimError } = await supabase
       .from("subject_claims")
-      .update({ status: "approved", reviewed_at: new Date().toISOString(), reviewed_by: session.user.id, admin_note: note || null })
+      .update({ status: "approved", reviewed_at: new Date().toISOString(), reviewed_by: session.user.id, note: note || null })
       .eq("id", claim.id);
     if (claimError) throw claimError;
 
     // Notify claimant
     await supabase.from("notifications").insert({
-      user_id: claim.claimant_user_id,
+      user_id: claim.claimant_auth_user_id,
       title: "Your profile claim was approved",
       body: `You now own the subject profile for "${claim.subject_name}". You can manage it from your dashboard.`,
       type: "claim_approved",
@@ -90,7 +90,7 @@ export default function AdminClaimsPage() {
     await supabase.from("admin_audit_log").insert({
       admin_user_id: session.user.id, admin_level: adminLevel,
       action: "claim_approved", target_type: "subject_claims", target_id: claim.id,
-      new_value: { subject_id: claim.subject_id, claimant_user_id: claim.claimant_user_id, note },
+      new_value: { subject_id: claim.subject_uuid, claimant_user_id: claim.claimant_auth_user_id, note },
     });
 
     showToast("success", "Claim approved — subject ownership transferred");
@@ -106,12 +106,12 @@ export default function AdminClaimsPage() {
 
     const { error } = await supabase
       .from("subject_claims")
-      .update({ status: "rejected", reviewed_at: new Date().toISOString(), reviewed_by: session.user.id, admin_note: note })
+      .update({ status: "rejected", reviewed_at: new Date().toISOString(), reviewed_by: session.user.id, note: note })
       .eq("id", claim.id);
     if (error) throw error;
 
     await supabase.from("notifications").insert({
-      user_id: claim.claimant_user_id,
+      user_id: claim.claimant_auth_user_id,
       title: "Your profile claim was not approved",
       body: `Your claim for "${claim.subject_name}" was reviewed and could not be approved at this time. Reason: ${note}`,
       type: "claim_rejected",
@@ -121,7 +121,7 @@ export default function AdminClaimsPage() {
     await supabase.from("admin_audit_log").insert({
       admin_user_id: session.user.id, admin_level: adminLevel,
       action: "claim_rejected", target_type: "subject_claims", target_id: claim.id,
-      new_value: { subject_id: claim.subject_id, claimant_user_id: claim.claimant_user_id, note },
+      new_value: { subject_id: claim.subject_uuid, claimant_user_id: claim.claimant_auth_user_id, note },
     });
 
     showToast("success", "Claim rejected — user notified");
@@ -133,15 +133,15 @@ export default function AdminClaimsPage() {
 
   const filtered = claims.filter(c => {
     const q = search.toLowerCase();
-    const m = !search || c.subject_name?.toLowerCase().includes(q) || c.claimant_name?.toLowerCase().includes(q) || c.claimant_email?.toLowerCase().includes(q) || c.id?.includes(q) || c.claimant_user_id?.includes(q);
+    const m = !search || c.subject_name?.toLowerCase().includes(q) || c.claimant_name?.toLowerCase().includes(q) || c.claimant_email?.toLowerCase().includes(q) || c.id?.includes(q) || c.claimant_auth_user_id?.includes(q);
     return m && (statusFilter === "all" || c.status === statusFilter);
   });
 
   const csvData = filtered.map(c => ({
     id: c.id,
-    subject_id: c.subject_id,
+    subject_id: c.subject_uuid,
     subject_name: c.subject_name,
-    claimant_user_id: c.claimant_user_id,
+    claimant_user_id: c.claimant_auth_user_id,
     claimant_name: c.claimant_name,
     claimant_email: c.claimant_email,
     status: c.status,
@@ -232,6 +232,11 @@ export default function AdminClaimsPage() {
             )
           }
         >
+          {selected.note && (
+            <DetailSection title="User's Verification Note">
+              <p className="py-3 text-sm text-gray-300 whitespace-pre-wrap">{selected.note}</p>
+            </DetailSection>
+          )}
           <DetailSection title="Claim Details">
             <DetailRow label="Claim ID" value={selected.id} mono copyable />
             <DetailRow label="Status" value={selected.status} highlight={selected.status === "approved" ? "green" : selected.status === "rejected" ? "red" : undefined} />

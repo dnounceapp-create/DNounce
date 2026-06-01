@@ -129,7 +129,7 @@ export default function SubmitRecordPage() {
 
   const [files, setFiles] = useState<File[]>([]);
   // Identity preference (required)
-  const [identityPreference, setIdentityPreference] = useState<"hide" | "show">("hide"); // default hide
+  const [identityPreference, setIdentityPreference] = useState<"hide" | "show">("show");
   const [identityTouched, setIdentityTouched] = useState(false);
   
   // confirm when changing after initial choice

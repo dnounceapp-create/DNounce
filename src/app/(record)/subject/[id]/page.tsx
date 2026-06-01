@@ -274,6 +274,14 @@ function ClaimBanner({
       note: "Auto-claimed via email match",
     });
 
+    await supabase.from("notifications").insert({
+      user_id: user.id,
+      title: "Your profile claim was approved",
+      body: `You now own the subject profile on DNounce. You can manage it from your dashboard.`,
+      type: "claim_approved",
+      record_id: null,
+    });
+
     setClaimState("auto-claimed");
     setLoading(false);
     onClaimed();
@@ -302,6 +310,7 @@ function ClaimBanner({
     }
 
     setClaimState("claim-submitted");
+    onClaimed();
     setLoading(false);
   }
 
@@ -369,7 +378,7 @@ function ClaimBanner({
           onClick={() => router.push(`/loginsignup?redirectTo=/subject/${subjectId}`)}
           className="shrink-0 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 transition"
         >
-          Claim Profile
+          Sign in to claim this profile
         </button>
       </div>
     );
@@ -421,7 +430,7 @@ function ClaimBanner({
               onClick={() => setShowForm(true)}
               className="shrink-0 rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-100 transition"
             >
-              Claim profile
+              Request to claim
             </button>
           )}
         </div>
