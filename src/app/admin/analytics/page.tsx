@@ -231,7 +231,7 @@ export default function AdminAnalyticsPage() {
         supabase.from("records").select("anonymity_status").limit(2000),
         supabase.from("records").select("id,status,final_outcome,dispute_started_at,voting_ends_at,decision_made_at,created_at").limit(2000),
         supabase.from("users").select("created_at").limit(5000),
-        supabase.from("subscriptions").select("plan_id,status").limit(5000),
+        supabase.from("subscriptions").select("plan_id,status,stripe_subscription_id").limit(5000),
         supabase.from("voter_quality_badges").select("is_low_quality,is_convicted").limit(5000),
         supabase.from("profile_views").select("id", { count: "exact", head: true }),
         supabase.from("record_views").select("id", { count: "exact", head: true }),
