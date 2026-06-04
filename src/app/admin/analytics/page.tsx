@@ -197,6 +197,8 @@ export default function AdminAnalyticsPage() {
   const [recordPageViews, setRecordPageViews] = useState(0);
   const [subjectPageViews, setSubjectPageViews] = useState(0);
   const [subscriberCounts, setSubscriberCounts] = useState({ standard: 0, insights: 0, pro: 0 });
+  const [trialCounts, setTrialCounts] = useState({ insights: 0, pro: 0 });
+  const [trialingSoonCount, setTrialingSoonCount] = useState(0);
   const [mrr, setMrr] = useState(0);
   const [pendingVerdicts, setPendingVerdicts] = useState(0);
   const [lowQualityVoterPct, setLowQualityVoterPct] = useState<number | null>(null);
@@ -231,7 +233,7 @@ export default function AdminAnalyticsPage() {
         supabase.from("records").select("anonymity_status").limit(2000),
         supabase.from("records").select("id,status,final_outcome,dispute_started_at,voting_ends_at,decision_made_at,created_at").limit(2000),
         supabase.from("users").select("created_at").limit(5000),
-        supabase.from("subscriptions").select("plan_id,status,stripe_subscription_id").limit(5000),
+        supabase.from("subscriptions").select("plan_id,status,stripe_subscription_id,trial_ends_at,trial_started_at").limit(5000),
         supabase.from("voter_quality_badges").select("is_low_quality,is_convicted").limit(5000),
         supabase.from("profile_views").select("id", { count: "exact", head: true }),
         supabase.from("record_views").select("id", { count: "exact", head: true }),
@@ -325,6 +327,27 @@ export default function AdminAnalyticsPage() {
         { name: "Pro ($24.99)", value: planCounts.pro },
       ]);
       setMrr(Math.round(planCounts.insights * 9.99 + planCounts.pro * 24.99));
+
+      // Trial subscribers (trialing status, trial not yet expired)
+      const now = new Date();
+      const trialing = subsData.filter((s: any) =>
+        s.status === "trialing" &&
+        s.trial_ends_at &&
+        new Date(s.trial_ends_at) > now
+      );
+
+      const trialCounts = { insights: 0, pro: 0 };
+      const trialingSoon: typeof trialing = [];
+
+      trialing.forEach((s: any) => {
+        if (s.plan_id === "insights") trialCounts.insights++;
+        if (s.plan_id === "pro") trialCounts.pro++;
+        const daysLeft = Math.ceil((new Date(s.trial_ends_at!).getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        if (daysLeft <= 7) trialingSoon.push(s);
+      });
+
+      setTrialCounts(trialCounts);
+      setTrialingSoonCount(trialingSoon.length);
 
       const vqData = voteQuality.data ?? [];
       if (vqData.length > 0) {
@@ -432,6 +455,9 @@ export default function AdminAnalyticsPage() {
           <StatBox label="Free Plan Users" value={subscriberCounts.standard} sub="No subscription yet" color="gray" />
           <StatBox label="Insights Plan Subscribers" value={subscriberCounts.insights} sub="$9.99/month" color="blue" />
           <StatBox label="Pro Plan Subscribers" value={subscriberCounts.pro} sub="$24.99/month" color="purple" />
+          <StatBox label="Insights Plan Trials" value={trialCounts.insights} sub="Active free trials" color="blue" />
+          <StatBox label="Pro Plan Trials" value={trialCounts.pro} sub="Active free trials" color="blue" />
+          <StatBox label="Trials Ending Soon" value={trialingSoonCount} sub="Expiring within 7 days" color="yellow" />
         </div>
         <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5">
           <h3 className="text-white text-xs font-semibold mb-4">Plan Breakdown</h3>

@@ -43,11 +43,17 @@ export async function POST(req: NextRequest) {
         .upsert({
           user_id: userId,
           plan_id: planId,
-          status: "active",
+          status: stripeSub.status,
           stripe_customer_id: customerId,
           stripe_subscription_id: subscriptionId,
           current_period_start: new Date(stripeSub.current_period_start * 1000).toISOString(),
           current_period_end: new Date(stripeSub.current_period_end * 1000).toISOString(),
+          trial_started_at: stripeSub.trial_start
+            ? new Date(stripeSub.trial_start * 1000).toISOString()
+            : null,
+          trial_ends_at: stripeSub.trial_end
+            ? new Date(stripeSub.trial_end * 1000).toISOString()
+            : null,
           updated_at: new Date().toISOString(),
         }, { onConflict: "user_id" });
 
@@ -73,6 +79,12 @@ export async function POST(req: NextRequest) {
           status,
           current_period_start: new Date(session.current_period_start * 1000).toISOString(),
           current_period_end: new Date(session.current_period_end * 1000).toISOString(),
+          trial_started_at: session.trial_start
+            ? new Date(session.trial_start * 1000).toISOString()
+            : null,
+          trial_ends_at: session.trial_end
+            ? new Date(session.trial_end * 1000).toISOString()
+            : null,
           canceled_at: session.canceled_at
             ? new Date(session.canceled_at * 1000).toISOString()
             : null,
@@ -80,6 +92,33 @@ export async function POST(req: NextRequest) {
         })
         .eq("stripe_customer_id", customerId);
 
+      break;
+    }
+
+    case "customer.subscription.trial_will_end": {
+      const customerId = session.customer;
+
+      // Look up the user for this customer
+      const { data: sub } = await supabase
+        .from("subscriptions")
+        .select("user_id, plan_id")
+        .eq("stripe_customer_id", customerId)
+        .maybeSingle();
+
+      if (sub?.user_id) {
+        const planLabel = sub.plan_id === "pro" ? "Pro ($24.99/month)" : "Insights ($9.99/month)";
+        const trialEnd = session.trial_end
+          ? new Date(session.trial_end * 1000).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
+          : "soon";
+
+        await supabase.from("notifications").insert({
+          user_id: sub.user_id,
+          title: "Your free trial ends in 3 days",
+          body: `Your ${planLabel} free trial ends on ${trialEnd}. After that you'll be charged automatically. You can manage your subscription in your dashboard.`,
+          type: "trial_ending",
+          record_id: null,
+        });
+      }
       break;
     }
 

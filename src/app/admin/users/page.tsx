@@ -8,6 +8,12 @@ import UserHistoryPanel from "./UserHistoryPanel";
 const LEVEL_LABELS: Record<string, string> = {"":"Regular User", support_agent:"Support Agent", moderator:"Moderator", super_admin:"Super Admin"};
 const LEVEL_COLORS: Record<string, string> = {"":"bg-gray-800 text-gray-400 border-gray-700", support_agent:"bg-blue-900 text-blue-300 border-blue-700", moderator:"bg-purple-900 text-purple-300 border-purple-700", super_admin:"bg-red-900 text-red-300 border-red-700"};
 
+function trialDaysLeft(trial_ends_at: string | null): number | null {
+  if (!trial_ends_at) return null;
+  const ms = new Date(trial_ends_at).getTime() - Date.now();
+  return ms <= 0 ? 0 : Math.ceil(ms / (1000 * 60 * 60 * 24));
+}
+
 export default function AdminUsersPage() {
   const [tab, setTab] = useState<"active" | "deleted">("active");
   const [users, setUsers] = useState<any[]>([]);
@@ -37,7 +43,7 @@ export default function AdminUsersPage() {
 
   async function load() {
     setLoading(true);
-    const [usersRes, acctsRes, adminRolesRes, scoresRes, bansRes, socialRes, prefsRes, deletedRes] = await Promise.all([
+    const [usersRes, acctsRes, adminRolesRes, scoresRes, bansRes, socialRes, prefsRes, subsRes, deletedRes] = await Promise.all([
       supabase.from("users").select("id,auth_user_id,is_banned,admin,created_at,onboarding_complete,personal_category,subject_id,contributor_id,updated_at,how_found").order("created_at", { ascending: false }).limit(500),
       supabase.from("user_accountdetails").select("user_id,first_name,last_name,job_title,organization,location,nickname,phone,email,avatar_url,created_at,updated_at"),
       supabase.from("admin_roles").select("user_id,role,created_at,assigned_by").eq("is_active", true),
@@ -45,6 +51,7 @@ export default function AdminUsersPage() {
       supabase.from("user_bans").select("user_id,id,reason,is_permanent,expires_at,created_at,is_active,revoked_at,banned_by").eq("is_active", true),
       supabase.from("user_social_links").select("user_id,platform,label,url,id"),
       supabase.from("user_preferences").select("user_id,language,theme,font_size,reduce_motion,notif_email,notif_push,updated_at"),
+      supabase.from("subscriptions").select("user_id,plan_id,status,trial_ends_at,stripe_subscription_id"),
       supabase.from("deleted_accounts").select("*").order("deleted_at", { ascending: false }).limit(500),
     ]);
     const acctMap: Record<string, any> = {}; (acctsRes.data ?? []).forEach((a: any) => { acctMap[a.user_id] = a; });
@@ -53,9 +60,10 @@ export default function AdminUsersPage() {
     const banMap: Record<string, any> = {}; (bansRes.data ?? []).forEach((b: any) => { banMap[b.user_id] = b; });
     const socialMap: Record<string, any[]> = {}; (socialRes.data ?? []).forEach((s: any) => { if (!socialMap[s.user_id]) socialMap[s.user_id] = []; socialMap[s.user_id].push(s); });
     const prefsMap: Record<string, any> = {}; (prefsRes.data ?? []).forEach((p: any) => { prefsMap[p.user_id] = p; });
+    const subMap: Record<string, any> = {}; (subsRes.data ?? []).forEach((s: any) => { subMap[s.user_id] = s; });
     const merged = (usersRes.data ?? []).map((u: any) => {
       const a = acctMap[u.auth_user_id] ?? {}; const s = scoreMap[u.auth_user_id] ?? {};
-      return { ...u, ...a, admin_level: adminMap[u.auth_user_id] ?? "", ...s, active_ban: banMap[u.auth_user_id] ?? null, social_links: socialMap[u.auth_user_id] ?? [], prefs: prefsMap[u.auth_user_id] ?? null };
+      return { ...u, ...a, admin_level: adminMap[u.auth_user_id] ?? "", ...s, active_ban: banMap[u.auth_user_id] ?? null, social_links: socialMap[u.auth_user_id] ?? [], prefs: prefsMap[u.auth_user_id] ?? null, subscription: subMap[u.auth_user_id] ?? null };
     });
     setUsers(merged);
     setDeletedAccounts(deletedRes.data ?? []);
@@ -363,6 +371,24 @@ export default function AdminUsersPage() {
               <DetailRow label="Ban Expires" value={fmtDate(selected.active_ban.expires_at)} />
               <DetailRow label="Banned At" value={fmtDate(selected.active_ban.created_at)} />
             </>}
+          </DetailSection>
+          <DetailSection title="Subscription">
+            {(() => {
+              const sub = selected.subscription;
+              if (!sub) return <DetailRow label="Plan" value="Standard (Free)" />;
+              const planName = sub.plan_id === "pro" ? "Pro" : sub.plan_id === "insights" ? "Insights" : "Standard";
+              const isTrialing = sub.status === "trialing";
+              const days = trialDaysLeft(sub.trial_ends_at);
+              const statusLabel = isTrialing ? "Trialing" : sub.status === "active" ? "Active" : sub.status === "canceled" ? "Canceled" : sub.status;
+              return (
+                <>
+                  <DetailRow label="Plan" value={planName} />
+                  <DetailRow label="Status" value={statusLabel} />
+                  {isTrialing && days !== null && <DetailRow label="Trial Days Left" value={days} />}
+                  {!isTrialing && sub.stripe_subscription_id && <DetailRow label="Payment Status" value="Paying" />}
+                </>
+              );
+            })()}
           </DetailSection>
           <DetailSection title="Scores">
             <DetailRow label="Subject Score" value={selected.subject_score} />

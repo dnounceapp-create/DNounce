@@ -224,6 +224,22 @@ Deno.serve(async (req) => {
         </div>
       `;
 
+    } else if (notification.type === "trial_ending") {
+      subject = "Your free trial ends in 3 days";
+      html = `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #333;">
+          <h2 style="color: #111;">Hello ${firstName},</h2>
+          <p>${notification.body}</p>
+          <p>If you enjoy DNounce, no action is needed — you'll be charged automatically when your trial ends.</p>
+          <p>If you'd like to cancel before being charged, you can do so from your dashboard.</p>
+          <a href="${APP_URL}/dashboard/settings/billing" style="display:inline-block; margin:16px 0; padding:10px 20px; background:#111; color:#fff; border-radius:999px; text-decoration:none; font-size:13px; font-weight:600;">Manage Subscription →</a>
+          <p style="margin-top: 32px;">Sincerely,<br/><strong>The DNounce Team</strong></p>
+          <p style="margin-top: 32px; font-size: 12px; color: #999;">
+            <a href="${APP_URL}/dashboard/settings/notifications" style="color: #999;">Manage notification preferences</a>
+          </p>
+        </div>
+      `;
+
     } else {
       // Generic fallback — uses notification title and body as-is
       const recordUrl = notification.record_id ? `${APP_URL}/record/${notification.record_id}` : null;
