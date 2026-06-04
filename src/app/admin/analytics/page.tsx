@@ -329,11 +329,11 @@ export default function AdminAnalyticsPage() {
       setMrr(Math.round(planCounts.insights * 9.99 + planCounts.pro * 24.99));
 
       // Trial subscribers (trialing status, trial not yet expired)
-      const now = new Date();
+      const trialNow = new Date();
       const trialing = subsData.filter((s: any) =>
         s.status === "trialing" &&
         s.trial_ends_at &&
-        new Date(s.trial_ends_at) > now
+        new Date(s.trial_ends_at) > trialNow
       );
 
       const trialCounts = { insights: 0, pro: 0 };
@@ -342,7 +342,7 @@ export default function AdminAnalyticsPage() {
       trialing.forEach((s: any) => {
         if (s.plan_id === "insights") trialCounts.insights++;
         if (s.plan_id === "pro") trialCounts.pro++;
-        const daysLeft = Math.ceil((new Date(s.trial_ends_at!).getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        const daysLeft = Math.ceil((new Date(s.trial_ends_at!).getTime() - trialNow.getTime()) / (1000 * 60 * 60 * 24));
         if (daysLeft <= 7) trialingSoon.push(s);
       });
 
