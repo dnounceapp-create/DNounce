@@ -120,14 +120,18 @@ def fetch_reddit_posts() -> list[dict]:
     """Fetch recent posts from target subreddits using Reddit's public JSON API."""
     import requests
 
-    headers = {"User-Agent": "DNounce Monitor v1.0 (personal use)"}
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "application/json",
+        "Accept-Language": "en-US,en;q=0.9",
+    }
     candidates = []
 
     for sub_name in SUBREDDITS:
         try:
             log.info(f"Scanning r/{sub_name}...")
             url = f"https://www.reddit.com/r/{sub_name}/new.json?limit=50"
-            r = requests.get(url, headers=headers, timeout=10)
+            r = requests.get(url, headers=headers, timeout=15)
 
             if r.status_code == 429:
                 log.warning(f"Rate limited on r/{sub_name}. Waiting 60s...")
@@ -173,7 +177,7 @@ def fetch_reddit_posts() -> list[dict]:
                         "created_utc": data.get("created_utc", 0),
                     })
 
-            time.sleep(2)  # Be respectful — 2 seconds between subreddits
+            time.sleep(3)  # Be respectful — 3 seconds between subreddits
 
         except Exception as e:
             log.warning(f"Error scanning r/{sub_name}: {e}")
