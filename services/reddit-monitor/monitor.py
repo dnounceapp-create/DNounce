@@ -25,11 +25,6 @@ logging.basicConfig(
 log = logging.getLogger("dnounce-monitor")
 
 # ── Config ───────────────────────────────────────────────────────────────────
-REDDIT_CLIENT_ID     = os.environ["REDDIT_CLIENT_ID"]
-REDDIT_CLIENT_SECRET = os.environ["REDDIT_CLIENT_SECRET"]
-REDDIT_USER_AGENT    = os.environ.get("REDDIT_USER_AGENT", "DNounce Monitor v1.0")
-REDDIT_USERNAME      = os.environ["REDDIT_USERNAME"]
-REDDIT_PASSWORD      = os.environ["REDDIT_PASSWORD"]
 GROQ_API_KEY         = os.environ["GROQ_API_KEY"]
 SUPABASE_URL         = os.environ["SUPABASE_URL"]
 SUPABASE_KEY         = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
@@ -122,52 +117,63 @@ def score_post(title: str, body: str) -> tuple[int, str]:
 
 
 def fetch_reddit_posts() -> list[dict]:
-    """Fetch recent posts from target subreddits and score them."""
-    import praw
+    """Fetch recent posts from target subreddits using Reddit's public JSON API."""
+    import requests
 
-    log.info("Connecting to Reddit...")
-    reddit = praw.Reddit(
-        client_id=REDDIT_CLIENT_ID,
-        client_secret=REDDIT_CLIENT_SECRET,
-        user_agent=REDDIT_USER_AGENT,
-        username=REDDIT_USERNAME,
-        password=REDDIT_PASSWORD,
-    )
-
+    headers = {"User-Agent": "DNounce Monitor v1.0 (personal use)"}
     candidates = []
 
     for sub_name in SUBREDDITS:
         try:
             log.info(f"Scanning r/{sub_name}...")
-            sub = reddit.subreddit(sub_name)
+            url = f"https://www.reddit.com/r/{sub_name}/new.json?limit=50"
+            r = requests.get(url, headers=headers, timeout=10)
 
-            for post in sub.new(limit=50):
+            if r.status_code == 429:
+                log.warning(f"Rate limited on r/{sub_name}. Waiting 60s...")
+                time.sleep(60)
+                continue
+
+            if r.status_code != 200:
+                log.warning(f"r/{sub_name} returned {r.status_code}. Skipping.")
+                continue
+
+            posts = r.json().get("data", {}).get("children", [])
+
+            for post in posts:
+                data = post.get("data", {})
+
                 # Skip if older than 48 hours
-                age_hours = (time.time() - post.created_utc) / 3600
+                age_hours = (time.time() - data.get("created_utc", 0)) / 3600
                 if age_hours > 48:
                     continue
 
                 # Skip if no body
-                body = post.selftext or ""
+                body = data.get("selftext", "") or ""
                 if len(body) < 100:
                     continue
 
-                score, persona = score_post(post.title, body)
+                # Skip deleted/removed
+                if body in ("[deleted]", "[removed]"):
+                    continue
+
+                title = data.get("title", "")
+                score, persona = score_post(title, body)
 
                 if score >= 5:
                     candidates.append({
-                        "reddit_id": post.id,
-                        "title": post.title,
+                        "reddit_id": data.get("id"),
+                        "title": title,
                         "body": body[:2000],
-                        "author": str(post.author),
+                        "author": data.get("author", "unknown"),
                         "subreddit": sub_name,
-                        "url": f"https://reddit.com{post.permalink}",
+                        "url": f"https://reddit.com{data.get('permalink', '')}",
                         "score": score,
                         "persona": persona,
-                        "created_utc": post.created_utc,
+                        "created_utc": data.get("created_utc", 0),
                     })
 
-            time.sleep(1)  # Rate limit safety
+            time.sleep(2)  # Be respectful — 2 seconds between subreddits
 
         except Exception as e:
             log.warning(f"Error scanning r/{sub_name}: {e}")
@@ -180,7 +186,6 @@ def fetch_reddit_posts() -> list[dict]:
     professionals = [c for c in candidates if c["persona"] == "professional"][:5]
     consumers = [c for c in candidates if c["persona"] == "consumer"][:5]
 
-    # Fill remaining slots if one side has fewer than 5
     result = professionals + consumers
     if len(result) < 10:
         extras = [c for c in candidates if c not in result]
