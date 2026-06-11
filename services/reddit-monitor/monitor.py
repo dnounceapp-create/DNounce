@@ -117,70 +117,110 @@ def score_post(title: str, body: str) -> tuple[int, str]:
 
 
 def fetch_reddit_posts() -> list[dict]:
-    """Fetch recent posts from target subreddits using Reddit's public JSON API."""
+    """
+    Fetch recent Reddit posts using Google search RSS feeds.
+    No Reddit API credentials required.
+    """
     import requests
+    from urllib.parse import quote
 
     headers = {
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "application/json",
-        "Accept-Language": "en-US,en;q=0.9",
+        "Accept": "application/rss+xml, application/xml, text/xml, */*",
     }
-    candidates = []
 
-    for sub_name in SUBREDDITS:
+    # Search queries targeting both personas
+    search_queries = [
+        # Consumer persona — bad experience with professional
+        'site:reddit.com "barber" "won\'t pay" OR "scammed" OR "bad experience"',
+        'site:reddit.com "nail tech" OR "nail salon" "scammed" OR "ripped off" OR "refused refund"',
+        'site:reddit.com "realtor" OR "real estate agent" "scammed" OR "won\'t pay" OR "fraud"',
+        'site:reddit.com "contractor" OR "plumber" OR "electrician" "scammed" OR "took my money" OR "never finished"',
+        'site:reddit.com "freelancer" OR "designer" OR "developer" "won\'t pay" OR "ghosted" OR "scammed"',
+        # Professional persona — bad client
+        'site:reddit.com "my client" "won\'t pay" OR "ghosted me" OR "chargeback" OR "stiffed"',
+        'site:reddit.com "freelancer" "client won\'t pay" OR "client ghosted" OR "bad client"',
+        'site:reddit.com "as a barber" OR "as a nail tech" OR "as a realtor" "bad client" OR "refused to pay"',
+    ]
+
+    candidates = []
+    seen_urls = set()
+
+    for query in search_queries:
         try:
-            log.info(f"Scanning r/{sub_name}...")
-            url = f"https://www.reddit.com/r/{sub_name}/new.json?limit=50"
+            # Use Google's RSS search feed
+            encoded = quote(query)
+            url = f"https://news.google.com/rss/search?q={encoded}&hl=en-US&gl=US&ceid=US:en"
+
+            log.info(f"Searching: {query[:60]}...")
             r = requests.get(url, headers=headers, timeout=15)
 
-            if r.status_code == 429:
-                log.warning(f"Rate limited on r/{sub_name}. Waiting 60s...")
-                time.sleep(60)
-                continue
-
             if r.status_code != 200:
-                log.warning(f"r/{sub_name} returned {r.status_code}. Skipping.")
+                log.warning(f"Search returned {r.status_code}. Skipping.")
+                time.sleep(3)
                 continue
 
-            posts = r.json().get("data", {}).get("children", [])
+            # Parse RSS XML
+            import xml.etree.ElementTree as ET
+            root = ET.fromstring(r.content)
+            items = root.findall(".//item")
 
-            for post in posts:
-                data = post.get("data", {})
+            for item in items:
+                title_el = item.find("title")
+                link_el = item.find("link")
+                desc_el = item.find("description")
 
-                # Skip if older than 48 hours
-                age_hours = (time.time() - data.get("created_utc", 0)) / 3600
-                if age_hours > 48:
+                if title_el is None or link_el is None:
                     continue
 
-                # Skip if no body
-                body = data.get("selftext", "") or ""
-                if len(body) < 100:
+                title = title_el.text or ""
+                link = link_el.text or ""
+                desc = desc_el.text or "" if desc_el is not None else ""
+
+                # Only keep Reddit links
+                if "reddit.com" not in link:
                     continue
 
-                # Skip deleted/removed
-                if body in ("[deleted]", "[removed]"):
+                # Skip duplicates
+                if link in seen_urls:
+                    continue
+                seen_urls.add(link)
+
+                # Clean description (strip HTML tags)
+                import re as re_module
+                clean_desc = re_module.sub(r'<[^>]+>', '', desc).strip()
+
+                body = clean_desc or title
+                if len(body) < 50:
                     continue
 
-                title = data.get("title", "")
                 score, persona = score_post(title, body)
 
-                if score >= 5:
+                if score >= 4:
+                    # Extract subreddit from URL
+                    sub_match = re_module.search(r'reddit\.com/r/(\w+)', link)
+                    subreddit = sub_match.group(1) if sub_match else "reddit"
+
+                    # Extract author if present
+                    author_match = re_module.search(r'/u/(\w+)', body + title)
+                    author = author_match.group(1) if author_match else "unknown"
+
                     candidates.append({
-                        "reddit_id": data.get("id"),
+                        "reddit_id": link.split("/")[-2] if "/" in link else link[-8:],
                         "title": title,
                         "body": body[:2000],
-                        "author": data.get("author", "unknown"),
-                        "subreddit": sub_name,
-                        "url": f"https://reddit.com{data.get('permalink', '')}",
+                        "author": author,
+                        "subreddit": subreddit,
+                        "url": link,
                         "score": score,
                         "persona": persona,
-                        "created_utc": data.get("created_utc", 0),
+                        "created_utc": time.time(),
                     })
 
-            time.sleep(3)  # Be respectful — 3 seconds between subreddits
+            time.sleep(3)  # Be respectful between searches
 
         except Exception as e:
-            log.warning(f"Error scanning r/{sub_name}: {e}")
+            log.warning(f"Search error: {e}")
             continue
 
     # Sort by score descending
