@@ -8,7 +8,27 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from "recharts";
 
-type DailyCount = { date: string; count: number };
+type DailyCount = { period: string; count: number };
+type Granularity = "day" | "week" | "month" | "year";
+
+function todayISO(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+function daysAgoISO(days: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  return d.toISOString().slice(0, 10);
+}
+function formatPeriodLabel(period: string, granularity: Granularity): string {
+  if (!period) return "";
+  const d = new Date(period);
+  if (isNaN(d.getTime())) return period;
+  if (granularity === "day") return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  if (granularity === "week") return `Wk ${d.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
+  if (granularity === "month") return d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+  if (granularity === "year") return String(d.getFullYear());
+  return period;
+}
 type TableCounts = Record<string, number>;
 
 const CHART_COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#f97316"];
@@ -172,7 +192,12 @@ export default function AdminAnalyticsPage() {
   const [credDistribution, setCredDistribution] = useState<{ name: string; value: number }[]>([]);
   const [planDistribution, setPlanDistribution] = useState<{ name: string; value: number }[]>([]);
   const [loading, setLoading] = useState(true);
-  const [days, setDays] = useState(30);
+  const [granularity, setGranularity] = useState<Granularity>("day");
+  const [startDate, setStartDate] = useState<string>(daysAgoISO(30));
+  const [endDate, setEndDate] = useState<string>(todayISO());
+  const [dailySubjectClaims, setDailySubjectClaims] = useState<DailyCount[]>([]);
+  const [pageViewsByType, setPageViewsByType] = useState<Array<Record<string, any>>>([]);
+  const [pageViewTypes, setPageViewTypes] = useState<string[]>([]);
   const [totalUsers, setTotalUsers] = useState(0);
   const [newUsersThisMonth, setNewUsersThisMonth] = useState(0);
   const [newUsersLastMonth, setNewUsersLastMonth] = useState(0);
@@ -203,7 +228,7 @@ export default function AdminAnalyticsPage() {
   const [pendingVerdicts, setPendingVerdicts] = useState(0);
   const [lowQualityVoterPct, setLowQualityVoterPct] = useState<number | null>(null);
 
-  useEffect(() => { load(); }, [days]);
+  useEffect(() => { load(); }, [granularity, startDate, endDate]);
 
   async function load() {
     setLoading(true);
@@ -213,22 +238,26 @@ export default function AdminAnalyticsPage() {
       const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
       const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
+      const rpcArgs = { p_start: startDate, p_end: endDate, p_granularity: granularity };
+
       const [
         counts, records, votes, users, reactions, notifications, statements,
-        submitClicks, socialClicks, stages, creds,
+        submitClicks, socialClicks, subjectClaims, pageViews, stages, creds,
         allRecords, allUsers, subscriptions, voteQuality,
         profileViewsRes, recordViewsRes, submitClicksRes, socialClicksRes,
         homeViewsRes, demoFreelancerRes, demoNailtechRes, demoBarberRes, demoWaitressRes, demoRealtorRes, recordPagesRes, subjectPagesRes, geoRes,
       ] = await Promise.all([
         supabase.rpc("get_all_table_counts"),
-        supabase.rpc("get_daily_counts", { p_table: "records", p_days: days }),
-        supabase.rpc("get_daily_counts", { p_table: "record_votes", p_days: days }),
-        supabase.rpc("get_daily_counts", { p_table: "users", p_days: days }),
-        supabase.rpc("get_daily_counts", { p_table: "reactions", p_days: days }),
-        supabase.rpc("get_daily_counts", { p_table: "notifications", p_days: days }),
-        supabase.rpc("get_daily_counts", { p_table: "record_community_statements", p_days: days }),
-        supabase.rpc("get_daily_counts", { p_table: "submit_clicks", p_days: days }),
-        supabase.rpc("get_daily_counts", { p_table: "social_link_clicks", p_days: days }),
+        supabase.rpc("get_metric_timeseries", { p_table: "records", ...rpcArgs }),
+        supabase.rpc("get_metric_timeseries", { p_table: "record_votes", ...rpcArgs }),
+        supabase.rpc("get_metric_timeseries", { p_table: "users", ...rpcArgs }),
+        supabase.rpc("get_metric_timeseries", { p_table: "reactions", ...rpcArgs }),
+        supabase.rpc("get_metric_timeseries", { p_table: "notifications", ...rpcArgs }),
+        supabase.rpc("get_metric_timeseries", { p_table: "record_community_statements", ...rpcArgs }),
+        supabase.rpc("get_metric_timeseries", { p_table: "submit_clicks", ...rpcArgs }),
+        supabase.rpc("get_metric_timeseries", { p_table: "social_link_clicks", ...rpcArgs }),
+        supabase.rpc("get_metric_timeseries", { p_table: "subject_claims", ...rpcArgs }),
+        supabase.rpc("get_metric_timeseries", { p_table: "page_views", ...rpcArgs, p_date_column: "viewed_at", p_group_column: "page_type" }),
         supabase.from("records").select("status").limit(2000),
         supabase.from("records").select("anonymity_status").limit(2000),
         supabase.from("records").select("id,status,final_outcome,dispute_started_at,voting_ends_at,decision_made_at,created_at").limit(2000),
@@ -252,7 +281,7 @@ export default function AdminAnalyticsPage() {
 
       if (counts.data) setTableCounts(counts.data as TableCounts);
 
-      const fmt = (d: any[]) => (d || []).map((r: any) => ({ date: r.date?.slice(5) ?? "", count: Number(r.count) }));
+      const fmt = (d: any[]) => (d || []).map((r: any) => ({ period: r.period ?? "", count: Number(r.count) }));
       setDailyRecords(fmt(records.data ?? []));
       setDailyVotes(fmt(votes.data ?? []));
       setDailyUsers(fmt(users.data ?? []));
@@ -261,6 +290,26 @@ export default function AdminAnalyticsPage() {
       setDailyStatements(fmt(statements.data ?? []));
       setDailySubmitClicks(fmt(submitClicks.data ?? []));
       setDailySocialClicks(fmt(socialClicks.data ?? []));
+      setDailySubjectClaims(fmt(subjectClaims.data ?? []));
+
+      // Pivot page_views (period, group_value, count) -> [{period, type1: n, type2: n, ...}]
+      const pageRows = (pageViews.data ?? []) as Array<{ period: string; group_value: string | null; count: number }>;
+      const typeSet = new Set<string>();
+      const byPeriod: Record<string, Record<string, any>> = {};
+      pageRows.forEach((r) => {
+        const period = r.period ?? "";
+        const type = r.group_value || "unknown";
+        typeSet.add(type);
+        if (!byPeriod[period]) byPeriod[period] = { period };
+        byPeriod[period][type] = Number(r.count);
+      });
+      const sortedTypes = Array.from(typeSet).sort();
+      const pivoted = Object.values(byPeriod).map((row) => {
+        sortedTypes.forEach((t) => { if (row[t] === undefined) row[t] = 0; });
+        return row;
+      }).sort((a, b) => String(a.period).localeCompare(String(b.period)));
+      setPageViewTypes(sortedTypes);
+      setPageViewsByType(pivoted);
 
       const stageLabels: Record<string, string> = {
         ai_verification: "AI Review", subject_notified: "Subject Notified",
@@ -384,7 +433,7 @@ export default function AdminAnalyticsPage() {
   }
 
   const chartData = dailyRecords.map((r, i) => ({
-    date: r.date,
+    period: r.period,
     "Records": r.count,
     "Votes": dailyVotes[i]?.count ?? 0,
     "New Users": dailyUsers[i]?.count ?? 0,
@@ -394,9 +443,14 @@ export default function AdminAnalyticsPage() {
   }));
 
   const trackingChartData = dailySubmitClicks.map((r, i) => ({
-    date: r.date,
+    period: r.period,
     "Submit Clicks": r.count,
     "Social Clicks": dailySocialClicks[i]?.count ?? 0,
+  }));
+
+  const subjectClaimsChartData = dailySubjectClaims.map((r) => ({
+    period: r.period,
+    "Claims": r.count,
   }));
 
   const momGrowth = newUsersLastMonth > 0
@@ -415,13 +469,40 @@ export default function AdminAnalyticsPage() {
           <h1 className="text-white text-2xl font-bold">Analytics</h1>
           <p className="text-gray-400 text-sm mt-1">Platform-wide data — investor metrics, site visits, and every table</p>
         </div>
-        <div className="flex items-center gap-3">
-          <select value={days} onChange={e => setDays(Number(e.target.value))}
-            className="bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white outline-none">
-            <option value={7}>Last 7 days</option>
-            <option value={30}>Last 30 days</option>
-            <option value={90}>Last 90 days</option>
-          </select>
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex bg-gray-900 border border-gray-700 rounded-xl p-1 gap-1">
+            {(["day", "week", "month", "year"] as Granularity[]).map((g) => (
+              <button
+                key={g}
+                onClick={() => setGranularity(g)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+                  granularity === g
+                    ? "bg-blue-600 text-white"
+                    : "text-gray-400 hover:text-white"
+                }`}
+              >
+                {g[0].toUpperCase() + g.slice(1)}
+              </button>
+            ))}
+          </div>
+          <input
+            type="date"
+            value={startDate}
+            max={endDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white outline-none"
+            aria-label="Start date"
+          />
+          <span className="text-gray-500 text-sm">→</span>
+          <input
+            type="date"
+            value={endDate}
+            min={startDate}
+            max={todayISO()}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white outline-none"
+            aria-label="End date"
+          />
           <button onClick={load} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-800 text-gray-300 hover:text-white text-sm transition">
             <RefreshCw className="w-4 h-4" /> Refresh
           </button>
@@ -523,7 +604,7 @@ export default function AdminAnalyticsPage() {
           <StatBox label="Social Link Clicks" value={totalSocialClicks.toLocaleString()} sub="Outbound social clicks" color="teal" />
         </div>
         <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5">
-          <h3 className="text-white text-xs font-semibold mb-4">Submit & Social Clicks — Last {days} days</h3>
+          <h3 className="text-white text-xs font-semibold mb-4">Submit & Social Clicks</h3>
           <ResponsiveContainer width="100%" height={220}>
             <LineChart data={trackingChartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
@@ -541,7 +622,7 @@ export default function AdminAnalyticsPage() {
       <section>
         <SectionTitle icon={BarChart2} title="Platform Activity" />
         <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5">
-          <h2 className="text-white text-sm font-semibold mb-4">Activity Over Time — Last {days} days</h2>
+          <h2 className="text-white text-sm font-semibold mb-4">Activity Over Time</h2>
           <ResponsiveContainer width="100%" height={280}>
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />

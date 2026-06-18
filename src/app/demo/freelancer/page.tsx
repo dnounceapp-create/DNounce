@@ -26,93 +26,112 @@ import { supabase } from "@/lib/supabaseClient";
 /* ─── Static fake data ─────────────────────────────── */
 
 const RECORD = {
-  id: "ac3d9478-5143-4313-9730-c470b97fd1bb",
-  created_at: "2026-04-02T19:57:12.655Z",
-  category: "Graphic Designer",
-  location: "New York, NY",
+  id: "bf72c341-9a1e-4d88-b203-e91fa6c30d44",
+  created_at: "2026-05-14T22:11:00.000Z",
+  category: "Freelancer",
+  location: "Austin, TX",
   relationship: "Client",
-  rating: 1.5,
+  rating: 1,
   anonymity_status: "Anonymity Not Granted",
   description:
-    "I hired Alex to design a landing page for my startup. We agreed on $800 upfront, which I paid because they had a decent portfolio. At first, communication was fine, but after a few days, responses got slower. When I finally got the design back, it honestly didn’t match what we discussed at all. The layout was messy, and key sections we talked about weren’t even included. I asked for revisions, but the changes were minimal and didn’t address the core issues. After that, communication basically stopped. I ended up hiring someone else to redo everything. I’m not saying they’re a scammer, but this felt really unprofessional and not worth the money.",
+    "Do not hire this developer. We paid $3,000 for a restaurant ordering website to launch before our busiest weekend of the year. The site went live, but the checkout button literally didn't work. Customers couldn't place a single order. When we asked them to fix it, they locked us out of our own dashboard and demanded an extra $500 to finish what we already paid for. We lost an estimated $4,200 in orders that weekend. This is extortion. They held our business hostage at the worst possible moment.",
   status: "voting",
 };
 
-const SUBJECT = { name: "Marcus Reid", organization: "Independent", location: "New York, NY" };
+const SUBJECT = { name: "Alex Rivera", organization: "Rivera Web Studio", location: "Austin, TX" };
 
-const CONTRIBUTOR = { name: "Taylor V." };
+const CONTRIBUTOR = { name: "GourmetGo Catering" };
 
 const DEBATE_POSTS = [
   {
-    id: "d2",
+    id: "d1",
     role: "subject" as const,
-    name: "Marcus Reid",
-    body: "I think this is a really unfair representation of what happened. The initial scope was very loosely defined, and I asked multiple times for clarification on certain sections but didn't get clear answers. I delivered based on the information I had at the time. When revisions were requested, I did make updates, but the requests started going beyond what we originally agreed on. Also, after delivering the first version, there was a long delay in feedback, which made the timeline difficult to manage. I didn't \"disappear\" — I just didn't continue working beyond the agreed scope without further discussion.",
-    created_at: "2026-04-07T14:22:00Z",
+    name: "Alex Rivera",
+    body: "The original contract — which the client signed — was for a 5-page informational website with 'e-commerce capabilities via standard PayPal link.' That's in Section 3B, word for word. Two days before launch, they messaged me at 11pm asking me to scrap the PayPal integration and build a custom Stripe checkout instead because they 'didn't want to deal with PayPal fees.' That is a completely different feature. I told them it would cost $500 more and take extra time. They said 'just make it work.' I stayed up all night building it anyway — without a signed change order, without payment, and without the Stripe API keys they were supposed to provide. When they refused to send the keys or pay the invoice, the gateway failed at launch. I paused their dashboard access until the outstanding balance was resolved. That's not extortion. That's a contractor protecting themselves from a client who wanted free work.",
+    created_at: "2026-05-16T10:14:00Z",
     parentId: null,
+  },
+  {
+    id: "d2",
+    role: "contributor" as const,
+    name: "GourmetGo Catering",
+    body: "The contract said 'fully functional e-commerce capabilities.' To any normal person running a food business, that means customers can check out and pay. We didn't ask for 'Stripe specifically' — we asked for a checkout that works. PayPal's redirect flow breaks on mobile and we told him that during the kickoff call. He nodded and said he'd handle it. There were no written notes from that call because he never sent a recap. Now he's hiding behind contract language while we lost a $4,200 weekend. And locking us out of the dashboard we paid for? That's not 'protecting himself.' That's holding us hostage.",
+    created_at: "2026-05-16T13:45:00Z",
+    parentId: "d1",
   },
   {
     id: "d3",
-    role: "contributor" as const,
-    name: "Taylor V.",
-    body: "I disagree with that.\nThe scope was clearly outlined in our messages, including examples of what I wanted.\nThe issues weren't about \"extra features\" — it was about the basics not being done right.\nAlso, the delays only started after the first delivery, not before.\nI wasn't expecting perfection, just something usable, which it wasn't.",
-    created_at: "2026-04-08T09:00:00Z",
-    parentId: "d2",
+    role: "subject" as const,
+    name: "Alex Rivera",
+    body: "There are no written notes from that call because the client never responded to the recap email I sent the next morning. I have the email. I have the read receipt. The PayPal mobile issue they're describing is a known limitation they were aware of — it's literally why Section 3B specifies 'standard PayPal link' rather than a full embedded checkout. If they wanted embedded Stripe, that conversation needed to happen in week one, not 48 hours before launch. I didn't lock them out of their content — I suspended API-level access to the payment layer pending resolution of a $500 unpaid invoice. Their homepage, menu, and contact page were fully accessible the entire time.",
+    created_at: "2026-05-17T08:30:00Z",
+    parentId: null,
   },
   {
     id: "d4",
-    role: "subject" as const,
-    name: "Marcus Reid",
-    body: "I understand you weren't satisfied, but calling the work unusable is subjective. From my perspective, I delivered a draft based on the brief provided, and further refinement would have required clearer direction and additional iterations. I don't think it's fair to frame this as me not delivering.",
-    created_at: "2026-04-08T09:41:00Z",
-    parentId: null,
+    role: "contributor" as const,
+    name: "GourmetGo Catering",
+    body: "He has a read receipt. Great. We opened the email at 7am during our busiest prep day and didn't respond until that evening — that is not consent. You can't send a recap email that rewrites what was verbally agreed on a call, wait 12 hours during a catering service day, and then claim silence means agreement. We were not technically sophisticated enough to understand that 'API-level access' meant our customers couldn't check out. From our side, the site was broken and he had the key. The $500 wasn't the issue — the timing and the leverage were.",
+    created_at: "2026-05-17T11:02:00Z",
+    parentId: "d3",
   },
 ];
 
 const SEED_VOTES: VoteRow[] = [
   {
     id: "v1",
-    alias: "kxr@dnounce_312",
-    jobTitle: "Freelance Designer",
-    choice: "side_with_contributor",
+    alias: "mwp@dnounce_114",
+    jobTitle: "Contracts Attorney",
+    choice: "side_with_subject",
     explanation:
-      "The poster has the message thread as evidence. If the scope was really that unclear, the designer should have gotten written sign-off before starting. \"I didn't have enough info\" isn't a reason to deliver something unusable — it's a reason to pause and ask. Record should stand.",
-    created_at: "2026-04-10T11:04:00Z",
-    agreeCount: 14,
-    disagreeCount: 2,
+      "The written contract controls. 'E-commerce capabilities via standard PayPal link' is specific language — it doesn't mean 'any checkout method the client prefers.' Verbal agreements that contradict signed contracts are nearly impossible to enforce, especially when the developer sent a written recap the following morning. The client had an opportunity to dispute that recap in writing and didn't. From a pure contract standpoint, the developer delivered what was specified.",
+    created_at: "2026-05-18T09:00:00Z",
+    agreeCount: 21,
+    disagreeCount: 8,
   },
   {
     id: "v2",
-    alias: "mbvp@dnounce_87",
-    jobTitle: "Creative Director",
-    choice: "side_with_subject",
+    alias: "tlr@dnounce_289",
+    jobTitle: "Small Business Owner",
+    choice: "side_with_contributor",
     explanation:
-      "Scope disputes are incredibly common in freelance design. Without seeing the actual message thread, I can't confirm the brief was as clear as the poster claims. The designer's account of delayed feedback and vague direction is plausible. Too much ambiguity here to let this stand.",
-    created_at: "2026-04-11T08:17:00Z",
-    agreeCount: 6,
-    disagreeCount: 9,
+      "I've hired four developers in the past three years. Not one of them sent me a 'recap email' after a kickoff call and then used my silence as a contract amendment. That's a tactic, not a process. The client trusted a professional to tell them if what they were asking for was out of scope — clearly, in plain language, before doing the work. Staying up all night building something and then invoicing for it without a signed change order is the developer's risk, not the client's debt.",
+    created_at: "2026-05-18T11:30:00Z",
+    agreeCount: 18,
+    disagreeCount: 11,
   },
   {
     id: "v3",
-    alias: "tjf@dnounce_541",
-    jobTitle: "UX Consultant",
+    alias: "kcx@dnounce_502",
+    jobTitle: "Senior Full-Stack Developer",
     choice: "side_with_contributor",
     explanation:
-      "What stands out to me is that communication broke down after delivery rather than before. A professional who genuinely believed they'd fulfilled the scope would engage with the feedback, not go quiet. That pattern matters regardless of how clear the brief was.",
-    created_at: "2026-04-12T16:55:00Z",
-    agreeCount: 19,
-    disagreeCount: 3,
+      "The developer made three mistakes that are on them regardless of the contract dispute: (1) they built the Stripe integration without a signed change order, (2) they launched knowing the payment gateway would fail because the API keys weren't provided, and (3) they suspended dashboard access as financial leverage. That last one is the thing that kills me. Even if you're 100% right about the scope, you don't hold a live production site hostage. You finish, you invoice, you pursue collections. What he did damaged the client's business and his own reputation simultaneously.",
+    created_at: "2026-05-19T14:15:00Z",
+    agreeCount: 29,
+    disagreeCount: 7,
   },
   {
     id: "v4",
-    alias: "qlnx@dnounce_29",
-    jobTitle: "Brand Strategist",
+    alias: "nfb@dnounce_77",
+    jobTitle: "UX Consultant",
     choice: "side_with_subject",
     explanation:
-      "Both sides agree the deliverable didn't match expectations — they just disagree on why. But without seeing the actual brief or message thread, I can't confidently say the designer was fully in the wrong. Ambiguous scopes cut both ways. Not enough here to keep this on the record.",
-    created_at: "2026-04-13T10:30:00Z",
-    agreeCount: 17,
-    disagreeCount: 4,
+      "Everyone is ignoring the API keys. The developer couldn't finish a Stripe integration without credentials that only the client could provide. The client refused to send them and refused to pay the invoice — and then acted surprised the checkout didn't work. You can't withhold the technical access required to complete your own feature request and then blame the developer when it fails. The lock-out was heavy-handed, but the root cause of the broken checkout was the client's own inaction.",
+    created_at: "2026-05-19T16:45:00Z",
+    agreeCount: 14,
+    disagreeCount: 16,
+  },
+  {
+    id: "v5",
+    alias: "rzq@dnounce_431",
+    jobTitle: "Freelance Project Manager",
+    choice: "side_with_contributor",
+    explanation:
+      "Both parties failed at communication, but the developer had the professional obligation to pump the brakes. When a client says 'just make it work' at 11pm two days before launch, a professional says: 'I can't do that without a change order and your API keys — here's the form, let's get this signed in the morning.' Instead he built it, broke it, launched it broken, and then used access control as a collections tool. The client is not blameless, but the developer escalated every single step of this incorrectly.",
+    created_at: "2026-05-20T10:00:00Z",
+    agreeCount: 24,
+    disagreeCount: 9,
   },
 ];
 
@@ -134,14 +153,14 @@ type VoteRow = {
 const STORAGE_KEY = "dnounce_demo_user_votes_v4";
 
 const DEMO_ATTACHMENTS = [
-  { id: "a1", label: "Attachment #1", type: "image" as const, src: "/og-image.png", agree: 11, disagree: 1 },
+  { id: "a1", label: "Contract_Section_3B.pdf", type: "image" as const, src: "/og-image.png", agree: 17, disagree: 6 },
 ];
 
 const SEED_DEBATE_REACTIONS: Record<string, { agree: number; disagree: number; mine: 1 | -1 | null }> = {
-  d1: { agree: 18, disagree: 3, mine: null },
-  d2: { agree: 11, disagree: 19, mine: null },
-  d3: { agree: 24, disagree: 6, mine: null },
-  d4: { agree: 7, disagree: 14, mine: null },
+  d1: { agree: 12, disagree: 23, mine: null },
+  d2: { agree: 27, disagree: 9, mine: null },
+  d3: { agree: 15, disagree: 18, mine: null },
+  d4: { agree: 22, disagree: 11, mine: null },
 };
 
 /* ─── Helpers ───────────────────────────────────────── */
@@ -719,7 +738,7 @@ export default function DemoPage() {
               <User className="w-7 h-7 text-gray-600" />
             </div>
             <div className="min-w-0">
-              <p className="text-lg font-semibold text-gray-900 break-words leading-tight">{SUBJECT.name}</p>
+              <Link href="/subject/demo/freelancer" className="text-lg font-semibold text-gray-900 break-words leading-tight hover:underline">{SUBJECT.name}</Link>
               <p className="text-sm text-gray-600">{SUBJECT.organization} · {SUBJECT.location}</p>
             </div>
           </div>
