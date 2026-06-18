@@ -38,7 +38,7 @@ const RECORD = {
   status: "voting",
 };
 
-const SUBJECT = { name: "Carlos V.", organization: "Palmview Realty Group", location: "Miami, FL" };
+const SUBJECT = { name: "John Doe", organization: "Palmview Realty Group", location: "Miami, FL" };
 
 const CONTRIBUTOR = { name: "Simone A." };
 
@@ -46,7 +46,7 @@ const DEBATE_POSTS = [
   {
     id: "d2",
     role: "subject" as const,
-    name: "Carlos V.",
+    name: "John Doe",
     body: "I presented the facts of the market as they were at the time. That area was seeing multiple offers within 48 hours of listing. I gave the client all the information they needed to make their decision. I never told her she had to make an offer — I showed her what would happen if she didn't act. Ultimately, every offer submitted went through her and required her signature.",
     created_at: "2026-04-07T14:22:00Z",
     parentId: null,
@@ -62,7 +62,7 @@ const DEBATE_POSTS = [
   {
     id: "d4",
     role: "subject" as const,
-    name: "Carlos V.",
+    name: "John Doe",
     body: "In my professional opinion, in a competitive market, hesitation has real consequences. My job is to make sure my clients understand those consequences fully. If she felt that information was pressure rather than guidance, I understand that — but I was doing my job. I always respect the final decision as the client's own.",
     created_at: "2026-04-08T09:41:00Z",
     parentId: null,
@@ -718,7 +718,7 @@ export default function DemoRealtorPage() {
               <User className="w-7 h-7 text-gray-600" />
             </div>
             <div className="min-w-0">
-              <p className="text-lg font-semibold text-gray-900 break-words leading-tight">{SUBJECT.name}</p>
+              <Link href="/subject/demo/realtor" className="text-lg font-semibold text-gray-900 break-words leading-tight hover:underline">{SUBJECT.name}</Link>
               <p className="text-sm text-gray-600">{SUBJECT.organization} · {SUBJECT.location}</p>
             </div>
           </div>
