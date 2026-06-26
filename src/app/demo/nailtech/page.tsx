@@ -329,7 +329,7 @@ function DebateCard({
           <div className="min-w-0">
             <div className="text-sm font-semibold text-gray-900">{post.name}</div>
             <div className="mt-0.5 text-[11px] text-gray-500">
-              {isSubject ? "Subject" : "Poster"} · {formatTimestamp(post.created_at)}
+              {isSubject ? "Subject" : "Contributor"} · {formatTimestamp(post.created_at)}
             </div>
           </div>
         </div>
@@ -367,7 +367,7 @@ function DebateCard({
                         <div className="min-w-0 flex-1">
                           <div className="text-xs font-semibold text-gray-900">{reply.name}</div>
                           <div className="text-[11px] text-gray-500">
-                            {reply.role === "subject" ? "Subject" : "Poster"} · {formatTimestamp(reply.created_at)}
+                            {reply.role === "subject" ? "Subject" : "Contributor"} · {formatTimestamp(reply.created_at)}
                           </div>
                           <div className="mt-1 text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{reply.body}</div>
                           <div className="mt-2">
@@ -728,7 +728,7 @@ export default function DemoNailTechPage() {
         <div className="border border-gray-200 rounded-2xl p-4 sm:p-5 bg-white relative">
           <div className="flex items-center gap-2 mb-3">
             <User className="w-4 h-4 text-green-600" />
-            <h2 className="text-sm font-semibold text-gray-900">Poster</h2>
+            <h2 className="text-sm font-semibold text-gray-900">Contributor</h2>
           </div>
           <div className="flex items-start gap-4">
             <div className="w-11 h-11 bg-gray-100 rounded-full border border-gray-200 flex items-center justify-center shrink-0">
