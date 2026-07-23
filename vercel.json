@@ -8,5 +8,29 @@
       "path": "/api/cleanup-ghost-users",
       "schedule": "0 0 * * *"
     }
+  ],
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "dnounce.com"
+        }
+      ],
+      "destination": "https://www.dnounce.com/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.dnounce.com"
+        }
+      ],
+      "destination": "https://www.dnounce.com/:path*",
+      "permanent": true
+    }
   ]
 }
