@@ -47,6 +47,7 @@ export async function GET(
       ai_completed_at,
       published_at,
       contributor_identity_preference,
+      contributor_display_name,
       contributor_id,
       subject:subjects (
         subject_uuid,
