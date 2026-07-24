@@ -3325,7 +3325,7 @@ function VotingCourtroom({
 
   const canVote =
   isVotingWindow &&
-  locked === "voter" &&
+  (locked === "citizen" || locked === "voter") &&
   !myVote;
 
   async function submitVote() {
