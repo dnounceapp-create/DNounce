@@ -34,6 +34,20 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 
+function slugify(s?: string | null) {
+  return (s || "")
+    .normalize("NFKD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
+function subjectSlug(name?: string | null, nickname?: string | null) {
+  const combined = [name, nickname].filter(Boolean).join(" ");
+  return slugify(combined) || "profile";
+}
+
 /** ——— Subject Search Types ——— */
 type UserPreview = {
   kind: "user";
@@ -1353,7 +1367,7 @@ function SubjectResultCard({
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
         {subject.kind === "user" ? (
           <Link
-            href={`/subject/${subject.subject_uuid}`}
+            href={`/subject/${subject.subject_uuid}/${subjectSlug(subject.name, subject.nickname)}`}
             className="text-xs font-medium text-gray-700 hover:text-black hover:underline flex items-center justify-center gap-1 border border-gray-300 rounded-full px-3 py-1.5 sm:py-1 bg-white w-full sm:w-auto"
             onClick={(e) => e.stopPropagation()}
           >
@@ -1364,7 +1378,7 @@ function SubjectResultCard({
           </Link>
         ) : !subject.id.startsWith("temp-") ? (
           <Link
-            href={`/subject/${subject.id}`}
+            href={`/subject/${subject.id}/${subjectSlug(subject.name, subject.nickname)}`}
             className="text-xs font-medium text-gray-700 hover:text-black hover:underline flex items-center justify-center gap-1 border border-gray-300 rounded-full px-3 py-1.5 sm:py-1 bg-white w-full sm:w-auto"
             onClick={(e) => e.stopPropagation()}
           >

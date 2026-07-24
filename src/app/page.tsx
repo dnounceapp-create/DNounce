@@ -47,6 +47,20 @@ import {
   ChevronDown,
 } from "lucide-react";
 
+function slugify(s?: string | null) {
+  return (s || "")
+    .normalize("NFKD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
+function subjectSlug(name?: string | null, nickname?: string | null) {
+  const combined = [name, nickname].filter(Boolean).join(" ");
+  return slugify(combined) || "profile";
+}
+
 function buildNoProfileMessage({
   profileId,
   nickname,
@@ -400,7 +414,7 @@ export default function HomePage() {
           />
 
           <p className="text-lg text-gray-500 max-w-lg mx-auto leading-relaxed mb-4">
-            DNounce is the platform where real experiences are shared, subjects get to respond, and the community decides what's credible. Transparent. Fair. Both sides, always.
+            DNounce is the review platform where real experiences are shared, subjects get to respond, and the community decides what's credible. Transparent. Fair. Both sides, always.
           </p>
           <p className="text-sm text-gray-400 italic mb-8">Search a person · Share an experience · Defend your record</p>
           {/*
@@ -539,7 +553,7 @@ export default function HomePage() {
                     location={item.location}
                     category={item.category}
                     id={item.id}
-                    href={item.type === "record" ? `/record/${item.id}` : `/subject/${item.id}`}
+                    href={item.type === "record" ? `/record/${item.id}` : `/subject/${item.id}/${subjectSlug(item.name, item.nickname)}`}
                     avatarUrl={item.avatar_url || null}
                   />
                 ))}

@@ -88,6 +88,20 @@ function formatMMDDYYYY(value: any) {
   return `${mm}/${dd}/${yyyy}`;
 }
 
+function slugify(s?: string | null) {
+  return (s || "")
+    .normalize("NFKD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
+function subjectSlug(name?: string | null, nickname?: string | null) {
+  const combined = [name, nickname].filter(Boolean).join(" ");
+  return slugify(combined) || "profile";
+}
+
 function viewerLabel(viewerRole: ViewerRole) {
   switch (viewerRole) {
     case "public":
@@ -4335,6 +4349,8 @@ export default function RecordDetail({
   } | null>(null);
 
   const [contributorSubjectId, setContributorSubjectId] = useState<string | null>(null);
+  const [contributorSubjectName, setContributorSubjectName] = useState<string | null>(null);
+  const [contributorSubjectNickname, setContributorSubjectNickname] = useState<string | null>(null);
   const [subjectAvatarUrl, setSubjectAvatarUrl] = useState<string | null>(null);
   const [contributorBadges, setContributorBadges] = useState<{ label: string; icon: string }[]>([]);
 
@@ -4647,16 +4663,20 @@ export default function RecordDetail({
             avatar_url: cAcct?.avatar_url ?? null,
           });
 
-          // Fetch contributor's subject UUID for profile link
+          // Fetch contributor's subject UUID + name/nickname for profile link
           const { data: cSubject } = await supabase
             .from("subjects")
-            .select("subject_uuid")
+            .select("subject_uuid, name, nickname")
             .eq("owner_auth_user_id", contributorUserId)
             .maybeSingle();
           setContributorSubjectId(cSubject?.subject_uuid ?? null);
+          setContributorSubjectName(cSubject?.name ?? null);
+          setContributorSubjectNickname(cSubject?.nickname ?? null);
         } else {
           setContributorProfile(null);
           setContributorSubjectId(null);
+          setContributorSubjectName(null);
+          setContributorSubjectNickname(null);
         }
 
         // Fetch subject avatar — always, independent of contributor reveal
@@ -4782,7 +4802,7 @@ export default function RecordDetail({
   const reveal = shouldRevealContributorIdentity(record);
 
   const contributorProfileHref = reveal && (contributorSubjectId || (record as any)?.contributorSubjectUuid)
-      ? `/subject/${contributorSubjectId || (record as any)?.contributorSubjectUuid}`
+      ? `/subject/${contributorSubjectId || (record as any)?.contributorSubjectUuid}/${subjectSlug(contributorSubjectName, contributorSubjectNickname)}`
       : null;
 
   const contributorRealName = (record as any)?.contributor_display_name || (record as any)?.contributorDisplayName || `${contributorProfile?.first_name ?? ""} ${contributorProfile?.last_name ?? ""}`.trim();
@@ -4803,7 +4823,7 @@ export default function RecordDetail({
   };
 
   const subjectName = (subject?.name as string) || "Subject";
-  const subjectProfileHref = subject?.subject_uuid ? `/subject/${subject.subject_uuid}` : null;
+  const subjectProfileHref = subject?.subject_uuid ? `/subject/${subject.subject_uuid}/${subjectSlug(subject?.name as string, subject?.nickname as string | null)}` : null;
   const resolvedSubjectAvatarUrl = subjectAvatarUrl;
 
   const contributorLinkAllowedForViewer = canShowContributorProfileLink(record);

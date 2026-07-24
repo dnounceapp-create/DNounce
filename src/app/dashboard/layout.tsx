@@ -39,6 +39,20 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 
+function slugify(s?: string | null) {
+  return (s || "")
+    .normalize("NFKD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
+function subjectSlug(name?: string | null, nickname?: string | null) {
+  const combined = [name, nickname].filter(Boolean).join(" ");
+  return slugify(combined) || "profile";
+}
+
 interface NavItem {
   name: string;
   href: string;
@@ -95,6 +109,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [selectedProfileId, setSelectedProfileId] = useState<string>("");
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [subjectId, setSubjectId] = useState<string | null>(null);
+  const [subjectName, setSubjectName] = useState<string | null>(null);
+  const [subjectNickname, setSubjectNickname] = useState<string | null>(null);
   const desktopInputRef = useRef<HTMLInputElement>(null);
   const mobileInputRef = useRef<HTMLInputElement>(null);
   const [advancedOpen, setAdvancedOpen] = useState(false);
@@ -122,6 +138,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           .single();
         if (!error && data?.subject_id) {
           setSubjectId(data.subject_id);
+          const { data: subj } = await supabase
+            .from("subjects")
+            .select("name, nickname")
+            .eq("subject_uuid", data.subject_id)
+            .maybeSingle();
+          if (subj) {
+            setSubjectName(subj.name ?? null);
+            setSubjectNickname(subj.nickname ?? null);
+          }
         }
       } catch (err) {
         console.error("Failed to fetch subject_id:", err);
@@ -444,7 +469,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 {advResults.length > 0 && (
                   <div className="mt-4 border-t border-gray-100 pt-4 space-y-2 max-h-[40vh] overflow-y-auto">
                     {advResults.map((item: any) => {
-                      const href = item.type === "profile" ? `/subject/${item.id}` : `/record/${item.id}`;
+                      const href = item.type === "profile" ? `/subject/${item.id}/${subjectSlug(item.name, item.nickname)}` : `/record/${item.id}`;
                       return (
                         <>
                           <SearchResultCard
@@ -495,7 +520,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                           <ul className="space-y-2">
                             {groupItems.map((item: any) => {
                               const href =
-                                item.type === "profile" ? `/subject/${item.id}` :
+                                item.type === "profile" ? `/subject/${item.id}/${subjectSlug(item.name, item.nickname)}` :
                                 item.type === "organization" ? `/organization/${item.id}` :
                                 item.type === "record" ? `/record/${item.id}` :
                                 item.type === "hashtag" ? `/#${item.tag}` :
@@ -761,7 +786,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                               {groupItems.map((item: any) => {
                                 const href =
                                   item.type === "profile"
-                                    ? `/subject/${item.id}`
+                                    ? `/subject/${item.id}/${subjectSlug(item.name, item.nickname)}`
                                     : item.type === "organization"
                                     ? `/organization/${item.id}`
                                     : item.type === "record"
@@ -820,7 +845,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             const active = pathname === item.href;
             const Icon = item.icon;
             const resolvedHref = item.special_profile && subjectId
-              ? `/subject/${subjectId}`
+              ? `/subject/${subjectId}/${subjectSlug(subjectName, subjectNickname)}`
               : item.href;
             return (
               <Link
@@ -865,7 +890,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 : `${baseClasses} ${active ? activeClasses : normalClasses}`;
 
               const resolvedHref = item.special_profile && subjectId
-                ? `/subject/${subjectId}`
+                ? `/subject/${subjectId}/${subjectSlug(subjectName, subjectNickname)}`
                 : item.href;
               return (
                 <Link
