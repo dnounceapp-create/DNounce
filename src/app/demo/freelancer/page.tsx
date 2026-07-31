@@ -29,49 +29,49 @@ const RECORD = {
   id: "bf72c341-9a1e-4d88-b203-e91fa6c30d44",
   created_at: "2026-05-14T22:11:00.000Z",
   category: "Freelancer",
-  location: "Austin, TX",
+  location: "Queens, NY",
   relationship: "Client",
-  rating: 1,
+  rating: 2,
   anonymity_status: "Anonymity Not Granted",
   description:
-    "Do not hire this developer. We paid $3,000 for a restaurant ordering website to launch before our busiest weekend of the year. The site went live, but the checkout button literally didn't work. Customers couldn't place a single order. When we asked them to fix it, they locked us out of our own dashboard and demanded an extra $500 to finish what we already paid for. We lost an estimated $4,200 in orders that weekend. This is extortion. They held our business hostage at the worst possible moment.",
+    "I booked Danielle for my wedding day makeup. She offered a patch test beforehand and I skipped it because I've never had a skin reaction to anything in my life — I work in healthcare, I know my skin. By the afternoon my cheeks were red and irritated and I have photos from my own wedding where it's visible. She immediately pointed to me declining the patch test and I get it, I really do. But I also feel like a professional should have products that don't cause reactions on a significant portion of people, patch test or not. We are at a standstill. I declined the test, she used the products, my skin reacted, my wedding photos show it. I don't think either of us is entirely right.",
   status: "voting",
 };
 
-const SUBJECT = { name: "Alex Rivera", organization: "Rivera Web Studio", location: "Austin, TX" };
+const SUBJECT = { name: "Danielle Foster", organization: "Independent", location: "Queens, NY" };
 
-const CONTRIBUTOR = { name: "GourmetGo Catering" };
+const CONTRIBUTOR = { name: "Christina Ruiz" };
 
 const DEBATE_POSTS = [
   {
     id: "d1",
     role: "subject" as const,
-    name: "Alex Rivera",
-    body: "The original contract — which the client signed — was for a 5-page informational website with 'e-commerce capabilities via standard PayPal link.' That's in Section 3B, word for word. Two days before launch, they messaged me at 11pm asking me to scrap the PayPal integration and build a custom Stripe checkout instead because they 'didn't want to deal with PayPal fees.' That is a completely different feature. I told them it would cost $500 more and take extra time. They said 'just make it work.' I stayed up all night building it anyway — without a signed change order, without payment, and without the Stripe API keys they were supposed to provide. When they refused to send the keys or pay the invoice, the gateway failed at launch. I paused their dashboard access until the outstanding balance was resolved. That's not extortion. That's a contractor protecting themselves from a client who wanted free work.",
+    name: "Danielle Foster",
+    body: "I offer every single client a complimentary patch test exactly for this reason. Christina declined it in writing — I have her message saying she was confident she had no sensitivities. I used the same professional-grade products I use on every bridal client. I followed my entire sanitation and application protocol correctly. I understand she's upset, especially on her wedding day, but the patch test exists specifically to catch individual reactions before they happen on the day itself. She made an informed choice to skip it.",
     created_at: "2026-05-16T10:14:00Z",
     parentId: null,
   },
   {
     id: "d2",
     role: "contributor" as const,
-    name: "GourmetGo Catering",
-    body: "The contract said 'fully functional e-commerce capabilities.' To any normal person running a food business, that means customers can check out and pay. We didn't ask for 'Stripe specifically' — we asked for a checkout that works. PayPal's redirect flow breaks on mobile and we told him that during the kickoff call. He nodded and said he'd handle it. There were no written notes from that call because he never sent a recap. Now he's hiding behind contract language while we lost a $4,200 weekend. And locking us out of the dashboard we paid for? That's not 'protecting himself.' That's holding us hostage.",
+    name: "Christina Ruiz",
+    body: "I declined because I genuinely have no history of skin reactions — not to makeup, not to anything. I'm a nurse, I'm around products and chemicals constantly. I made a reasonable judgment call based on my own medical history. What I didn't expect was to spend my wedding reception with visibly red cheeks. If your products cause this kind of reaction with no prior sensitivity history, that raises a real question about the formulation regardless of the patch test waiver.",
     created_at: "2026-05-16T13:45:00Z",
     parentId: "d1",
   },
   {
     id: "d3",
     role: "subject" as const,
-    name: "Alex Rivera",
-    body: "There are no written notes from that call because the client never responded to the recap email I sent the next morning. I have the email. I have the read receipt. The PayPal mobile issue they're describing is a known limitation they were aware of — it's literally why Section 3B specifies 'standard PayPal link' rather than a full embedded checkout. If they wanted embedded Stripe, that conversation needed to happen in week one, not 48 hours before launch. I didn't lock them out of their content — I suspended API-level access to the payment layer pending resolution of a $500 unpaid invoice. Their homepage, menu, and contact page were fully accessible the entire time.",
+    name: "Danielle Foster",
+    body: "My products are professional-grade and used on hundreds of clients without incident. A reaction doesn't mean a product is defective — it means that specific person's skin responded to that specific formulation, which is exactly why patch tests exist. I can't know in advance which clients will react without testing. That's not a formulation problem, that's human biology. I offered the exact tool designed to prevent this outcome and it was declined.",
     created_at: "2026-05-17T08:30:00Z",
     parentId: null,
   },
   {
     id: "d4",
     role: "contributor" as const,
-    name: "GourmetGo Catering",
-    body: "He has a read receipt. Great. We opened the email at 7am during our busiest prep day and didn't respond until that evening — that is not consent. You can't send a recap email that rewrites what was verbally agreed on a call, wait 12 hours during a catering service day, and then claim silence means agreement. We were not technically sophisticated enough to understand that 'API-level access' meant our customers couldn't check out. From our side, the site was broken and he had the key. The $500 wasn't the issue — the timing and the leverage were.",
+    name: "Christina Ruiz",
+    body: "I'm not saying the products are defective across the board. I'm saying that on the most important day of my life, I trusted a professional and ended up with a visible skin reaction in every photo. Maybe I should have done the patch test. But I also think a professional working on brides — who are under enormous emotional pressure — should be proactive about flagging risks more forcefully than a quick optional offer. I said I was fine. She accepted that. We both moved on and I paid the price.",
     created_at: "2026-05-17T11:02:00Z",
     parentId: "d3",
   },
@@ -80,58 +80,58 @@ const DEBATE_POSTS = [
 const SEED_VOTES: VoteRow[] = [
   {
     id: "v1",
-    alias: "mwp@dnounce_114",
-    jobTitle: "Contracts Attorney",
+    alias: "nfx@dnounce_219",
+    jobTitle: "Esthetician",
     choice: "side_with_subject",
     explanation:
-      "The written contract controls. 'E-commerce capabilities via standard PayPal link' is specific language — it doesn't mean 'any checkout method the client prefers.' Verbal agreements that contradict signed contracts are nearly impossible to enforce, especially when the developer sent a written recap the following morning. The client had an opportunity to dispute that recap in writing and didn't. From a pure contract standpoint, the developer delivered what was specified.",
+      "The patch test is the standard of care in this industry for exactly this reason. Offering it and having it declined in writing is a complete due diligence. A professional cannot force a client to do a patch test — they can only offer it. Danielle did everything right. The client made an informed choice and the outcome, while unfortunate, was a known risk of skipping that step.",
     created_at: "2026-05-18T09:00:00Z",
-    agreeCount: 21,
-    disagreeCount: 8,
+    agreeCount: 24,
+    disagreeCount: 6,
   },
   {
     id: "v2",
-    alias: "tlr@dnounce_289",
-    jobTitle: "Small Business Owner",
+    alias: "rlk@dnounce_445",
+    jobTitle: "Bride (married last year)",
     choice: "side_with_contributor",
     explanation:
-      "I've hired four developers in the past three years. Not one of them sent me a 'recap email' after a kickoff call and then used my silence as a contract amendment. That's a tactic, not a process. The client trusted a professional to tell them if what they were asking for was out of scope — clearly, in plain language, before doing the work. Staying up all night building something and then invoicing for it without a signed change order is the developer's risk, not the client's debt.",
+      "I've been in this exact position. When you're in full wedding planning mode and a vendor offers an optional test weeks out, you brush it off because you've never had a reaction before. The makeup artist knows the stakes of a bridal booking better than anyone — I think there's an argument that 'optional' patch tests should be presented as much more urgent for first-time clients, not just a quick offer that's easy to decline.",
     created_at: "2026-05-18T11:30:00Z",
-    agreeCount: 18,
-    disagreeCount: 11,
+    agreeCount: 19,
+    disagreeCount: 14,
   },
   {
     id: "v3",
-    alias: "kcx@dnounce_502",
-    jobTitle: "Senior Full-Stack Developer",
-    choice: "side_with_contributor",
+    alias: "tpw@dnounce_88",
+    jobTitle: "Dermatologist",
+    choice: "side_with_subject",
     explanation:
-      "The developer made three mistakes that are on them regardless of the contract dispute: (1) they built the Stripe integration without a signed change order, (2) they launched knowing the payment gateway would fail because the API keys weren't provided, and (3) they suspended dashboard access as financial leverage. That last one is the thing that kills me. Even if you're 100% right about the scope, you don't hold a live production site hostage. You finish, you invoice, you pursue collections. What he did damaged the client's business and his own reputation simultaneously.",
+      "Contact dermatitis can develop from products a person has never reacted to before — prior tolerance is not a guarantee of future tolerance. The client's reasoning that she 'knows her skin' because she works in healthcare is not clinically sound. A patch test would have caught this. Danielle followed industry protocol. The outcome is unfortunate but the professional responsibility was fulfilled.",
     created_at: "2026-05-19T14:15:00Z",
-    agreeCount: 29,
-    disagreeCount: 7,
+    agreeCount: 31,
+    disagreeCount: 9,
   },
   {
     id: "v4",
-    alias: "nfb@dnounce_77",
-    jobTitle: "UX Consultant",
-    choice: "side_with_subject",
+    alias: "cmr@dnounce_312",
+    jobTitle: "Wedding Photographer",
+    choice: "side_with_contributor",
     explanation:
-      "Everyone is ignoring the API keys. The developer couldn't finish a Stripe integration without credentials that only the client could provide. The client refused to send them and refused to pay the invoice — and then acted surprised the checkout didn't work. You can't withhold the technical access required to complete your own feature request and then blame the developer when it fails. The lock-out was heavy-handed, but the root cause of the broken checkout was the client's own inaction.",
+      "I've photographed over 200 weddings. The number of brides who skip pre-appointment safety steps because they're overwhelmed is enormous. Vendors who work in the bridal industry know this — the emotional pressure of a wedding makes clients bad at assessing risk. A truly client-centered makeup artist builds in more friction around skipping the patch test for bridal bookings specifically, not less.",
     created_at: "2026-05-19T16:45:00Z",
-    agreeCount: 14,
-    disagreeCount: 16,
+    agreeCount: 22,
+    disagreeCount: 17,
   },
   {
     id: "v5",
-    alias: "rzq@dnounce_431",
-    jobTitle: "Freelance Project Manager",
-    choice: "side_with_contributor",
+    alias: "bqn@dnounce_671",
+    jobTitle: "Medical Malpractice Attorney",
+    choice: "side_with_subject",
     explanation:
-      "Both parties failed at communication, but the developer had the professional obligation to pump the brakes. When a client says 'just make it work' at 11pm two days before launch, a professional says: 'I can't do that without a change order and your API keys — here's the form, let's get this signed in the morning.' Instead he built it, broke it, launched it broken, and then used access control as a collections tool. The client is not blameless, but the developer escalated every single step of this incorrectly.",
+      "From a liability standpoint, offering and documenting a declined patch test is exactly the right move. The client signed off on skipping it. Whether or not the professional 'pushed hard enough' is a subjective standard that varies by person — legally and ethically, informed refusal transfers responsibility. I sympathize with what happened on her wedding day but the makeup artist covered herself correctly.",
     created_at: "2026-05-20T10:00:00Z",
-    agreeCount: 24,
-    disagreeCount: 9,
+    agreeCount: 28,
+    disagreeCount: 11,
   },
 ];
 
@@ -153,14 +153,14 @@ type VoteRow = {
 const STORAGE_KEY = "dnounce_demo_user_votes_v4";
 
 const DEMO_ATTACHMENTS = [
-  { id: "a1", label: "Contract_Section_3B.pdf", type: "image" as const, src: "/og-image.png", agree: 17, disagree: 6 },
+  { id: "a1", label: "Wedding Photo - Ceremony.jpg", type: "image" as const, src: "/og-image.png", agree: 21, disagree: 4 },
 ];
 
 const SEED_DEBATE_REACTIONS: Record<string, { agree: number; disagree: number; mine: 1 | -1 | null }> = {
-  d1: { agree: 12, disagree: 23, mine: null },
-  d2: { agree: 27, disagree: 9, mine: null },
-  d3: { agree: 15, disagree: 18, mine: null },
-  d4: { agree: 22, disagree: 11, mine: null },
+  d1: { agree: 18, disagree: 29, mine: null },
+  d2: { agree: 31, disagree: 12, mine: null },
+  d3: { agree: 14, disagree: 22, mine: null },
+  d4: { agree: 26, disagree: 9, mine: null },
 };
 
 /* ─── Helpers ───────────────────────────────────────── */

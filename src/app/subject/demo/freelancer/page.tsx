@@ -17,18 +17,18 @@ import {
 /* ─── Static demo data ─────────────────────────────── */
 
 const SUBJECT = {
-  name: "Alex Rivera",
+  name: "Danielle Foster",
   nickname: null as string | null,
-  job_title: "Independent Web Designer",
-  organization: "Rivera Web Studio",
-  location: "Austin, TX",
-  bio: "Full-stack web designer and developer based in Austin. Building custom websites and e-commerce solutions for small businesses since 2018.",
-  subject_uuid: "demo-freelancer-alex-rivera",
+  job_title: "Makeup Artist",
+  organization: "Independent",
+  location: "Queens, NY",
+  bio: "Bridal and editorial makeup artist based in Queens with over six years of experience. Specializing in long-wear looks for weddings, photo shoots, and special events.",
+  subject_uuid: "demo-freelancer-danielle-foster",
 };
 
 const SCORES = {
-  subject_score: 1.8 as number | null,
-  overall_score: 44 as number | null,
+  subject_score: 2.1 as number | null,
+  overall_score: 38 as number | null,
   contributor_score: null as number | null,
   voter_score: null as number | null,
   citizen_score: null as number | null,
@@ -39,14 +39,14 @@ const BREAKDOWN = { total: 1, evidence: 0, opinion: 1 };
 const RECORDS = [
   {
     id: "bf72c341-9a1e-4d88-b203-e91fa6c30d44",
-    title: "GourmetGo Catering • Alex Rivera",
+    title: "Christina Ruiz • Danielle Foster",
     category: "Freelancer",
     stage: "Voting Open",
     anonymity_status: "Anonymity Not Granted",
     description:
-      "Do not hire this developer. We paid $3,000 for a restaurant ordering website to launch before our busiest weekend of the year. The site went live, but the checkout button literally didn't work — customers were filling carts and bouncing because nothing happened when they hit Pay.",
-    date: "2026-05-14T09:30:00.000Z",
-    comments: 12,
+      "I booked Danielle for my wedding day makeup. She offered a patch test beforehand and I skipped it because I've never had a skin reaction to anything in my life — I work in healthcare, I know my skin. By the afternoon my cheeks were red and irritated...",
+    date: "2026-05-14T22:11:00.000Z",
+    comments: 9,
   },
 ];
 
