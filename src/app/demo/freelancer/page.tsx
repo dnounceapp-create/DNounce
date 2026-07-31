@@ -23,118 +23,6 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 
-/* ─── Static fake data ─────────────────────────────── */
-
-const RECORD = {
-  id: "bf72c341-9a1e-4d88-b203-e91fa6c30d44",
-  created_at: "2026-05-14T22:11:00.000Z",
-  category: "Freelancer",
-  location: "Queens, NY",
-  relationship: "Client",
-  rating: 2,
-  anonymity_status: "Anonymity Not Granted",
-  description:
-    "I booked Danielle for my wedding day makeup. She offered a patch test beforehand and I skipped it because I've never had a skin reaction to anything in my life — I work in healthcare, I know my skin. By the afternoon my cheeks were red and irritated and I have photos from my own wedding where it's visible. She immediately pointed to me declining the patch test and I get it, I really do. But I also feel like a professional should have products that don't cause reactions on a significant portion of people, patch test or not. We are at a standstill. I declined the test, she used the products, my skin reacted, my wedding photos show it. I don't think either of us is entirely right.",
-  status: "voting",
-};
-
-const SUBJECT = { name: "Danielle Foster", organization: "Independent", location: "Queens, NY" };
-
-const CONTRIBUTOR = { name: "Christina Ruiz" };
-
-const DEBATE_POSTS = [
-  {
-    id: "d1",
-    role: "subject" as const,
-    name: "Danielle Foster",
-    body: "I offer every single client a complimentary patch test exactly for this reason. Christina declined it in writing — I have her message saying she was confident she had no sensitivities. I used the same professional-grade products I use on every bridal client. I followed my entire sanitation and application protocol correctly. I understand she's upset, especially on her wedding day, but the patch test exists specifically to catch individual reactions before they happen on the day itself. She made an informed choice to skip it.",
-    created_at: "2026-05-16T10:14:00Z",
-    parentId: null,
-  },
-  {
-    id: "d2",
-    role: "contributor" as const,
-    name: "Christina Ruiz",
-    body: "I declined because I genuinely have no history of skin reactions — not to makeup, not to anything. I'm a nurse, I'm around products and chemicals constantly. I made a reasonable judgment call based on my own medical history. What I didn't expect was to spend my wedding reception with visibly red cheeks. If your products cause this kind of reaction with no prior sensitivity history, that raises a real question about the formulation regardless of the patch test waiver.",
-    created_at: "2026-05-16T13:45:00Z",
-    parentId: "d1",
-  },
-  {
-    id: "d3",
-    role: "subject" as const,
-    name: "Danielle Foster",
-    body: "My products are professional-grade and used on hundreds of clients without incident. A reaction doesn't mean a product is defective — it means that specific person's skin responded to that specific formulation, which is exactly why patch tests exist. I can't know in advance which clients will react without testing. That's not a formulation problem, that's human biology. I offered the exact tool designed to prevent this outcome and it was declined.",
-    created_at: "2026-05-17T08:30:00Z",
-    parentId: null,
-  },
-  {
-    id: "d4",
-    role: "contributor" as const,
-    name: "Christina Ruiz",
-    body: "I'm not saying the products are defective across the board. I'm saying that on the most important day of my life, I trusted a professional and ended up with a visible skin reaction in every photo. Maybe I should have done the patch test. But I also think a professional working on brides — who are under enormous emotional pressure — should be proactive about flagging risks more forcefully than a quick optional offer. I said I was fine. She accepted that. We both moved on and I paid the price.",
-    created_at: "2026-05-17T11:02:00Z",
-    parentId: "d3",
-  },
-];
-
-const SEED_VOTES: VoteRow[] = [
-  {
-    id: "v1",
-    alias: "nfx@dnounce_219",
-    jobTitle: "Esthetician",
-    choice: "side_with_subject",
-    explanation:
-      "The patch test is the standard of care in this industry for exactly this reason. Offering it and having it declined in writing is a complete due diligence. A professional cannot force a client to do a patch test — they can only offer it. Danielle did everything right. The client made an informed choice and the outcome, while unfortunate, was a known risk of skipping that step.",
-    created_at: "2026-05-18T09:00:00Z",
-    agreeCount: 24,
-    disagreeCount: 6,
-  },
-  {
-    id: "v2",
-    alias: "rlk@dnounce_445",
-    jobTitle: "Bride (married last year)",
-    choice: "side_with_contributor",
-    explanation:
-      "I've been in this exact position. When you're in full wedding planning mode and a vendor offers an optional test weeks out, you brush it off because you've never had a reaction before. The makeup artist knows the stakes of a bridal booking better than anyone — I think there's an argument that 'optional' patch tests should be presented as much more urgent for first-time clients, not just a quick offer that's easy to decline.",
-    created_at: "2026-05-18T11:30:00Z",
-    agreeCount: 19,
-    disagreeCount: 14,
-  },
-  {
-    id: "v3",
-    alias: "tpw@dnounce_88",
-    jobTitle: "Dermatologist",
-    choice: "side_with_subject",
-    explanation:
-      "Contact dermatitis can develop from products a person has never reacted to before — prior tolerance is not a guarantee of future tolerance. The client's reasoning that she 'knows her skin' because she works in healthcare is not clinically sound. A patch test would have caught this. Danielle followed industry protocol. The outcome is unfortunate but the professional responsibility was fulfilled.",
-    created_at: "2026-05-19T14:15:00Z",
-    agreeCount: 31,
-    disagreeCount: 9,
-  },
-  {
-    id: "v4",
-    alias: "cmr@dnounce_312",
-    jobTitle: "Wedding Photographer",
-    choice: "side_with_contributor",
-    explanation:
-      "I've photographed over 200 weddings. The number of brides who skip pre-appointment safety steps because they're overwhelmed is enormous. Vendors who work in the bridal industry know this — the emotional pressure of a wedding makes clients bad at assessing risk. A truly client-centered makeup artist builds in more friction around skipping the patch test for bridal bookings specifically, not less.",
-    created_at: "2026-05-19T16:45:00Z",
-    agreeCount: 22,
-    disagreeCount: 17,
-  },
-  {
-    id: "v5",
-    alias: "bqn@dnounce_671",
-    jobTitle: "Medical Malpractice Attorney",
-    choice: "side_with_subject",
-    explanation:
-      "From a liability standpoint, offering and documenting a declined patch test is exactly the right move. The client signed off on skipping it. Whether or not the professional 'pushed hard enough' is a subjective standard that varies by person — legally and ethically, informed refusal transfers responsibility. I sympathize with what happened on her wedding day but the makeup artist covered herself correctly.",
-    created_at: "2026-05-20T10:00:00Z",
-    agreeCount: 28,
-    disagreeCount: 11,
-  },
-];
-
 /* ─── Types ─────────────────────────────────────────── */
 
 type VoteChoice = "side_with_contributor" | "side_with_subject";
@@ -150,18 +38,16 @@ type VoteRow = {
   disagreeCount: number;
 };
 
-const STORAGE_KEY = "dnounce_demo_user_votes_v4";
-
-const DEMO_ATTACHMENTS = [
-  { id: "a1", label: "Wedding Photo - Ceremony.jpg", type: "image" as const, src: "/og-image.png", agree: 21, disagree: 4 },
-];
-
-const SEED_DEBATE_REACTIONS: Record<string, { agree: number; disagree: number; mine: 1 | -1 | null }> = {
-  d1: { agree: 18, disagree: 29, mine: null },
-  d2: { agree: 31, disagree: 12, mine: null },
-  d3: { agree: 14, disagree: 22, mine: null },
-  d4: { agree: 26, disagree: 9, mine: null },
+type DebatePost = {
+  id: string;
+  role: "subject" | "contributor";
+  name: string;
+  body: string;
+  created_at: string;
+  parentId: string | null;
 };
+
+const STORAGE_KEY = "dnounce_demo_user_votes_v4";
 
 /* ─── Helpers ───────────────────────────────────────── */
 
@@ -325,12 +211,12 @@ function DebateCard({
   replyReactions,
   onReplyToggle,
 }: {
-  post: typeof DEBATE_POSTS[0];
+  post: DebatePost;
   agree: number;
   disagree: number;
   myDir: 1 | -1 | null;
   onToggle: (d: 1 | -1) => void;
-  replies?: typeof DEBATE_POSTS;
+  replies?: DebatePost[];
   replyReactions?: Record<string, { agree: number; disagree: number; mine: 1 | -1 | null }>;
   onReplyToggle?: (id: string, d: 1 | -1) => void;
 }) {
@@ -429,8 +315,52 @@ export default function DemoPage() {
   const [shareOpen, setShareOpen] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
 
+  // 📡 Fetch demo scenario from Supabase (demo_records table, slug='freelancer')
+  const [demoData, setDemoData] = useState<any>(null);
+  const [demoLoading, setDemoLoading] = useState(true);
+
+  useEffect(() => {
+    supabase
+      .from("demo_records")
+      .select("*")
+      .eq("slug", "freelancer")
+      .single()
+      .then(({ data }) => {
+        if (data) setDemoData(data);
+        setDemoLoading(false);
+      });
+  }, []);
+
+  // Derived data from demoData
+  const RECORD = demoData ? {
+    id: demoData.record_id,
+    created_at: demoData.created_at_display,
+    category: demoData.category,
+    location: demoData.location,
+    relationship: demoData.relationship,
+    rating: demoData.rating,
+    anonymity_status: demoData.anonymity_status,
+    description: demoData.description,
+    status: demoData.status,
+  } : null;
+
+  const SUBJECT = demoData ? {
+    name: demoData.subject_name,
+    organization: demoData.subject_organization,
+    location: demoData.subject_location,
+  } : null;
+
+  const CONTRIBUTOR = demoData ? { name: demoData.contributor_name } : null;
+
+  const DEBATE_POSTS: DebatePost[] = demoData?.debate_posts ?? [];
+  const DEMO_ATTACHMENTS = demoData?.attachments ?? [];
+  const SEED_DEBATE_REACTIONS: Record<string, { agree: number; disagree: number; mine: 1 | -1 | null }> =
+    demoData?.debate_reactions ?? {};
+  const SEED_VOTES: VoteRow[] = demoData?.seed_votes ?? [];
+
   // close mobile menu on outside click
   useEffect(() => {
+    if (!demoData) return;
     // 🔍 Track demo page view
     supabase.auth.getSession().then(async ({ data: sessionData }) => {
       const userId = sessionData?.session?.user?.id ?? null;
@@ -439,13 +369,13 @@ export default function DemoPage() {
         if (adminCheck) return;
       }
       supabase.from("page_views").insert({
-        page_type: "demo_freelancer",
+        page_type: demoData.page_type,
         page_id: null,
         viewer_auth_user_id: sessionData?.session?.user?.id ?? null,
         is_anonymous: !sessionData?.session?.user?.id,
       }).then(() => {});
     });
-  }, []);
+  }, [demoData]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -472,9 +402,7 @@ export default function DemoPage() {
   // reactions on vote cards
   const [reactions, setReactions] = useState<Record<string, { agree: number; disagree: number; mine: 1 | -1 | null }>>({});
   // reactions on debate posts
-  const [debateReactions, setDebateReactions] = useState<Record<string, { agree: number; disagree: number; mine: 1 | -1 | null }>>(
-    JSON.parse(JSON.stringify(SEED_DEBATE_REACTIONS))
-  );
+  const [debateReactions, setDebateReactions] = useState<Record<string, { agree: number; disagree: number; mine: 1 | -1 | null }>>({});
   // attachment modal
   const [attachmentOpen, setAttachmentOpen] = useState<string | null>(null);
   // reactions on attachments
@@ -488,8 +416,9 @@ export default function DemoPage() {
 
   const recordUrl = typeof window !== "undefined" ? window.location.href : "https://dnounce.com/demo";
 
-  // load persisted votes
+  // load persisted votes (waits for demoData so debateReactions can seed from fetch when localStorage is empty)
   useEffect(() => {
+    if (!demoData) return;
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
@@ -499,11 +428,14 @@ export default function DemoPage() {
         setReactions(parsed.reactions ?? {});
         setCommunityPosts(parsed.community ?? []);
         if (parsed.debateReactions) setDebateReactions(parsed.debateReactions);
+        else setDebateReactions(JSON.parse(JSON.stringify(SEED_DEBATE_REACTIONS)));
         if (parsed.recordReaction) setRecordReaction(parsed.recordReaction);
         if (parsed.attachmentReactions) setAttachmentReactions(parsed.attachmentReactions);
+      } else {
+        setDebateReactions(JSON.parse(JSON.stringify(SEED_DEBATE_REACTIONS)));
       }
     } catch {}
-  }, []);
+  }, [demoData]);
 
   function persist(
     votes: VoteRow[],
@@ -618,7 +550,7 @@ export default function DemoPage() {
   }
 
   function toggleAttachmentReaction(attachId: string, dir: 1 | -1) {
-    const base = DEMO_ATTACHMENTS.find((a) => a.id === attachId);
+    const base = DEMO_ATTACHMENTS.find((a: any) => a.id === attachId);
     const cur = attachmentReactions[attachId] ?? { agree: base?.agree ?? 0, disagree: base?.disagree ?? 0, mine: null };
     let agree = cur.agree;
     let disagree = cur.disagree;
@@ -663,6 +595,9 @@ export default function DemoPage() {
   const canVote = !myVote;
   const showVoteForm = canVote;
   const maxChars = 1000;
+
+  if (demoLoading) return null;
+  if (!demoData || !RECORD || !SUBJECT || !CONTRIBUTOR) return null;
 
   return (
     <div className="min-h-screen bg-white">
@@ -738,7 +673,7 @@ export default function DemoPage() {
               <User className="w-7 h-7 text-gray-600" />
             </div>
             <div className="min-w-0">
-              <Link href="/subject/demo/freelancer" className="text-lg font-semibold text-gray-900 break-words leading-tight hover:underline">{SUBJECT.name}</Link>
+              <Link href={demoData.subject_demo_url} className="text-lg font-semibold text-gray-900 break-words leading-tight hover:underline">{SUBJECT.name}</Link>
               <p className="text-sm text-gray-600">{SUBJECT.organization} · {SUBJECT.location}</p>
             </div>
           </div>
@@ -853,7 +788,7 @@ export default function DemoPage() {
             <div className="text-xs text-gray-500">2 file(s)</div>
           </div>
           <div className="space-y-2">
-            {DEMO_ATTACHMENTS.map((a) => (
+            {DEMO_ATTACHMENTS.map((a: any) => (
               <div key={a.id}>
                 <button
                   type="button"
@@ -1075,7 +1010,7 @@ export default function DemoPage() {
 
       {/* Attachment modal */}
       {attachmentOpen && (() => {
-        const a = DEMO_ATTACHMENTS.find((x) => x.id === attachmentOpen);
+        const a = DEMO_ATTACHMENTS.find((x: any) => x.id === attachmentOpen);
         if (!a) return null;
         return (
           <div className="fixed inset-0 z-[80] bg-black/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4" onClick={() => setAttachmentOpen(null)}>
