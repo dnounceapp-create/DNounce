@@ -49,7 +49,7 @@ function credibilityBadge(cred: string) {
 
 export const dynamic = 'force-dynamic';
 
-export default function SubjectDemoRealtorPage() {
+export default function SubjectDemoBarberPage() {
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [copiedSubjectId, setCopiedSubjectId] = useState(false);
@@ -58,7 +58,7 @@ export default function SubjectDemoRealtorPage() {
     "records"
   );
 
-  // 📡 Fetch demo scenario from Supabase (demo_records table, slug='realtor')
+  // 📡 Fetch demo scenario from Supabase (demo_records table, slug='barber')
   const [demoData, setDemoData] = useState<any>(null);
   const [demoLoading, setDemoLoading] = useState(true);
 
@@ -66,7 +66,7 @@ export default function SubjectDemoRealtorPage() {
     supabase
       .from("demo_records")
       .select("*")
-      .eq("slug", "realtor")
+      .eq("slug", "barber")
       .single()
       .then(({ data }) => {
         if (data) setDemoData(data);

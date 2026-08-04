@@ -14,45 +14,6 @@ import {
   AlertTriangle,
 } from "lucide-react";
 
-/* ─── Static demo data ─────────────────────────────── */
-
-const SUBJECT = {
-  name: "Danielle Foster",
-  nickname: null as string | null,
-  job_title: "Makeup Artist",
-  organization: "Independent",
-  location: "Queens, NY",
-  bio: "Bridal and editorial makeup artist based in Queens with over six years of experience. Specializing in long-wear looks for weddings, photo shoots, and special events.",
-  subject_uuid: "demo-freelancer-danielle-foster",
-};
-
-const SCORES = {
-  subject_score: 2.1 as number | null,
-  overall_score: 38 as number | null,
-  contributor_score: null as number | null,
-  voter_score: null as number | null,
-  citizen_score: null as number | null,
-};
-
-const BREAKDOWN = { total: 1, evidence: 0, opinion: 1 };
-
-const RECORDS = [
-  {
-    id: "bf72c341-9a1e-4d88-b203-e91fa6c30d44",
-    title: "Christina Ruiz • Danielle Foster",
-    category: "Freelancer",
-    stage: "Voting Open",
-    anonymity_status: "Anonymity Not Granted",
-    description:
-      "I booked Danielle for my wedding day makeup. She offered a patch test beforehand and I skipped it because I've never had a skin reaction to anything in my life — I work in healthcare, I know my skin. By the afternoon my cheeks were red and irritated...",
-    date: "2026-05-14T22:11:00.000Z",
-    comments: 9,
-  },
-];
-
-const QR_URL = "https://www.dnounce.com/subject/demo/freelancer";
-const RECORD_HREF = "/demo/freelancer";
-
 /* ─── Helpers ──────────────────────────────────────── */
 
 function shortId(id: string) {
@@ -86,6 +47,8 @@ function credibilityBadge(cred: string) {
 
 /* ─── Page ─────────────────────────────────────────── */
 
+export const dynamic = 'force-dynamic';
+
 export default function SubjectDemoFreelancerPage() {
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -95,8 +58,46 @@ export default function SubjectDemoFreelancerPage() {
     "records"
   );
 
+  // 📡 Fetch demo scenario from Supabase (demo_records table, slug='freelancer')
+  const [demoData, setDemoData] = useState<any>(null);
+  const [demoLoading, setDemoLoading] = useState(true);
+
+  useEffect(() => {
+    supabase
+      .from("demo_records")
+      .select("*")
+      .eq("slug", "freelancer")
+      .single()
+      .then(({ data }) => {
+        if (data) setDemoData(data);
+        setDemoLoading(false);
+      });
+  }, []);
+
+  // Derived data from demoData
+  const SUBJECT = demoData ? {
+    name: demoData.subject_name,
+    nickname: demoData.subject_nickname ?? null,
+    job_title: demoData.subject_job_title,
+    organization: demoData.subject_organization,
+    location: demoData.subject_location,
+    bio: demoData.subject_bio,
+    subject_uuid: `demo-${demoData.slug}-${demoData.subject_name?.toLowerCase().replace(/\s+/g, '-')}`,
+  } : {} as any;
+
+  const SCORES = demoData?.subject_scores ?? {
+    subject_score: null, overall_score: null,
+    contributor_score: null, voter_score: null, citizen_score: null,
+  };
+
+  const BREAKDOWN = demoData?.subject_breakdown ?? { total: 0, evidence: 0, opinion: 0 };
+  const RECORDS = demoData?.subject_records ?? [];
+  const QR_URL = demoData ? `https://www.dnounce.com${demoData.subject_demo_url}` : '#';
+  const RECORD_HREF = demoData?.subject_demo_url?.replace('/subject/demo/', '/demo/') ?? '#';
+
   // Page view tracking — skip admins
   useEffect(() => {
+    if (!demoData) return;
     supabase.auth.getSession().then(async ({ data: sessionData }) => {
       const userId = sessionData?.session?.user?.id ?? null;
       if (userId) {
@@ -111,14 +112,14 @@ export default function SubjectDemoFreelancerPage() {
       supabase
         .from("page_views")
         .insert({
-          page_type: "demo_subject_freelancer",
+          page_type: demoData.subject_page_type,
           page_id: null,
           viewer_auth_user_id: userId,
           is_anonymous: !userId,
         })
         .then(() => {});
     });
-  }, []);
+  }, [demoData]);
 
   // Close mobile menu on outside click
   useEffect(() => {
@@ -137,6 +138,9 @@ export default function SubjectDemoFreelancerPage() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  if (demoLoading) return null;
+  if (!demoData) return null;
 
   return (
     <div className="min-h-screen bg-white">
@@ -453,7 +457,7 @@ export default function SubjectDemoFreelancerPage() {
 
                   {/* Records list */}
                   <div className="space-y-4">
-                    {RECORDS.map((r) => (
+                    {RECORDS.map((r: any) => (
                       <div
                         key={r.id}
                         className="w-full rounded-2xl border bg-white p-4 hover:shadow-sm hover:border-gray-300 transition"

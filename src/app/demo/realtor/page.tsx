@@ -23,99 +23,6 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 
-/* ─── Static fake data ─────────────────────────────── */
-
-const RECORD = {
-  id: "ac3d9478-5143-4313-9730-c470b97fd1bb",
-  created_at: "2026-04-02T19:57:12.655Z",
-  category: "Realtor",
-  location: "Miami, FL",
-  relationship: "Client",
-  rating: 2,
-  anonymity_status: "Anonymity Not Granted",
-  description:
-    "I felt pressured by my realtor to make an offer on a property I wasn't fully comfortable with. Every time I expressed hesitation, the response was about how fast the market was moving and how I'd lose it if I waited. I ultimately made an offer I regretted. I'm not saying the property was bad — I'm saying I never felt like I had space to think. My concerns were consistently minimized in favor of moving fast.",
-  status: "voting",
-};
-
-const SUBJECT = { name: "John Doe", organization: "Palmview Realty Group", location: "Miami, FL" };
-
-const CONTRIBUTOR = { name: "Simone A." };
-
-const DEBATE_POSTS = [
-  {
-    id: "d2",
-    role: "subject" as const,
-    name: "John Doe",
-    body: "I presented the facts of the market as they were at the time. That area was seeing multiple offers within 48 hours of listing. I gave the client all the information they needed to make their decision. I never told her she had to make an offer — I showed her what would happen if she didn't act. Ultimately, every offer submitted went through her and required her signature.",
-    created_at: "2026-04-07T14:22:00Z",
-    parentId: null,
-  },
-  {
-    id: "d3",
-    role: "contributor" as const,
-    name: "Simone A.",
-    body: "Showing someone what happens if they don't act fast — every single time they express doubt — is pressure. I asked twice about waiting to see one more property. Both times I was told the market wouldn't support that. I signed the offer feeling rushed, not informed. There's a difference between presenting facts and steering a client toward a decision.",
-    created_at: "2026-04-08T09:00:00Z",
-    parentId: "d2",
-  },
-  {
-    id: "d4",
-    role: "subject" as const,
-    name: "John Doe",
-    body: "In my professional opinion, in a competitive market, hesitation has real consequences. My job is to make sure my clients understand those consequences fully. If she felt that information was pressure rather than guidance, I understand that — but I was doing my job. I always respect the final decision as the client's own.",
-    created_at: "2026-04-08T09:41:00Z",
-    parentId: null,
-  },
-];
-
-const SEED_VOTES: VoteRow[] = [
-  {
-    id: "v1",
-    alias: "kxr@dnounce_312",
-    jobTitle: "Real Estate Broker",
-    choice: "side_with_contributor",
-    explanation:
-      "Repeatedly citing urgency every time a client expresses doubt is a known pressure tactic in real estate. The fact that the client signed the offer feeling rushed — not informed — is the core issue. Agents should create space for hesitation, not fill it with market fear.",
-    created_at: "2026-04-10T11:04:00Z",
-    agreeCount: 16,
-    disagreeCount: 4,
-  },
-  {
-    id: "v2",
-    alias: "mbvp@dnounce_87",
-    jobTitle: "Property Investor",
-    choice: "side_with_subject",
-    explanation:
-      "In a hot market, the agent's urgency was likely accurate. The client chose to make an offer and signed off on it. Regret after the fact doesn't necessarily mean the agent was wrong. Without knowing the specific market conditions, this reads as a legitimate difference of opinion.",
-    created_at: "2026-04-11T08:17:00Z",
-    agreeCount: 11,
-    disagreeCount: 9,
-  },
-  {
-    id: "v3",
-    alias: "tjf@dnounce_541",
-    jobTitle: "Buyer's Advocate",
-    choice: "side_with_contributor",
-    explanation:
-      "A buyer expressing hesitation twice and being redirected both times toward urgency is a pattern. Good agents acknowledge doubt and work through it — they don't override it with market pressure. The client's emotional experience of the process matters.",
-    created_at: "2026-04-12T16:55:00Z",
-    agreeCount: 20,
-    disagreeCount: 3,
-  },
-  {
-    id: "v4",
-    alias: "qlnx@dnounce_29",
-    jobTitle: "Mortgage Advisor",
-    choice: "side_with_subject",
-    explanation:
-      "Urgency is part of the job in fast markets. I've seen clients regret moving quickly and regret waiting — it cuts both ways. The agent made the offer available, explained the stakes, and the client signed. I can't call that misconduct based on this account alone.",
-    created_at: "2026-04-13T10:30:00Z",
-    agreeCount: 9,
-    disagreeCount: 14,
-  },
-];
-
 /* ─── Types ─────────────────────────────────────────── */
 
 type VoteChoice = "side_with_contributor" | "side_with_subject";
@@ -131,21 +38,21 @@ type VoteRow = {
   disagreeCount: number;
 };
 
-const STORAGE_KEY = "dnounce_demo_user_votes_v4";
-
-const DEMO_ATTACHMENTS = [
-  { id: "a1", label: "Attachment #1", type: "image" as const, src: "/og-image.png", agree: 10, disagree: 1 },
-];
-
-const SEED_DEBATE_REACTIONS: Record<string, { agree: number; disagree: number; mine: 1 | -1 | null }> = {
-  d2: { agree: 8, disagree: 19, mine: null },
-  d3: { agree: 24, disagree: 6, mine: null },
-  d4: { agree: 9, disagree: 15, mine: null },
+type DebatePost = {
+  id: string;
+  role: "subject" | "contributor";
+  name: string;
+  body: string;
+  created_at: string;
+  parentId: string | null;
 };
+
+const STORAGE_KEY = "dnounce_demo_realtor_v1";
 
 /* ─── Helpers ───────────────────────────────────────── */
 
 function formatMMDDYYYY(value: string) {
+  if (!value) return '';
   const d = new Date(value);
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
@@ -162,6 +69,7 @@ function formatTimestamp(value: string) {
 }
 
 function shortId(id: string) {
+  if (!id) return '';
   return `${id.slice(0, 6)}…${id.slice(-4)}`;
 }
 
@@ -305,12 +213,12 @@ function DebateCard({
   replyReactions,
   onReplyToggle,
 }: {
-  post: typeof DEBATE_POSTS[0];
+  post: DebatePost;
   agree: number;
   disagree: number;
   myDir: 1 | -1 | null;
   onToggle: (d: 1 | -1) => void;
-  replies?: typeof DEBATE_POSTS;
+  replies?: DebatePost[];
   replyReactions?: Record<string, { agree: number; disagree: number; mine: 1 | -1 | null }>;
   onReplyToggle?: (id: string, d: 1 | -1) => void;
 }) {
@@ -401,6 +309,8 @@ function DebateCard({
 
 /* ─── Main page ─────────────────────────────────────── */
 
+export const dynamic = 'force-dynamic';
+
 export default function DemoRealtorPage() {
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -409,8 +319,52 @@ export default function DemoRealtorPage() {
   const [shareOpen, setShareOpen] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
 
+  // 📡 Fetch demo scenario from Supabase (demo_records table, slug='realtor')
+  const [demoData, setDemoData] = useState<any>(null);
+  const [demoLoading, setDemoLoading] = useState(true);
+
+  useEffect(() => {
+    supabase
+      .from("demo_records")
+      .select("*")
+      .eq("slug", "realtor")
+      .single()
+      .then(({ data }) => {
+        if (data) setDemoData(data);
+        setDemoLoading(false);
+      });
+  }, []);
+
+  // Derived data from demoData
+  const RECORD = demoData ? {
+    id: demoData.record_id,
+    created_at: demoData.created_at_display,
+    category: demoData.category,
+    location: demoData.location,
+    relationship: demoData.relationship,
+    rating: demoData.rating,
+    anonymity_status: demoData.anonymity_status,
+    description: demoData.description,
+    status: demoData.status,
+  } : {} as any;
+
+  const SUBJECT = demoData ? {
+    name: demoData.subject_name,
+    organization: demoData.subject_organization,
+    location: demoData.subject_location,
+  } : {} as any;
+
+  const CONTRIBUTOR = demoData ? { name: demoData.contributor_name } : {} as any;
+
+  const DEBATE_POSTS: DebatePost[] = demoData?.debate_posts ?? [];
+  const DEMO_ATTACHMENTS = demoData?.attachments ?? [];
+  const SEED_DEBATE_REACTIONS: Record<string, { agree: number; disagree: number; mine: 1 | -1 | null }> =
+    demoData?.debate_reactions ?? {};
+  const SEED_VOTES: VoteRow[] = demoData?.seed_votes ?? [];
+
   // close mobile menu on outside click
   useEffect(() => {
+    if (!demoData) return;
     // 🔍 Track demo page view
     supabase.auth.getSession().then(async ({ data: sessionData }) => {
       const userId = sessionData?.session?.user?.id ?? null;
@@ -419,13 +373,13 @@ export default function DemoRealtorPage() {
         if (adminCheck) return;
       }
       supabase.from("page_views").insert({
-        page_type: "demo_realtor",
+        page_type: demoData.page_type,
         page_id: null,
         viewer_auth_user_id: sessionData?.session?.user?.id ?? null,
         is_anonymous: !sessionData?.session?.user?.id,
       }).then(() => {});
     });
-  }, []);
+  }, [demoData]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -452,9 +406,7 @@ export default function DemoRealtorPage() {
   // reactions on vote cards
   const [reactions, setReactions] = useState<Record<string, { agree: number; disagree: number; mine: 1 | -1 | null }>>({});
   // reactions on debate posts
-  const [debateReactions, setDebateReactions] = useState<Record<string, { agree: number; disagree: number; mine: 1 | -1 | null }>>(
-    JSON.parse(JSON.stringify(SEED_DEBATE_REACTIONS))
-  );
+  const [debateReactions, setDebateReactions] = useState<Record<string, { agree: number; disagree: number; mine: 1 | -1 | null }>>({});
   // attachment modal
   const [attachmentOpen, setAttachmentOpen] = useState<string | null>(null);
   // reactions on attachments
@@ -468,8 +420,9 @@ export default function DemoRealtorPage() {
 
   const recordUrl = typeof window !== "undefined" ? window.location.href : "https://dnounce.com/demo";
 
-  // load persisted votes
+  // load persisted votes (waits for demoData so debateReactions can seed from fetch when localStorage is empty)
   useEffect(() => {
+    if (!demoData) return;
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
@@ -479,11 +432,14 @@ export default function DemoRealtorPage() {
         setReactions(parsed.reactions ?? {});
         setCommunityPosts(parsed.community ?? []);
         if (parsed.debateReactions) setDebateReactions(parsed.debateReactions);
+        else setDebateReactions(JSON.parse(JSON.stringify(SEED_DEBATE_REACTIONS)));
         if (parsed.recordReaction) setRecordReaction(parsed.recordReaction);
         if (parsed.attachmentReactions) setAttachmentReactions(parsed.attachmentReactions);
+      } else {
+        setDebateReactions(JSON.parse(JSON.stringify(SEED_DEBATE_REACTIONS)));
       }
     } catch {}
-  }, []);
+  }, [demoData]);
 
   function persist(
     votes: VoteRow[],
@@ -598,7 +554,7 @@ export default function DemoRealtorPage() {
   }
 
   function toggleAttachmentReaction(attachId: string, dir: 1 | -1) {
-    const base = DEMO_ATTACHMENTS.find((a) => a.id === attachId);
+    const base = DEMO_ATTACHMENTS.find((a: any) => a.id === attachId);
     const cur = attachmentReactions[attachId] ?? { agree: base?.agree ?? 0, disagree: base?.disagree ?? 0, mine: null };
     let agree = cur.agree;
     let disagree = cur.disagree;
@@ -718,8 +674,8 @@ export default function DemoRealtorPage() {
               <User className="w-7 h-7 text-gray-600" />
             </div>
             <div className="min-w-0">
-              <Link href="/subject/demo/realtor" className="text-lg font-semibold text-gray-900 break-words leading-tight hover:underline">{SUBJECT.name}</Link>
-              <p className="text-sm text-gray-600">{SUBJECT.organization} · {SUBJECT.location}</p>
+              <Link href={demoData?.subject_demo_url ?? '#'} className="text-lg font-semibold text-gray-900 break-words leading-tight hover:underline">{SUBJECT?.name}</Link>
+              <p className="text-sm text-gray-600">{SUBJECT?.organization} · {SUBJECT?.location}</p>
             </div>
           </div>
         </div>
@@ -735,7 +691,7 @@ export default function DemoRealtorPage() {
               <User className="w-7 h-7 text-gray-600" />
             </div>
             <div className="min-w-0">
-              <p className="text-lg font-semibold text-gray-900 break-words leading-tight">{CONTRIBUTOR.name}</p>
+              <p className="text-lg font-semibold text-gray-900 break-words leading-tight">{CONTRIBUTOR?.name}</p>
               <p className="text-xs text-gray-400 mt-1">Submitted this record</p>
             </div>
           </div>
@@ -758,15 +714,15 @@ export default function DemoRealtorPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-gray-600">
           <div className="flex items-center gap-2">
             <span className="font-medium text-gray-500">Submitted</span>
-            <span className="text-gray-900">{formatMMDDYYYY(RECORD.created_at)}</span>
+            <span className="text-gray-900">{formatMMDDYYYY(RECORD?.created_at)}</span>
           </div>
           <div className="flex flex-wrap items-center gap-2 min-w-0">
             <span className="font-medium text-gray-500 shrink-0">Record ID</span>
-            <span className="font-mono text-[12px] text-gray-900">{shortId(RECORD.id)}</span>
+            <span className="font-mono text-[12px] text-gray-900">{shortId(RECORD?.id)}</span>
             <button
               type="button"
               onClick={async () => {
-                await navigator.clipboard.writeText(RECORD.id);
+                await navigator.clipboard.writeText(RECORD?.id);
                 setCopied(true);
                 setTimeout(() => setCopied(false), 1200);
               }}
@@ -793,7 +749,7 @@ export default function DemoRealtorPage() {
         {/* Stars */}
         <div className="flex items-center gap-1.5 text-yellow-500">
           {Array.from({ length: 10 }).map((_, i) => (
-            <Star key={i} size={18} className={RECORD.rating >= i + 1 ? "fill-current text-gray-900" : "text-gray-300"} />
+            <Star key={i} size={18} className={RECORD?.rating >= i + 1 ? "fill-current text-gray-900" : "text-gray-300"} />
           ))}
         </div>
 
@@ -801,15 +757,15 @@ export default function DemoRealtorPage() {
         <div className="grid grid-cols-1 gap-3 text-sm">
           <div className="flex items-center gap-2">
             <span className="font-medium text-gray-500">Category:</span>
-            <span className="text-gray-900">{RECORD.category}</span>
+            <span className="text-gray-900">{RECORD?.category}</span>
           </div>
           <div className="flex items-center gap-2 text-gray-900">
             <MapPin className="w-4 h-4 text-gray-400" />
-            <span>{RECORD.location}</span>
+            <span>{RECORD?.location}</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="font-medium text-gray-500">Relationship:</span>
-            <span className="text-gray-900">{RECORD.relationship}</span>
+            <span className="text-gray-900">{RECORD?.relationship}</span>
           </div>
         </div>
 
@@ -817,7 +773,7 @@ export default function DemoRealtorPage() {
         <div className="pt-4 border-t border-gray-200">
           <div className="text-sm font-semibold text-gray-900 mb-2">Experience Details</div>
           <div className="text-[15px] text-gray-800 whitespace-pre-wrap break-words leading-7">
-            {RECORD.description}
+            {RECORD?.description}
           </div>
         </div>
 
@@ -833,7 +789,7 @@ export default function DemoRealtorPage() {
             <div className="text-xs text-gray-500">2 file(s)</div>
           </div>
           <div className="space-y-2">
-            {DEMO_ATTACHMENTS.map((a) => (
+            {DEMO_ATTACHMENTS.map((a: any) => (
               <div key={a.id}>
                 <button
                   type="button"
@@ -933,7 +889,7 @@ export default function DemoRealtorPage() {
             <div className="text-xs font-semibold text-gray-900">Your vote</div>
             <div className="mt-2 inline-flex items-center gap-2 rounded-full border bg-white px-3 py-1 text-xs font-semibold">
               <span className={myVote.choice === "side_with_contributor" ? "text-blue-700" : "text-indigo-700"}>
-                {myVote.choice === "side_with_contributor" ? `Sided with ${CONTRIBUTOR.name}` : `Sided with ${SUBJECT.name}`}
+                {myVote.choice === "side_with_contributor" ? `Sided with ${CONTRIBUTOR?.name}` : `Sided with ${SUBJECT?.name}`}
               </span>
               <span className="text-gray-400">•</span>
               <span className="text-gray-600">{formatTimestamp(myVote.created_at)}</span>
@@ -962,7 +918,7 @@ export default function DemoRealtorPage() {
                   choice === "side_with_contributor" ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-800 hover:bg-gray-50",
                 ].join(" ")}
               >
-                Side with {CONTRIBUTOR.name}
+                Side with {CONTRIBUTOR?.name}
               </button>
               <button
                 type="button"
@@ -972,7 +928,7 @@ export default function DemoRealtorPage() {
                   choice === "side_with_subject" ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-gray-800 hover:bg-gray-50",
                 ].join(" ")}
               >
-                Side with {SUBJECT.name}
+                Side with {SUBJECT?.name}
               </button>
             </div>
 
@@ -1021,7 +977,7 @@ export default function DemoRealtorPage() {
                       "inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold shrink-0",
                       v.choice === "side_with_contributor" ? "text-blue-700 border-blue-200 bg-blue-50" : "text-indigo-700 border-indigo-200 bg-indigo-50",
                     ].join(" ")}>
-                      {v.choice === "side_with_contributor" ? `With ${CONTRIBUTOR.name}` : `With ${SUBJECT.name}`}
+                      {v.choice === "side_with_contributor" ? `With ${CONTRIBUTOR?.name}` : `With ${SUBJECT?.name}`}
                     </span>
                   </div>
                   <div className="mt-2 text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{v.explanation}</div>
@@ -1055,7 +1011,7 @@ export default function DemoRealtorPage() {
 
       {/* Attachment modal */}
       {attachmentOpen && (() => {
-        const a = DEMO_ATTACHMENTS.find((x) => x.id === attachmentOpen);
+        const a = DEMO_ATTACHMENTS.find((x: any) => x.id === attachmentOpen);
         if (!a) return null;
         return (
           <div className="fixed inset-0 z-[80] bg-black/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4" onClick={() => setAttachmentOpen(null)}>

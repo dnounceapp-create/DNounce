@@ -52,6 +52,7 @@ const STORAGE_KEY = "dnounce_demo_user_votes_v4";
 /* ─── Helpers ───────────────────────────────────────── */
 
 function formatMMDDYYYY(value: string) {
+  if (!value) return '';
   const d = new Date(value);
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
@@ -68,6 +69,7 @@ function formatTimestamp(value: string) {
 }
 
 function shortId(id: string) {
+  if (!id) return '';
   return `${id.slice(0, 6)}…${id.slice(-4)}`;
 }
 
@@ -342,15 +344,15 @@ export default function DemoPage() {
     anonymity_status: demoData.anonymity_status,
     description: demoData.description,
     status: demoData.status,
-  } : null;
+  } : {} as any;
 
   const SUBJECT = demoData ? {
     name: demoData.subject_name,
     organization: demoData.subject_organization,
     location: demoData.subject_location,
-  } : null;
+  } : {} as any;
 
-  const CONTRIBUTOR = demoData ? { name: demoData.contributor_name } : null;
+  const CONTRIBUTOR = demoData ? { name: demoData.contributor_name } : {} as any;
 
   const DEBATE_POSTS: DebatePost[] = demoData?.debate_posts ?? [];
   const DEMO_ATTACHMENTS = demoData?.attachments ?? [];
@@ -673,8 +675,8 @@ export default function DemoPage() {
               <User className="w-7 h-7 text-gray-600" />
             </div>
             <div className="min-w-0">
-              <Link href={demoData.subject_demo_url} className="text-lg font-semibold text-gray-900 break-words leading-tight hover:underline">{SUBJECT.name}</Link>
-              <p className="text-sm text-gray-600">{SUBJECT.organization} · {SUBJECT.location}</p>
+              <Link href={demoData?.subject_demo_url ?? '#'} className="text-lg font-semibold text-gray-900 break-words leading-tight hover:underline">{SUBJECT?.name}</Link>
+              <p className="text-sm text-gray-600">{SUBJECT?.organization} · {SUBJECT?.location}</p>
             </div>
           </div>
         </div>
@@ -690,7 +692,7 @@ export default function DemoPage() {
               <User className="w-7 h-7 text-gray-600" />
             </div>
             <div className="min-w-0">
-              <p className="text-lg font-semibold text-gray-900 break-words leading-tight">{CONTRIBUTOR.name}</p>
+              <p className="text-lg font-semibold text-gray-900 break-words leading-tight">{CONTRIBUTOR?.name}</p>
               <p className="text-xs text-gray-400 mt-1">Submitted this record</p>
             </div>
           </div>
@@ -713,15 +715,15 @@ export default function DemoPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-gray-600">
           <div className="flex items-center gap-2">
             <span className="font-medium text-gray-500">Submitted</span>
-            <span className="text-gray-900">{formatMMDDYYYY(RECORD.created_at)}</span>
+            <span className="text-gray-900">{formatMMDDYYYY(RECORD?.created_at)}</span>
           </div>
           <div className="flex flex-wrap items-center gap-2 min-w-0">
             <span className="font-medium text-gray-500 shrink-0">Record ID</span>
-            <span className="font-mono text-[12px] text-gray-900">{shortId(RECORD.id)}</span>
+            <span className="font-mono text-[12px] text-gray-900">{shortId(RECORD?.id)}</span>
             <button
               type="button"
               onClick={async () => {
-                await navigator.clipboard.writeText(RECORD.id);
+                await navigator.clipboard.writeText(RECORD?.id);
                 setCopied(true);
                 setTimeout(() => setCopied(false), 1200);
               }}
@@ -748,7 +750,7 @@ export default function DemoPage() {
         {/* Stars */}
         <div className="flex items-center gap-1.5 text-yellow-500">
           {Array.from({ length: 10 }).map((_, i) => (
-            <Star key={i} size={18} className={RECORD.rating >= i + 1 ? "fill-current text-gray-900" : "text-gray-300"} />
+            <Star key={i} size={18} className={RECORD?.rating >= i + 1 ? "fill-current text-gray-900" : "text-gray-300"} />
           ))}
         </div>
 
@@ -756,15 +758,15 @@ export default function DemoPage() {
         <div className="grid grid-cols-1 gap-3 text-sm">
           <div className="flex items-center gap-2">
             <span className="font-medium text-gray-500">Category:</span>
-            <span className="text-gray-900">{RECORD.category}</span>
+            <span className="text-gray-900">{RECORD?.category}</span>
           </div>
           <div className="flex items-center gap-2 text-gray-900">
             <MapPin className="w-4 h-4 text-gray-400" />
-            <span>{RECORD.location}</span>
+            <span>{RECORD?.location}</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="font-medium text-gray-500">Relationship:</span>
-            <span className="text-gray-900">{RECORD.relationship}</span>
+            <span className="text-gray-900">{RECORD?.relationship}</span>
           </div>
         </div>
 
@@ -772,7 +774,7 @@ export default function DemoPage() {
         <div className="pt-4 border-t border-gray-200">
           <div className="text-sm font-semibold text-gray-900 mb-2">Experience Details</div>
           <div className="text-[15px] text-gray-800 whitespace-pre-wrap break-words leading-7">
-            {RECORD.description}
+            {RECORD?.description}
           </div>
         </div>
 
@@ -888,7 +890,7 @@ export default function DemoPage() {
             <div className="text-xs font-semibold text-gray-900">Your vote</div>
             <div className="mt-2 inline-flex items-center gap-2 rounded-full border bg-white px-3 py-1 text-xs font-semibold">
               <span className={myVote.choice === "side_with_contributor" ? "text-blue-700" : "text-indigo-700"}>
-                {myVote.choice === "side_with_contributor" ? `Sided with ${CONTRIBUTOR.name}` : `Sided with ${SUBJECT.name}`}
+                {myVote.choice === "side_with_contributor" ? `Sided with ${CONTRIBUTOR?.name}` : `Sided with ${SUBJECT?.name}`}
               </span>
               <span className="text-gray-400">•</span>
               <span className="text-gray-600">{formatTimestamp(myVote.created_at)}</span>
@@ -917,7 +919,7 @@ export default function DemoPage() {
                   choice === "side_with_contributor" ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-800 hover:bg-gray-50",
                 ].join(" ")}
               >
-                Side with {CONTRIBUTOR.name}
+                Side with {CONTRIBUTOR?.name}
               </button>
               <button
                 type="button"
@@ -927,7 +929,7 @@ export default function DemoPage() {
                   choice === "side_with_subject" ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-gray-800 hover:bg-gray-50",
                 ].join(" ")}
               >
-                Side with {SUBJECT.name}
+                Side with {SUBJECT?.name}
               </button>
             </div>
 
@@ -976,7 +978,7 @@ export default function DemoPage() {
                       "inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold shrink-0",
                       v.choice === "side_with_contributor" ? "text-blue-700 border-blue-200 bg-blue-50" : "text-indigo-700 border-indigo-200 bg-indigo-50",
                     ].join(" ")}>
-                      {v.choice === "side_with_contributor" ? `With ${CONTRIBUTOR.name}` : `With ${SUBJECT.name}`}
+                      {v.choice === "side_with_contributor" ? `With ${CONTRIBUTOR?.name}` : `With ${SUBJECT?.name}`}
                     </span>
                   </div>
                   <div className="mt-2 text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{v.explanation}</div>

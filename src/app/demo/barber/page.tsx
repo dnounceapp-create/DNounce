@@ -23,99 +23,6 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 
-/* ─── Static fake data ─────────────────────────────── */
-
-const RECORD = {
-  id: "ac3d9478-5143-4313-9730-c470b97fd1bb",
-  created_at: "2026-04-02T19:57:12.655Z",
-  category: "Barber",
-  location: "Atlanta, GA",
-  relationship: "Client",
-  rating: 2,
-  anonymity_status: "Anonymity Not Granted",
-  description:
-    "I showed DeShawn a reference photo — a clean low fade with a hard part. What I got looked nothing like it. The fade was uneven on one side and the hard part was crooked. I pointed it out in the chair and he said it looked fine. I ended up going to another barber the next day to fix it. I'm not saying he can't cut, but for the style I asked for, this wasn't it.",
-  status: "voting",
-};
-
-const SUBJECT = { name: "DeShawn M.", organization: "Fresh Cutz Barbershop", location: "Atlanta, GA" };
-
-const CONTRIBUTOR = { name: "Jordan K." };
-
-const DEBATE_POSTS = [
-  {
-    id: "d2",
-    role: "subject" as const,
-    name: "DeShawn M.",
-    body: "The style in that reference photo required a specific texture and length that this client's hair didn't have. I told him before I started that I could get him close but not exact. He approved it during the cut and only raised an issue after leaving. I work on 20+ clients a week and have never had this complaint before.",
-    created_at: "2026-04-07T14:22:00Z",
-    parentId: null,
-  },
-  {
-    id: "d3",
-    role: "contributor" as const,
-    name: "Jordan K.",
-    body: "You never told me it wasn't achievable before you started. You took the photo, looked at it, and started cutting. I only said it was \"okay\" because I wasn't sure if it was still being shaped. When I asked about the unevenness you said \"that's how it is.\" That's not communication — that's dismissal.",
-    created_at: "2026-04-08T09:00:00Z",
-    parentId: "d2",
-  },
-  {
-    id: "d4",
-    role: "subject" as const,
-    name: "DeShawn M.",
-    body: "I understand you weren't happy with the result. But calling it completely different from the reference isn't accurate. The fade style was achieved — the exact texture wasn't possible with your hair length at the time. That's a hair limitation, not a skill issue.",
-    created_at: "2026-04-08T09:41:00Z",
-    parentId: null,
-  },
-];
-
-const SEED_VOTES: VoteRow[] = [
-  {
-    id: "v1",
-    alias: "kxr@dnounce_312",
-    jobTitle: "Master Barber, 8 years",
-    choice: "side_with_contributor",
-    explanation:
-      "If you can't replicate the reference, you say that before you pick up the clippers — not after. Taking the photo, starting the cut, and then blaming hair texture is backwards. The client should have been warned upfront.",
-    created_at: "2026-04-10T11:04:00Z",
-    agreeCount: 19,
-    disagreeCount: 2,
-  },
-  {
-    id: "v2",
-    alias: "mbvp@dnounce_87",
-    jobTitle: "Hair Stylist",
-    choice: "side_with_subject",
-    explanation:
-      "Not every style works on every hair type and that's genuinely true. If the barber communicated the limitation and the client approved the cut mid-service, it's hard to hold the barber fully accountable for the outcome.",
-    created_at: "2026-04-11T08:17:00Z",
-    agreeCount: 7,
-    disagreeCount: 12,
-  },
-  {
-    id: "v3",
-    alias: "tjf@dnounce_541",
-    jobTitle: "Barbershop Owner",
-    choice: "side_with_contributor",
-    explanation:
-      "Saying \"that's how it is\" when a client points out unevenness is the issue here. Even if the style wasn't fully achievable, a professional response is to acknowledge it and offer a fix — not dismiss it.",
-    created_at: "2026-04-12T16:55:00Z",
-    agreeCount: 16,
-    disagreeCount: 3,
-  },
-  {
-    id: "v4",
-    alias: "qlnx@dnounce_29",
-    jobTitle: "Grooming Consultant",
-    choice: "side_with_subject",
-    explanation:
-      "Reference photos can be misleading — clients often don't realize how much hair type changes the outcome. Without seeing both the photo and the result side by side, I can't say the barber was wrong. This seems like a miscommunication more than negligence.",
-    created_at: "2026-04-13T10:30:00Z",
-    agreeCount: 8,
-    disagreeCount: 13,
-  },
-];
-
 /* ─── Types ─────────────────────────────────────────── */
 
 type VoteChoice = "side_with_contributor" | "side_with_subject";
@@ -131,21 +38,21 @@ type VoteRow = {
   disagreeCount: number;
 };
 
-const STORAGE_KEY = "dnounce_demo_user_votes_v4";
-
-const DEMO_ATTACHMENTS = [
-  { id: "a1", label: "Attachment #1", type: "image" as const, src: "/og-image.png", agree: 11, disagree: 1 },
-];
-
-const SEED_DEBATE_REACTIONS: Record<string, { agree: number; disagree: number; mine: 1 | -1 | null }> = {
-  d2: { agree: 7, disagree: 18, mine: null },
-  d3: { agree: 22, disagree: 5, mine: null },
-  d4: { agree: 5, disagree: 16, mine: null },
+type DebatePost = {
+  id: string;
+  role: "subject" | "contributor";
+  name: string;
+  body: string;
+  created_at: string;
+  parentId: string | null;
 };
+
+const STORAGE_KEY = "dnounce_demo_barber_v1";
 
 /* ─── Helpers ───────────────────────────────────────── */
 
 function formatMMDDYYYY(value: string) {
+  if (!value) return '';
   const d = new Date(value);
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
@@ -162,6 +69,7 @@ function formatTimestamp(value: string) {
 }
 
 function shortId(id: string) {
+  if (!id) return '';
   return `${id.slice(0, 6)}…${id.slice(-4)}`;
 }
 
@@ -305,12 +213,12 @@ function DebateCard({
   replyReactions,
   onReplyToggle,
 }: {
-  post: typeof DEBATE_POSTS[0];
+  post: DebatePost;
   agree: number;
   disagree: number;
   myDir: 1 | -1 | null;
   onToggle: (d: 1 | -1) => void;
-  replies?: typeof DEBATE_POSTS;
+  replies?: DebatePost[];
   replyReactions?: Record<string, { agree: number; disagree: number; mine: 1 | -1 | null }>;
   onReplyToggle?: (id: string, d: 1 | -1) => void;
 }) {
@@ -401,6 +309,8 @@ function DebateCard({
 
 /* ─── Main page ─────────────────────────────────────── */
 
+export const dynamic = 'force-dynamic';
+
 export default function DemoBarberPage() {
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -409,8 +319,52 @@ export default function DemoBarberPage() {
   const [shareOpen, setShareOpen] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
 
+  // 📡 Fetch demo scenario from Supabase (demo_records table, slug='barber')
+  const [demoData, setDemoData] = useState<any>(null);
+  const [demoLoading, setDemoLoading] = useState(true);
+
+  useEffect(() => {
+    supabase
+      .from("demo_records")
+      .select("*")
+      .eq("slug", "barber")
+      .single()
+      .then(({ data }) => {
+        if (data) setDemoData(data);
+        setDemoLoading(false);
+      });
+  }, []);
+
+  // Derived data from demoData
+  const RECORD = demoData ? {
+    id: demoData.record_id,
+    created_at: demoData.created_at_display,
+    category: demoData.category,
+    location: demoData.location,
+    relationship: demoData.relationship,
+    rating: demoData.rating,
+    anonymity_status: demoData.anonymity_status,
+    description: demoData.description,
+    status: demoData.status,
+  } : {} as any;
+
+  const SUBJECT = demoData ? {
+    name: demoData.subject_name,
+    organization: demoData.subject_organization,
+    location: demoData.subject_location,
+  } : {} as any;
+
+  const CONTRIBUTOR = demoData ? { name: demoData.contributor_name } : {} as any;
+
+  const DEBATE_POSTS: DebatePost[] = demoData?.debate_posts ?? [];
+  const DEMO_ATTACHMENTS = demoData?.attachments ?? [];
+  const SEED_DEBATE_REACTIONS: Record<string, { agree: number; disagree: number; mine: 1 | -1 | null }> =
+    demoData?.debate_reactions ?? {};
+  const SEED_VOTES: VoteRow[] = demoData?.seed_votes ?? [];
+
   // close mobile menu on outside click
   useEffect(() => {
+    if (!demoData) return;
     // 🔍 Track demo page view
     supabase.auth.getSession().then(async ({ data: sessionData }) => {
       const userId = sessionData?.session?.user?.id ?? null;
@@ -419,13 +373,13 @@ export default function DemoBarberPage() {
         if (adminCheck) return;
       }
       supabase.from("page_views").insert({
-        page_type: "demo_barber",
+        page_type: demoData.page_type,
         page_id: null,
         viewer_auth_user_id: sessionData?.session?.user?.id ?? null,
         is_anonymous: !sessionData?.session?.user?.id,
       }).then(() => {});
     });
-  }, []);
+  }, [demoData]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -452,9 +406,7 @@ export default function DemoBarberPage() {
   // reactions on vote cards
   const [reactions, setReactions] = useState<Record<string, { agree: number; disagree: number; mine: 1 | -1 | null }>>({});
   // reactions on debate posts
-  const [debateReactions, setDebateReactions] = useState<Record<string, { agree: number; disagree: number; mine: 1 | -1 | null }>>(
-    JSON.parse(JSON.stringify(SEED_DEBATE_REACTIONS))
-  );
+  const [debateReactions, setDebateReactions] = useState<Record<string, { agree: number; disagree: number; mine: 1 | -1 | null }>>({});
   // attachment modal
   const [attachmentOpen, setAttachmentOpen] = useState<string | null>(null);
   // reactions on attachments
@@ -468,8 +420,9 @@ export default function DemoBarberPage() {
 
   const recordUrl = typeof window !== "undefined" ? window.location.href : "https://dnounce.com/demo";
 
-  // load persisted votes
+  // load persisted votes (waits for demoData so debateReactions can seed from fetch when localStorage is empty)
   useEffect(() => {
+    if (!demoData) return;
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
@@ -479,11 +432,14 @@ export default function DemoBarberPage() {
         setReactions(parsed.reactions ?? {});
         setCommunityPosts(parsed.community ?? []);
         if (parsed.debateReactions) setDebateReactions(parsed.debateReactions);
+        else setDebateReactions(JSON.parse(JSON.stringify(SEED_DEBATE_REACTIONS)));
         if (parsed.recordReaction) setRecordReaction(parsed.recordReaction);
         if (parsed.attachmentReactions) setAttachmentReactions(parsed.attachmentReactions);
+      } else {
+        setDebateReactions(JSON.parse(JSON.stringify(SEED_DEBATE_REACTIONS)));
       }
     } catch {}
-  }, []);
+  }, [demoData]);
 
   function persist(
     votes: VoteRow[],
@@ -598,7 +554,7 @@ export default function DemoBarberPage() {
   }
 
   function toggleAttachmentReaction(attachId: string, dir: 1 | -1) {
-    const base = DEMO_ATTACHMENTS.find((a) => a.id === attachId);
+    const base = DEMO_ATTACHMENTS.find((a: any) => a.id === attachId);
     const cur = attachmentReactions[attachId] ?? { agree: base?.agree ?? 0, disagree: base?.disagree ?? 0, mine: null };
     let agree = cur.agree;
     let disagree = cur.disagree;
@@ -643,6 +599,9 @@ export default function DemoBarberPage() {
   const canVote = !myVote;
   const showVoteForm = canVote;
   const maxChars = 1000;
+
+  if (demoLoading) return null;
+  if (!demoData || !RECORD || !SUBJECT || !CONTRIBUTOR) return null;
 
   return (
     <div className="min-h-screen bg-white">
@@ -718,8 +677,8 @@ export default function DemoBarberPage() {
               <User className="w-7 h-7 text-gray-600" />
             </div>
             <div className="min-w-0">
-              <p className="text-lg font-semibold text-gray-900 break-words leading-tight">{SUBJECT.name}</p>
-              <p className="text-sm text-gray-600">{SUBJECT.organization} · {SUBJECT.location}</p>
+              <p className="text-lg font-semibold text-gray-900 break-words leading-tight">{SUBJECT?.name}</p>
+              <p className="text-sm text-gray-600">{SUBJECT?.organization} · {SUBJECT?.location}</p>
             </div>
           </div>
         </div>
@@ -735,7 +694,7 @@ export default function DemoBarberPage() {
               <User className="w-7 h-7 text-gray-600" />
             </div>
             <div className="min-w-0">
-              <p className="text-lg font-semibold text-gray-900 break-words leading-tight">{CONTRIBUTOR.name}</p>
+              <p className="text-lg font-semibold text-gray-900 break-words leading-tight">{CONTRIBUTOR?.name}</p>
               <p className="text-xs text-gray-400 mt-1">Submitted this record</p>
             </div>
           </div>
@@ -758,15 +717,15 @@ export default function DemoBarberPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-gray-600">
           <div className="flex items-center gap-2">
             <span className="font-medium text-gray-500">Submitted</span>
-            <span className="text-gray-900">{formatMMDDYYYY(RECORD.created_at)}</span>
+            <span className="text-gray-900">{formatMMDDYYYY(RECORD?.created_at)}</span>
           </div>
           <div className="flex flex-wrap items-center gap-2 min-w-0">
             <span className="font-medium text-gray-500 shrink-0">Record ID</span>
-            <span className="font-mono text-[12px] text-gray-900">{shortId(RECORD.id)}</span>
+            <span className="font-mono text-[12px] text-gray-900">{shortId(RECORD?.id)}</span>
             <button
               type="button"
               onClick={async () => {
-                await navigator.clipboard.writeText(RECORD.id);
+                await navigator.clipboard.writeText(RECORD?.id);
                 setCopied(true);
                 setTimeout(() => setCopied(false), 1200);
               }}
@@ -793,7 +752,7 @@ export default function DemoBarberPage() {
         {/* Stars */}
         <div className="flex items-center gap-1.5 text-yellow-500">
           {Array.from({ length: 10 }).map((_, i) => (
-            <Star key={i} size={18} className={RECORD.rating >= i + 1 ? "fill-current text-gray-900" : "text-gray-300"} />
+            <Star key={i} size={18} className={RECORD?.rating >= i + 1 ? "fill-current text-gray-900" : "text-gray-300"} />
           ))}
         </div>
 
@@ -801,15 +760,15 @@ export default function DemoBarberPage() {
         <div className="grid grid-cols-1 gap-3 text-sm">
           <div className="flex items-center gap-2">
             <span className="font-medium text-gray-500">Category:</span>
-            <span className="text-gray-900">{RECORD.category}</span>
+            <span className="text-gray-900">{RECORD?.category}</span>
           </div>
           <div className="flex items-center gap-2 text-gray-900">
             <MapPin className="w-4 h-4 text-gray-400" />
-            <span>{RECORD.location}</span>
+            <span>{RECORD?.location}</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="font-medium text-gray-500">Relationship:</span>
-            <span className="text-gray-900">{RECORD.relationship}</span>
+            <span className="text-gray-900">{RECORD?.relationship}</span>
           </div>
         </div>
 
@@ -817,7 +776,7 @@ export default function DemoBarberPage() {
         <div className="pt-4 border-t border-gray-200">
           <div className="text-sm font-semibold text-gray-900 mb-2">Experience Details</div>
           <div className="text-[15px] text-gray-800 whitespace-pre-wrap break-words leading-7">
-            {RECORD.description}
+            {RECORD?.description}
           </div>
         </div>
 
@@ -833,7 +792,7 @@ export default function DemoBarberPage() {
             <div className="text-xs text-gray-500">2 file(s)</div>
           </div>
           <div className="space-y-2">
-            {DEMO_ATTACHMENTS.map((a) => (
+            {DEMO_ATTACHMENTS.map((a: any) => (
               <div key={a.id}>
                 <button
                   type="button"
@@ -933,7 +892,7 @@ export default function DemoBarberPage() {
             <div className="text-xs font-semibold text-gray-900">Your vote</div>
             <div className="mt-2 inline-flex items-center gap-2 rounded-full border bg-white px-3 py-1 text-xs font-semibold">
               <span className={myVote.choice === "side_with_contributor" ? "text-blue-700" : "text-indigo-700"}>
-                {myVote.choice === "side_with_contributor" ? `Sided with ${CONTRIBUTOR.name}` : `Sided with ${SUBJECT.name}`}
+                {myVote.choice === "side_with_contributor" ? `Sided with ${CONTRIBUTOR?.name}` : `Sided with ${SUBJECT?.name}`}
               </span>
               <span className="text-gray-400">•</span>
               <span className="text-gray-600">{formatTimestamp(myVote.created_at)}</span>
@@ -962,7 +921,7 @@ export default function DemoBarberPage() {
                   choice === "side_with_contributor" ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-800 hover:bg-gray-50",
                 ].join(" ")}
               >
-                Side with {CONTRIBUTOR.name}
+                Side with {CONTRIBUTOR?.name}
               </button>
               <button
                 type="button"
@@ -972,7 +931,7 @@ export default function DemoBarberPage() {
                   choice === "side_with_subject" ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-gray-800 hover:bg-gray-50",
                 ].join(" ")}
               >
-                Side with {SUBJECT.name}
+                Side with {SUBJECT?.name}
               </button>
             </div>
 
@@ -1021,7 +980,7 @@ export default function DemoBarberPage() {
                       "inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold shrink-0",
                       v.choice === "side_with_contributor" ? "text-blue-700 border-blue-200 bg-blue-50" : "text-indigo-700 border-indigo-200 bg-indigo-50",
                     ].join(" ")}>
-                      {v.choice === "side_with_contributor" ? `With ${CONTRIBUTOR.name}` : `With ${SUBJECT.name}`}
+                      {v.choice === "side_with_contributor" ? `With ${CONTRIBUTOR?.name}` : `With ${SUBJECT?.name}`}
                     </span>
                   </div>
                   <div className="mt-2 text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{v.explanation}</div>
@@ -1055,7 +1014,7 @@ export default function DemoBarberPage() {
 
       {/* Attachment modal */}
       {attachmentOpen && (() => {
-        const a = DEMO_ATTACHMENTS.find((x) => x.id === attachmentOpen);
+        const a = DEMO_ATTACHMENTS.find((x: any) => x.id === attachmentOpen);
         if (!a) return null;
         return (
           <div className="fixed inset-0 z-[80] bg-black/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4" onClick={() => setAttachmentOpen(null)}>
