@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 
 /* ─── Types ─────────────────────────────────────────── */
@@ -46,8 +46,6 @@ type DebatePost = {
   created_at: string;
   parentId: string | null;
 };
-
-const STORAGE_KEY = "dnounce_demo_waitress_v1";
 
 /* ─── Helpers ───────────────────────────────────────── */
 
@@ -311,29 +309,33 @@ function DebateCard({
 
 export const dynamic = 'force-dynamic';
 
-export default function DemoWaitressPage() {
+export default function DemoSlugPage() {
   const router = useRouter();
+  const params = useParams();
+  const slug = params?.slug as string;
+  const STORAGE_KEY = `dnounce_demo_${slug}_v1`;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [fileRecordOpen, setFileRecordOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
 
-  // 📡 Fetch demo scenario from Supabase (demo_records table, slug='waitress')
+  // 📡 Fetch demo scenario from Supabase (demo_records table, dynamic slug)
   const [demoData, setDemoData] = useState<any>(null);
   const [demoLoading, setDemoLoading] = useState(true);
 
   useEffect(() => {
+    if (!slug) return;
     supabase
       .from("demo_records")
       .select("*")
-      .eq("slug", "waitress")
+      .eq("slug", slug)
       .single()
       .then(({ data }) => {
         if (data) setDemoData(data);
         setDemoLoading(false);
       });
-  }, []);
+  }, [slug]);
 
   // Derived data from demoData
   const RECORD = demoData ? {
@@ -411,7 +413,7 @@ export default function DemoWaitressPage() {
   const [attachmentOpen, setAttachmentOpen] = useState<string | null>(null);
   // reactions on attachments
   const [attachmentReactions, setAttachmentReactions] = useState<Record<string, { agree: number; disagree: number; mine: 1 | -1 | null }>>({});
-  const [recordReaction, setRecordReaction] = useState<{ agree: number; disagree: number; mine: 1 | -1 | null }>({ agree: 22, disagree: 9, mine: null });
+  const [recordReaction, setRecordReaction] = useState<{ agree: number; disagree: number; mine: 1 | -1 | null }>({ agree: 31, disagree: 8, mine: null });
 
   // community section
   const [communityBody, setCommunityBody] = useState("");
@@ -601,6 +603,7 @@ export default function DemoWaitressPage() {
   const maxChars = 1000;
 
   if (demoLoading) return null;
+  if (!slug) return null;
   if (!demoData || !RECORD || !SUBJECT || !CONTRIBUTOR) return null;
 
   return (
@@ -677,9 +680,7 @@ export default function DemoWaitressPage() {
               <User className="w-7 h-7 text-gray-600" />
             </div>
             <div className="min-w-0">
-              <Link href={demoData?.subject_demo_url ?? '#'} className="text-lg font-semibold text-gray-900 break-words leading-tight hover:underline">
-                {SUBJECT?.name}
-              </Link>
+              <Link href={demoData?.subject_demo_url ?? '#'} className="text-lg font-semibold text-gray-900 break-words leading-tight hover:underline">{SUBJECT?.name}</Link>
               <p className="text-sm text-gray-600">{SUBJECT?.organization} · {SUBJECT?.location}</p>
             </div>
           </div>

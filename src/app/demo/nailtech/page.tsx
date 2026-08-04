@@ -677,7 +677,9 @@ export default function DemoNailTechPage() {
               <User className="w-7 h-7 text-gray-600" />
             </div>
             <div className="min-w-0">
-              <p className="text-lg font-semibold text-gray-900 break-words leading-tight">{SUBJECT?.name}</p>
+              <Link href={demoData?.subject_demo_url ?? '#'} className="text-lg font-semibold text-gray-900 break-words leading-tight hover:underline">
+                {SUBJECT?.name}
+              </Link>
               <p className="text-sm text-gray-600">{SUBJECT?.organization} · {SUBJECT?.location}</p>
             </div>
           </div>
