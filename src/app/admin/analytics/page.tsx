@@ -550,6 +550,8 @@ export default function AdminAnalyticsPage() {
         <SectionTitle icon={Users} title="Site Visits" />
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <StatBox label="Home Page Visits" value={homePageViews.toLocaleString()} sub="dnounce.com" color="blue" />
+          <StatBox label="Record Page Visits" value={recordPageViews.toLocaleString()} sub="dnounce.com/record/..." color="indigo" />
+          <StatBox label="Profile Page Visits" value={subjectPageViews.toLocaleString()} sub="dnounce.com/subject/..." color="teal" />
           {[
             { key: "demo_freelancer", label: "Freelancer", url: "/d/freelancer" },
             { key: "demo_realtor", label: "Realtor", url: "/d/realtor" },
@@ -579,8 +581,6 @@ export default function AdminAnalyticsPage() {
           ].map(({ key, label, url }) => (
             <StatBox key={key} label={`Demo: ${label}`} value={(demoViews[key] ?? 0).toLocaleString()} sub={`dnounce.com${url}`} color="purple" />
           ))}
-          <StatBox label="Record Page Visits" value={recordPageViews.toLocaleString()} sub="dnounce.com/record/..." color="indigo" />
-          <StatBox label="Profile Page Visits" value={subjectPageViews.toLocaleString()} sub="dnounce.com/subject/..." color="teal" />
         </div>
       </section>
 
