@@ -29,6 +29,7 @@ export default function LinksPage() {
   const router = useRouter();
   const [rows, setRows] = useState<DemoRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Fetch all demos
   useEffect(() => {
@@ -70,29 +71,43 @@ export default function LinksPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* ── Header ── */}
-      <header className="bg-white/90 backdrop-blur-md border-b border-gray-100">
-        <div className="max-w-[480px] mx-auto px-4 py-4">
-          <div
-            className="flex items-center gap-2 cursor-pointer justify-center"
-            onClick={() => router.push("/")}
-          >
-            <Image
-              src="/logo.png"
-              alt="DNounce Logo"
-              width={44}
-              height={44}
-              priority
-              className="w-11 h-11"
-            />
-            <span className="text-xl font-bold text-gray-900 tracking-tight">
-              DNounce
-            </span>
+      <header className="bg-white/90 backdrop-blur-md border-b border-gray-100 fixed top-0 left-0 w-full z-50">
+        <div className="max-w-6xl mx-auto px-5 py-3.5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => router.push("/")}>
+              <Image src="/logo.png" alt="DNounce Logo" width={74} height={74} priority />
+              <span className="text-xl font-bold text-gray-900 tracking-tight">DNounce</span>
+            </div>
+
+            <nav className="hidden md:flex items-center gap-8">
+              <a href="/?section=how-it-works" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">How it works</a>
+              <a href="/?section=voting-section" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Community</a>
+              <a href="/?section=guidelines-section" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Guidelines</a>
+              <a href="/?section=legal-section" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Legal</a>
+            </nav>
+
+            <div className="flex items-center gap-3">
+              <button onClick={() => router.push("/loginsignup")} className="hidden md:block text-sm text-gray-600 hover:text-gray-900 transition-colors">Log in</button>
+              <button onClick={() => router.push("/loginsignup")} className="bg-gray-900 hover:bg-black text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors">Get started</button>
+              <button id="menu-button" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100">
+                <div className="w-4 h-0.5 bg-current mb-1" /><div className="w-4 h-0.5 bg-current mb-1" /><div className="w-4 h-0.5 bg-current" />
+              </button>
+            </div>
           </div>
+
+          {mobileMenuOpen && (
+            <div id="mobile-menu" className="md:hidden pt-4 pb-2 space-y-1 border-t border-gray-100 mt-3">
+              <a href="/?section=how-it-works" onClick={() => setMobileMenuOpen(false)} className="block w-full text-left px-3 py-2.5 text-sm text-gray-600 hover:bg-gray-50 rounded-lg">How it works</a>
+              <a href="/?section=voting-section" onClick={() => setMobileMenuOpen(false)} className="block w-full text-left px-3 py-2.5 text-sm text-gray-600 hover:bg-gray-50 rounded-lg">Community</a>
+              <a href="/?section=guidelines-section" onClick={() => setMobileMenuOpen(false)} className="block w-full text-left px-3 py-2.5 text-sm text-gray-600 hover:bg-gray-50 rounded-lg">Guidelines</a>
+              <a href="/?section=legal-section" onClick={() => setMobileMenuOpen(false)} className="block w-full text-left px-3 py-2.5 text-sm text-gray-600 hover:bg-gray-50 rounded-lg">Legal</a>
+            </div>
+          )}
         </div>
       </header>
 
       {/* ── Content ── */}
-      <main className="max-w-[480px] mx-auto px-4 py-8 space-y-6">
+      <main className="max-w-[480px] mx-auto px-4 py-8 pt-20 sm:pt-24 space-y-6">
         {/* Tagline */}
         <div className="text-center space-y-2">
           <h1 className="text-xl font-semibold text-gray-900 leading-snug">
