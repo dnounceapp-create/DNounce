@@ -214,11 +214,7 @@ export default function AdminAnalyticsPage() {
   const [totalRecordViews, setTotalRecordViews] = useState(0);
   const [homePageViews, setHomePageViews] = useState(0);
   const [geoBreakdown, setGeoBreakdown] = useState<{ country: string; count: number }[]>([]);
-  const [demoFreelancerViews, setDemoFreelancerViews] = useState(0);
-  const [demoNailtechViews, setDemoNailtechViews] = useState(0);
-  const [demoBarberViews, setDemoBarberViews] = useState(0);
-  const [demoWaitressViews, setDemoWaitressViews] = useState(0);
-  const [demoRealtorViews, setDemoRealtorViews] = useState(0);
+  const [demoViews, setDemoViews] = useState<Record<string, number>>({});
   const [recordPageViews, setRecordPageViews] = useState(0);
   const [subjectPageViews, setSubjectPageViews] = useState(0);
   const [subscriberCounts, setSubscriberCounts] = useState({ standard: 0, insights: 0, pro: 0 });
@@ -245,7 +241,7 @@ export default function AdminAnalyticsPage() {
         submitClicks, socialClicks, subjectClaims, pageViews, stages, creds,
         allRecords, allUsers, subscriptions, voteQuality,
         profileViewsRes, recordViewsRes, submitClicksRes, socialClicksRes,
-        homeViewsRes, demoFreelancerRes, demoNailtechRes, demoBarberRes, demoWaitressRes, demoRealtorRes, recordPagesRes, subjectPagesRes, geoRes,
+        homeViewsRes, demoViewsRes, recordPagesRes, subjectPagesRes, geoRes,
       ] = await Promise.all([
         supabase.rpc("get_all_table_counts"),
         supabase.rpc("get_metric_timeseries", { p_table: "records", ...rpcArgs }),
@@ -269,11 +265,7 @@ export default function AdminAnalyticsPage() {
         supabase.from("submit_clicks").select("id", { count: "exact", head: true }),
         supabase.from("social_link_clicks").select("id", { count: "exact", head: true }),
         supabase.from("page_views").select("id", { count: "exact", head: true }).eq("page_type", "home"),
-        supabase.from("page_views").select("id", { count: "exact", head: true }).eq("page_type", "demo_freelancer"),
-        supabase.from("page_views").select("id", { count: "exact", head: true }).eq("page_type", "demo_nailtech"),
-        supabase.from("page_views").select("id", { count: "exact", head: true }).eq("page_type", "demo_barber"),
-        supabase.from("page_views").select("id", { count: "exact", head: true }).eq("page_type", "demo_waitress"),
-        supabase.from("page_views").select("id", { count: "exact", head: true }).eq("page_type", "demo_realtor"),
+        supabase.from("page_views").select("page_type").ilike("page_type", "demo_%").not("page_type", "ilike", "demo_subject%"),
         supabase.from("page_views").select("id", { count: "exact", head: true }).eq("page_type", "record"),
         supabase.from("page_views").select("id", { count: "exact", head: true }).eq("page_type", "subject"),
         supabase.from("page_views").select("country").not("country", "is", null).eq("page_type", "home"),
@@ -409,11 +401,11 @@ export default function AdminAnalyticsPage() {
       setTotalSubmitClicks(submitClicksRes.count ?? 0);
       setTotalSocialClicks(socialClicksRes.count ?? 0);
       setHomePageViews(homeViewsRes.count ?? 0);
-      setDemoFreelancerViews(demoFreelancerRes.count ?? 0);
-      setDemoNailtechViews(demoNailtechRes.count ?? 0);
-      setDemoBarberViews(demoBarberRes.count ?? 0);
-      setDemoWaitressViews(demoWaitressRes.count ?? 0);
-      setDemoRealtorViews(demoRealtorRes.count ?? 0);
+      const demoViewsMap: Record<string, number> = {};
+      (demoViewsRes.data ?? []).forEach((row: any) => {
+        demoViewsMap[row.page_type] = (demoViewsMap[row.page_type] ?? 0) + 1;
+      });
+      setDemoViews(demoViewsMap);
       setRecordPageViews(recordPagesRes.count ?? 0);
       setSubjectPageViews(subjectPagesRes.count ?? 0);
 
@@ -558,11 +550,35 @@ export default function AdminAnalyticsPage() {
         <SectionTitle icon={Users} title="Site Visits" />
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <StatBox label="Home Page Visits" value={homePageViews.toLocaleString()} sub="dnounce.com" color="blue" />
-          <StatBox label="Demo: Freelancer" value={demoFreelancerViews.toLocaleString()} sub="dnounce.com/demo/freelancer" color="purple" />
-          <StatBox label="Demo: Nail Tech" value={demoNailtechViews.toLocaleString()} sub="dnounce.com/demo/nailtech" color="purple" />
-          <StatBox label="Demo: Barber" value={demoBarberViews.toLocaleString()} sub="dnounce.com/demo/barber" color="purple" />
-          <StatBox label="Demo: Waitress" value={demoWaitressViews.toLocaleString()} sub="dnounce.com/demo/waitress" color="purple" />
-          <StatBox label="Demo: Realtor" value={demoRealtorViews.toLocaleString()} sub="dnounce.com/demo/realtor" color="purple" />
+          {[
+            { key: "demo_freelancer", label: "Freelancer", url: "/d/freelancer" },
+            { key: "demo_realtor", label: "Realtor", url: "/d/realtor" },
+            { key: "demo_barber", label: "Barber", url: "/d/barber" },
+            { key: "demo_nailtech", label: "Nail Tech", url: "/d/nailtech" },
+            { key: "demo_waitress", label: "Waitress", url: "/d/waitress" },
+            { key: "demo_wedding_photographer", label: "Wedding Photographer", url: "/d/wedding-photographer" },
+            { key: "demo_personal_trainer", label: "Personal Trainer", url: "/d/personal-trainer" },
+            { key: "demo_tattoo_artist", label: "Tattoo Artist", url: "/d/tattoo-artist" },
+            { key: "demo_hair_stylist", label: "Hair Stylist", url: "/d/hair-stylist" },
+            { key: "demo_interior_designer", label: "Interior Designer", url: "/d/interior-designer" },
+            { key: "demo_private_chef", label: "Private Chef", url: "/d/private-chef" },
+            { key: "demo_dog_trainer", label: "Dog Trainer", url: "/d/dog-trainer" },
+            { key: "demo_music_producer", label: "Music Producer", url: "/d/music-producer" },
+            { key: "demo_life_coach", label: "Life Coach", url: "/d/life-coach" },
+            { key: "demo_moving_company", label: "Moving Company", url: "/d/moving-company" },
+            { key: "demo_auto_mechanic", label: "Auto Mechanic", url: "/d/auto-mechanic" },
+            { key: "demo_landlord", label: "Landlord", url: "/d/landlord" },
+            { key: "demo_nanny", label: "Nanny", url: "/d/nanny" },
+            { key: "demo_wedding_planner", label: "Wedding Planner", url: "/d/wedding-planner" },
+            { key: "demo_real_estate_agent", label: "Real Estate Agent", url: "/d/real-estate-agent" },
+            { key: "demo_contractor", label: "Contractor", url: "/d/contractor" },
+            { key: "demo_social_media_manager", label: "Social Media Manager", url: "/d/social-media-manager" },
+            { key: "demo_tutor", label: "Tutor", url: "/d/tutor" },
+            { key: "demo_veterinarian", label: "Veterinarian", url: "/d/veterinarian" },
+            { key: "demo_event_photographer", label: "Event Photographer", url: "/d/event-photographer" },
+          ].map(({ key, label, url }) => (
+            <StatBox key={key} label={`Demo: ${label}`} value={(demoViews[key] ?? 0).toLocaleString()} sub={`dnounce.com${url}`} color="purple" />
+          ))}
           <StatBox label="Record Page Visits" value={recordPageViews.toLocaleString()} sub="dnounce.com/record/..." color="indigo" />
           <StatBox label="Profile Page Visits" value={subjectPageViews.toLocaleString()} sub="dnounce.com/subject/..." color="teal" />
         </div>
