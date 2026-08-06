@@ -414,7 +414,7 @@ export default function HomePage() {
           />
 
           <p className="text-lg text-gray-500 max-w-lg mx-auto leading-relaxed mb-4">
-            DNounce is the review platform where real experiences are shared, subjects get to respond, and the community decides what's credible. Transparent. Fair. Both sides, always.
+            DNounce is a review platform where both sides get heard. Share your experience about a contractor, freelancer, landlord, or any individual you had a professional experience with — they can respond publicly, and when it's contested, our community decides what's credible. Transparent. Fair. Both sides, always.
           </p>
           <p className="text-sm text-gray-400 italic mb-8">Search a person · Share an experience · Defend your record</p>
           {/*
