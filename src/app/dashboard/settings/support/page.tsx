@@ -1,11 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Mail, Upload, CheckCircle2, XCircle } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 
 export default function ContactSupportPage() {
-  const [topic, setTopic] = useState("");
+  const searchParams = useSearchParams();
+  const topicFromUrl = searchParams.get("topic") ?? "";
+  const [topic, setTopic] = useState(topicFromUrl);
   const [message, setMessage] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -67,6 +70,7 @@ export default function ContactSupportPage() {
                 <option value="technical">Technical Issue</option>
                 <option value="report">Reporting Abuse</option>
                 <option value="general">General Question</option>
+                <option value="platform_suggestion">Platform Suggestion — propose a feature, logic change, or improvement</option>
               </select>
             </div>
 

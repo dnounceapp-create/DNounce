@@ -7,7 +7,7 @@ import { supabase } from "@/lib/supabaseClient";
 import {
   LayoutDashboard, FileText, Users, Ticket, Flag,
   Bell, Award, ScrollText, LogOut, Shield, ChevronRight, Menu, X,
-  BarChart2, Search, ClipboardList, Star
+  BarChart2, Search, ClipboardList, Star, Vote
 } from "lucide-react";
 
 const NAV = [
@@ -18,6 +18,7 @@ const NAV = [
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/claims", label: "Claims", icon: ClipboardList },
   { href: "/admin/surveys", label: "Surveys", icon: Star },
+  { href: "/admin/polls", label: "Polls", icon: Vote },
   { href: "/admin/tickets", label: "Support Tickets", icon: Ticket },
   { href: "/admin/reports", label: "Reports", icon: Flag },
   { href: "/admin/notifications", label: "Notifications Log", icon: Bell },
