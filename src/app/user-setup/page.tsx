@@ -25,6 +25,7 @@ export default function UserSetupPage() {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [showAvatarOptionsModal, setShowAvatarOptionsModal] = useState(false);
   const [showCropModal, setShowCropModal] = useState(false);
@@ -188,6 +189,12 @@ export default function UserSetupPage() {
     setSaving(true);
     setError(null);
 
+    if (!termsAccepted) {
+      setError("You must agree to the Terms of Service and Privacy Policy to continue.");
+      setSaving(false);
+      return;
+    }
+
     try {
       const cleanPhone = form.phone.replace(/\D/g, "");
 
@@ -224,6 +231,15 @@ export default function UserSetupPage() {
       });
 
       if (rpcError) throw rpcError;
+
+      // Store marketing/T&C consent
+      await supabase
+        .from("user_accountdetails")
+        .update({
+          marketing_consent: true,
+          marketing_consent_at: new Date().toISOString(),
+        })
+        .eq("user_id", userId);
 
       // Save how_found
       if (form.howFound) {
@@ -642,17 +658,26 @@ export default function UserSetupPage() {
               )}
             </div>
 
-            <p className="text-xs text-gray-400 text-center">
-              By completing setup, you agree to DNounce's{" "}
-              <a href="/legal" target="_blank" className="text-blue-500 hover:underline">Terms of Service</a>{" "}
-              and{" "}
-              <a href="/legal#privacy" target="_blank" className="text-blue-500 hover:underline">Privacy Policy</a>.
-              DNounce is a neutral platform. All community verdicts are user-generated, not editorial decisions by DNounce.
-            </p>
+            <div className="flex items-start gap-3 mt-2">
+              <input
+                type="checkbox"
+                id="terms-accepted"
+                checked={termsAccepted}
+                onChange={(e) => setTermsAccepted(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-gray-900 cursor-pointer flex-shrink-0"
+              />
+              <label htmlFor="terms-accepted" className="text-xs text-gray-500 leading-relaxed cursor-pointer">
+                I agree to DNounce's{" "}
+                <a href="/legal" target="_blank" className="text-gray-900 underline hover:text-blue-600">Terms of Service</a>
+                {" "}and{" "}
+                <a href="/legal" target="_blank" className="text-gray-900 underline hover:text-blue-600">Privacy Policy</a>
+                . By creating an account, I consent to DNounce using my activity, records, and content on the platform for product improvements, marketing, and promotional purposes.
+              </label>
+            </div>
 
             <button
               type="submit"
-              disabled={saving || success}
+              disabled={saving || success || !termsAccepted}
               className="w-full inline-flex items-center justify-center gap-2 py-3 px-6 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:brightness-110 disabled:opacity-50 transition-all shadow-sm"
             >
               {saving ? (

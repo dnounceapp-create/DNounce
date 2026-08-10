@@ -107,7 +107,11 @@ function buildNoProfileMessage({
   return `No profile found ${pieces.join(" ")}.`;
 }
 
-function TickerRow({ items, renderCard }: { items: any[]; renderCard: (item: any) => React.ReactNode }) {
+function TickerRow({ items, renderCard, direction = 'left' }: {
+  items: any[];
+  renderCard: (item: any) => React.ReactNode;
+  direction?: 'left' | 'right';
+}) {
   const trackRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -115,17 +119,24 @@ function TickerRow({ items, renderCard }: { items: any[]; renderCard: (item: any
     if (!track || items.length === 0) return;
     let animFrame: number;
     let pos = 0;
-    const speed = 0.4; // px per frame
+    const speed = 0.07; // px per frame
     function tick() {
-      pos += speed;
-      const half = (track as HTMLDivElement).scrollWidth / 2;
-      if (pos >= half) pos = 0;
-      (track as HTMLDivElement).style.transform = `translateX(-${pos}px)`;
+      if (direction === 'left') {
+        pos += speed;
+        const half = (track as HTMLDivElement).scrollWidth / 2;
+        if (pos >= half) pos = 0;
+        (track as HTMLDivElement).style.transform = `translateX(-${pos}px)`;
+      } else {
+        pos += speed;
+        const half = (track as HTMLDivElement).scrollWidth / 2;
+        if (pos >= half) pos = 0;
+        (track as HTMLDivElement).style.transform = `translateX(${pos - half}px)`;
+      }
       animFrame = requestAnimationFrame(tick);
     }
     animFrame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(animFrame);
-  }, [items]);
+  }, [items, direction]);
 
   if (items.length === 0) return null;
 
@@ -505,6 +516,7 @@ export default function HomePage() {
                 <span className="text-xs text-gray-400">Live · updates hourly</span>
               </div>
               <TickerRow
+                direction="left"
                 items={trendingRecords}
                 renderCard={(r) => (
                   <div
@@ -546,6 +558,7 @@ export default function HomePage() {
                 <span className="text-[10px] font-medium bg-green-50 text-green-700 px-2 py-0.5 rounded-full">Most trusted</span>
               </div>
               <TickerRow
+                direction="right"
                 items={topVoters}
                 renderCard={(v) => (
                   <div
@@ -575,6 +588,7 @@ export default function HomePage() {
                 <span className="text-[10px] font-medium bg-red-50 text-red-700 px-2 py-0.5 rounded-full">Disqualified</span>
               </div>
               <TickerRow
+                direction="left"
                 items={worstVoters}
                 renderCard={(v) => (
                   <div
