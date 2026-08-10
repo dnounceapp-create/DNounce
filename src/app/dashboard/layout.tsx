@@ -97,7 +97,7 @@ function TickerRow({ items, renderCard, direction = 'left' }: {
     if (!track || items.length === 0) return;
     let animFrame: number;
     let pos = 0;
-    const speed = 0.4;
+    const speed = 0.07;
     function tick() {
       if (direction === 'left') {
         pos += speed;
