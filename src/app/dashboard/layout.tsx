@@ -3,7 +3,7 @@
 import { useAuth } from "@/lib/auth";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Dialog } from "@headlessui/react";
 import { motion, AnimatePresence } from "framer-motion";
 import SearchResultCard from "@/components/SearchResultCard";
@@ -86,8 +86,56 @@ const SETTINGS_NAV: NavItem[] = [
   { name: "Log Out", href: "/logout", icon: LogOut, special: true },
 ];
 
+function TickerRow({ items, renderCard }: { items: any[]; renderCard: (item: any) => React.ReactNode }) {
+  const trackRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track || items.length === 0) return;
+    let animFrame: number;
+    let pos = 0;
+    const speed = 0.4;
+    function tick() {
+      pos += speed;
+      const half = (track as HTMLDivElement).scrollWidth / 2;
+      if (pos >= half) pos = 0;
+      (track as HTMLDivElement).style.transform = `translateX(-${pos}px)`;
+      animFrame = requestAnimationFrame(tick);
+    }
+    animFrame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(animFrame);
+  }, [items]);
+  if (items.length === 0) return null;
+  const doubled = [...items, ...items];
+  return (
+    <div style={{ overflow: 'hidden', width: '100%' }}>
+      <div ref={trackRef} style={{ display: 'flex', gap: '10px', width: 'max-content' }}>
+        {doubled.map((item, i) => (
+          <div key={i} style={{ flexShrink: 0 }}>{renderCard(item)}</div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [trendingRecords, setTrendingRecords] = useState<any[]>([]);
+  const [topVoters, setTopVoters] = useState<any[]>([]);
+  const [worstVoters, setWorstVoters] = useState<any[]>([]);
+  const tickerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function fetchTicker() {
+      supabase.from('trending_records_today').select('*').then(({ data }) => setTrendingRecords(data ?? []));
+      supabase.from('top_good_voters_today').select('*').then(({ data }) => setTopVoters(data ?? []));
+      supabase.from('top_bad_voters_today').select('*').then(({ data }) => setWorstVoters(data ?? []));
+    }
+    fetchTicker();
+    const interval = setInterval(fetchTicker, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
   const [menuOpen, setMenuOpen] = useState(false);
   const { user, loading } = useAuth({
     redirectIfUnauthed: true,
@@ -917,11 +965,130 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           )}
         </aside>
 
-        <main className="flex-1 overflow-y-auto relative min-h-0">
-          <div className="p-4 sm:p-8">
-            {children}
+        <main className="overflow-y-auto relative">
+          <div className="flex flex-col min-h-0">
+            <div className="p-4 sm:p-8">
+              {children}
+            </div>
+
+          {/* ── Community Leaderboard Ticker ── */}
+          <div ref={tickerRef} className="border-t border-gray-100 bg-white py-6 px-4 sm:px-6 space-y-6">
+
+            {/* Trending Records */}
+            {trendingRecords.length > 0 && (
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-semibold text-gray-900">Trending today</span>
+                  <span className="text-[10px] text-gray-400">Live · updates every 30s</span>
+                </div>
+                <TickerRow
+                  items={trendingRecords}
+                  renderCard={(r) => (
+                    <div
+                      onClick={() => router.push(r.record_href ?? `/record/${r.id}`)}
+                      className="cursor-pointer w-[220px] min-w-[220px] max-w-[220px] bg-white border border-gray-200 rounded-2xl p-3 hover:shadow-sm transition"
+                    >
+                      <div className="text-[10px] text-gray-400 mb-1">{r.category}</div>
+                      <div className="text-[11px] font-semibold text-gray-900 leading-tight mb-1 line-clamp-2">
+                        {r.subject_name} · {r.contributor_display_name}
+                      </div>
+                      <div className="flex justify-between text-[10px] text-gray-500 mb-1">
+                        <span>{r.contributor_display_name} {r.contributor_pct}%</span>
+                        <span>{r.subject_pct}% {r.subject_name}</span>
+                      </div>
+                      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden mb-1">
+                        <div className="h-full bg-blue-500 rounded-full" style={{ width: `${r.contributor_pct ?? 50}%` }} />
+                      </div>
+                      <div className="flex items-center gap-2 text-[10px] text-gray-400">
+                        <span>{r.view_count} views</span>
+                        <span>·</span>
+                        <span>{r.vote_count} votes</span>
+                        <span>·</span>
+                        <span>{r.comment_count} comments</span>
+                      </div>
+                    </div>
+                  )}
+                />
+              </div>
+            )}
+
+            {/* Top Voters */}
+            {topVoters.length > 0 && (
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-semibold text-gray-900">Top voters today</span>
+                  <span className="text-[10px] font-medium bg-green-50 text-green-700 px-2 py-0.5 rounded-full">Most trusted</span>
+                </div>
+                <TickerRow
+                  items={topVoters}
+                  renderCard={(v) => (
+                    <div
+                      onClick={() => v.subject_uuid && router.push(`/subject/${v.subject_uuid}/${slugify(v.subject_name)}`)}
+                      className="cursor-pointer w-[170px] min-w-[170px] max-w-[170px] bg-white border border-green-200 rounded-2xl p-3 hover:shadow-sm transition"
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className="w-6 h-6 rounded-full bg-green-50 flex items-center justify-center text-green-600 text-[10px] font-semibold flex-shrink-0">
+                          {(v.first_name?.[0] ?? '') + (v.last_name?.[0] ?? '')}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-[11px] font-semibold text-gray-900 truncate">{v.first_name} {v.last_name}</div>
+                          <div className="text-[10px] text-green-600 font-medium">Top Voter</div>
+                        </div>
+                      </div>
+                      <div className="text-[10px] text-gray-400 mb-1 truncate">{v.job_title}</div>
+                      <div className="text-[11px] font-semibold text-green-600">↑ {v.upticks} upticks</div>
+                    </div>
+                  )}
+                />
+              </div>
+            )}
+
+            {/* Worst Voters */}
+            {worstVoters.length > 0 && (
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-semibold text-gray-900">Worst voters today</span>
+                  <span className="text-[10px] font-medium bg-red-50 text-red-700 px-2 py-0.5 rounded-full">Disqualified</span>
+                </div>
+                <TickerRow
+                  items={worstVoters}
+                  renderCard={(v) => (
+                    <div
+                      onClick={() => v.subject_uuid && router.push(`/subject/${v.subject_uuid}/${slugify(v.subject_name)}`)}
+                      className="cursor-pointer w-[170px] min-w-[170px] max-w-[170px] bg-white border border-red-200 rounded-2xl p-3 hover:shadow-sm transition opacity-90"
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className="w-6 h-6 rounded-full bg-red-50 flex items-center justify-center text-red-600 text-[10px] font-semibold flex-shrink-0">
+                          {(v.first_name?.[0] ?? '') + (v.last_name?.[0] ?? '')}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-[11px] font-semibold text-gray-900 truncate">{v.first_name} {v.last_name}</div>
+                          <div className="text-[10px] text-red-600 font-medium">Convicted</div>
+                        </div>
+                      </div>
+                      <div className="text-[10px] text-gray-400 mb-1 truncate">{v.job_title}</div>
+                      <div className="text-[11px] font-semibold text-red-600">↓ {v.downticks} downticks</div>
+                    </div>
+                  )}
+                />
+              </div>
+            )}
+
           </div>
-      
+          </div>
+
+          {(trendingRecords.length > 0 || topVoters.length > 0 || worstVoters.length > 0) && (
+            <div
+              className="sticky bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-2 flex items-center gap-3 cursor-pointer hover:bg-gray-50 transition z-10"
+              onClick={() => tickerRef.current?.scrollIntoView({ behavior: 'smooth' })}
+            >
+              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse flex-shrink-0" />
+              <span className="text-xs font-medium text-gray-700">Community Leaderboard</span>
+              <span className="text-xs text-gray-400">Trending · Top Voters · Worst Voters</span>
+              <span className="ml-auto text-xs text-gray-400">↓ scroll to view</span>
+            </div>
+          )}
+
           {/* Footer */}
           <footer className="bg-[#0A1120] text-gray-300 py-12">
             <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-8">

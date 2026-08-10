@@ -107,6 +107,43 @@ function buildNoProfileMessage({
   return `No profile found ${pieces.join(" ")}.`;
 }
 
+function TickerRow({ items, renderCard }: { items: any[]; renderCard: (item: any) => React.ReactNode }) {
+  const trackRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track || items.length === 0) return;
+    let animFrame: number;
+    let pos = 0;
+    const speed = 0.4; // px per frame
+    function tick() {
+      pos += speed;
+      const half = (track as HTMLDivElement).scrollWidth / 2;
+      if (pos >= half) pos = 0;
+      (track as HTMLDivElement).style.transform = `translateX(-${pos}px)`;
+      animFrame = requestAnimationFrame(tick);
+    }
+    animFrame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(animFrame);
+  }, [items]);
+
+  if (items.length === 0) return null;
+
+  const doubled = [...items, ...items]; // duplicate for seamless loop
+
+  return (
+    <div style={{ overflow: 'hidden', width: '100%' }}>
+      <div ref={trackRef} style={{ display: 'flex', gap: '12px', width: 'max-content' }}>
+        {doubled.map((item, i) => (
+          <div key={i} style={{ flexShrink: 0 }}>
+            {renderCard(item)}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function HomePage() {
   const [scrollProgress, setScrollProgress] = useState(0);
   const [activeTab, setActiveTab] = useState<"records" | "reputations" | "social">("records");
@@ -128,6 +165,21 @@ export default function HomePage() {
   const [showResults, setShowResults] = useState(false);
 
   const [fromDemo, setFromDemo] = useState(false);
+
+  const [trendingRecords, setTrendingRecords] = useState<any[]>([]);
+  const [topVoters, setTopVoters] = useState<any[]>([]);
+  const [worstVoters, setWorstVoters] = useState<any[]>([]);
+
+  useEffect(() => {
+    function fetchTicker() {
+      supabase.from('trending_records_today').select('*').then(({ data }) => setTrendingRecords(data ?? []));
+      supabase.from('top_good_voters_today').select('*').then(({ data }) => setTopVoters(data ?? []));
+      supabase.from('top_bad_voters_today').select('*').then(({ data }) => setWorstVoters(data ?? []));
+    }
+    fetchTicker();
+    const interval = setInterval(fetchTicker, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -438,6 +490,112 @@ export default function HomePage() {
               <div key={item.label} className="flex items-center gap-1.5">{item.icon}<span>{item.label}</span></div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* ── Trending + Voter Tickers ── */}
+      <section className="w-full py-8 border-t border-gray-100">
+        <div className="max-w-6xl mx-auto px-4 sm:px-5 space-y-8">
+
+          {/* Trending Records */}
+          {trendingRecords.length > 0 && (
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-semibold text-gray-900">Trending today</span>
+                <span className="text-xs text-gray-400">Live · updates hourly</span>
+              </div>
+              <TickerRow
+                items={trendingRecords}
+                renderCard={(r) => (
+                  <div
+                    onClick={() => router.push(r.record_href ?? `/record/${r.id}`)}
+                    className="cursor-pointer w-[200px] bg-white border border-gray-200 rounded-2xl p-4 hover:shadow-sm transition"
+                  >
+                    <div className="text-[10px] text-gray-400 mb-1">{r.category}</div>
+                    <div className="text-[12px] font-semibold text-gray-900 leading-tight mb-2 line-clamp-2">
+                      {r.subject_name} · {r.contributor_display_name}
+                    </div>
+                    <div className="flex justify-between text-[10px] text-gray-500 mb-1">
+                      <span>{r.contributor_display_name} {r.contributor_pct}%</span>
+                      <span>{r.subject_pct}% {r.subject_name}</span>
+                    </div>
+                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden mb-2">
+                      <div
+                        className="h-full bg-blue-500 rounded-full"
+                        style={{ width: `${r.contributor_pct ?? 50}%` }}
+                      />
+                    </div>
+                    <div className="flex items-center gap-2 text-[10px] text-gray-400">
+                      <span>{r.view_count} views</span>
+                      <span>·</span>
+                      <span>{r.vote_count} votes</span>
+                      <span>·</span>
+                      <span>{r.comment_count} comments</span>
+                    </div>
+                  </div>
+                )}
+              />
+            </div>
+          )}
+
+          {/* Top Voters */}
+          {topVoters.length > 0 && (
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-semibold text-gray-900">Top voters today</span>
+                <span className="text-[10px] font-medium bg-green-50 text-green-700 px-2 py-0.5 rounded-full">Most trusted</span>
+              </div>
+              <TickerRow
+                items={topVoters}
+                renderCard={(v) => (
+                  <div
+                    onClick={() => v.subject_uuid && router.push(`/subject/${v.subject_uuid}/${slugify(v.subject_name ?? '')}`)}
+                    className="cursor-pointer w-[170px] bg-white border border-green-200 rounded-2xl p-4 hover:shadow-sm transition"
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-7 h-7 rounded-full bg-green-50 flex items-center justify-center text-green-600 text-xs font-semibold flex-shrink-0">★</div>
+                      <div className="min-w-0">
+                        <div className="text-[11px] font-semibold text-gray-900 truncate">{v.first_name} {v.last_name}</div>
+                        <div className="text-[10px] text-green-600 font-medium">Top Voter Badge</div>
+                      </div>
+                    </div>
+                    <div className="text-[10px] text-gray-400 mb-1">{v.job_title}</div>
+                    <div className="text-[11px] font-semibold text-green-600">↑ {v.upticks} upticks</div>
+                  </div>
+                )}
+              />
+            </div>
+          )}
+
+          {/* Worst Voters */}
+          {worstVoters.length > 0 && (
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-semibold text-gray-900">Worst voters today</span>
+                <span className="text-[10px] font-medium bg-red-50 text-red-700 px-2 py-0.5 rounded-full">Disqualified</span>
+              </div>
+              <TickerRow
+                items={worstVoters}
+                renderCard={(v) => (
+                  <div
+                    onClick={() => v.subject_uuid && router.push(`/subject/${v.subject_uuid}/${slugify(v.subject_name ?? '')}`)}
+                    className="cursor-pointer w-[170px] bg-white border border-red-200 rounded-2xl p-4 hover:shadow-sm transition opacity-90"
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-7 h-7 rounded-full bg-red-50 flex items-center justify-center text-red-600 text-xs font-semibold flex-shrink-0">✕</div>
+                      <div className="min-w-0">
+                        <div className="text-[11px] font-semibold text-gray-900 truncate">{v.first_name} {v.last_name}</div>
+                        <div className="text-[10px] text-red-600 font-medium">Convicted</div>
+                      </div>
+                    </div>
+                    <div className="text-[10px] text-gray-400 mb-1">{v.job_title}</div>
+                    <div className="text-[11px] font-semibold text-red-600">↓ {v.downticks} downticks</div>
+                  </div>
+                )}
+              />
+            </div>
+          )}
+
         </div>
       </section>
 

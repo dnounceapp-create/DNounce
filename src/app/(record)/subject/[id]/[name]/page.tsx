@@ -744,12 +744,21 @@ export default function SubjectProfilePage() {
         setSubjectBadges(badgeData || []);
       }
 
+      // Check if this is a demo voter persona — overlay their voter/overall scores.
+      // For real subjects this returns null and the block below falls back to
+      // whatever came out of user_scores. Real users are unaffected.
+      const { data: demoVoter } = await supabase
+        .from("demo_voter_badges")
+        .select("voter_score, overall_score")
+        .eq("subject_uuid", subjectId)
+        .maybeSingle();
+
       setSubjectScores({
         subject_score: subjectScoreData?.subject_score ?? null,
         contributor_score: userScoreData?.contributor_score ?? null,
-        voter_score: userScoreData?.voter_score ?? null,
+        voter_score: demoVoter?.voter_score ?? userScoreData?.voter_score ?? null,
         citizen_score: userScoreData?.citizen_score ?? null,
-        overall_score: userScoreData?.overall_score ?? null,
+        overall_score: demoVoter?.overall_score ?? userScoreData?.overall_score ?? null,
       });
 
     } catch (e: any) {
