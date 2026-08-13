@@ -107,50 +107,111 @@ function buildNoProfileMessage({
   return `No profile found ${pieces.join(" ")}.`;
 }
 
-function TickerRow({ items, renderCard, direction = 'left' }: {
+function TickerRow({ items, renderCard, direction = 'left', speed = 0.2 }: {
   items: any[];
   renderCard: (item: any) => React.ReactNode;
   direction?: 'left' | 'right';
+  speed?: number;
 }) {
   const trackRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const posRef = useRef(0);
+  const isDragging = useRef(false);
+  const dragStartX = useRef(0);
+  const dragStartPos = useRef(0);
+  const animRef = useRef<number>(0);
 
   useEffect(() => {
     const track = trackRef.current;
     if (!track || items.length === 0) return;
-    let animFrame: number;
-    let pos = 0;
-    const speed = 0.07; // px per frame
-    function tick() {
-      if (direction === 'left') {
-        pos += speed;
-        const half = (track as HTMLDivElement).scrollWidth / 2;
-        if (pos >= half) pos = 0;
-        (track as HTMLDivElement).style.transform = `translateX(-${pos}px)`;
-      } else {
-        pos += speed;
-        const half = (track as HTMLDivElement).scrollWidth / 2;
-        if (pos >= half) pos = 0;
-        (track as HTMLDivElement).style.transform = `translateX(${pos - half}px)`;
-      }
-      animFrame = requestAnimationFrame(tick);
+
+    function applyTransform() {
+      const half = track!.scrollWidth / 2;
+      if (posRef.current >= half) posRef.current = 0;
+      if (posRef.current < 0) posRef.current = half - 1;
+      const offset = direction === 'left' ? -posRef.current : posRef.current - half;
+      track!.style.transform = `translateX(${offset}px)`;
     }
-    animFrame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(animFrame);
-  }, [items, direction]);
+
+    function tick() {
+      if (!isDragging.current) {
+        posRef.current += speed;
+      }
+      applyTransform();
+      animRef.current = requestAnimationFrame(tick);
+    }
+
+    animRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(animRef.current);
+  }, [items, direction, speed]);
 
   if (items.length === 0) return null;
+  const doubled = [...items, ...items];
 
-  const doubled = [...items, ...items]; // duplicate for seamless loop
+  function handleMouseDown(e: React.MouseEvent) {
+    isDragging.current = true;
+    dragStartX.current = e.clientX;
+    dragStartPos.current = posRef.current;
+  }
+  function handleMouseMove(e: React.MouseEvent) {
+    if (!isDragging.current) return;
+    const delta = dragStartX.current - e.clientX;
+    posRef.current = dragStartPos.current + delta;
+  }
+  function handleMouseUp() { isDragging.current = false; }
+
+  function handleTouchStart(e: React.TouchEvent) {
+    isDragging.current = true;
+    dragStartX.current = e.touches[0].clientX;
+    dragStartPos.current = posRef.current;
+  }
+  function handleTouchMove(e: React.TouchEvent) {
+    if (!isDragging.current) return;
+    const delta = dragStartX.current - e.touches[0].clientX;
+    posRef.current = dragStartPos.current + delta;
+  }
+  function handleTouchEnd() { isDragging.current = false; }
+
+  function scrollLeft() { posRef.current = Math.max(0, posRef.current - 200); }
+  function scrollRight() { posRef.current += 200; }
 
   return (
-    <div style={{ overflow: 'hidden', width: '100%' }}>
-      <div ref={trackRef} style={{ display: 'flex', gap: '12px', width: 'max-content' }}>
-        {doubled.map((item, i) => (
-          <div key={i} style={{ flexShrink: 0 }}>
-            {renderCard(item)}
-          </div>
-        ))}
+    <div ref={containerRef} style={{ position: 'relative' }}>
+      {/* Left arrow — desktop only */}
+      <button
+        onClick={scrollLeft}
+        className="hidden sm:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 items-center justify-center rounded-full bg-white border border-gray-200 shadow-sm hover:bg-gray-50 transition -ml-4"
+        aria-label="Scroll left"
+      >
+        ‹
+      </button>
+
+      {/* Ticker */}
+      <div
+        style={{ overflow: 'hidden', width: '100%', cursor: 'grab', userSelect: 'none' }}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        <div ref={trackRef} style={{ display: 'flex', gap: '10px', width: 'max-content', pointerEvents: 'none' }}>
+          {doubled.map((item, i) => (
+            <div key={i} style={{ flexShrink: 0, pointerEvents: 'auto' }}>{renderCard(item)}</div>
+          ))}
+        </div>
       </div>
+
+      {/* Right arrow — desktop only */}
+      <button
+        onClick={scrollRight}
+        className="hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 items-center justify-center rounded-full bg-white border border-gray-200 shadow-sm hover:bg-gray-50 transition -mr-4"
+        aria-label="Scroll right"
+      >
+        ›
+      </button>
     </div>
   );
 }
@@ -512,10 +573,11 @@ export default function HomePage() {
           {trendingRecords.length > 0 && (
             <div>
               <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-semibold text-gray-900">Trending today</span>
+                <span className="text-sm font-semibold text-gray-900">Top 5 records trending today</span>
                 <span className="text-xs text-gray-400">Live · updates hourly</span>
               </div>
               <TickerRow
+                speed={0.3}
                 direction="left"
                 items={trendingRecords}
                 renderCard={(r) => (
@@ -554,10 +616,11 @@ export default function HomePage() {
           {topVoters.length > 0 && (
             <div>
               <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-semibold text-gray-900">Top voters today</span>
+                <span className="text-sm font-semibold text-gray-900">Top 5 voters today</span>
                 <span className="text-[10px] font-medium bg-green-50 text-green-700 px-2 py-0.5 rounded-full">Most trusted</span>
               </div>
               <TickerRow
+                speed={0.2}
                 direction="right"
                 items={topVoters}
                 renderCard={(v) => (
@@ -584,10 +647,11 @@ export default function HomePage() {
           {worstVoters.length > 0 && (
             <div>
               <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-semibold text-gray-900">Worst voters today</span>
+                <span className="text-sm font-semibold text-gray-900">Worst 5 voters today</span>
                 <span className="text-[10px] font-medium bg-red-50 text-red-700 px-2 py-0.5 rounded-full">Disqualified</span>
               </div>
               <TickerRow
+                speed={0.2}
                 direction="left"
                 items={worstVoters}
                 renderCard={(v) => (
