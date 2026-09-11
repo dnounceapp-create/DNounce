@@ -512,6 +512,7 @@ export default function SubjectProfilePage() {
 
   const [copiedSubjectId, setCopiedSubjectId] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
+  const [qrLinkCopied, setQrLinkCopied] = useState(false);
   const [pageUrl, setPageUrl] = useState("");
   const [qrUrl, setQrUrl] = useState("");
   const [copiedSocialId, setCopiedSocialId] = useState<string | null>(null);
@@ -1332,11 +1333,19 @@ export default function SubjectProfilePage() {
             <div className="mt-3 flex justify-end">
               <button
                 type="button"
-                onClick={async () => { try { await navigator.clipboard.writeText(pageUrl); } catch (e) { console.error("Copy failed", e); } }}
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(pageUrl);
+                    setQrLinkCopied(true);
+                    setTimeout(() => setQrLinkCopied(false), 1500);
+                  } catch (e) {
+                    console.error("Copy failed", e);
+                  }
+                }}
                 className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
               >
                 <Copy className="h-4 w-4" />
-                Copy link
+                {qrLinkCopied ? "Copied!" : "Copy link"}
               </button>
             </div>
           </div>
