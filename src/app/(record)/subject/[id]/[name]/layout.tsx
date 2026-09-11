@@ -26,6 +26,10 @@ function subjectSlug(name?: string | null, nickname?: string | null) {
   return slugify(combined) || "profile";
 }
 
+function citySlug(location?: string | null) {
+  return slugify((location || '').split(',')[0].trim()) || 'unknown';
+}
+
 export default async function SubjectNameLayout({
   params,
   children,
@@ -37,7 +41,7 @@ export default async function SubjectNameLayout({
 
   const { data: subject } = await supabaseAdmin
     .from("subjects")
-    .select("name, nickname")
+    .select("name, nickname, location")
     .eq("subject_uuid", id)
     .maybeSingle();
 
@@ -46,7 +50,7 @@ export default async function SubjectNameLayout({
   if (subject) {
     const canonical = subjectSlug(subject.name, subject.nickname);
     if (name !== canonical) {
-      permanentRedirect(`/subject/${id}/${canonical}`);
+      permanentRedirect(`/subject/${id}/${canonical}/${citySlug(subject.location)}`);
     }
   }
 

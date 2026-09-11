@@ -48,6 +48,10 @@ function subjectSlug(name?: string | null, nickname?: string | null) {
   return slugify(combined) || "profile";
 }
 
+function citySlug(location?: string | null) {
+  return slugify((location || '').split(',')[0].trim()) || 'unknown';
+}
+
 /** ——— Subject Search Types ——— */
 type UserPreview = {
   kind: "user";
@@ -1367,7 +1371,7 @@ function SubjectResultCard({
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
         {subject.kind === "user" ? (
           <Link
-            href={`/subject/${subject.subject_uuid}/${subjectSlug(subject.name, subject.nickname)}`}
+            href={`/subject/${subject.subject_uuid}/${subjectSlug(subject.name, subject.nickname)}/${citySlug(subject.location)}`}
             className="text-xs font-medium text-gray-700 hover:text-black hover:underline flex items-center justify-center gap-1 border border-gray-300 rounded-full px-3 py-1.5 sm:py-1 bg-white w-full sm:w-auto"
             onClick={(e) => e.stopPropagation()}
           >
@@ -1378,7 +1382,7 @@ function SubjectResultCard({
           </Link>
         ) : !subject.id.startsWith("temp-") ? (
           <Link
-            href={`/subject/${subject.id}/${subjectSlug(subject.name, subject.nickname)}`}
+            href={`/subject/${subject.id}/${subjectSlug(subject.name, subject.nickname)}/${citySlug(subject.location)}`}
             className="text-xs font-medium text-gray-700 hover:text-black hover:underline flex items-center justify-center gap-1 border border-gray-300 rounded-full px-3 py-1.5 sm:py-1 bg-white w-full sm:w-auto"
             onClick={(e) => e.stopPropagation()}
           >

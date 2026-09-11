@@ -102,6 +102,10 @@ function subjectSlug(name?: string | null, nickname?: string | null) {
   return slugify(combined) || "profile";
 }
 
+function citySlug(location?: string | null) {
+  return slugify((location || '').split(',')[0].trim()) || 'unknown';
+}
+
 function viewerLabel(viewerRole: ViewerRole) {
   switch (viewerRole) {
     case "public":
@@ -4802,7 +4806,7 @@ export default function RecordDetail({
   const reveal = shouldRevealContributorIdentity(record);
 
   const contributorProfileHref = reveal && (contributorSubjectId || (record as any)?.contributorSubjectUuid)
-      ? `/subject/${contributorSubjectId || (record as any)?.contributorSubjectUuid}/${subjectSlug(contributorSubjectName, contributorSubjectNickname)}`
+      ? `/subject/${contributorSubjectId || (record as any)?.contributorSubjectUuid}/${subjectSlug(contributorSubjectName, contributorSubjectNickname)}/${citySlug(subject?.location as string | null)}`
       : null;
 
   const contributorRealName = (record as any)?.contributor_display_name || (record as any)?.contributorDisplayName || `${contributorProfile?.first_name ?? ""} ${contributorProfile?.last_name ?? ""}`.trim();
@@ -4823,7 +4827,7 @@ export default function RecordDetail({
   };
 
   const subjectName = (subject?.name as string) || "Subject";
-  const subjectProfileHref = subject?.subject_uuid ? `/subject/${subject.subject_uuid}/${subjectSlug(subject?.name as string, subject?.nickname as string | null)}` : null;
+  const subjectProfileHref = subject?.subject_uuid ? `/subject/${subject.subject_uuid}/${subjectSlug(subject?.name as string, subject?.nickname as string | null)}/${citySlug(subject?.location as string | null)}` : null;
   const resolvedSubjectAvatarUrl = subjectAvatarUrl;
 
   const contributorLinkAllowedForViewer = canShowContributorProfileLink(record);

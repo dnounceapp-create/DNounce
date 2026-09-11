@@ -53,6 +53,10 @@ function subjectSlug(name?: string | null, nickname?: string | null) {
   return slugify(combined) || "profile";
 }
 
+function citySlug(location?: string | null) {
+  return slugify((location || '').split(',')[0].trim()) || 'unknown';
+}
+
 interface NavItem {
   name: string;
   href: string;
@@ -237,6 +241,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [subjectId, setSubjectId] = useState<string | null>(null);
   const [subjectName, setSubjectName] = useState<string | null>(null);
   const [subjectNickname, setSubjectNickname] = useState<string | null>(null);
+  const [subjectLocation, setSubjectLocation] = useState<string | null>(null);
   const desktopInputRef = useRef<HTMLInputElement>(null);
   const mobileInputRef = useRef<HTMLInputElement>(null);
   const [advancedOpen, setAdvancedOpen] = useState(false);
@@ -266,12 +271,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           setSubjectId(data.subject_id);
           const { data: subj } = await supabase
             .from("subjects")
-            .select("name, nickname")
+            .select("name, nickname, location")
             .eq("subject_uuid", data.subject_id)
             .maybeSingle();
           if (subj) {
             setSubjectName(subj.name ?? null);
             setSubjectNickname(subj.nickname ?? null);
+            setSubjectLocation(subj.location ?? null);
           }
         }
       } catch (err) {
@@ -595,7 +601,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 {advResults.length > 0 && (
                   <div className="mt-4 border-t border-gray-100 pt-4 space-y-2 max-h-[40vh] overflow-y-auto">
                     {advResults.map((item: any) => {
-                      const href = item.type === "profile" ? `/subject/${item.id}/${subjectSlug(item.name, item.nickname)}` : `/record/${item.id}`;
+                      const href = item.type === "profile" ? `/subject/${item.id}/${subjectSlug(item.name, item.nickname)}/${citySlug(item.location)}` : `/record/${item.id}`;
                       return (
                         <>
                           <SearchResultCard
@@ -646,7 +652,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                           <ul className="space-y-2">
                             {groupItems.map((item: any) => {
                               const href =
-                                item.type === "profile" ? `/subject/${item.id}/${subjectSlug(item.name, item.nickname)}` :
+                                item.type === "profile" ? `/subject/${item.id}/${subjectSlug(item.name, item.nickname)}/${citySlug(item.location)}` :
                                 item.type === "organization" ? `/organization/${item.id}` :
                                 item.type === "record" ? `/record/${item.id}` :
                                 item.type === "hashtag" ? `/#${item.tag}` :
@@ -912,7 +918,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                               {groupItems.map((item: any) => {
                                 const href =
                                   item.type === "profile"
-                                    ? `/subject/${item.id}/${subjectSlug(item.name, item.nickname)}`
+                                    ? `/subject/${item.id}/${subjectSlug(item.name, item.nickname)}/${citySlug(item.location)}`
                                     : item.type === "organization"
                                     ? `/organization/${item.id}`
                                     : item.type === "record"
@@ -971,7 +977,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             const active = pathname === item.href;
             const Icon = item.icon;
             const resolvedHref = item.special_profile && subjectId
-              ? `/subject/${subjectId}/${subjectSlug(subjectName, subjectNickname)}`
+              ? `/subject/${subjectId}/${subjectSlug(subjectName, subjectNickname)}/${citySlug(subjectLocation)}`
               : item.href;
             return (
               <Link
@@ -1016,7 +1022,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 : `${baseClasses} ${active ? activeClasses : normalClasses}`;
 
               const resolvedHref = item.special_profile && subjectId
-                ? `/subject/${subjectId}/${subjectSlug(subjectName, subjectNickname)}`
+                ? `/subject/${subjectId}/${subjectSlug(subjectName, subjectNickname)}/${citySlug(subjectLocation)}`
                 : item.href;
               return (
                 <Link

@@ -24,6 +24,10 @@ function subjectSlug(name?: string | null, nickname?: string | null) {
   return slugify(combined) || "profile";
 }
 
+function citySlug(location?: string | null) {
+  return slugify((location || '').split(',')[0].trim()) || 'unknown';
+}
+
 export default async function SubjectIdRedirect({
   params,
 }: {
@@ -33,10 +37,10 @@ export default async function SubjectIdRedirect({
 
   const { data: subject } = await supabaseAdmin
     .from("subjects")
-    .select("name, nickname")
+    .select("name, nickname, location")
     .eq("subject_uuid", id)
     .maybeSingle();
 
   const slug = subjectSlug(subject?.name ?? null, subject?.nickname ?? null);
-  redirect(`/subject/${id}/${slug}`);
+  redirect(`/subject/${id}/${slug}/${citySlug(subject?.location)}`);
 }

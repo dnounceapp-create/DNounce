@@ -61,6 +61,10 @@ function subjectSlug(name?: string | null, nickname?: string | null) {
   return slugify(combined) || "profile";
 }
 
+function citySlug(location?: string | null) {
+  return slugify((location || '').split(',')[0].trim()) || 'unknown';
+}
+
 function buildNoProfileMessage({
   profileId,
   nickname,
@@ -789,7 +793,7 @@ export default function HomePage() {
                     location={item.location}
                     category={item.category}
                     id={item.id}
-                    href={item.type === "record" ? `/record/${item.id}` : `/subject/${item.id}/${subjectSlug(item.name, item.nickname)}`}
+                    href={item.type === "record" ? `/record/${item.id}` : `/subject/${item.id}/${subjectSlug(item.name, item.nickname)}/${citySlug(item.location)}`}
                     avatarUrl={item.avatar_url || null}
                   />
                 ))}

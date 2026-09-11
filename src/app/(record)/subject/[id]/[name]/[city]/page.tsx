@@ -69,6 +69,10 @@ function subjectSlug(name?: string | null, nickname?: string | null) {
   return slugify(combined) || "profile";
 }
 
+function citySlug(location?: string | null) {
+  return slugify((location || '').split(',')[0].trim()) || 'unknown';
+}
+
 function normalizeCredBucket(raw: any) {
   const s = (raw || "").toString().toLowerCase();
   if (s.includes("anonymity not granted") || s.includes("opinion")) return "Anonymity Not Granted";
@@ -493,7 +497,7 @@ function ClaimBanner({
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function SubjectProfilePage() {
-  const params = useParams<{ id: string; name: string }>();
+  const params = useParams<{ id: string; name: string; city: string }>();
   const subjectId = params?.id;
 
   const [loading, setLoading] = useState(true);
@@ -545,7 +549,7 @@ export default function SubjectProfilePage() {
     setPageUrl(window.location.href);
     if (subjectId) {
       const slug = subject ? subjectSlug(subject.name, subject.nickname) : "profile";
-      setQrUrl(`https://www.dnounce.com/subject/${subjectId}/${slug}`);
+      setQrUrl(`https://www.dnounce.com/subject/${subjectId}/${slug}/${citySlug(subject?.location)}`);
     }
   }, [subjectId, subject]);
 
