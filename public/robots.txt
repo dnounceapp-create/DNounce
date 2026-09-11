@@ -1,0 +1,18 @@
+User-agent: *
+Allow: /
+Allow: /d/
+Allow: /links
+Allow: /legal
+Allow: /loginsignup
+Allow: /record/
+Allow: /subject/
+Allow: /dashboard/community/polls
+
+Disallow: /dashboard/
+Disallow: /admin/
+Disallow: /api/
+Disallow: /user-setup
+Disallow: /logout
+Disallow: /auth/
+
+Sitemap: https://www.dnounce.com/sitemap.xml
