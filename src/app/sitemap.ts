@@ -66,6 +66,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${base}/legal`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
     { url: `${base}/links`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
 
+    // Blog
+    { url: `${base}/blog`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
+    { url: `${base}/blog/how-to-check-if-a-contractor-is-licensed`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${base}/blog/5-red-flags-before-hiring-a-freelancer`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${base}/blog/landlord-reputation-how-to-screen-a-rental-property-owner`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${base}/blog/your-right-to-respond-why-one-sided-reviews-hurt-everyone`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${base}/blog/what-happens-when-a-review-is-disputed`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
+
     // Demo record pages
     ...demoSlugs.map(slug => ({
       url: `${base}/d/${slug}`,

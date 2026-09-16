@@ -7,7 +7,7 @@ import { supabase } from "@/lib/supabaseClient";
 import {
   LayoutDashboard, FileText, Users, Ticket, Flag,
   Bell, Award, ScrollText, LogOut, Shield, ChevronRight, Menu, X,
-  BarChart2, Search, ClipboardList, Star, Vote
+  BarChart2, Search, ClipboardList, Star, Vote, BookOpen
 } from "lucide-react";
 
 const NAV = [
@@ -24,6 +24,7 @@ const NAV = [
   { href: "/admin/notifications", label: "Notifications Log", icon: Bell },
   { href: "/admin/badges", label: "Badges", icon: Award },
   { href: "/admin/audit", label: "Audit Log", icon: ScrollText },
+  { href: "/admin/blog", label: "Blog", icon: BookOpen },
 ];
 
 const LEVEL_LABELS: Record<string, string> = {
