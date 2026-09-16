@@ -245,7 +245,7 @@ function DebateCard({
 
         {/* Reactions — read-only, debate is closed */}
         <div className="mt-2">
-          <AgreeDisagree agreeCount={agree} disagreeCount={disagree} myDir={myDir} onToggle={onToggle} disabled size={26} />
+          <AgreeDisagree agreeCount={agree} disagreeCount={disagree} myDir={myDir} onToggle={onToggle} size={26} />
         </div>
 
         {/* Replies toggle */}
@@ -282,7 +282,6 @@ function DebateCard({
                               disagreeCount={rx.disagree}
                               myDir={rx.mine}
                               onToggle={(d) => onReplyToggle?.(reply.id, d)}
-                              disabled
                               size={22}
                             />
                           </div>
