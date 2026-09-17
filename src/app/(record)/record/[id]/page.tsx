@@ -1,4 +1,5 @@
 import RecordDetail from "@/components/record/RecordDetail";
+import ClaimBanner from "@/components/record/ClaimBanner";
 import { createClient } from "@supabase/supabase-js";
 import type { Metadata } from "next";
 import { Suspense } from "react";
@@ -70,9 +71,24 @@ export default async function RecordPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+
+  // Check if this is an unclaimed DNounce Mod record
+  const { data: recordMeta } = await supabaseAdmin
+    .from("records")
+    .select("dnounce_mod_record, contributor_claimed")
+    .eq("id", id)
+    .maybeSingle();
+
+  const showClaimBanner =
+    recordMeta?.dnounce_mod_record === true &&
+    recordMeta?.contributor_claimed === false;
+
   return (
-    <Suspense fallback={<RecordSkeleton />}>
-      <RecordDetail recordId={id} embedded={false} />
-    </Suspense>
+    <>
+      {showClaimBanner && <ClaimBanner recordId={id} />}
+      <Suspense fallback={<RecordSkeleton />}>
+        <RecordDetail recordId={id} embedded={false} />
+      </Suspense>
+    </>
   );
 }
