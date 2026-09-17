@@ -1,283 +1,209 @@
-"use client";
+'use client';
+export const dynamic = 'force-dynamic';
+
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { Search, RefreshCw, ChevronRight } from "lucide-react";
-import { CSVButton, SidePanel, SmartEditModal, DetailRow, DetailSection, CopyID, fmtDate, type SmartField } from "../adminUtils";
+import { Loader2, Copy, Check, Plus, RefreshCw } from "lucide-react";
+
+const DNOUNCE_MOD_CONTRIBUTOR_ID = 'ef0fdd91-38c6-438b-8229-f2efa16bdaa9';
+const DNOUNCE_MOD_AUTH_ID = 'b164ea4a-6ced-48dc-9546-cab73967d6b8';
+
+type ClaimCode = {
+  id: string;
+  record_id: string;
+  code: string;
+  used: boolean;
+  used_at: string | null;
+  created_at: string;
+  source_url: string | null;
+  notes: string | null;
+  record?: { category: string; contributor_display_name: string; };
+};
+
+function generateCode() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
 
 export default function AdminClaimsPage() {
-  const [claims, setClaims] = useState<any[]>([]);
+  const [codes, setCodes] = useState<ClaimCode[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("pending");
-  const [selected, setSelected] = useState<any | null>(null);
-  const [editModal, setEditModal] = useState<{ claim: any; type: string } | null>(null);
-  const [adminLevel, setAdminLevel] = useState("");
-  const [toast, setToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [copied, setCopied] = useState<string | null>(null);
+  const [generating, setGenerating] = useState(false);
 
-  useEffect(() => {
-    async function init() {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-      const { data: role } = await supabase.from("admin_roles").select("role").eq("user_id", session.user.id).eq("is_active", true).maybeSingle();
-      setAdminLevel(role?.role ?? "");
-      await load();
-    }
-    init();
-  }, []);
+  // Form state for generating a code for an existing record
+  const [recordId, setRecordId] = useState('');
+  const [sourceUrl, setSourceUrl] = useState('');
+  const [notes, setNotes] = useState('');
+  const [generatedCode, setGeneratedCode] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
     const { data } = await supabase
-      .from("subject_claims")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(500);
-
-    const rows = (data as any[]) ?? [];
-
-    // Enrich with subject name and claimant name
-    const subjectIds = [...new Set(rows.map(r => r.subject_uuid).filter(Boolean))];
-    const userIds = [...new Set(rows.map(r => r.claimant_auth_user_id).filter(Boolean))];
-
-    const [subjectsRes, acctsRes] = await Promise.all([
-      subjectIds.length ? supabase.from("subjects").select("subject_uuid,name").in("subject_uuid", subjectIds) : { data: [] },
-      userIds.length ? supabase.from("user_accountdetails").select("user_id,first_name,last_name,email").in("user_id", userIds) : { data: [] },
-    ]);
-
-    const subjectMap: Record<string, string> = {};
-    (subjectsRes.data ?? []).forEach((s: any) => { subjectMap[s.subject_uuid] = s.name; });
-
-    const acctMap: Record<string, any> = {};
-    (acctsRes.data ?? []).forEach((a: any) => { acctMap[a.user_id] = a; });
-
-    setClaims(rows.map(r => ({
-      ...r,
-      subject_name: subjectMap[r.subject_uuid] ?? "—",
-      claimant_name: `${acctMap[r.claimant_auth_user_id]?.first_name ?? ""} ${acctMap[r.claimant_auth_user_id]?.last_name ?? ""}`.trim() || "—",
-      claimant_email: acctMap[r.claimant_auth_user_id]?.email ?? "—",
-    })));
-
+      .from('record_claim_codes')
+      .select('*, record:records(category, contributor_display_name)')
+      .order('created_at', { ascending: false });
+    setCodes(data ?? []);
     setLoading(false);
   }
 
-  async function handleApprove(claim: any, note: string) {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) throw new Error("Not signed in");
+  useEffect(() => { load(); }, []);
 
-    // Set owner_auth_user_id on the subject
-    const { error: subjectError } = await supabase
-      .from("subjects")
-      .update({ owner_auth_user_id: claim.claimant_auth_user_id })
-      .eq("subject_uuid", claim.subject_uuid);
-    if (subjectError) throw subjectError;
+  async function generateClaimCode() {
+    if (!recordId.trim()) { setFormError('Record ID is required.'); return; }
+    setGenerating(true);
+    setFormError(null);
 
-    // Update claim status
-    const { error: claimError } = await supabase
-      .from("subject_claims")
-      .update({ status: "approved", reviewed_at: new Date().toISOString(), reviewed_by: session.user.id, note: note || null })
-      .eq("id", claim.id);
-    if (claimError) throw claimError;
+    // Verify record exists and is a mod record
+    const { data: record, error: recErr } = await supabase
+      .from('records')
+      .select('id, dnounce_mod_record, contributor_claimed')
+      .eq('id', recordId.trim())
+      .single();
 
-    // Notify claimant
-    await supabase.from("notifications").insert({
-      user_id: claim.claimant_auth_user_id,
-      title: "Your profile claim was approved",
-      body: `You now own the subject profile for "${claim.subject_name}". You can manage it from your dashboard.`,
-      type: "claim_approved",
-      record_id: null,
+    if (recErr || !record) { setFormError('Record not found.'); setGenerating(false); return; }
+    if (!record.dnounce_mod_record) { setFormError('This record is not a DNounce Mod record.'); setGenerating(false); return; }
+    if (record.contributor_claimed) { setFormError('This record has already been claimed.'); setGenerating(false); return; }
+
+    const code = generateCode();
+    const { error } = await supabase.from('record_claim_codes').insert({
+      record_id: recordId.trim(),
+      code,
+      source_url: sourceUrl.trim() || null,
+      notes: notes.trim() || null,
     });
 
-    await supabase.from("admin_audit_log").insert({
-      admin_user_id: session.user.id, admin_level: adminLevel,
-      action: "claim_approved", target_type: "subject_claims", target_id: claim.id,
-      new_value: { subject_id: claim.subject_uuid, claimant_user_id: claim.claimant_auth_user_id, note },
-    });
+    if (error) { setFormError(error.message); setGenerating(false); return; }
 
-    showToast("success", "Claim approved — subject ownership transferred");
+    setGeneratedCode(code);
+    setGenerating(false);
     await load();
-    setSelected(null);
   }
 
-  async function handleReject(claim: any, note: string) {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) throw new Error("Not signed in");
-
-    if (!note?.trim()) throw new Error("Rejection reason is required");
-
-    const { error } = await supabase
-      .from("subject_claims")
-      .update({ status: "rejected", reviewed_at: new Date().toISOString(), reviewed_by: session.user.id, note: note })
-      .eq("id", claim.id);
-    if (error) throw error;
-
-    await supabase.from("notifications").insert({
-      user_id: claim.claimant_auth_user_id,
-      title: "Your profile claim was not approved",
-      body: `Your claim for "${claim.subject_name}" was reviewed and could not be approved at this time. Reason: ${note}`,
-      type: "claim_rejected",
-      record_id: null,
-    });
-
-    await supabase.from("admin_audit_log").insert({
-      admin_user_id: session.user.id, admin_level: adminLevel,
-      action: "claim_rejected", target_type: "subject_claims", target_id: claim.id,
-      new_value: { subject_id: claim.subject_uuid, claimant_user_id: claim.claimant_auth_user_id, note },
-    });
-
-    showToast("success", "Claim rejected — user notified");
-    await load();
-    setSelected(null);
+  async function copyToClipboard(text: string, id: string) {
+    await navigator.clipboard.writeText(text);
+    setCopied(id);
+    setTimeout(() => setCopied(null), 1500);
   }
-
-  function showToast(type: "success" | "error", msg: string) { setToast({ type, msg }); setTimeout(() => setToast(null), 3500); }
-
-  const filtered = claims.filter(c => {
-    const q = search.toLowerCase();
-    const m = !search || c.subject_name?.toLowerCase().includes(q) || c.claimant_name?.toLowerCase().includes(q) || c.claimant_email?.toLowerCase().includes(q) || c.id?.includes(q) || c.claimant_auth_user_id?.includes(q);
-    return m && (statusFilter === "all" || c.status === statusFilter);
-  });
-
-  const csvData = filtered.map(c => ({
-    id: c.id,
-    subject_id: c.subject_uuid,
-    subject_name: c.subject_name,
-    claimant_user_id: c.claimant_auth_user_id,
-    claimant_name: c.claimant_name,
-    claimant_email: c.claimant_email,
-    status: c.status,
-    admin_note: c.admin_note ?? "",
-    reviewed_by: c.reviewed_by ?? "",
-    reviewed_at: c.reviewed_at ?? "",
-    created_at: c.created_at,
-  }));
-
-  const approveFields: SmartField[] = [
-    { key: "id", label: "Claim ID", type: "readonly" },
-    { key: "subject_name", label: "Subject Profile", type: "readonly" },
-    { key: "claimant_name", label: "Claimant", type: "readonly" },
-    { key: "_warn", type: "warning", label: "", help: "Approving transfers ownership of this subject profile to the claimant. They will be able to manage their profile and dispute records. This cannot be undone easily." },
-    { key: "admin_note", label: "Internal Note (optional)", type: "textarea", help: "Visible only to admins. Not shown to the user." },
-  ];
-
-  const rejectFields: SmartField[] = [
-    { key: "id", label: "Claim ID", type: "readonly" },
-    { key: "subject_name", label: "Subject Profile", type: "readonly" },
-    { key: "claimant_name", label: "Claimant", type: "readonly" },
-    { key: "admin_note", label: "Rejection Reason", type: "textarea", required: true, help: "This will be sent to the user in their notification. Be clear and professional." },
-  ];
 
   return (
-    <div className="space-y-5">
-      <div className="flex items-center justify-between flex-wrap gap-3">
+    <div className="p-6 max-w-5xl mx-auto space-y-6">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-white text-2xl font-bold">Profile Claims</h1>
-          <p className="text-gray-400 text-sm mt-1">{filtered.length} claims — review requests from users claiming ownership of subject profiles</p>
+          <h1 className="text-2xl font-bold text-gray-900">Contributor Claims</h1>
+          <p className="text-sm text-gray-500 mt-1">Generate 6-digit claim codes for DNounce Mod records.</p>
         </div>
-        <div className="flex gap-2">
-          <CSVButton data={csvData} filename="dnounce-claims" />
-          <button onClick={load} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-800 text-gray-300 hover:text-white text-sm transition"><RefreshCw className="w-4 h-4" /> Refresh</button>
+        <button onClick={() => { setShowForm(!showForm); setGeneratedCode(null); setFormError(null); setRecordId(''); setSourceUrl(''); setNotes(''); }}
+          className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition">
+          <Plus className="w-4 h-4" /> Generate Code
+        </button>
+      </div>
+
+      {/* DNounce Mod Account Info */}
+      <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4">
+        <div className="text-xs font-semibold text-blue-700 mb-2">DNounce Mod Account</div>
+        <div className="grid grid-cols-2 gap-3 text-xs font-mono text-blue-800">
+          <div><span className="text-blue-500">Auth ID:</span> {DNOUNCE_MOD_AUTH_ID}</div>
+          <div><span className="text-blue-500">Contributor ID:</span> {DNOUNCE_MOD_CONTRIBUTOR_ID}</div>
         </div>
       </div>
 
-      <div className="flex gap-3">
-        <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" /><input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search subject name, claimant name, email, ID…" className="w-full bg-gray-900 border border-gray-700 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder-gray-500 outline-none focus:border-gray-500" /></div>
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="bg-gray-900 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white outline-none">
-          {["all", "pending", "approved", "rejected"].map(s => <option key={s} value={s}>{s}</option>)}
-        </select>
-      </div>
+      {/* Generate Code Form */}
+      {showForm && (
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 space-y-4 shadow-sm">
+          <h2 className="text-base font-semibold text-gray-900">Generate Claim Code</h2>
+          {formError && <div className="rounded-xl bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm">{formError}</div>}
 
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
-        {loading ? <div className="p-8 text-center text-gray-500 text-sm animate-pulse">Loading claims…</div> : filtered.length === 0 ? <div className="p-8 text-center text-gray-500 text-sm">No claims found.</div> : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead><tr className="border-b border-gray-800 bg-gray-950">{["Claim ID", "Subject Profile", "Claimant", "Email", "Status", "Submitted", "Reviewed At", ""].map(h => <th key={h} className="text-left text-gray-500 font-medium px-4 py-3 whitespace-nowrap">{h}</th>)}</tr></thead>
-              <tbody className="divide-y divide-gray-800/50">
-                {filtered.map(c => (
-                  <tr key={c.id} onClick={() => setSelected(c)} className={`hover:bg-gray-800/50 transition cursor-pointer ${selected?.id === c.id ? "bg-gray-800/70" : ""}`}>
-                    <td className="px-4 py-3"><CopyID id={c.id} /></td>
-                    <td className="px-4 py-3 text-white font-medium">{c.subject_name}</td>
-                    <td className="px-4 py-3 text-gray-300">{c.claimant_name}</td>
-                    <td className="px-4 py-3 text-gray-400">{c.claimant_email}</td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold border ${
-                        c.status === "pending" ? "bg-orange-900 text-orange-300 border-orange-700" :
-                        c.status === "approved" ? "bg-green-900 text-green-300 border-green-700" :
-                        "bg-red-900 text-red-300 border-red-700"
-                      }`}>{c.status}</span>
-                    </td>
-                    <td className="px-4 py-3 text-gray-400 whitespace-nowrap">{fmtDate(c.created_at)}</td>
-                    <td className="px-4 py-3 text-gray-400 whitespace-nowrap">{c.reviewed_at ? fmtDate(c.reviewed_at) : "—"}</td>
-                    <td className="px-4 py-3"><ChevronRight className="w-4 h-4 text-gray-600" /></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-
-      {selected && (
-        <SidePanel
-          title={`Claim — ${selected.subject_name}`}
-          subtitle={`From ${selected.claimant_name} (${selected.claimant_email})`}
-          onClose={() => setSelected(null)}
-          actions={
-            selected.status === "pending" ? (
-              <div className="grid grid-cols-2 gap-2">
-                <button onClick={() => setEditModal({ claim: selected, type: "approve" })} className="px-3 py-2 rounded-xl bg-green-900/30 text-green-400 hover:bg-green-900/60 text-xs font-medium border border-green-800 transition">✅ Approve Claim</button>
-                <button onClick={() => setEditModal({ claim: selected, type: "reject" })} className="px-3 py-2 rounded-xl bg-red-900/30 text-red-400 hover:bg-red-900/60 text-xs font-medium border border-red-800 transition">❌ Reject Claim</button>
+          {generatedCode ? (
+            <div className="space-y-4">
+              <div className="rounded-2xl border-2 border-green-200 bg-green-50 p-6 text-center">
+                <div className="text-xs text-green-600 font-medium mb-2">Claim Code Generated</div>
+                <div className="text-5xl font-bold font-mono tracking-widest text-green-700 mb-4">{generatedCode}</div>
+                <button onClick={() => copyToClipboard(generatedCode, 'generated')}
+                  className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition">
+                  {copied === 'generated' ? <><Check className="w-4 h-4" /> Copied!</> : <><Copy className="w-4 h-4" /> Copy Code</>}
+                </button>
               </div>
-            ) : (
-              <div className="text-gray-500 text-xs text-center py-2">This claim has already been {selected.status}.</div>
-            )
-          }
-        >
-          {selected.note && (
-            <DetailSection title="User's Verification Note">
-              <p className="py-3 text-sm text-gray-300 whitespace-pre-wrap">{selected.note}</p>
-            </DetailSection>
+              <div className="text-xs text-gray-500 text-center">Send this code to the original poster along with the record URL. It never expires and can only be used once.</div>
+              <button onClick={() => { setGeneratedCode(null); setRecordId(''); setSourceUrl(''); setNotes(''); }}
+                className="w-full py-2 text-sm text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 transition">
+                Generate Another
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-medium text-gray-600 mb-1 block">Record ID *</label>
+                <input value={recordId} onChange={e => setRecordId(e.target.value)}
+                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm font-mono focus:outline-none focus:border-blue-500"
+                  placeholder="UUID of the DNounce Mod record" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-600 mb-1 block">Source URL</label>
+                <input value={sourceUrl} onChange={e => setSourceUrl(e.target.value)}
+                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+                  placeholder="https://reddit.com/r/nyc/comments/..." />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-600 mb-1 block">Notes</label>
+                <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2}
+                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-blue-500 resize-none"
+                  placeholder="e.g. Reddit post from Aug 2026, user complained about contractor in Brooklyn" />
+              </div>
+              <button onClick={generateClaimCode} disabled={generating}
+                className="inline-flex items-center gap-2 w-full justify-center bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition disabled:opacity-50">
+                {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                {generating ? 'Generating...' : 'Generate 6-Digit Code'}
+              </button>
+            </div>
           )}
-          <DetailSection title="Claim Details">
-            <DetailRow label="Claim ID" value={selected.id} mono copyable />
-            <DetailRow label="Status" value={selected.status} highlight={selected.status === "approved" ? "green" : selected.status === "rejected" ? "red" : undefined} />
-            <DetailRow label="Submitted" value={fmtDate(selected.created_at)} />
-            <DetailRow label="Reviewed At" value={fmtDate(selected.reviewed_at)} />
-            <DetailRow label="Reviewed By" value={selected.reviewed_by} mono copyable />
-            {selected.admin_note && <DetailRow label="Admin Note" value={selected.admin_note} />}
-          </DetailSection>
-          <DetailSection title="Subject Profile">
-            <DetailRow label="Subject Name" value={selected.subject_name} />
-            <DetailRow label="Subject UUID" value={selected.subject_id} mono copyable />
-          </DetailSection>
-          <DetailSection title="Claimant">
-            <DetailRow label="Name" value={selected.claimant_name} />
-            <DetailRow label="Email" value={selected.claimant_email} copyable />
-            <DetailRow label="Auth User ID" value={selected.claimant_user_id} mono copyable />
-          </DetailSection>
-          {selected.verification_data && (
-            <DetailSection title="Verification Data Submitted" defaultOpen={false}>
-              <pre className="py-3 text-xs text-gray-300 whitespace-pre-wrap overflow-auto max-h-60">{JSON.stringify(selected.verification_data, null, 2)}</pre>
-            </DetailSection>
-          )}
-        </SidePanel>
+        </div>
       )}
 
-      {editModal && (
-        <SmartEditModal
-          title={editModal.type === "approve" ? "Approve Profile Claim" : "Reject Profile Claim"}
-          subtitle={`${editModal.claim.subject_name} — claimed by ${editModal.claim.claimant_name}`}
-          data={editModal.claim}
-          fields={editModal.type === "approve" ? approveFields : rejectFields}
-          danger={editModal.type === "reject"}
-          onSave={async (updated, note) => {
-            if (editModal.type === "approve") await handleApprove(editModal.claim, note);
-            else await handleReject(editModal.claim, updated.admin_note || note);
-          }}
-          onClose={() => setEditModal(null)}
-        />
+      {/* Codes List */}
+      {loading ? (
+        <div className="flex items-center justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
+      ) : codes.length === 0 ? (
+        <div className="rounded-2xl border border-gray-200 bg-white p-12 text-center text-sm text-gray-500">No claim codes yet.</div>
+      ) : (
+        <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden">
+          <div className="px-6 py-3 border-b border-gray-100 grid grid-cols-12 text-xs font-medium text-gray-400 uppercase tracking-wide">
+            <div className="col-span-2">Code</div>
+            <div className="col-span-3">Record</div>
+            <div className="col-span-3">Source</div>
+            <div className="col-span-2">Notes</div>
+            <div className="col-span-1">Status</div>
+            <div className="col-span-1"></div>
+          </div>
+          {codes.map(c => (
+            <div key={c.id} className="px-6 py-4 border-b border-gray-50 last:border-0 grid grid-cols-12 gap-2 items-center">
+              <div className="col-span-2 font-mono text-lg font-bold text-gray-900 tracking-widest">{c.code}</div>
+              <div className="col-span-3 min-w-0">
+                <div className="text-xs font-medium text-gray-700 truncate">{c.record?.contributor_display_name ?? '—'}</div>
+                <div className="text-[10px] text-gray-400 truncate">{c.record?.category ?? '—'}</div>
+                <div className="text-[10px] font-mono text-gray-300 truncate">{c.record_id.slice(0, 8)}…</div>
+              </div>
+              <div className="col-span-3 min-w-0">
+                {c.source_url ? (
+                  <a href={c.source_url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline truncate block">{c.source_url.replace(/^https?:\/\//, '').slice(0, 40)}…</a>
+                ) : <span className="text-xs text-gray-300">—</span>}
+              </div>
+              <div className="col-span-2 text-xs text-gray-500 truncate">{c.notes ?? '—'}</div>
+              <div className="col-span-1">
+                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${c.used ? 'bg-gray-100 text-gray-400' : 'bg-green-50 text-green-700'}`}>
+                  {c.used ? 'Used' : 'Active'}
+                </span>
+              </div>
+              <div className="col-span-1 flex justify-end">
+                <button onClick={() => copyToClipboard(c.code, c.id)} className="p-1.5 rounded-lg hover:bg-gray-100 transition text-gray-400">
+                  {copied === c.id ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
       )}
-
-      {toast && <div className={`fixed bottom-6 right-6 px-4 py-3 rounded-xl text-sm font-medium shadow-lg z-[80] border ${toast.type === "success" ? "bg-green-900 text-green-300 border-green-700" : "bg-red-900 text-red-300 border-red-700"}`}>{toast.msg}</div>}
     </div>
   );
 }
