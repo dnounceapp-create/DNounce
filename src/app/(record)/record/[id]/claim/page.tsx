@@ -1,268 +1,207 @@
 'use client';
+export const dynamic = 'force-dynamic';
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
-import { Loader2, AlertTriangle, CheckCircle } from "lucide-react";
+import { Loader2, Copy, Check, Plus, RefreshCw } from "lucide-react";
 
-const ANONYMITY_OPTIONS = [
-  { value: 'Anonymity Granted', label: 'Keep me anonymous', desc: 'Your name will not appear on the record.' },
-  { value: 'Anonymity Not Granted', label: 'Show my name', desc: 'Your display name will appear publicly on the record.' },
-];
+const DNOUNCE_MOD_CONTRIBUTOR_ID = 'ef0fdd91-38c6-438b-8229-f2efa16bdaa9';
+const DNOUNCE_MOD_AUTH_ID = 'b164ea4a-6ced-48dc-9546-cab73967d6b8';
 
-export default function ClaimOverridePage() {
-  const { id: recordId } = useParams<{ id: string }>();
-  const router = useRouter();
+type ClaimCode = {
+  id: string;
+  record_id: string;
+  code: string;
+  used: boolean;
+  used_at: string | null;
+  created_at: string;
+  source_url: string | null;
+  notes: string | null;
+  record?: { category: string; contributor_display_name: string; };
+};
 
+function generateCode() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+export default function AdminClaimsPage() {
+  const [codes, setCodes] = useState<ClaimCode[]>([]);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
-  const [sessionUserId, setSessionUserId] = useState<string | null>(null);
-  const [confirmed, setConfirmed] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [copied, setCopied] = useState<string | null>(null);
+  const [generating, setGenerating] = useState(false);
 
-  const [description, setDescription] = useState('');
-  const [displayName, setDisplayName] = useState('');
-  const [anonymity, setAnonymity] = useState('Anonymity Granted');
+  // Form state for generating a code for an existing record
+  const [recordId, setRecordId] = useState('');
+  const [sourceUrl, setSourceUrl] = useState('');
+  const [notes, setNotes] = useState('');
+  const [generatedCode, setGeneratedCode] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function init() {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { router.push('/loginsignup'); return; }
-      setSessionUserId(session.user.id);
-
-      const storedRecordId = sessionStorage.getItem('claim_record_id');
-      const storedCode = sessionStorage.getItem('claim_code');
-
-      if (storedRecordId !== recordId || !storedCode) {
-        setError('Invalid or missing claim code. Please start over from the record page.');
-        setLoading(false);
-        return;
-      }
-
-      const { data: claimCode } = await supabase
-        .from('record_claim_codes')
-        .select('id, used')
-        .eq('record_id', recordId)
-        .eq('code', storedCode)
-        .maybeSingle();
-
-      if (!claimCode || claimCode.used) {
-        setError('This claim code is invalid or has already been used.');
-        setLoading(false);
-        return;
-      }
-
-      const { data: record } = await supabase
-        .from('records')
-        .select('description, contributor_display_name, anonymity_status, contributor_claimed, dnounce_mod_record, contributor_override_used')
-        .eq('id', recordId)
-        .maybeSingle();
-
-      if (!record) { setError('Record not found.'); setLoading(false); return; }
-      if (!record.dnounce_mod_record) { setError('This record cannot be claimed.'); setLoading(false); return; }
-      if (record.contributor_claimed) { setError('This record has already been claimed.'); setLoading(false); return; }
-      if (record.contributor_override_used) { setError('This record has already been edited.'); setLoading(false); return; }
-
-      setDescription(record.description ?? '');
-      setDisplayName(record.contributor_display_name ?? '');
-      setAnonymity(record.anonymity_status ?? 'Anonymity Granted');
-      setLoading(false);
-    }
-    init();
-  }, [recordId, router]);
-
-  async function handleClaim() {
-    if (!sessionUserId) return;
-    setSaving(true);
-    setError(null);
-
-    const storedCode = sessionStorage.getItem('claim_code');
-
-    const { data: contributor } = await supabase
-      .from('contributors')
-      .select('id')
-      .eq('auth_user_id', sessionUserId)
-      .maybeSingle();
-
-    if (!contributor) {
-      setError('Could not find your contributor account. Please contact support.');
-      setSaving(false);
-      return;
-    }
-
-    const { error: updateErr } = await supabase
-      .from('records')
-      .update({
-        contributor_id: contributor.id,
-        created_by: sessionUserId,
-        description: description.trim(),
-        contributor_display_name: displayName.trim(),
-        anonymity_status: anonymity,
-        contributor_claimed: true,
-        contributor_override_used: true,
-        status: 'ai_processing',
-        submitted_at: new Date().toISOString(),
-        published_at: null,
-        ai_completed_at: null,
-        debate_started_at: null,
-        debate_ends_at: null,
-        voting_started_at: null,
-        voting_ends_at: null,
-        verdict_announced_at: null,
-        decision_started_at: null,
-      })
-      .eq('id', recordId);
-
-    if (updateErr) { setError(updateErr.message); setSaving(false); return; }
-
-    await supabase
+  async function load() {
+    setLoading(true);
+    const { data } = await supabase
       .from('record_claim_codes')
-      .update({
-        used: true,
-        used_by: sessionUserId,
-        used_at: new Date().toISOString(),
-      })
-      .eq('record_id', recordId)
-      .eq('code', storedCode ?? '');
-
-    sessionStorage.removeItem('claim_record_id');
-    sessionStorage.removeItem('claim_code');
-
-    setSuccess(true);
-    setSaving(false);
-    setTimeout(() => router.push(`/record/${recordId}`), 3000);
+      .select('*, record:records(category, contributor_display_name)')
+      .order('created_at', { ascending: false });
+    setCodes(data ?? []);
+    setLoading(false);
   }
 
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center">
-      <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
-    </div>
-  );
+  useEffect(() => { load(); }, []);
 
-  if (error) return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="max-w-md w-full rounded-2xl border border-red-200 bg-red-50 p-8 text-center">
-        <AlertTriangle className="w-8 h-8 text-red-500 mx-auto mb-4" />
-        <div className="text-base font-semibold text-red-900 mb-2">Unable to claim record</div>
-        <div className="text-sm text-red-700 mb-6">{error}</div>
-        <button onClick={() => router.push(`/record/${recordId}`)} className="text-sm text-red-600 hover:underline">← Back to record</button>
-      </div>
-    </div>
-  );
+  async function generateClaimCode() {
+    if (!recordId.trim()) { setFormError('Record ID is required.'); return; }
+    setGenerating(true);
+    setFormError(null);
 
-  if (success) return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="max-w-md w-full rounded-2xl border border-green-200 bg-green-50 p-8 text-center">
-        <CheckCircle className="w-8 h-8 text-green-500 mx-auto mb-4" />
-        <div className="text-base font-semibold text-green-900 mb-2">Record claimed successfully!</div>
-        <div className="text-sm text-green-700 mb-1">Your record has been updated and is now going through AI verification.</div>
-        <div className="text-sm text-gray-400">Redirecting you back to the record...</div>
-      </div>
-    </div>
-  );
+    // Verify record exists and is a mod record
+    const { data: record, error: recErr } = await supabase
+      .from('records')
+      .select('id, dnounce_mod_record, contributor_claimed')
+      .eq('id', recordId.trim())
+      .single();
+
+    if (recErr || !record) { setFormError('Record not found.'); setGenerating(false); return; }
+    if (!record.dnounce_mod_record) { setFormError('This record is not a DNounce Mod record.'); setGenerating(false); return; }
+    if (record.contributor_claimed) { setFormError('This record has already been claimed.'); setGenerating(false); return; }
+
+    const code = generateCode();
+    const { error } = await supabase.from('record_claim_codes').insert({
+      record_id: recordId.trim(),
+      code,
+      source_url: sourceUrl.trim() || null,
+      notes: notes.trim() || null,
+    });
+
+    if (error) { setFormError(error.message); setGenerating(false); return; }
+
+    setGeneratedCode(code);
+    setGenerating(false);
+    await load();
+  }
+
+  async function copyToClipboard(text: string, id: string) {
+    await navigator.clipboard.writeText(text);
+    setCopied(id);
+    setTimeout(() => setCopied(null), 1500);
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-12">
-      <div className="max-w-2xl mx-auto">
-        <div className="mb-8">
-          <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-4">
-            One-time override · Cannot be undone
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900">Claim your record</h1>
-          <p className="text-gray-500 mt-2 text-sm leading-relaxed">This is your one and only chance to update this record before it goes live under your account. Once you submit, this record is locked — it cannot be edited again.</p>
+    <div className="p-6 max-w-5xl mx-auto space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Contributor Claims</h1>
+          <p className="text-sm text-gray-500 mt-1">Generate 6-digit claim codes for DNounce Mod records.</p>
         </div>
+        <button onClick={() => { setShowForm(!showForm); setGeneratedCode(null); setFormError(null); setRecordId(''); setSourceUrl(''); setNotes(''); }}
+          className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition">
+          <Plus className="w-4 h-4" /> Generate Code
+        </button>
+      </div>
 
-        <div className="space-y-5">
-          {/* Display name */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-6">
-            <label className="text-sm font-semibold text-gray-900 mb-1 block">Your display name</label>
-            <p className="text-xs text-gray-500 mb-3">How you'll appear on the record if anonymity is not granted.</p>
-            <input
-              value={displayName}
-              onChange={e => setDisplayName(e.target.value)}
-              className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
-              placeholder="Your full name"
-            />
-          </div>
-
-          {/* Anonymity */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-6">
-            <label className="text-sm font-semibold text-gray-900 mb-3 block">Anonymity preference</label>
-            <div className="space-y-3">
-              {ANONYMITY_OPTIONS.map(opt => (
-                <label key={opt.value} className={`flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition ${anonymity === opt.value ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}>
-                  <input type="radio" name="anonymity" value={opt.value} checked={anonymity === opt.value} onChange={() => setAnonymity(opt.value)} className="mt-0.5" />
-                  <div>
-                    <div className="text-sm font-semibold text-gray-900">{opt.label}</div>
-                    <div className="text-xs text-gray-500">{opt.desc}</div>
-                  </div>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* Description */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-6">
-            <label className="text-sm font-semibold text-gray-900 mb-1 block">Your experience</label>
-            <p className="text-xs text-gray-500 mb-3">This is pre-filled with the original complaint. Update it in your own words.</p>
-            <textarea
-              value={description}
-              onChange={e => setDescription(e.target.value)}
-              rows={8}
-              className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-blue-500 resize-none leading-relaxed"
-              placeholder="Describe your experience..."
-            />
-          </div>
-
-          {/* Warning */}
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
-            <div className="flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <div className="text-sm font-semibold text-amber-900 mb-1">This cannot be undone</div>
-                <div className="text-xs text-amber-700 leading-relaxed">Once you claim this record, you cannot edit it again. The record will restart the full verification process and the subject will be re-notified. Make sure everything above is accurate before submitting.</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Confirm checkbox */}
-          <label className="flex items-start gap-3 cursor-pointer">
-            <input type="checkbox" checked={confirmed} onChange={e => setConfirmed(e.target.checked)} className="mt-0.5 rounded" />
-            <span className="text-sm text-gray-600 leading-relaxed">I confirm this is my firsthand experience, the information above is accurate, and I understand this record cannot be edited after claiming.</span>
-          </label>
-
-          <button
-            onClick={() => setShowConfirm(true)}
-            disabled={!confirmed || !description.trim()}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3.5 rounded-2xl transition disabled:opacity-50 text-sm"
-          >
-            Claim & Submit Record
-          </button>
+      {/* DNounce Mod Account Info */}
+      <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4">
+        <div className="text-xs font-semibold text-blue-700 mb-2">DNounce Mod Account</div>
+        <div className="grid grid-cols-2 gap-3 text-xs font-mono text-blue-800">
+          <div><span className="text-blue-500">Auth ID:</span> {DNOUNCE_MOD_AUTH_ID}</div>
+          <div><span className="text-blue-500">Contributor ID:</span> {DNOUNCE_MOD_CONTRIBUTOR_ID}</div>
         </div>
       </div>
 
-      {/* Final confirm modal */}
-      {showConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-          <div className="bg-white rounded-2xl p-8 w-full max-w-sm shadow-2xl">
-            <h2 className="text-lg font-bold text-gray-900 mb-2">Are you absolutely sure?</h2>
-            <p className="text-sm text-gray-500 mb-6">This will permanently claim the record under your account. The subject will be notified. <span className="font-semibold text-gray-700">You can never edit this record again.</span></p>
-            <div className="flex gap-3">
-              <button onClick={() => setShowConfirm(false)} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition">
-                Go back
-              </button>
-              <button
-                onClick={() => { setShowConfirm(false); handleClaim(); }}
-                disabled={saving}
-                className="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition disabled:opacity-50 inline-flex items-center justify-center gap-2"
-              >
-                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                {saving ? 'Saving...' : 'Yes, claim it'}
+      {/* Generate Code Form */}
+      {showForm && (
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 space-y-4 shadow-sm">
+          <h2 className="text-base font-semibold text-gray-900">Generate Claim Code</h2>
+          {formError && <div className="rounded-xl bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm">{formError}</div>}
+
+          {generatedCode ? (
+            <div className="space-y-4">
+              <div className="rounded-2xl border-2 border-green-200 bg-green-50 p-6 text-center">
+                <div className="text-xs text-green-600 font-medium mb-2">Claim Code Generated</div>
+                <div className="text-5xl font-bold font-mono tracking-widest text-green-700 mb-4">{generatedCode}</div>
+                <button onClick={() => copyToClipboard(generatedCode, 'generated')}
+                  className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition">
+                  {copied === 'generated' ? <><Check className="w-4 h-4" /> Copied!</> : <><Copy className="w-4 h-4" /> Copy Code</>}
+                </button>
+              </div>
+              <div className="text-xs text-gray-500 text-center">Send this code to the original poster along with the record URL. It never expires and can only be used once.</div>
+              <button onClick={() => { setGeneratedCode(null); setRecordId(''); setSourceUrl(''); setNotes(''); }}
+                className="w-full py-2 text-sm text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 transition">
+                Generate Another
               </button>
             </div>
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-medium text-gray-600 mb-1 block">Record ID *</label>
+                <input value={recordId} onChange={e => setRecordId(e.target.value)}
+                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm font-mono focus:outline-none focus:border-blue-500"
+                  placeholder="UUID of the DNounce Mod record" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-600 mb-1 block">Source URL</label>
+                <input value={sourceUrl} onChange={e => setSourceUrl(e.target.value)}
+                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+                  placeholder="https://reddit.com/r/nyc/comments/..." />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-600 mb-1 block">Notes</label>
+                <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2}
+                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-blue-500 resize-none"
+                  placeholder="e.g. Reddit post from Aug 2026, user complained about contractor in Brooklyn" />
+              </div>
+              <button onClick={generateClaimCode} disabled={generating}
+                className="inline-flex items-center gap-2 w-full justify-center bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition disabled:opacity-50">
+                {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                {generating ? 'Generating...' : 'Generate 6-Digit Code'}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Codes List */}
+      {loading ? (
+        <div className="flex items-center justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
+      ) : codes.length === 0 ? (
+        <div className="rounded-2xl border border-gray-200 bg-white p-12 text-center text-sm text-gray-500">No claim codes yet.</div>
+      ) : (
+        <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden">
+          <div className="px-6 py-3 border-b border-gray-100 grid grid-cols-12 text-xs font-medium text-gray-400 uppercase tracking-wide">
+            <div className="col-span-2">Code</div>
+            <div className="col-span-3">Record</div>
+            <div className="col-span-3">Source</div>
+            <div className="col-span-2">Notes</div>
+            <div className="col-span-1">Status</div>
+            <div className="col-span-1"></div>
           </div>
+          {codes.map(c => (
+            <div key={c.id} className="px-6 py-4 border-b border-gray-50 last:border-0 grid grid-cols-12 gap-2 items-center">
+              <div className="col-span-2 font-mono text-lg font-bold text-gray-900 tracking-widest">{c.code}</div>
+              <div className="col-span-3 min-w-0">
+                <div className="text-xs font-medium text-gray-700 truncate">{c.record?.contributor_display_name ?? '—'}</div>
+                <div className="text-[10px] text-gray-400 truncate">{c.record?.category ?? '—'}</div>
+                <div className="text-[10px] font-mono text-gray-300 truncate">{c.record_id.slice(0, 8)}…</div>
+              </div>
+              <div className="col-span-3 min-w-0">
+                {c.source_url ? (
+                  <a href={c.source_url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline truncate block">{c.source_url.replace(/^https?:\/\//, '').slice(0, 40)}…</a>
+                ) : <span className="text-xs text-gray-300">—</span>}
+              </div>
+              <div className="col-span-2 text-xs text-gray-500 truncate">{c.notes ?? '—'}</div>
+              <div className="col-span-1">
+                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${c.used ? 'bg-gray-100 text-gray-400' : 'bg-green-50 text-green-700'}`}>
+                  {c.used ? 'Used' : 'Active'}
+                </span>
+              </div>
+              <div className="col-span-1 flex justify-end">
+                <button onClick={() => copyToClipboard(c.code, c.id)} className="p-1.5 rounded-lg hover:bg-gray-100 transition text-gray-400">
+                  {copied === c.id ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

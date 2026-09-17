@@ -734,7 +734,7 @@ export default function SubmitRecordPage() {
           {/* Contact Info */}
           <div className="mb-8 sm:mb-10 bg-gray-50 border border-gray-200 rounded-2xl p-5 sm:p-8 shadow-sm">
             <div className="flex flex-col text-center mb-5 sm:mb-6">
-              <h2 className="text-base sm:text-lg font-semibold text-gray-800">Contact Information</h2>
+              <h2 className="text-base sm:text-lg font-semibold text-gray-800">Subject Contact Information</h2>
               <p className="text-xs sm:text-sm text-gray-500 leading-relaxed max-w-lg mx-auto">
                 Enter a phone number and/or email. We’ll automatically search for matching DNounce users or existing subjects.
               </p>
@@ -771,6 +771,11 @@ export default function SubmitRecordPage() {
           </div>
 
           {/* Subject Info */}
+          <div className="mb-5 sm:mb-6 text-center">
+            <h2 className="text-base sm:text-lg font-semibold text-gray-800">Subject's Basic Information</h2>
+            <p className="text-xs sm:text-sm text-gray-500 leading-relaxed">Help identify the subject of this record.</p>
+          </div>
+
           <div
             ref={subjectInfoRef}
             className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-4 sm:gap-x-6 gap-y-6 sm:gap-y-8 mb-6"
