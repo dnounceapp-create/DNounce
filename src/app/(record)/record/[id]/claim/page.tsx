@@ -22,30 +22,25 @@ export default function ClaimOverridePage() {
   const [confirmed, setConfirmed] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  // Record fields user can override
   const [description, setDescription] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [anonymity, setAnonymity] = useState('Anonymity Granted');
-  const [originalDescription, setOriginalDescription] = useState('');
 
   useEffect(() => {
     async function init() {
-      // Check session
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { router.push('/loginsignup'); return; }
       setSessionUserId(session.user.id);
 
-      // Validate claim code from sessionStorage
       const storedRecordId = sessionStorage.getItem('claim_record_id');
       const storedCode = sessionStorage.getItem('claim_code');
 
       if (storedRecordId !== recordId || !storedCode) {
-        setError('Invalid or missing claim code. Please start over.');
+        setError('Invalid or missing claim code. Please start over from the record page.');
         setLoading(false);
         return;
       }
 
-      // Verify code
       const { data: claimCode } = await supabase
         .from('record_claim_codes')
         .select('id, used')
@@ -59,21 +54,18 @@ export default function ClaimOverridePage() {
         return;
       }
 
-      // Load record
       const { data: record } = await supabase
         .from('records')
-        .select('description, contributor_display_name, anonymity_status, contributor_claimed, dnounce_mod_record')
+        .select('description, contributor_display_name, anonymity_status, contributor_claimed, dnounce_mod_record, contributor_override_used')
         .eq('id', recordId)
         .maybeSingle();
 
-      if (!record || !record.dnounce_mod_record || record.contributor_claimed) {
-        setError('This record cannot be claimed.');
-        setLoading(false);
-        return;
-      }
+      if (!record) { setError('Record not found.'); setLoading(false); return; }
+      if (!record.dnounce_mod_record) { setError('This record cannot be claimed.'); setLoading(false); return; }
+      if (record.contributor_claimed) { setError('This record has already been claimed.'); setLoading(false); return; }
+      if (record.contributor_override_used) { setError('This record has already been edited.'); setLoading(false); return; }
 
       setDescription(record.description ?? '');
-      setOriginalDescription(record.description ?? '');
       setDisplayName(record.contributor_display_name ?? '');
       setAnonymity(record.anonymity_status ?? 'Anonymity Granted');
       setLoading(false);
@@ -88,7 +80,6 @@ export default function ClaimOverridePage() {
 
     const storedCode = sessionStorage.getItem('claim_code');
 
-    // Get contributor record for this user
     const { data: contributor } = await supabase
       .from('contributors')
       .select('id')
@@ -101,7 +92,6 @@ export default function ClaimOverridePage() {
       return;
     }
 
-    // Update the record — transfer ownership + apply overrides + reset lifecycle
     const { error: updateErr } = await supabase
       .from('records')
       .update({
@@ -112,7 +102,6 @@ export default function ClaimOverridePage() {
         anonymity_status: anonymity,
         contributor_claimed: true,
         contributor_override_used: true,
-        // Reset lifecycle to AI verification stage
         status: 'ai_processing',
         submitted_at: new Date().toISOString(),
         published_at: null,
@@ -122,26 +111,27 @@ export default function ClaimOverridePage() {
         voting_started_at: null,
         voting_ends_at: null,
         verdict_announced_at: null,
+        decision_started_at: null,
       })
       .eq('id', recordId);
 
     if (updateErr) { setError(updateErr.message); setSaving(false); return; }
 
-    // Mark claim code as used
     await supabase
       .from('record_claim_codes')
-      .update({ used: true, used_by: sessionUserId, used_at: new Date().toISOString() })
+      .update({
+        used: true,
+        used_by: sessionUserId,
+        used_at: new Date().toISOString(),
+      })
       .eq('record_id', recordId)
       .eq('code', storedCode ?? '');
 
-    // Clear sessionStorage
     sessionStorage.removeItem('claim_record_id');
     sessionStorage.removeItem('claim_code');
 
     setSuccess(true);
     setSaving(false);
-
-    // Redirect to record after 3 seconds
     setTimeout(() => router.push(`/record/${recordId}`), 3000);
   }
 
@@ -167,7 +157,8 @@ export default function ClaimOverridePage() {
       <div className="max-w-md w-full rounded-2xl border border-green-200 bg-green-50 p-8 text-center">
         <CheckCircle className="w-8 h-8 text-green-500 mx-auto mb-4" />
         <div className="text-base font-semibold text-green-900 mb-2">Record claimed successfully!</div>
-        <div className="text-sm text-green-700">Your record has been updated and is now going through verification. Redirecting you back...</div>
+        <div className="text-sm text-green-700 mb-1">Your record has been updated and is now going through AI verification.</div>
+        <div className="text-sm text-gray-400">Redirecting you back to the record...</div>
       </div>
     </div>
   );
@@ -175,25 +166,24 @@ export default function ClaimOverridePage() {
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-12">
       <div className="max-w-2xl mx-auto">
-        {/* Header */}
         <div className="mb-8">
           <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-4">
-            One-time override
+            One-time override · Cannot be undone
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Claim your record</h1>
-          <p className="text-gray-500 mt-2">This is your one chance to update the record before it goes live under your name. Once you save, this record cannot be edited again.</p>
+          <p className="text-gray-500 mt-2 text-sm leading-relaxed">This is your one and only chance to update this record before it goes live under your account. Once you submit, this record is locked — it cannot be edited again.</p>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-5">
           {/* Display name */}
           <div className="bg-white rounded-2xl border border-gray-200 p-6">
             <label className="text-sm font-semibold text-gray-900 mb-1 block">Your display name</label>
-            <p className="text-xs text-gray-500 mb-3">This is how you'll appear on the record if anonymity is not granted.</p>
+            <p className="text-xs text-gray-500 mb-3">How you'll appear on the record if anonymity is not granted.</p>
             <input
               value={displayName}
               onChange={e => setDisplayName(e.target.value)}
               className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
-              placeholder="Your name"
+              placeholder="Your full name"
             />
           </div>
 
@@ -216,12 +206,12 @@ export default function ClaimOverridePage() {
           {/* Description */}
           <div className="bg-white rounded-2xl border border-gray-200 p-6">
             <label className="text-sm font-semibold text-gray-900 mb-1 block">Your experience</label>
-            <p className="text-xs text-gray-500 mb-3">Update the description in your own words. The original text is pre-filled below.</p>
+            <p className="text-xs text-gray-500 mb-3">This is pre-filled with the original complaint. Update it in your own words.</p>
             <textarea
               value={description}
               onChange={e => setDescription(e.target.value)}
               rows={8}
-              className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-blue-500 resize-none"
+              className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-blue-500 resize-none leading-relaxed"
               placeholder="Describe your experience..."
             />
           </div>
@@ -231,8 +221,8 @@ export default function ClaimOverridePage() {
             <div className="flex items-start gap-3">
               <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
               <div>
-                <div className="text-sm font-semibold text-amber-900 mb-1">This action is permanent</div>
-                <div className="text-xs text-amber-700 leading-relaxed">Once you claim this record, it cannot be edited again. The record will restart the verification process and the subject will be re-notified. Are you sure everything above is accurate?</div>
+                <div className="text-sm font-semibold text-amber-900 mb-1">This cannot be undone</div>
+                <div className="text-xs text-amber-700 leading-relaxed">Once you claim this record, you cannot edit it again. The record will restart the full verification process and the subject will be re-notified. Make sure everything above is accurate before submitting.</div>
               </div>
             </div>
           </div>
@@ -240,13 +230,12 @@ export default function ClaimOverridePage() {
           {/* Confirm checkbox */}
           <label className="flex items-start gap-3 cursor-pointer">
             <input type="checkbox" checked={confirmed} onChange={e => setConfirmed(e.target.checked)} className="mt-0.5 rounded" />
-            <span className="text-sm text-gray-600">I confirm this is my experience, the information above is accurate, and I understand this record cannot be edited after claiming.</span>
+            <span className="text-sm text-gray-600 leading-relaxed">I confirm this is my firsthand experience, the information above is accurate, and I understand this record cannot be edited after claiming.</span>
           </label>
 
-          {/* Submit */}
           <button
             onClick={() => setShowConfirm(true)}
-            disabled={!confirmed || saving || !description.trim()}
+            disabled={!confirmed || !description.trim()}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3.5 rounded-2xl transition disabled:opacity-50 text-sm"
           >
             Claim & Submit Record
@@ -258,11 +247,17 @@ export default function ClaimOverridePage() {
       {showConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
           <div className="bg-white rounded-2xl p-8 w-full max-w-sm shadow-2xl">
-            <h2 className="text-lg font-bold text-gray-900 mb-3">Are you sure?</h2>
-            <p className="text-sm text-gray-500 mb-6">This will permanently claim the record under your account. The subject will be notified. You cannot undo this or edit the record again.</p>
+            <h2 className="text-lg font-bold text-gray-900 mb-2">Are you absolutely sure?</h2>
+            <p className="text-sm text-gray-500 mb-6">This will permanently claim the record under your account. The subject will be notified. <span className="font-semibold text-gray-700">You can never edit this record again.</span></p>
             <div className="flex gap-3">
-              <button onClick={() => setShowConfirm(false)} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition">Cancel</button>
-              <button onClick={() => { setShowConfirm(false); handleClaim(); }} disabled={saving} className="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition disabled:opacity-50 inline-flex items-center justify-center gap-2">
+              <button onClick={() => setShowConfirm(false)} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition">
+                Go back
+              </button>
+              <button
+                onClick={() => { setShowConfirm(false); handleClaim(); }}
+                disabled={saving}
+                className="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition disabled:opacity-50 inline-flex items-center justify-center gap-2"
+              >
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
                 {saving ? 'Saving...' : 'Yes, claim it'}
               </button>

@@ -279,7 +279,13 @@ export default function UserSetupPage() {
       if (updateError) throw updateError;
 
       setSuccess(true);
-      setTimeout(() => router.push("/dashboard/myrecords"), 1200);
+      const claimRecordId = sessionStorage.getItem('claim_record_id');
+      const claimCode = sessionStorage.getItem('claim_code');
+      if (claimRecordId && claimCode) {
+        setTimeout(() => router.push(`/record/${claimRecordId}/claim`), 1200);
+      } else {
+        setTimeout(() => router.push("/dashboard/myrecords"), 1200);
+      }
     } catch (err: any) {
       console.error("Setup error:", err);
       setError(err.message || "Something went wrong, please try again.");
