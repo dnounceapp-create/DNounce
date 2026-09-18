@@ -282,7 +282,7 @@ export default function UserSetupPage() {
       const claimRecordId = sessionStorage.getItem('claim_record_id');
       const claimCode = sessionStorage.getItem('claim_code');
       if (claimRecordId && claimCode) {
-        setTimeout(() => router.push(`/record/${claimRecordId}/claim`), 1200);
+        setTimeout(() => router.push(`/claim/${claimRecordId}`), 1200);
       } else {
         setTimeout(() => router.push("/dashboard/myrecords"), 1200);
       }

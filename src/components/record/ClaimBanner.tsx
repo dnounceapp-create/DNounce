@@ -38,14 +38,14 @@ export default function ClaimBanner({ recordId }: { recordId: string }) {
       // Store code + record in sessionStorage then redirect to signup
       sessionStorage.setItem('claim_record_id', recordId);
       sessionStorage.setItem('claim_code', code.trim());
-      router.push(`/loginsignup?redirectTo=/record/${recordId}/claim`);
+      router.push(`/loginsignup?redirectTo=/claim/${recordId}`);
       return;
     }
 
     // Already logged in — go straight to override screen
     sessionStorage.setItem('claim_record_id', recordId);
     sessionStorage.setItem('claim_code', code.trim());
-    router.push(`/record/${recordId}/claim`);
+    router.push(`/claim/${recordId}`);
   }
 
   return (
