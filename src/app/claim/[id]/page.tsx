@@ -89,6 +89,7 @@ export default function ClaimOverridePage() {
   const [lastTappedStar, setLastTappedStar] = useState<number | null>(null);
   const [description, setDescription] = useState('');
   const [files, setFiles] = useState<File[]>([]);
+  const [existingAttachments, setExistingAttachments] = useState<{id: string; path: string; label: string; mime_type: string; size_bytes: number}[]>([]);
 
   // Identity
   const [identityPreference, setIdentityPreference] = useState<'hide' | 'show'>('hide');
@@ -194,6 +195,13 @@ export default function ClaimOverridePage() {
           setSubjectNickname(subject.nickname || '');
         }
       }
+
+      // Load existing attachments
+      const { data: attachments } = await supabase
+        .from('record_attachments')
+        .select('id, path, label, mime_type, size_bytes')
+        .eq('record_id', recordId);
+      setExistingAttachments(attachments ?? []);
 
       setLoading(false);
     }
@@ -443,6 +451,29 @@ export default function ClaimOverridePage() {
           {/* Evidence Upload */}
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-2">Evidence (optional)</label>
+            {existingAttachments.length > 0 && (
+              <div className="mb-3 space-y-2">
+                <div className="text-[10px] text-gray-400 font-medium uppercase tracking-wide">Existing evidence</div>
+                {existingAttachments.map(a => (
+                  <div key={a.id} className="flex items-center justify-between bg-white border border-gray-200 rounded-xl px-3 py-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-xs text-gray-700 truncate">{a.label || a.path.split('/').pop()}</span>
+                      <span className="text-[10px] text-gray-400">{(a.size_bytes / 1024).toFixed(0)}KB</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        await supabase.from('record_attachments').delete().eq('id', a.id);
+                        setExistingAttachments(prev => prev.filter(x => x.id !== a.id));
+                      }}
+                      className="text-gray-400 hover:text-red-500 ml-2 flex-shrink-0"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
             <div className="border-2 border-dashed border-gray-100 rounded-2xl p-8 text-center bg-gray-50 cursor-pointer hover:bg-gray-100 transition"
               onClick={() => document.getElementById('claim-file-input')?.click()}
               onDragOver={e => e.preventDefault()}
