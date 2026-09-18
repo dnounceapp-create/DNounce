@@ -4660,7 +4660,8 @@ export default function RecordDetail({
             .select("first_name,last_name,avatar_url")
             .eq("user_id", contributorUserId)
             .maybeSingle();
-        
+          console.log("🔍 cAcct from user_public_profiles:", cAcct, "for userId:", contributorUserId);
+
           setContributorProfile({
             first_name: cAcct?.first_name ?? null,
             last_name: cAcct?.last_name ?? null,
