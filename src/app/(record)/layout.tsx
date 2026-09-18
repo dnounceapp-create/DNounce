@@ -15,8 +15,11 @@ export default function RecordRootLayout({ children }: { children: React.ReactNo
   });
 
   // While auth is still checking, don't render the auth layout (it redirects).
-  // Signed in → dashboard shell
-  if (user) {
+  // Signed in → dashboard shell (but not on the claim page)
+  const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+  const isClaimPage = pathname.endsWith('/claim');
+
+  if (user && !isClaimPage) {
     return <AuthUsersLayout>{children}</AuthUsersLayout>;
   }
 
