@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { Loader2, Copy, Check, Plus } from "lucide-react";
+import { Loader2, Copy, Check, Plus, X } from "lucide-react";
 
 const DNOUNCE_MOD_CONTRIBUTOR_ID = 'ef0fdd91-38c6-438b-8229-f2efa16bdaa9';
 const DNOUNCE_MOD_AUTH_ID = 'b164ea4a-6ced-48dc-9546-cab73967d6b8';
@@ -170,6 +170,13 @@ export default function AdminClaimsPage() {
     setGeneratedCode(code);
     setGeneratedRecordId(record.id);
     setGenerating(false);
+    await load();
+  }
+
+  async function deleteCode(id: string, recordId: string) {
+    if (!confirm('Delete this claim code and its record permanently?')) return;
+    await supabase.from('record_claim_codes').delete().eq('id', id);
+    await supabase.from('records').delete().eq('id', recordId);
     await load();
   }
 
@@ -404,6 +411,7 @@ export default function AdminClaimsPage() {
                 <th className="px-4 py-3 text-left font-medium">Status</th>
                 <th className="px-4 py-3 text-left font-medium">Link</th>
                 <th className="px-4 py-3 text-left font-medium"></th>
+                <th className="px-4 py-3 text-left font-medium"></th>
               </tr>
             </thead>
             <tbody>
@@ -439,6 +447,11 @@ export default function AdminClaimsPage() {
                     </div>
                   </td>
                   <td className="px-4 py-3"></td>
+                  <td className="px-4 py-3 text-right">
+                    <button onClick={() => deleteCode(c.id, c.record_id)} className="p-1.5 rounded-lg hover:bg-red-50 transition text-red-400">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
