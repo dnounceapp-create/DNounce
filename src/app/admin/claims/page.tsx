@@ -79,111 +79,36 @@ export default function AdminClaimsPage() {
   useEffect(() => { load(); }, []);
 
   async function generateRecord() {
+    if (!sFirstName.trim()) { setFormError('Subject first name is required.'); return; }
+    if (!sCategory.trim()) { setFormError('Category is required.'); return; }
+    if (!description.trim()) { setFormError('Experience description is required.'); return; }
+    if (!sourceUrl.trim()) { setFormError('Source URL is required.'); return; }
+
     setGenerating(true);
     setFormError(null);
 
-    // Check for duplicate source URL if one was provided
-    if (sourceUrl.trim()) {
-      const { data: existing } = await supabase
-        .from('record_claim_codes')
-        .select('id')
-        .eq('source_url', sourceUrl.trim())
-        .maybeSingle();
-      if (existing) {
-        setFormError('A record already exists for this source URL.');
-        setGenerating(false);
-        return;
-      }
-    }
-
-    // Create subject
-    const subjectName = `${sFirstName.trim()} ${sLastName.trim()}`.trim();
-    const { data: subject, error: subjectErr } = await supabase
-      .from('subjects')
-      .insert({
-        name: subjectName,
-        nickname: sNickname.trim() || null,
-        organization: sOrganization.trim() || null,
-        location: sLocation.trim() || null,
-      })
-      .select('subject_uuid')
-      .single();
-    if (subjectErr || !subject) { setFormError('Failed to create subject: ' + subjectErr?.message); setGenerating(false); return; }
-
-    // Create record under DNounce Mod
-    const { data: record, error: recordErr } = await supabase
-      .from('records')
-      .insert({
-        subject_id: subject.subject_uuid,
-        contributor_id: DNOUNCE_MOD_CONTRIBUTOR_ID,
-        created_by: DNOUNCE_MOD_AUTH_ID,
-        record_type: 'evidence',
-        is_published: true,
-        relationship: sRelationship.trim() || 'Client',
-        location: sLocation.trim() || null,
-        category: sCategory.trim(),
-        rating,
-        description: description.trim(),
-        submitted_at: new Date().toISOString(),
-        agree_terms: true,
-        status: 'voting',
-        anonymity_status: 'Anonymity Granted',
-        published_at: new Date().toISOString(),
-        contributor_identity_preference: true,
-        contributor_display_name: 'DNounce Community',
-        voting_started_at: new Date().toISOString(),
-        voting_ends_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-        dnounce_mod_record: true,
-        contributor_claimed: false,
-      })
-      .select('id')
-      .single();
-    if (recordErr || !record) { setFormError('Failed to create record: ' + recordErr?.message); setGenerating(false); return; }
-
-    // Upload attachments
-    for (const file of files) {
-      const path = `${record.id}/${Date.now()}-${file.name}`;
-      const { error: uploadErr } = await supabase.storage.from('attachments').upload(path, file);
-      if (!uploadErr) {
-        await supabase.from('record_attachments').insert({
-          record_id: record.id,
-          path,
-          mime_type: file.type,
-          size_bytes: file.size,
-          label: file.name,
-        });
-      }
-    }
-
-    // Generate claim code
-    const code = generateCode();
-    const { error: codeErr } = await supabase.from('record_claim_codes').insert({
-      record_id: record.id,
-      code,
-      source_url: sourceUrl.trim(),
-      notes: notes.trim() || null,
-      subject_phone: sPhone.trim() || null,
-      subject_email: sEmail.trim() || null,
+    const res = await fetch('/api/admin/generate-record', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sourceUrl, notes,
+        cFirstName, cLastName, cJobTitle, cLocation,
+        sFirstName, sLastName, sNickname, sOrganization,
+        sRelationship, sCategory, sLocation, sPhone, sEmail,
+        rating, description,
+      }),
     });
-    if (codeErr) { setFormError('Record created but failed to generate code: ' + codeErr.message); setGenerating(false); return; }
 
-    setGeneratedCode(code);
-    setGeneratedRecordId(record.id);
+    const result = await res.json();
+    if (!res.ok) { setFormError(result.error); setGenerating(false); return; }
+
+    setGeneratedCode(result.code);
+    setGeneratedRecordId(result.recordId);
     setGenerating(false);
     await load();
   }
 
-  async function deleteCode(id: string, recordId: string) {
-    if (!confirm('Delete this claim code and its record permanently?')) return;
-    const res = await fetch('/api/admin/delete-claim', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ codeId: id, recordId }),
-    });
-    if (res.ok) await load();
-  }
-
-  async function copyToClipboard(text: string, id: string) {
+    async function copyToClipboard(text: string, id: string) {
     await navigator.clipboard.writeText(text);
     setCopied(id);
     setTimeout(() => setCopied(null), 1500);
