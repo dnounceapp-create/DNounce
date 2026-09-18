@@ -57,11 +57,16 @@ export async function POST(req: Request) {
         location: location?.trim(),
         contributor_claimed: true,
         contributor_override_used: true,
-        status: 'ai_verification', anonymity_status: null,
+        status: 'subject_notified',
+        anonymity_status: (() => {
+          const hasAttachments = false; // attachments handled separately
+          if (!hasAttachments && rating && rating <= 5) return 'Anonymity Not Granted';
+          return 'Anonymity Granted';
+        })(),
+        ai_completed_at: new Date().toISOString(),
         submitted_at: new Date().toISOString(),
         published_at: null,
-        is_published: true,
-        ai_completed_at: null,
+        is_published: false,
         debate_started_at: null,
         debate_ends_at: null,
         voting_started_at: null,
