@@ -51,7 +51,6 @@ export async function POST(req: Request) {
         description: description?.trim(),
         contributor_display_name: identityPreference === 'hide' ? 'SuperHero123' : displayName?.trim(),
         contributor_identity_preference: identityPreference !== 'hide',
-        anonymity_status: 'Anonymity Granted',
         category: category?.trim(),
         relationship: relationship?.trim(),
         rating,
