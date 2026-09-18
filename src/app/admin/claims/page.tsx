@@ -124,74 +124,10 @@ export default function AdminClaimsPage() {
     }
     setAutoLoading(true);
     setAutoSearched(false);
-
-    const q = query.trim();
-    const isPhone = /^\+?[\d\s\-().]{7,}$/.test(q);
-    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(q);
-
-    let userRows: any[] = [];
-
-    if (isPhone || isEmail) {
-      // Search by phone or email in user_accountdetails
-      const col = isPhone ? "phone" : "email";
-      const { data } = await supabase
-        .from("user_accountdetails")
-        .select("user_id, first_name, last_name, job_title, location, phone, email, avatar_url")
-        .ilike(col, `%${q}%`)
-        .limit(5);
-      userRows = data ?? [];
-    } else {
-      // Search by name
-      const { data } = await supabase
-        .from("user_accountdetails")
-        .select("user_id, first_name, last_name, job_title, location, phone, email, avatar_url")
-        .or(`first_name.ilike.%${q}%,last_name.ilike.%${q}%`)
-        .limit(5);
-      userRows = data ?? [];
-    }
-
-    // Map to UserPreview — need subject_uuid from subjects table
-    const mapped: UserPreview[] = [];
-    for (const u of userRows) {
-      const { data: subj } = await supabase
-        .from("subjects")
-        .select("subject_uuid, name, nickname, organization, location")
-        .eq("owner_auth_user_id", u.user_id)
-        .maybeSingle();
-      if (subj) {
-        mapped.push({
-          kind: "user",
-          user_id: u.user_id,
-          subject_uuid: subj.subject_uuid,
-          name: subj.name || `${u.first_name ?? ""} ${u.last_name ?? ""}`.trim(),
-          nickname: subj.nickname,
-          organization: subj.organization,
-          location: subj.location || u.location,
-          phone: u.phone,
-          email: u.email,
-        });
-      }
-    }
-
-    // Search external subjects by name
-    const { data: externals } = await supabase
-      .from("subjects")
-      .select("subject_uuid, name, nickname, organization, location")
-      .ilike("name", `%${q}%`)
-      .is("owner_auth_user_id", null)
-      .limit(5);
-
-    const mappedExt: ExternalSubjectPreview[] = (externals ?? []).map((s: any) => ({
-      kind: "external",
-      id: s.subject_uuid,
-      name: s.name,
-      nickname: s.nickname,
-      organization: s.organization,
-      location: s.location,
-    }));
-
-    setUserResults(mapped);
-    setExternalResults(mappedExt);
+    const res = await fetch(`/api/admin/search-subjects?q=${encodeURIComponent(query.trim())}`);
+    const data = await res.json();
+    setUserResults(data.users ?? []);
+    setExternalResults(data.externals ?? []);
     setAutoLoading(false);
     setAutoSearched(true);
   }
@@ -200,6 +136,7 @@ export default function AdminClaimsPage() {
     if (!input.trim() || input.length < 3) { setLocationSuggestions([]); return; }
     try {
       const res = await fetch(`/api/places?input=${encodeURIComponent(input)}`);
+      if (!res.ok) { setLocationSuggestions([]); return; }
       const data = await res.json();
       setLocationSuggestions(data.predictions ?? []);
     } catch { setLocationSuggestions([]); }
@@ -304,72 +241,6 @@ export default function AdminClaimsPage() {
                   <div><label className="text-xs font-medium text-gray-600 mb-1 block">Location</label><input value={cLocation} onChange={e => setCLocation(e.target.value)} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-blue-500" placeholder="e.g. Brooklyn, NY" /></div>
                 </div>
               </div>
-              {/* Subject Search */}
-              <div className="space-y-3">
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Subject</h3>
-                <div className="relative">
-                  <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
-                  <input
-                    value={searchQuery}
-                    onChange={e => { setSearchQuery(e.target.value); runSubjectSearch(e.target.value); }}
-                    className="w-full rounded-xl border border-gray-200 pl-9 pr-3 py-2 text-sm focus:outline-none focus:border-blue-500"
-                    placeholder="Search by name, email, or phone..."
-                  />
-                </div>
-
-                {autoLoading && <div className="text-xs text-gray-400">Searching...</div>}
-
-                {autoSearched && (userResults.length > 0 || externalResults.length > 0) && !selectedPerson && (
-                  <div className="space-y-2">
-                    {[...userResults, ...externalResults].map(p => {
-                      const key = p.kind === 'user' ? p.subject_uuid : p.id;
-                      return (
-                        <div key={key} onClick={() => {
-                          setSelectedPerson(p);
-                          const parts = p.name.split(' ');
-                          setSFirstName(parts[0] || '');
-                          setSLastName(parts.slice(1).join(' ') || '');
-                          setSNickname(p.nickname || '');
-                          setSOrganization(p.organization || '');
-                          setSLocation(p.location || '');
-                          if (p.kind === 'user') { setSPhone(p.phone || ''); setSEmail(p.email || ''); }
-                        }}
-                        className="flex items-center gap-3 p-3 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 cursor-pointer">
-                          <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
-                            <User className="w-4 h-4 text-gray-400" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="text-xs font-semibold text-gray-900">{p.name}</div>
-                            <div className="text-[10px] text-gray-400">{p.organization || 'Independent'} {p.location ? `· ${p.location}` : ''}</div>
-                            {p.kind === 'user' && <div className="text-[10px] text-blue-500">DNounce user</div>}
-                          </div>
-                        </div>
-                      );
-                    })}
-                    <button type="button" onClick={() => { setAutoSearched(false); setSelectedPerson(null); }}
-                      className="text-xs text-gray-400 hover:text-gray-600">
-                      + Create new subject instead
-                    </button>
-                  </div>
-                )}
-
-                {selectedPerson && (
-                  <div className="flex items-center gap-3 p-3 rounded-xl border border-blue-200 bg-blue-50">
-                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                      <User className="w-4 h-4 text-blue-500" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-semibold text-gray-900">{selectedPerson.name}</div>
-                      <div className="text-[10px] text-gray-400">{selectedPerson.organization} {selectedPerson.location ? `· ${selectedPerson.location}` : ''}</div>
-                    </div>
-                    <button type="button" onClick={() => { setSelectedPerson(null); setAutoSearched(false); setSearchQuery(''); }}
-                      className="text-gray-400 hover:text-red-500">
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                )}
-              </div>
-
               {/* Subject Basic Info */}
               <div className="space-y-3">
                 <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Subject's Basic Information</h3>
@@ -413,6 +284,70 @@ export default function AdminClaimsPage() {
                     <label className="text-xs font-medium text-gray-600 mb-1 block">Email Address</label>
                     <input value={sEmail} onChange={e => setSEmail(e.target.value)} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-blue-500" placeholder="john@example.com" />
                   </div>
+                </div>
+                {/* Subject Search */}
+                <div className="space-y-3">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+                    <input
+                      value={searchQuery}
+                      onChange={e => { setSearchQuery(e.target.value); runSubjectSearch(e.target.value); }}
+                      className="w-full rounded-xl border border-gray-200 pl-9 pr-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+                      placeholder="Search by name, email, or phone..."
+                    />
+                  </div>
+
+                  {autoLoading && <div className="text-xs text-gray-400">Searching...</div>}
+
+                  {autoSearched && (userResults.length > 0 || externalResults.length > 0) && !selectedPerson && (
+                    <div className="space-y-2">
+                      {[...userResults, ...externalResults].map(p => {
+                        const key = p.kind === 'user' ? p.subject_uuid : p.id;
+                        return (
+                          <div key={key} onClick={() => {
+                            setSelectedPerson(p);
+                            const parts = p.name.split(' ');
+                            setSFirstName(parts[0] || '');
+                            setSLastName(parts.slice(1).join(' ') || '');
+                            setSNickname(p.nickname || '');
+                            setSOrganization(p.organization || '');
+                            setSLocation(p.location || '');
+                            if (p.kind === 'user') { setSPhone(p.phone || ''); setSEmail(p.email || ''); }
+                          }}
+                          className="flex items-center gap-3 p-3 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 cursor-pointer">
+                            <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                              <User className="w-4 h-4 text-gray-400" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-xs font-semibold text-gray-900">{p.name}</div>
+                              <div className="text-[10px] text-gray-400">{p.organization || 'Independent'} {p.location ? `· ${p.location}` : ''}</div>
+                              {p.kind === 'user' && <div className="text-[10px] text-blue-500">DNounce user</div>}
+                            </div>
+                          </div>
+                        );
+                      })}
+                      <button type="button" onClick={() => { setAutoSearched(false); setSelectedPerson(null); }}
+                        className="text-xs text-gray-400 hover:text-gray-600">
+                        + Create new subject instead
+                      </button>
+                    </div>
+                  )}
+
+                  {selectedPerson && (
+                    <div className="flex items-center gap-3 p-3 rounded-xl border border-blue-200 bg-blue-50">
+                      <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                        <User className="w-4 h-4 text-blue-500" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-semibold text-gray-900">{selectedPerson.name}</div>
+                        <div className="text-[10px] text-gray-400">{selectedPerson.organization} {selectedPerson.location ? `· ${selectedPerson.location}` : ''}</div>
+                      </div>
+                      <button type="button" onClick={() => { setSelectedPerson(null); setAutoSearched(false); setSearchQuery(''); }}
+                        className="text-gray-400 hover:text-red-500">
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
               <div>
