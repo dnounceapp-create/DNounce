@@ -54,6 +54,32 @@ export default function UserSetupPage() {
   });
 
   const [locationSuggestions, setLocationSuggestions] = useState<any[]>([]);
+  const [existingUserMatch, setExistingUserMatch] = useState<{name: string; jobTitle: string; userId: string} | null>(null);
+
+  useEffect(() => {
+    const digits = form.phone.replace(/\D/g, '');
+    if (digits.length < 10) { setExistingUserMatch(null); return; }
+    const t = setTimeout(async () => {
+      const { data: session } = await supabase.auth.getSession();
+      const userId = session?.session?.user?.id;
+      const { data } = await supabase
+        .from('user_accountdetails')
+        .select('user_id, first_name, last_name, job_title')
+        .eq('phone', digits)
+        .neq('user_id', userId ?? '')
+        .maybeSingle();
+      if (data) {
+        setExistingUserMatch({
+          name: `${data.first_name ?? ''} ${data.last_name ?? ''}`.trim(),
+          jobTitle: data.job_title ?? '',
+          userId: data.user_id,
+        });
+      } else {
+        setExistingUserMatch(null);
+      }
+    }, 350);
+    return () => clearTimeout(t);
+  }, [form.phone]);
 
   async function uploadAvatarAndSaveUrl(file: File, userId: string) {
     const ext = file.name.split(".").pop()?.toLowerCase() || "png";
@@ -575,6 +601,26 @@ export default function UserSetupPage() {
                 placeholder="(555) 555-1234"
                 className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
               />
+              {existingUserMatch && (
+                <div className="mt-2 rounded-xl border border-blue-200 bg-blue-50 p-3 flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-xs font-semibold text-gray-900">Is this you? {existingUserMatch.name}</div>
+                    <div className="text-[10px] text-gray-500">{existingUserMatch.jobTitle}</div>
+                    <div className="text-[10px] text-blue-500">This number is linked to an existing DNounce account</div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const claimRecordId = sessionStorage.getItem('claim_record_id');
+                      const redirectTo = claimRecordId ? `/claim/${claimRecordId}` : '/dashboard';
+                      router.push(`/loginsignup?redirectTo=${encodeURIComponent(redirectTo)}`);
+                    }}
+                    className="text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-lg transition flex-shrink-0"
+                  >
+                    Log in instead →
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="relative">

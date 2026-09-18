@@ -211,6 +211,22 @@ export default function AdminClaimsPage() {
     if (!res.ok) { setFormError(result.error); setGenerating(false); return; }
     setGeneratedCode(result.code);
     setGeneratedRecordId(result.recordId);
+    // Upload evidence files if any
+    if (files.length > 0 && result.recordId) {
+      for (const file of files) {
+        const path = `records/${result.recordId}/mod_attachments/${Date.now()}-${file.name.replace(/\s+/g, '_')}`;
+        const { error: uploadErr } = await supabase.storage.from('attachments').upload(path, file);
+        if (!uploadErr) {
+          await supabase.from('record_attachments').insert({
+            record_id: result.recordId,
+            path,
+            mime_type: file.type,
+            size_bytes: file.size,
+            label: file.name,
+          });
+        }
+      }
+    }
     setGenerating(false);
     await load();
   }
