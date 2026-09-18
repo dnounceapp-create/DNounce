@@ -4656,7 +4656,7 @@ export default function RecordDetail({
         
         if (shouldFetchContributorProfile && contributorUserId) {
           const { data: cAcct } = await supabase
-            .from("user_accountdetails")
+            .from("user_public_profiles")
             .select("first_name,last_name,avatar_url")
             .eq("user_id", contributorUserId)
             .maybeSingle();
