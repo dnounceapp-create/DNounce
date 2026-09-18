@@ -32,6 +32,15 @@ type ExternalSubjectPreview = {
 };
 type PersonPreview = UserPreview | ExternalSubjectPreview;
 
+function formatPhoneNumber(value: string) {
+  const digits = value.replace(/\D/g, '').slice(0, 10);
+  const len = digits.length;
+  if (len === 0) return '';
+  if (len < 4) return digits;
+  if (len < 7) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+}
+
 const RELATIONSHIP_OPTIONS = [
   'Client', 'Former Client', 'Tenant', 'Former Tenant', 'Employee',
   'Former Employee', 'Customer', 'Patient', 'Student', 'Other'
@@ -327,7 +336,7 @@ export default function AdminClaimsPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs font-medium text-gray-600 mb-1 block">Phone Number</label>
-                    <input value={sPhone} onChange={e => setSPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-blue-500" placeholder="7185551234" maxLength={10} />
+                    <input value={sPhone} onChange={e => setSPhone(formatPhoneNumber(e.target.value))} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-blue-500" placeholder="7185551234" maxLength={10} />
                   </div>
                   <div>
                     <label className="text-xs font-medium text-gray-600 mb-1 block">Email Address</label>
