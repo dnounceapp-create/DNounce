@@ -148,10 +148,32 @@ export default function ClaimOverridePage() {
 
       const { data: userAcct } = await supabase
         .from('user_accountdetails')
-        .select('first_name, last_name')
+        .select('first_name, last_name, job_title, location')
         .eq('user_id', session.user.id)
         .maybeSingle();
       setDisplayName(`${userAcct?.first_name ?? ''} ${userAcct?.last_name ?? ''}`.trim());
+
+      // Load claimer info from claim code
+      const { data: claimData } = await supabase
+        .from('record_claim_codes')
+        .select('claimer_first_name, claimer_last_name, claimer_job_title, claimer_location, subject_phone, subject_email')
+        .eq('record_id', recordId)
+        .eq('code', storedCode)
+        .maybeSingle();
+
+      // Pre-fill subject contact if available
+      if (claimData?.subject_phone) setSubmitPhone(claimData.subject_phone);
+      if (claimData?.subject_email) setSubmitEmail(claimData.subject_email);
+
+      // If user has no first name yet and claimer info exists, update their account
+      if (claimData?.claimer_first_name && !userAcct?.first_name) {
+        await supabase.from('user_accountdetails').update({
+          first_name: claimData.claimer_first_name,
+          last_name: claimData.claimer_last_name || null,
+          job_title: claimData.claimer_job_title || null,
+          location: claimData.claimer_location || null,
+        }).eq('user_id', session.user.id);
+      }
 
       if (record.subject_id) {
         const { data: subject } = await supabase
