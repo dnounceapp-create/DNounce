@@ -55,7 +55,7 @@ export async function POST(req: Request) {
       contributor_id: DNOUNCE_MOD_CONTRIBUTOR_ID,
       created_by: DNOUNCE_MOD_AUTH_ID,
       record_type: 'evidence',
-      is_published: true,
+      is_published: false,
       relationship: sRelationship?.trim() || 'Client',
       location: sLocation?.trim() || null,
       category: sCategory.trim(),
@@ -63,13 +63,13 @@ export async function POST(req: Request) {
       description: description.trim(),
       submitted_at: new Date().toISOString(),
       agree_terms: true,
-      status: 'voting',
-      anonymity_status: 'Anonymity Granted',
-      published_at: new Date().toISOString(),
+      status: 'ai_verification',
+      anonymity_status: null,
+      published_at: null,
       contributor_identity_preference: true,
       contributor_display_name: 'DNounce Community',
-      voting_started_at: new Date().toISOString(),
-      voting_ends_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      
+      
       dnounce_mod_record: true,
       contributor_claimed: false,
     }).select('id').single();

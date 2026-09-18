@@ -60,6 +60,7 @@ export async function POST(req: Request) {
         status: 'ai_verification', anonymity_status: null,
         submitted_at: new Date().toISOString(),
         published_at: null,
+        is_published: true,
         ai_completed_at: null,
         debate_started_at: null,
         debate_ends_at: null,
