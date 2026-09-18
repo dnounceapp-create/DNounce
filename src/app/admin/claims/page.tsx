@@ -352,7 +352,7 @@ export default function AdminClaimsPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs font-medium text-gray-600 mb-1 block">Phone Number</label>
-                    <input value={sPhone} onChange={e => setSPhone(formatPhoneNumber(e.target.value))} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-blue-500" placeholder="7185551234" maxLength={10} />
+                    <input value={sPhone} onChange={e => setSPhone(formatPhoneNumber(e.target.value))} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-blue-500" placeholder="(718) 555-1234" />
                   </div>
                   <div>
                     <label className="text-xs font-medium text-gray-600 mb-1 block">Email Address</label>

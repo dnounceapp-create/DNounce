@@ -4809,7 +4809,9 @@ export default function RecordDetail({
       ? `/subject/${contributorSubjectId || (record as any)?.contributorSubjectUuid}/${subjectSlug(contributorSubjectName, contributorSubjectNickname)}/${citySlug(subject?.location as string | null)}`
       : null;
 
-  const contributorRealName = (record as any)?.contributor_display_name || (record as any)?.contributorDisplayName || `${contributorProfile?.first_name ?? ""} ${contributorProfile?.last_name ?? ""}`.trim();
+  const storedDisplayName = ((record as any)?.contributor_display_name || (record as any)?.contributorDisplayName || '').trim();
+  const profileName = `${contributorProfile?.first_name ?? ""} ${contributorProfile?.last_name ?? ""}`.trim();
+  const contributorRealName = (storedDisplayName && storedDisplayName !== 'SuperHero123') ? storedDisplayName : profileName || 'SuperHero123';
   const contributorPublicName = reveal ? contributorRealName || "SuperHero123" : "SuperHero123";
 
   const contributorSelfName =
