@@ -2,11 +2,40 @@
 export const dynamic = 'force-dynamic';
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
-import { Loader2, Copy, Check, Plus, X } from "lucide-react";
+import { Loader2, Copy, Check, Plus, X, Search, MapPin, User } from "lucide-react";
 
 const DNOUNCE_MOD_CONTRIBUTOR_ID = 'ef0fdd91-38c6-438b-8229-f2efa16bdaa9';
 const DNOUNCE_MOD_AUTH_ID = 'b164ea4a-6ced-48dc-9546-cab73967d6b8';
+
+type UserPreview = {
+  kind: "user";
+  user_id: string;
+  subject_uuid: string;
+  name: string;
+  nickname?: string | null;
+  organization?: string | null;
+  location?: string | null;
+  phone?: string | null;
+  email?: string | null;
+};
+type ExternalSubjectPreview = {
+  kind: "external";
+  id: string;
+  name: string;
+  nickname?: string | null;
+  organization?: string | null;
+  location?: string | null;
+  phone?: string | null;
+  email?: string | null;
+};
+type PersonPreview = UserPreview | ExternalSubjectPreview;
+
+const RELATIONSHIP_OPTIONS = [
+  'Client', 'Former Client', 'Tenant', 'Former Tenant', 'Employee',
+  'Former Employee', 'Customer', 'Patient', 'Student', 'Other'
+];
 
 type ClaimCode = {
   id: string;
@@ -47,6 +76,15 @@ export default function AdminClaimsPage() {
   const [rating, setRating] = useState(0);
   const [description, setDescription] = useState('');
   const [files, setFiles] = useState<File[]>([]);
+  // Subject search
+  const [selectedPerson, setSelectedPerson] = useState<PersonPreview | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [userResults, setUserResults] = useState<UserPreview[]>([]);
+  const [externalResults, setExternalResults] = useState<ExternalSubjectPreview[]>([]);
+  const [autoLoading, setAutoLoading] = useState(false);
+  const [autoSearched, setAutoSearched] = useState(false);
+  // Location suggestions
+  const [locationSuggestions, setLocationSuggestions] = useState<any[]>([]);
 
   async function load() {
     setLoading(true);
@@ -68,7 +106,71 @@ export default function AdminClaimsPage() {
     setSRelationship(''); setSCategory(''); setSLocation('');
     setSPhone(''); setSEmail('');
     setRating(0); setDescription(''); setFiles([]);
+    setSelectedPerson(null);
+    setSearchQuery('');
+    setUserResults([]);
+    setExternalResults([]);
+    setAutoSearched(false);
+    setLocationSuggestions([]);
     setFormError(null);
+  }
+
+  async function runSubjectSearch(query: string) {
+    if (!query.trim() || query.trim().length < 2) return;
+    setAutoLoading(true);
+    setAutoSearched(false);
+
+    const q = query.trim().toLowerCase();
+
+    // Search registered users
+    const { data: users } = await supabase
+      .from('users')
+      .select('auth_user_id, subject_uuid, first_name, last_name, nickname, organization, location, phone, email, avatar_url')
+      .or(`first_name.ilike.%${q}%,last_name.ilike.%${q}%,email.ilike.%${q}%,phone.ilike.%${q}%`)
+      .limit(5);
+
+    const mapped: UserPreview[] = (users ?? []).map((u: any) => ({
+      kind: 'user',
+      user_id: u.auth_user_id,
+      subject_uuid: u.subject_uuid,
+      name: `${u.first_name ?? ''} ${u.last_name ?? ''}`.trim(),
+      nickname: u.nickname,
+      organization: u.organization,
+      location: u.location,
+      phone: u.phone,
+      email: u.email,
+    }));
+
+    // Search external subjects
+    const { data: externals } = await supabase
+      .from('subjects')
+      .select('subject_uuid, name, nickname, organization, location')
+      .or(`name.ilike.%${q}%,organization.ilike.%${q}%`)
+      .is('owner_auth_user_id', null)
+      .limit(5);
+
+    const mappedExt: ExternalSubjectPreview[] = (externals ?? []).map((s: any) => ({
+      kind: 'external',
+      id: s.subject_uuid,
+      name: s.name,
+      nickname: s.nickname,
+      organization: s.organization,
+      location: s.location,
+    }));
+
+    setUserResults(mapped);
+    setExternalResults(mappedExt);
+    setAutoLoading(false);
+    setAutoSearched(true);
+  }
+
+  async function fetchLocationSuggestions(input: string) {
+    if (!input.trim() || input.length < 3) { setLocationSuggestions([]); return; }
+    try {
+      const res = await fetch(`/api/places?input=${encodeURIComponent(input)}`);
+      const data = await res.json();
+      setLocationSuggestions(data.predictions ?? []);
+    } catch { setLocationSuggestions([]); }
   }
 
   async function generateRecord() {
@@ -81,7 +183,14 @@ export default function AdminClaimsPage() {
     const res = await fetch('/api/admin/generate-record', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sourceUrl, notes, cFirstName, cLastName, cJobTitle, cLocation, sFirstName, sLastName, sNickname, sOrganization, sRelationship, sCategory, sLocation, sPhone, sEmail, rating, description }),
+      body: JSON.stringify({
+        sourceUrl, notes,
+        cFirstName, cLastName, cJobTitle, cLocation,
+        selectedSubjectId: selectedPerson ? (selectedPerson.kind === 'user' ? selectedPerson.subject_uuid : selectedPerson.id) : null,
+        sFirstName, sLastName, sNickname, sOrganization,
+        sRelationship, sCategory, sLocation, sPhone, sEmail,
+        rating, description,
+      }),
     });
     const result = await res.json();
     if (!res.ok) { setFormError(result.error); setGenerating(false); return; }
@@ -163,6 +272,73 @@ export default function AdminClaimsPage() {
                   <div><label className="text-xs font-medium text-gray-600 mb-1 block">Location</label><input value={cLocation} onChange={e => setCLocation(e.target.value)} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-blue-500" placeholder="e.g. Brooklyn, NY" /></div>
                 </div>
               </div>
+              {/* Subject Search */}
+              <div className="space-y-3">
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Subject</h3>
+                <div className="relative">
+                  <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+                  <input
+                    value={searchQuery}
+                    onChange={e => { setSearchQuery(e.target.value); runSubjectSearch(e.target.value); }}
+                    className="w-full rounded-xl border border-gray-200 pl-9 pr-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+                    placeholder="Search by name, email, or phone..."
+                  />
+                </div>
+
+                {autoLoading && <div className="text-xs text-gray-400">Searching...</div>}
+
+                {autoSearched && (userResults.length > 0 || externalResults.length > 0) && !selectedPerson && (
+                  <div className="space-y-2">
+                    {[...userResults, ...externalResults].map(p => {
+                      const key = p.kind === 'user' ? p.subject_uuid : p.id;
+                      return (
+                        <div key={key} onClick={() => {
+                          setSelectedPerson(p);
+                          const parts = p.name.split(' ');
+                          setSFirstName(parts[0] || '');
+                          setSLastName(parts.slice(1).join(' ') || '');
+                          setSNickname(p.nickname || '');
+                          setSOrganization(p.organization || '');
+                          setSLocation(p.location || '');
+                          if (p.kind === 'user') { setSPhone(p.phone || ''); setSEmail(p.email || ''); }
+                        }}
+                        className="flex items-center gap-3 p-3 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 cursor-pointer">
+                          <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                            <User className="w-4 h-4 text-gray-400" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs font-semibold text-gray-900">{p.name}</div>
+                            <div className="text-[10px] text-gray-400">{p.organization || 'Independent'} {p.location ? `· ${p.location}` : ''}</div>
+                            {p.kind === 'user' && <div className="text-[10px] text-blue-500">DNounce user</div>}
+                          </div>
+                        </div>
+                      );
+                    })}
+                    <button type="button" onClick={() => { setAutoSearched(false); setSelectedPerson(null); }}
+                      className="text-xs text-gray-400 hover:text-gray-600">
+                      + Create new subject instead
+                    </button>
+                  </div>
+                )}
+
+                {selectedPerson && (
+                  <div className="flex items-center gap-3 p-3 rounded-xl border border-blue-200 bg-blue-50">
+                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                      <User className="w-4 h-4 text-blue-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-semibold text-gray-900">{selectedPerson.name}</div>
+                      <div className="text-[10px] text-gray-400">{selectedPerson.organization} {selectedPerson.location ? `· ${selectedPerson.location}` : ''}</div>
+                    </div>
+                    <button type="button" onClick={() => { setSelectedPerson(null); setAutoSearched(false); setSearchQuery(''); }}
+                      className="text-gray-400 hover:text-red-500">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Subject Basic Info */}
               <div className="space-y-3">
                 <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Subject's Basic Information</h3>
                 <div className="grid grid-cols-2 gap-3">
@@ -170,16 +346,41 @@ export default function AdminClaimsPage() {
                   <div><label className="text-xs font-medium text-gray-600 mb-1 block">Last Name</label><input value={sLastName} onChange={e => setSLastName(e.target.value)} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-blue-500" placeholder="Doe" /></div>
                   <div><label className="text-xs font-medium text-gray-600 mb-1 block">Also Known As</label><input value={sNickname} onChange={e => setSNickname(e.target.value)} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-blue-500" placeholder="Johnny" /></div>
                   <div><label className="text-xs font-medium text-gray-600 mb-1 block">Organization</label><input value={sOrganization} onChange={e => setSOrganization(e.target.value)} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-blue-500" placeholder="Acme Inc." /></div>
-                  <div><label className="text-xs font-medium text-gray-600 mb-1 block">Relationship</label><input value={sRelationship} onChange={e => setSRelationship(e.target.value)} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-blue-500" placeholder="Client, Tenant..." /></div>
+                  <div>
+                    <label className="text-xs font-medium text-gray-600 mb-1 block">Relationship</label>
+                    <select value={sRelationship} onChange={e => setSRelationship(e.target.value)} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-blue-500 bg-white">
+                      <option value="">Select...</option>
+                      {RELATIONSHIP_OPTIONS.map(r => <option key={r} value={r}>{r}</option>)}
+                    </select>
+                  </div>
                   <div><label className="text-xs font-medium text-gray-600 mb-1 block">Category *</label><input value={sCategory} onChange={e => setSCategory(e.target.value)} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-blue-500" placeholder="Contractor, Barber..." /></div>
-                  <div className="col-span-2"><label className="text-xs font-medium text-gray-600 mb-1 block">Location</label><input value={sLocation} onChange={e => setSLocation(e.target.value)} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-blue-500" placeholder="Brooklyn, NY" /></div>
+                  <div className="col-span-2 relative">
+                    <label className="text-xs font-medium text-gray-600 mb-1 block">Location</label>
+                    <input value={sLocation} onChange={e => { setSLocation(e.target.value); fetchLocationSuggestions(e.target.value); }} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-blue-500" placeholder="Brooklyn, NY" />
+                    {locationSuggestions.length > 0 && (
+                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+                        {locationSuggestions.map((s: any) => (
+                          <div key={s.place_id} onClick={() => { setSLocation(s.description); setLocationSuggestions([]); }} className="px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 cursor-pointer flex items-center gap-2">
+                            <MapPin className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                            {s.description}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
               <div className="space-y-3">
                 <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Subject Contact Info (optional)</h3>
                 <div className="grid grid-cols-2 gap-3">
-                  <div><label className="text-xs font-medium text-gray-600 mb-1 block">Phone Number</label><input value={sPhone} onChange={e => setSPhone(e.target.value)} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-blue-500" placeholder="(718) 555-1234" /></div>
-                  <div><label className="text-xs font-medium text-gray-600 mb-1 block">Email Address</label><input value={sEmail} onChange={e => setSEmail(e.target.value)} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-blue-500" placeholder="john@example.com" /></div>
+                  <div>
+                    <label className="text-xs font-medium text-gray-600 mb-1 block">Phone Number</label>
+                    <input value={sPhone} onChange={e => setSPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-blue-500" placeholder="7185551234" maxLength={10} />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-gray-600 mb-1 block">Email Address</label>
+                    <input value={sEmail} onChange={e => setSEmail(e.target.value)} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-blue-500" placeholder="john@example.com" />
+                  </div>
                 </div>
               </div>
               <div>

@@ -12,7 +12,11 @@ const DNOUNCE_MOD_AUTH_ID = 'b164ea4a-6ced-48dc-9546-cab73967d6b8';
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { sourceUrl, notes, cFirstName, cLastName, cJobTitle, cLocation, sFirstName, sLastName, sNickname, sOrganization, sRelationship, sCategory, sLocation, sPhone, sEmail, rating, description } = body;
+    const { sourceUrl, notes, cFirstName, cLastName, cJobTitle, cLocation,
+      selectedSubjectId,
+      sFirstName, sLastName, sNickname, sOrganization,
+      sRelationship, sCategory, sLocation, sPhone, sEmail,
+      rating, description } = body;
 
     if (!sFirstName?.trim()) return NextResponse.json({ error: 'Subject first name is required.' }, { status: 400 });
     if (!sCategory?.trim()) return NextResponse.json({ error: 'Category is required.' }, { status: 400 });
@@ -22,12 +26,32 @@ export async function POST(req: Request) {
     const { data: existing } = await supabaseAdmin.from('record_claim_codes').select('id').eq('source_url', sourceUrl.trim()).maybeSingle();
     if (existing) return NextResponse.json({ error: 'A record already exists for this source URL.' }, { status: 400 });
 
-    const subjectName = `${sFirstName.trim()} ${sLastName?.trim() ?? ''}`.trim();
-    const { data: subject, error: subjectErr } = await supabaseAdmin.from('subjects').insert({ name: subjectName, nickname: sNickname?.trim() || null, organization: sOrganization?.trim() || null, location: sLocation?.trim() || null }).select('subject_uuid').single();
-    if (subjectErr || !subject) return NextResponse.json({ error: 'Failed to create subject: ' + subjectErr?.message }, { status: 500 });
+    let subjectUuid: string;
+
+    if (selectedSubjectId) {
+      // Use existing subject
+      subjectUuid = selectedSubjectId;
+      // Update subject info
+      await supabaseAdmin.from('subjects').update({
+        name: `${sFirstName.trim()} ${sLastName?.trim() ?? ''}`.trim(),
+        nickname: sNickname?.trim() || null,
+        organization: sOrganization?.trim() || null,
+        location: sLocation?.trim() || null,
+      }).eq('subject_uuid', selectedSubjectId);
+    } else {
+      // Create new subject
+      const subjectName = `${sFirstName.trim()} ${sLastName?.trim() ?? ''}`.trim();
+      const { data: subject, error: subjectErr } = await supabaseAdmin
+        .from('subjects')
+        .insert({ name: subjectName, nickname: sNickname?.trim() || null, organization: sOrganization?.trim() || null, location: sLocation?.trim() || null })
+        .select('subject_uuid')
+        .single();
+      if (subjectErr || !subject) return NextResponse.json({ error: 'Failed to create subject: ' + subjectErr?.message }, { status: 500 });
+      subjectUuid = subject.subject_uuid;
+    }
 
     const { data: record, error: recordErr } = await supabaseAdmin.from('records').insert({
-      subject_id: subject.subject_uuid,
+      subject_id: subjectUuid,
       contributor_id: DNOUNCE_MOD_CONTRIBUTOR_ID,
       created_by: DNOUNCE_MOD_AUTH_ID,
       record_type: 'evidence',
