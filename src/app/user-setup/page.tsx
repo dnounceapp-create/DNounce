@@ -60,21 +60,21 @@ export default function UserSetupPage() {
     const digits = form.phone.replace(/\D/g, '');
     if (digits.length < 10) { setExistingUserMatch(null); return; }
     const t = setTimeout(async () => {
-      const { data: session } = await supabase.auth.getSession();
-      const userId = session?.session?.user?.id;
-      const { data } = await supabase
-        .from('user_accountdetails')
-        .select('user_id, first_name, last_name, job_title')
-        .eq('phone', digits)
-        .neq('user_id', userId ?? '')
-        .maybeSingle();
-      if (data) {
-        setExistingUserMatch({
-          name: `${data.first_name ?? ''} ${data.last_name ?? ''}`.trim(),
-          jobTitle: data.job_title ?? '',
-          userId: data.user_id,
-        });
-      } else {
+      try {
+        const res = await fetch(`/api/admin/search-subjects?q=${encodeURIComponent(digits)}`);
+        const data = await res.json();
+        const users = data.users ?? [];
+        if (users.length > 0) {
+          const u = users[0];
+          setExistingUserMatch({
+            name: u.name,
+            jobTitle: u.organization || '',
+            userId: u.user_id,
+          });
+        } else {
+          setExistingUserMatch(null);
+        }
+      } catch {
         setExistingUserMatch(null);
       }
     }, 350);
