@@ -58,7 +58,7 @@ export async function POST(req: Request) {
         location: location?.trim(),
         contributor_claimed: true,
         contributor_override_used: true,
-        status: 'ai_processing',
+        status: 'ai_verification',
         submitted_at: new Date().toISOString(),
         published_at: null,
         ai_completed_at: null,
