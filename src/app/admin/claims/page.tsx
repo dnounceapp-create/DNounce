@@ -116,41 +116,73 @@ export default function AdminClaimsPage() {
   }
 
   async function runSubjectSearch(query: string) {
-    if (!query.trim() || query.trim().length < 2) return;
+    if (!query.trim() || query.trim().length < 2) {
+      setUserResults([]);
+      setExternalResults([]);
+      setAutoSearched(false);
+      return;
+    }
     setAutoLoading(true);
     setAutoSearched(false);
 
-    const q = query.trim().toLowerCase();
+    const q = query.trim();
+    const isPhone = /^\+?[\d\s\-().]{7,}$/.test(q);
+    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(q);
 
-    // Search registered users
-    const { data: users } = await supabase
-      .from('users')
-      .select('auth_user_id, subject_uuid, first_name, last_name, nickname, organization, location, phone, email, avatar_url')
-      .or(`first_name.ilike.%${q}%,last_name.ilike.%${q}%,email.ilike.%${q}%,phone.ilike.%${q}%`)
-      .limit(5);
+    let userRows: any[] = [];
 
-    const mapped: UserPreview[] = (users ?? []).map((u: any) => ({
-      kind: 'user',
-      user_id: u.auth_user_id,
-      subject_uuid: u.subject_uuid,
-      name: `${u.first_name ?? ''} ${u.last_name ?? ''}`.trim(),
-      nickname: u.nickname,
-      organization: u.organization,
-      location: u.location,
-      phone: u.phone,
-      email: u.email,
-    }));
+    if (isPhone || isEmail) {
+      // Search by phone or email in user_accountdetails
+      const col = isPhone ? "phone" : "email";
+      const { data } = await supabase
+        .from("user_accountdetails")
+        .select("user_id, first_name, last_name, job_title, location, phone, email, avatar_url")
+        .ilike(col, `%${q}%`)
+        .limit(5);
+      userRows = data ?? [];
+    } else {
+      // Search by name
+      const { data } = await supabase
+        .from("user_accountdetails")
+        .select("user_id, first_name, last_name, job_title, location, phone, email, avatar_url")
+        .or(`first_name.ilike.%${q}%,last_name.ilike.%${q}%`)
+        .limit(5);
+      userRows = data ?? [];
+    }
 
-    // Search external subjects
+    // Map to UserPreview — need subject_uuid from subjects table
+    const mapped: UserPreview[] = [];
+    for (const u of userRows) {
+      const { data: subj } = await supabase
+        .from("subjects")
+        .select("subject_uuid, name, nickname, organization, location")
+        .eq("owner_auth_user_id", u.user_id)
+        .maybeSingle();
+      if (subj) {
+        mapped.push({
+          kind: "user",
+          user_id: u.user_id,
+          subject_uuid: subj.subject_uuid,
+          name: subj.name || `${u.first_name ?? ""} ${u.last_name ?? ""}`.trim(),
+          nickname: subj.nickname,
+          organization: subj.organization,
+          location: subj.location || u.location,
+          phone: u.phone,
+          email: u.email,
+        });
+      }
+    }
+
+    // Search external subjects by name
     const { data: externals } = await supabase
-      .from('subjects')
-      .select('subject_uuid, name, nickname, organization, location')
-      .or(`name.ilike.%${q}%,organization.ilike.%${q}%`)
-      .is('owner_auth_user_id', null)
+      .from("subjects")
+      .select("subject_uuid, name, nickname, organization, location")
+      .ilike("name", `%${q}%`)
+      .is("owner_auth_user_id", null)
       .limit(5);
 
     const mappedExt: ExternalSubjectPreview[] = (externals ?? []).map((s: any) => ({
-      kind: 'external',
+      kind: "external",
       id: s.subject_uuid,
       name: s.name,
       nickname: s.nickname,
