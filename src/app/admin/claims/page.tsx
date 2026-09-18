@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
-import { Loader2, Copy, Check, Plus, X, Search, MapPin, User } from "lucide-react";
+import { Loader2, Copy, Check, Plus, X, MapPin, User } from "lucide-react";
 
 const DNOUNCE_MOD_CONTRIBUTOR_ID = 'ef0fdd91-38c6-438b-8229-f2efa16bdaa9';
 const DNOUNCE_MOD_AUTH_ID = 'b164ea4a-6ced-48dc-9546-cab73967d6b8';
@@ -78,13 +78,13 @@ export default function AdminClaimsPage() {
   const [files, setFiles] = useState<File[]>([]);
   // Subject search
   const [selectedPerson, setSelectedPerson] = useState<PersonPreview | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
   const [userResults, setUserResults] = useState<UserPreview[]>([]);
   const [externalResults, setExternalResults] = useState<ExternalSubjectPreview[]>([]);
   const [autoLoading, setAutoLoading] = useState(false);
   const [autoSearched, setAutoSearched] = useState(false);
   // Location suggestions
   const [locationSuggestions, setLocationSuggestions] = useState<any[]>([]);
+  const [cLocationSuggestions, setCLocationSuggestions] = useState<any[]>([]);
 
   async function load() {
     setLoading(true);
@@ -107,40 +107,77 @@ export default function AdminClaimsPage() {
     setSPhone(''); setSEmail('');
     setRating(0); setDescription(''); setFiles([]);
     setSelectedPerson(null);
-    setSearchQuery('');
     setUserResults([]);
     setExternalResults([]);
-    setAutoSearched(false);
     setLocationSuggestions([]);
+    setCLocationSuggestions([]);
     setFormError(null);
   }
 
-  async function runSubjectSearch(query: string) {
-    if (!query.trim() || query.trim().length < 2) {
+  const phoneDigits = sPhone.replace(/\D/g, '');
+  const emailNorm = sEmail.trim().toLowerCase();
+  const hasPhoneOrEmail = phoneDigits.length > 0 || emailNorm.length > 0;
+  const isTempExternal = selectedPerson?.kind === 'external' && selectedPerson.id.startsWith('temp-');
+  const isAnyNonTempSelected = !!selectedPerson && !isTempExternal;
+
+  useEffect(() => {
+    if (isAnyNonTempSelected) return;
+    if (!hasPhoneOrEmail) {
+      setAutoSearched(false);
+      setAutoLoading(false);
       setUserResults([]);
       setExternalResults([]);
-      setAutoSearched(false);
       return;
     }
     setAutoLoading(true);
-    setAutoSearched(false);
-    const res = await fetch(`/api/admin/search-subjects?q=${encodeURIComponent(query.trim())}`);
-    const data = await res.json();
-    setUserResults(data.users ?? []);
-    setExternalResults(data.externals ?? []);
-    setAutoLoading(false);
     setAutoSearched(true);
-  }
+    const t = setTimeout(async () => {
+      try {
+        const res = await fetch('/api/subjects/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone: sPhone, email: sEmail }),
+        });
+        const json = await res.json().catch(() => ({}));
+        setUserResults(Array.isArray(json.users) ? json.users : []);
+        setExternalResults(Array.isArray(json.externals) ? json.externals : []);
+      } catch {
+        setUserResults([]);
+        setExternalResults([]);
+      } finally {
+        setAutoLoading(false);
+      }
+    }, 350);
+    return () => clearTimeout(t);
+  }, [sPhone, sEmail, hasPhoneOrEmail, isAnyNonTempSelected]);
 
-  async function fetchLocationSuggestions(input: string) {
-    if (!input.trim() || input.length < 3) { setLocationSuggestions([]); return; }
-    try {
-      const res = await fetch(`/api/places?input=${encodeURIComponent(input)}`);
-      if (!res.ok) { setLocationSuggestions([]); return; }
-      const data = await res.json();
-      setLocationSuggestions(data.predictions ?? []);
-    } catch { setLocationSuggestions([]); }
-  }
+  useEffect(() => {
+    const q = sLocation.trim();
+    if (!q) { setLocationSuggestions([]); return; }
+    const id = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/location?input=${encodeURIComponent(q)}`);
+        if (!res.ok) { setLocationSuggestions([]); return; }
+        const data = await res.json().catch(() => ({}));
+        setLocationSuggestions(data?.predictions || []);
+      } catch { setLocationSuggestions([]); }
+    }, 100);
+    return () => clearTimeout(id);
+  }, [sLocation]);
+
+  useEffect(() => {
+    const q = cLocation.trim();
+    if (!q) { setCLocationSuggestions([]); return; }
+    const id = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/location?input=${encodeURIComponent(q)}`);
+        if (!res.ok) { setCLocationSuggestions([]); return; }
+        const data = await res.json().catch(() => ({}));
+        setCLocationSuggestions(data?.predictions || []);
+      } catch { setCLocationSuggestions([]); }
+    }, 100);
+    return () => clearTimeout(id);
+  }, [cLocation]);
 
   async function generateRecord() {
     if (!sFirstName.trim()) { setFormError('Subject first name is required.'); return; }
@@ -238,7 +275,19 @@ export default function AdminClaimsPage() {
                   <div><label className="text-xs font-medium text-gray-600 mb-1 block">First Name</label><input value={cFirstName} onChange={e => setCFirstName(e.target.value)} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-blue-500" placeholder="Jane" /></div>
                   <div><label className="text-xs font-medium text-gray-600 mb-1 block">Last Name</label><input value={cLastName} onChange={e => setCLastName(e.target.value)} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-blue-500" placeholder="Doe" /></div>
                   <div><label className="text-xs font-medium text-gray-600 mb-1 block">Job Title</label><input value={cJobTitle} onChange={e => setCJobTitle(e.target.value)} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-blue-500" placeholder="e.g. Nurse" /></div>
-                  <div><label className="text-xs font-medium text-gray-600 mb-1 block">Location</label><input value={cLocation} onChange={e => setCLocation(e.target.value)} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-blue-500" placeholder="e.g. Brooklyn, NY" /></div>
+                  <div className="relative">
+                    <label className="text-xs font-medium text-gray-600 mb-1 block">Location</label>
+                    <input value={cLocation} onChange={e => setCLocation(e.target.value)} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-blue-500" placeholder="e.g. Brooklyn, NY" />
+                    {cLocationSuggestions.length > 0 && (
+                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+                        {cLocationSuggestions.map((s: any) => (
+                          <div key={s.place_id} onClick={() => { setCLocation(s.description); setCLocationSuggestions([]); }} className="px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 cursor-pointer flex items-center gap-2">
+                            <MapPin className="w-3 h-3 text-gray-400 flex-shrink-0" />{s.description}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
               {/* Subject Basic Info */}
@@ -259,7 +308,7 @@ export default function AdminClaimsPage() {
                   <div><label className="text-xs font-medium text-gray-600 mb-1 block">Category *</label><input value={sCategory} onChange={e => setSCategory(e.target.value)} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-blue-500" placeholder="Contractor, Barber..." /></div>
                   <div className="col-span-2 relative">
                     <label className="text-xs font-medium text-gray-600 mb-1 block">Location</label>
-                    <input value={sLocation} onChange={e => { setSLocation(e.target.value); fetchLocationSuggestions(e.target.value); }} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-blue-500" placeholder="Brooklyn, NY" />
+                    <input value={sLocation} onChange={e => setSLocation(e.target.value)} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-blue-500" placeholder="Brooklyn, NY" />
                     {locationSuggestions.length > 0 && (
                       <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
                         {locationSuggestions.map((s: any) => (
@@ -285,70 +334,47 @@ export default function AdminClaimsPage() {
                     <input value={sEmail} onChange={e => setSEmail(e.target.value)} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-blue-500" placeholder="john@example.com" />
                   </div>
                 </div>
-                {/* Subject Search */}
-                <div className="space-y-3">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
-                    <input
-                      value={searchQuery}
-                      onChange={e => { setSearchQuery(e.target.value); runSubjectSearch(e.target.value); }}
-                      className="w-full rounded-xl border border-gray-200 pl-9 pr-3 py-2 text-sm focus:outline-none focus:border-blue-500"
-                      placeholder="Search by name, email, or phone..."
-                    />
-                  </div>
-
-                  {autoLoading && <div className="text-xs text-gray-400">Searching...</div>}
-
-                  {autoSearched && (userResults.length > 0 || externalResults.length > 0) && !selectedPerson && (
-                    <div className="space-y-2">
-                      {[...userResults, ...externalResults].map(p => {
-                        const key = p.kind === 'user' ? p.subject_uuid : p.id;
-                        return (
-                          <div key={key} onClick={() => {
-                            setSelectedPerson(p);
-                            const parts = p.name.split(' ');
-                            setSFirstName(parts[0] || '');
-                            setSLastName(parts.slice(1).join(' ') || '');
-                            setSNickname(p.nickname || '');
-                            setSOrganization(p.organization || '');
-                            setSLocation(p.location || '');
-                            if (p.kind === 'user') { setSPhone(p.phone || ''); setSEmail(p.email || ''); }
-                          }}
-                          className="flex items-center gap-3 p-3 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 cursor-pointer">
-                            <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
-                              <User className="w-4 h-4 text-gray-400" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="text-xs font-semibold text-gray-900">{p.name}</div>
-                              <div className="text-[10px] text-gray-400">{p.organization || 'Independent'} {p.location ? `· ${p.location}` : ''}</div>
-                              {p.kind === 'user' && <div className="text-[10px] text-blue-500">DNounce user</div>}
-                            </div>
+                {/* Auto-search results */}
+                {autoLoading && <div className="text-xs text-gray-400 mt-2">Searching...</div>}
+                {autoSearched && !autoLoading && [...userResults, ...externalResults].length > 0 && !selectedPerson && (
+                  <div className="mt-2 space-y-2">
+                    {[...userResults, ...externalResults].map(p => {
+                      const key = p.kind === 'user' ? p.subject_uuid : p.id;
+                      return (
+                        <div key={key} onClick={() => {
+                          setSelectedPerson(p);
+                          const parts = p.name.split(' ');
+                          setSFirstName(parts[0] || '');
+                          setSLastName(parts.slice(1).join(' ') || '');
+                          setSNickname(p.nickname || '');
+                          setSOrganization(p.organization || '');
+                          setSLocation(p.location || '');
+                        }} className="flex items-center gap-3 p-3 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 cursor-pointer">
+                          <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                            <User className="w-4 h-4 text-gray-400" />
                           </div>
-                        );
-                      })}
-                      <button type="button" onClick={() => { setAutoSearched(false); setSelectedPerson(null); }}
-                        className="text-xs text-gray-400 hover:text-gray-600">
-                        + Create new subject instead
-                      </button>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs font-semibold text-gray-900">{p.name}</div>
+                            <div className="text-[10px] text-gray-400">{p.organization || 'Independent'}{p.location ? ` · ${p.location}` : ''}</div>
+                            {p.kind === 'user' && <div className="text-[10px] text-blue-500">DNounce user</div>}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                {selectedPerson && (
+                  <div className="mt-2 flex items-center gap-3 p-3 rounded-xl border border-blue-200 bg-blue-50">
+                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                      <User className="w-4 h-4 text-blue-500" />
                     </div>
-                  )}
-
-                  {selectedPerson && (
-                    <div className="flex items-center gap-3 p-3 rounded-xl border border-blue-200 bg-blue-50">
-                      <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                        <User className="w-4 h-4 text-blue-500" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-xs font-semibold text-gray-900">{selectedPerson.name}</div>
-                        <div className="text-[10px] text-gray-400">{selectedPerson.organization} {selectedPerson.location ? `· ${selectedPerson.location}` : ''}</div>
-                      </div>
-                      <button type="button" onClick={() => { setSelectedPerson(null); setAutoSearched(false); setSearchQuery(''); }}
-                        className="text-gray-400 hover:text-red-500">
-                        <X className="w-4 h-4" />
-                      </button>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-semibold text-gray-900">{selectedPerson.name}</div>
+                      <div className="text-[10px] text-gray-400">{selectedPerson.organization}{selectedPerson.location ? ` · ${selectedPerson.location}` : ''}</div>
                     </div>
-                  )}
-                </div>
+                    <button type="button" onClick={() => { setSelectedPerson(null); setAutoSearched(false); }} className="text-gray-400 hover:text-red-500"><X className="w-4 h-4" /></button>
+                  </div>
+                )}
               </div>
               <div>
                 <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Rating</h3>
