@@ -175,9 +175,12 @@ export default function AdminClaimsPage() {
 
   async function deleteCode(id: string, recordId: string) {
     if (!confirm('Delete this claim code and its record permanently?')) return;
-    await supabase.from('record_claim_codes').delete().eq('id', id);
-    await supabase.from('records').delete().eq('id', recordId);
-    await load();
+    const res = await fetch('/api/admin/delete-claim', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ codeId: id, recordId }),
+    });
+    if (res.ok) await load();
   }
 
   async function copyToClipboard(text: string, id: string) {
