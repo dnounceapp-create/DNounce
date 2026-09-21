@@ -49,7 +49,7 @@ export async function POST(req: Request) {
         contributor_id: contributorId,
         created_by: userId,
         description: description?.trim(),
-        contributor_display_name: identityPreference === 'hide' ? 'SuperHero123' : displayName?.trim(),
+        contributor_display_name: displayName?.trim() || 'SuperHero123',
         contributor_identity_preference: identityPreference !== 'hide',
         category: category?.trim(),
         relationship: relationship?.trim(),
