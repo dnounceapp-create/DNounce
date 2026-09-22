@@ -220,16 +220,11 @@ export default function AdminClaimsPage() {
     });
     const result = await res.json();
     if (!res.ok) { setFormError(result.error); setGenerating(false); return; }
-    // Capture files before state changes cause re-render
-    const filesToUpload = [...files];
-    setGeneratedCode(result.code);
-    setGeneratedRecordId(result.recordId);
-    // Upload evidence files if any
-    console.log('📎 files to upload:', filesToUpload.length, 'recordId:', result.recordId);
-    if (filesToUpload.length > 0 && result.recordId) {
+    // Upload evidence files BEFORE state changes to prevent unmount
+    if (files.length > 0 && result.recordId) {
       const formData = new FormData();
       formData.append('recordId', result.recordId);
-      filesToUpload.forEach(f => formData.append('files', f));
+      files.forEach(f => formData.append('files', f));
       try {
         const uploadRes = await fetch('/api/admin/upload-attachments', {
           method: 'POST',
@@ -241,6 +236,8 @@ export default function AdminClaimsPage() {
         console.error('📎 upload error:', uploadErr);
       }
     }
+    setGeneratedCode(result.code);
+    setGeneratedRecordId(result.recordId);
     setGenerating(false);
     await load();
   }
