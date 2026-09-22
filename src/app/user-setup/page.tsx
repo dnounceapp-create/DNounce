@@ -305,7 +305,7 @@ export default function UserSetupPage() {
       if (updateError) throw updateError;
 
       // Auto-link user to subject profile if their phone/email matches a seeded record
-      const cleanEmail = form.email?.trim().toLowerCase() || '';
+      const cleanEmail = sessionData?.session?.user?.email?.trim().toLowerCase() || '';
       if (cleanPhone || cleanEmail) {
         await fetch('/api/user/link-subject', {
           method: 'POST',
