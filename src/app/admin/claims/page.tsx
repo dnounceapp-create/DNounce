@@ -221,7 +221,9 @@ export default function AdminClaimsPage() {
     const result = await res.json();
     if (!res.ok) { setFormError(result.error); setGenerating(false); return; }
     // Upload evidence files BEFORE state changes to prevent unmount
+    console.log('📎 PRE-UPLOAD files.length:', files.length, 'recordId:', result.recordId);
     if (files.length > 0 && result.recordId) {
+      console.log('📎 ENTERING UPLOAD BLOCK');
       const formData = new FormData();
       formData.append('recordId', result.recordId);
       files.forEach(f => formData.append('files', f));
