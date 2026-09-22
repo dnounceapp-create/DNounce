@@ -89,6 +89,7 @@ export default function ClaimOverridePage() {
   const [lastTappedStar, setLastTappedStar] = useState<number | null>(null);
   const [description, setDescription] = useState('');
   const [files, setFiles] = useState<File[]>([]);
+  const [previewFile, setPreviewFile] = useState<{url: string; name: string; type: string} | null>(null);
   const [existingAttachments, setExistingAttachments] = useState<{id: string; path: string; label: string; mime_type: string; size_bytes: number}[]>([]);
 
   // Identity
@@ -495,7 +496,7 @@ export default function ClaimOverridePage() {
                       <div key={index} className="relative flex items-center gap-3 rounded-2xl border border-gray-200 bg-white px-3 py-3 hover:bg-gray-50 w-full">
                         <button
                           type="button"
-                          onClick={() => { const url = URL.createObjectURL(file); window.open(url, '_blank'); }}
+                          onClick={() => { const url = URL.createObjectURL(file); setPreviewFile({ url, name: file.name, type: file.type }); }}
                           className="flex items-center gap-3 flex-1 min-w-0 text-left"
                         >
                           <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-gray-50 shrink-0">
@@ -571,6 +572,27 @@ export default function ClaimOverridePage() {
                 {saving ? 'Saving...' : 'Yes, claim it'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {previewFile && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4" onClick={() => setPreviewFile(null)}>
+          <div className="relative max-w-4xl w-full max-h-[90vh] flex flex-col items-center" onClick={e => e.stopPropagation()}>
+            <button onClick={() => setPreviewFile(null)} className="absolute -top-10 right-0 text-white hover:text-gray-300">
+              <X className="w-6 h-6" />
+            </button>
+            <div className="text-white text-sm mb-3 font-medium">{previewFile.name}</div>
+            {previewFile.type.startsWith('image/') ? (
+              <img src={previewFile.url} alt={previewFile.name} className="max-h-[80vh] max-w-full rounded-xl object-contain" />
+            ) : previewFile.type === 'application/pdf' ? (
+              <iframe src={previewFile.url} className="w-full h-[80vh] rounded-xl" />
+            ) : (
+              <div className="bg-white rounded-xl p-8 text-center">
+                <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <div className="text-gray-700 font-medium">{previewFile.name}</div>
+                <a href={previewFile.url} download={previewFile.name} className="mt-4 inline-block text-blue-600 hover:underline text-sm">Download to view</a>
+              </div>
+            )}
           </div>
         </div>
       )}
