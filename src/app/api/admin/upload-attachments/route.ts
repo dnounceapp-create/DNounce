@@ -17,6 +17,7 @@ export async function POST(req: Request) {
     }
 
     let uploaded = 0;
+    const insertErrors: string[] = [];
     for (const file of files) {
       const path = `records/${recordId}/mod_attachments/${Date.now()}-${file.name.replace(/\s+/g, '_')}`;
       const buffer = Buffer.from(await file.arrayBuffer());
@@ -34,7 +35,7 @@ export async function POST(req: Request) {
           label: file.name,
         });
         if (insertErr) {
-          console.error('record_attachments insert error:', insertErr.message);
+          insertErrors.push(insertErr.message);
         } else {
           uploaded++;
         }
@@ -43,7 +44,7 @@ export async function POST(req: Request) {
       }
     }
 
-    return NextResponse.json({ success: true, uploaded });
+    return NextResponse.json({ success: true, uploaded, insertErrors });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
