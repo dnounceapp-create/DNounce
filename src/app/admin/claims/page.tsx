@@ -230,10 +230,12 @@ export default function AdminClaimsPage() {
       const formData = new FormData();
       formData.append('recordId', result.recordId);
       filesToUpload.forEach(f => formData.append('files', f));
-      await fetch('/api/admin/upload-attachments', {
+      const uploadRes = await fetch('/api/admin/upload-attachments', {
         method: 'POST',
         body: formData,
       });
+      const uploadResult = await uploadRes.json();
+      console.log('📎 upload response:', uploadResult);
     }
     setGenerating(false);
     await load();
