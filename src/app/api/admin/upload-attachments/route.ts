@@ -26,14 +26,20 @@ export async function POST(req: Request) {
         .upload(path, buffer, { contentType: file.type });
 
       if (!uploadErr) {
-        await supabaseAdmin.from('record_attachments').insert({
+        const { error: insertErr } = await supabaseAdmin.from('record_attachments').insert({
           record_id: recordId,
           path,
           mime_type: file.type,
           size_bytes: file.size,
           label: file.name,
         });
-        uploaded++;
+        if (insertErr) {
+          console.error('record_attachments insert error:', insertErr.message);
+        } else {
+          uploaded++;
+        }
+      } else {
+        console.error('storage upload error:', uploadErr.message);
       }
     }
 
