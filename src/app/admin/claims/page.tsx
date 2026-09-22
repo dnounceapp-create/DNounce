@@ -225,20 +225,13 @@ export default function AdminClaimsPage() {
     // Upload evidence files if any
     console.log('📎 files to upload:', files.length, 'recordId:', result.recordId);
     if (files.length > 0 && result.recordId) {
-      for (const file of files) {
-        const path = `records/${result.recordId}/mod_attachments/${Date.now()}-${file.name.replace(/\s+/g, '_')}`;
-        const { error: uploadErr } = await supabase.storage.from('attachments').upload(path, file);
-        console.log('📎 upload result:', uploadErr, 'path:', path);
-        if (!uploadErr) {
-          await supabase.from('record_attachments').insert({
-            record_id: result.recordId,
-            path,
-            mime_type: file.type,
-            size_bytes: file.size,
-            label: file.name,
-          });
-        }
-      }
+      const formData = new FormData();
+      formData.append('recordId', result.recordId);
+      files.forEach(f => formData.append('files', f));
+      await fetch('/api/admin/upload-attachments', {
+        method: 'POST',
+        body: formData,
+      });
     }
     setGenerating(false);
     await load();
