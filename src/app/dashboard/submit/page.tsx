@@ -1169,27 +1169,28 @@ export default function SubmitRecordPage() {
             {files.length > 0 && (
               <div className="mt-5 text-left">
                 <h4 className="text-sm font-semibold text-gray-700 mb-2">Attached Files</h4>
-                <div className="flex flex-col sm:flex-wrap gap-3 w-full">
+                <div className="space-y-2">
                   {files.map((file, index) => {
                     const sizeKB = file.size / 1024;
                     const sizeLabel = sizeKB < 1024 ? `${sizeKB.toFixed(0)} KB` : `${(file.size / 1048576).toFixed(1)} MB`;
-
+                    const previewUrl = file.type.startsWith('image/') ? URL.createObjectURL(file) : null;
                     return (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between gap-3 border border-gray-200 rounded-lg px-3 py-2 shadow-sm bg-gray-50 hover:bg-gray-100 transition w-full sm:w-auto sm:min-w-[230px]"
-                      >
-                        <div className="flex items-center gap-2 min-w-0">
-                          {getFileIcon(file.name)}
-                          <div className="flex flex-col">
-                            <span className="text-sm text-gray-800 truncate max-w-[150px]">{file.name}</span>
-                            <span className="text-xs text-gray-500">{sizeLabel}</span>
-                          </div>
+                      <div key={index} className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-white px-3 py-3 hover:bg-gray-50 w-full">
+                        <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-gray-50 shrink-0">
+                          {previewUrl ? (
+                            <img src={previewUrl} alt={file.name} className="h-10 w-10 rounded-xl object-cover" />
+                          ) : (
+                            <FileText className="h-4 w-4 text-gray-700" />
+                          )}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-semibold text-gray-900 truncate">{`Attachment #${index + 1}`}</div>
+                          <div className="text-xs text-gray-500 truncate">{file.name} · {sizeLabel}</div>
                         </div>
                         <button
                           type="button"
                           onClick={() => setFiles(files.filter((_, i) => i !== index))}
-                          className="p-1 hover:bg-gray-200 rounded-full transition"
+                          className="p-1 hover:bg-gray-200 rounded-full transition flex-shrink-0"
                           title="Remove file"
                         >
                           <X className="w-4 h-4 text-gray-600" />
