@@ -49,7 +49,6 @@ export async function POST(req: Request) {
         contributor_id: contributorId,
         created_by: userId,
         description: description?.trim(),
-        contributor_display_name: displayName?.trim() || 'SuperHero123',
         contributor_identity_preference: identityPreference !== 'hide',
         category: category?.trim(),
         relationship: relationship?.trim(),
@@ -58,10 +57,25 @@ export async function POST(req: Request) {
         contributor_claimed: true,
         contributor_override_used: true,
         status: 'subject_notified',
-        anonymity_status: (() => {
-          const hasAttachments = false; // attachments handled separately
+        anonymity_status: await (async () => {
+          const { count } = await supabaseAdmin
+            .from('record_attachments')
+            .select('id', { count: 'exact', head: true })
+            .eq('record_id', recordId);
+          const hasAttachments = (count ?? 0) > 0;
           if (!hasAttachments && rating && rating <= 5) return 'Anonymity Not Granted';
           return 'Anonymity Granted';
+        })(),
+        contributor_display_name: await (async () => {
+          const { count } = await supabaseAdmin
+            .from('record_attachments')
+            .select('id', { count: 'exact', head: true })
+            .eq('record_id', recordId);
+          const hasAttachments = (count ?? 0) > 0;
+          const anonStatus = (!hasAttachments && rating && rating <= 5) ? 'Anonymity Not Granted' : 'Anonymity Granted';
+          if (anonStatus === 'Anonymity Not Granted') return displayName?.trim() || 'SuperHero123';
+          if (identityPreference !== 'hide') return displayName?.trim() || 'SuperHero123';
+          return 'SuperHero123';
         })(),
         ai_completed_at: new Date().toISOString(),
         submitted_at: new Date().toISOString(),

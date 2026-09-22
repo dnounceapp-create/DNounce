@@ -195,6 +195,17 @@ export default function AdminClaimsPage() {
     if (!sourceUrl.trim()) { setFormError('Source URL is required.'); return; }
     setGenerating(true);
     setFormError(null);
+    // Check if subject phone/email already exists in user_accountdetails
+    if (sPhone.replace(/\D/g, '') || sEmail.trim()) {
+      const res = await fetch(`/api/admin/search-subjects?q=${encodeURIComponent(sPhone.replace(/\D/g, '') || sEmail.trim())}`);
+      const data = await res.json();
+      if ((data.users ?? []).length > 0) {
+        const match = data.users[0];
+        setFormError(`This contact info is already linked to a DNounce account: ${match.name}. Search for them above and select them instead of creating a new subject.`);
+        setGenerating(false);
+        return;
+      }
+    }
     const res = await fetch('/api/admin/generate-record', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -212,10 +223,12 @@ export default function AdminClaimsPage() {
     setGeneratedCode(result.code);
     setGeneratedRecordId(result.recordId);
     // Upload evidence files if any
+    console.log('📎 files to upload:', files.length, 'recordId:', result.recordId);
     if (files.length > 0 && result.recordId) {
       for (const file of files) {
         const path = `records/${result.recordId}/mod_attachments/${Date.now()}-${file.name.replace(/\s+/g, '_')}`;
         const { error: uploadErr } = await supabase.storage.from('attachments').upload(path, file);
+        console.log('📎 upload result:', uploadErr, 'path:', path);
         if (!uploadErr) {
           await supabase.from('record_attachments').insert({
             record_id: result.recordId,

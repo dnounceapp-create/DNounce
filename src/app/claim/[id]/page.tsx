@@ -260,7 +260,7 @@ export default function ClaimOverridePage() {
         userId: sessionUserId,
         contributorId: contributor.id,
         description: description.trim(),
-        displayName: identityPreference === 'hide' ? 'SuperHero123' : displayName,
+        displayName: displayName,
         identityPreference,
         category: submitCategory.trim(),
         relationship: submitRelationship.trim(),
