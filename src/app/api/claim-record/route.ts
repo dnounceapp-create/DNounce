@@ -94,6 +94,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: updateErr.message }, { status: 500 });
     }
 
+    // Transfer attachments to new contributor
+    await supabaseAdmin
+      .from('record_attachments')
+      .update({ contributor_id: contributorId })
+      .eq('record_id', recordId);
+
     // Update subject info
     if (subjectId) {
       await supabaseAdmin

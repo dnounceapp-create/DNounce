@@ -27,8 +27,15 @@ export async function POST(req: Request) {
         .upload(path, buffer, { contentType: file.type });
 
       if (!uploadErr) {
+        const { data: recData } = await supabaseAdmin
+          .from('records')
+          .select('contributor_id')
+          .eq('id', recordId)
+          .maybeSingle();
+
         const { error: insertErr } = await supabaseAdmin.from('record_attachments').insert({
           record_id: recordId,
+          contributor_id: recData?.contributor_id ?? null,
           path,
           mime_type: file.type,
           size_bytes: file.size,
