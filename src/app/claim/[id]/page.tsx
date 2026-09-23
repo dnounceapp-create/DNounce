@@ -497,7 +497,7 @@ export default function ClaimOverridePage() {
                       <div key={index} className="relative flex items-center gap-3 rounded-2xl border border-gray-200 bg-white px-3 py-3 hover:bg-gray-50 w-full">
                         <button
                           type="button"
-                          onClick={() => { const url = URL.createObjectURL(file); setPreviewFile({ url, name: file.name, type: file.type }); }}
+                          onClick={() => { console.log('📎 preview clicked', file.name); const url = URL.createObjectURL(file); setPreviewFile({ url, name: file.name, type: file.type }); console.log('📎 previewFile set', url); }}
                           className="flex items-center gap-3 flex-1 min-w-0 text-left"
                         >
                           <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-gray-50 shrink-0">
