@@ -598,7 +598,7 @@ function AttachmentSection({
               </span>
               <span className="text-sm font-semibold text-gray-900">{`Attachment #${n}`}</span>
             </button>
-            <div className="px-1">
+            <div className="px-1 mt-1 mb-2">
               <AgreeDisagree
                 targetType="record_attachments"
                 targetId={a.id}
