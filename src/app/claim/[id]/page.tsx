@@ -453,29 +453,6 @@ export default function ClaimOverridePage() {
           {/* Evidence Upload */}
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-2">Evidence (optional)</label>
-            {existingAttachments.length > 0 && (
-              <div className="mb-3 space-y-2">
-                <div className="text-[10px] text-gray-400 font-medium uppercase tracking-wide">Existing evidence</div>
-                {existingAttachments.map(a => (
-                  <div key={a.id} className="flex items-center justify-between bg-white border border-gray-200 rounded-xl px-3 py-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-xs text-gray-700 truncate">{a.label || a.path.split('/').pop()}</span>
-                      <span className="text-[10px] text-gray-400">{(a.size_bytes / 1024).toFixed(0)}KB</span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        await supabase.from('record_attachments').delete().eq('id', a.id);
-                        setExistingAttachments(prev => prev.filter(x => x.id !== a.id));
-                      }}
-                      className="text-gray-400 hover:text-red-500 ml-2 flex-shrink-0"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
             <div className="border-2 border-dashed border-gray-100 rounded-2xl p-8 text-center bg-gray-50 cursor-pointer hover:bg-gray-100 transition"
               onClick={() => document.getElementById('claim-file-input')?.click()}
               onDragOver={e => e.preventDefault()}
@@ -485,10 +462,44 @@ export default function ClaimOverridePage() {
               <p className="text-xs text-gray-400">Drag and drop or click to browse</p>
               <p className="text-[11px] text-gray-300 mt-1">PDF, JPG, PNG, MP4, DOCX — max 100MB each</p>
             </div>
-            {files.length > 0 && (
+            {(existingAttachments.length > 0 || files.length > 0) && (
               <div className="mt-5 text-left">
                 <h4 className="text-sm font-semibold text-gray-700 mb-2">Attached Files</h4>
                 <div className="space-y-2">
+                  {existingAttachments.map((a, index) => {
+                    const publicUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/attachments/${a.path}`;
+                    return (
+                      <div key={a.id} className="relative flex items-center gap-3 rounded-2xl border border-gray-200 bg-white px-3 py-3 hover:bg-gray-50 w-full">
+                        <button
+                          type="button"
+                          onClick={() => setPreviewFile({ url: publicUrl, name: a.label || a.path.split('/').pop() || 'Attachment', type: a.mime_type || 'application/octet-stream' })}
+                          className="flex items-center gap-3 flex-1 min-w-0 text-left"
+                        >
+                          <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-gray-50 shrink-0">
+                            {a.mime_type?.startsWith('image/') ? (
+                              <img src={publicUrl} alt={a.label} className="h-10 w-10 rounded-xl object-cover" />
+                            ) : (
+                              <FileText className="h-4 w-4 text-gray-700" />
+                            )}
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-semibold text-gray-900 truncate">{`Attachment #${index + 1}`}</div>
+                            <div className="text-xs text-gray-500 truncate">{a.label || a.path.split('/').pop()} · {(a.size_bytes / 1024).toFixed(0)}KB</div>
+                          </div>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            await supabase.from('record_attachments').delete().eq('id', a.id);
+                            setExistingAttachments(prev => prev.filter(x => x.id !== a.id));
+                          }}
+                          className="p-1 hover:bg-gray-200 rounded-full transition flex-shrink-0"
+                        >
+                          <X className="w-4 h-4 text-gray-600" />
+                        </button>
+                      </div>
+                    );
+                  })}
                   {files.map((file, index) => {
                     const sizeKB = file.size / 1024;
                     const sizeLabel = sizeKB < 1024 ? `${sizeKB.toFixed(0)} KB` : `${(file.size / 1048576).toFixed(1)} MB`;
@@ -497,7 +508,7 @@ export default function ClaimOverridePage() {
                       <div key={index} className="relative flex items-center gap-3 rounded-2xl border border-gray-200 bg-white px-3 py-3 hover:bg-gray-50 w-full">
                         <button
                           type="button"
-                          onClick={() => { console.log('📎 preview clicked', file.name); const url = URL.createObjectURL(file); setPreviewFile({ url, name: file.name, type: file.type }); console.log('📎 previewFile set', url); }}
+                          onClick={() => { const url = URL.createObjectURL(file); setPreviewFile({ url, name: file.name, type: file.type }); }}
                           className="flex items-center gap-3 flex-1 min-w-0 text-left"
                         >
                           <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-gray-50 shrink-0">
@@ -508,7 +519,7 @@ export default function ClaimOverridePage() {
                             )}
                           </span>
                           <div className="flex-1 min-w-0">
-                            <div className="text-sm font-semibold text-gray-900 truncate">{`Attachment #${index + 1}`}</div>
+                            <div className="text-sm font-semibold text-gray-900 truncate">{`Attachment #${existingAttachments.length + index + 1}`}</div>
                             <div className="text-xs text-gray-500 truncate">{file.name} · {sizeLabel}</div>
                           </div>
                         </button>
@@ -516,7 +527,6 @@ export default function ClaimOverridePage() {
                           type="button"
                           onClick={() => setFiles(files.filter((_, i) => i !== index))}
                           className="p-1 hover:bg-gray-200 rounded-full transition flex-shrink-0"
-                          title="Remove file"
                         >
                           <X className="w-4 h-4 text-gray-600" />
                         </button>
