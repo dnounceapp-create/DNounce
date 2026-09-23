@@ -243,6 +243,37 @@ export default function UserSetupPage() {
         return;
       }
 
+      // Check if phone matches any subject contact info in claim codes
+      if (cleanPhone) {
+        const { data: subjectPhoneMatch } = await supabase
+          .from('record_claim_codes')
+          .select('id')
+          .eq('subject_phone', cleanPhone)
+          .maybeSingle();
+        if (subjectPhoneMatch) {
+          setPopup({ type: "warning", message: "This phone number is already in use.", visible: true });
+          setTimeout(() => setPopup({ type: null, message: "", visible: false }), 3500);
+          setSaving(false);
+          return;
+        }
+      }
+
+      // Check if signup email matches any subject email in claim codes
+      const sessionEmail = sessionData?.session?.user?.email?.trim().toLowerCase() || '';
+      if (sessionEmail) {
+        const { data: subjectEmailMatch } = await supabase
+          .from('record_claim_codes')
+          .select('id')
+          .eq('subject_email', sessionEmail)
+          .maybeSingle();
+        if (subjectEmailMatch) {
+          setPopup({ type: "warning", message: "This email is already in use.", visible: true });
+          setTimeout(() => setPopup({ type: null, message: "", visible: false }), 3500);
+          setSaving(false);
+          return;
+        }
+      }
+
       const { error: rpcError } = await supabase.rpc("update_user_accountdetails", {
         p_user_id: userId,
         p_first_name: form.first_name.trim(),

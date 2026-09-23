@@ -81,7 +81,7 @@ export async function POST(req: Request) {
       code,
       source_url: sourceUrl.trim(),
       notes: notes?.trim() || null,
-      subject_phone: sPhone?.trim() || null,
+      subject_phone: sPhone?.replace(/\D/g, '') || null,
       subject_email: sEmail?.trim() || null,
       claimer_first_name: cFirstName?.trim() || null,
       claimer_last_name: cLastName?.trim() || null,
