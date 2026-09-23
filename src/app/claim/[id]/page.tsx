@@ -314,6 +314,7 @@ export default function ClaimOverridePage() {
   );
 
   return (
+    <>
     <form onSubmit={e => { e.preventDefault(); setShowConfirm(true); }} className="w-full max-w-3xl mx-auto px-3 sm:px-5 md:px-8 py-4 sm:py-8 space-y-8 sm:space-y-10">
       <div className="flex flex-col items-center text-center mb-8 sm:mb-10">
         <div className="flex items-center gap-2 sm:gap-3 mb-2">
@@ -575,6 +576,7 @@ export default function ClaimOverridePage() {
           </div>
         </div>
       )}
+    </form>
       {previewFile && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4" onClick={() => setPreviewFile(null)}>
           <div className="relative max-w-4xl w-full max-h-[90vh] flex flex-col items-center" onClick={e => e.stopPropagation()}>
@@ -596,6 +598,6 @@ export default function ClaimOverridePage() {
           </div>
         </div>
       )}
-    </form>
+    </>
   );
 }
