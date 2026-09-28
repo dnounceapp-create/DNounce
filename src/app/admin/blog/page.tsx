@@ -8,7 +8,7 @@ import { Loader2, Plus, Pencil, Trash2, Eye, EyeOff, ExternalLink } from "lucide
 type Post = {
   id: string; slug: string; title: string; description: string;
   content: string; category: string; read_time: string;
-  published: boolean; published_at: string; created_at: string;
+  published: boolean; published_at: string; created_at: string; views?: number;
 };
 
 const CATEGORIES = ["Hiring Guide", "Tenant Guide", "Platform", "How It Works", "News", "Tips"];
@@ -33,7 +33,7 @@ export default function AdminBlogPage() {
     setLoading(true);
     const { data } = await supabase
       .from("blog_posts")
-      .select("*")
+      .select('id, slug, title, description, category, read_time, published, published_at, created_at, views')
       .order("created_at", { ascending: false });
     setPosts(data ?? []);
     setLoading(false);
@@ -194,6 +194,7 @@ export default function AdminBlogPage() {
                   </span>
                   <span className="text-[10px] text-gray-400">{post.category}</span>
                   <span className="text-[10px] text-gray-400">{post.read_time}</span>
+                  <span className="text-[10px] text-gray-400">{post.views ?? 0} views</span>
                 </div>
                 <div className="text-sm font-semibold text-gray-900 truncate">{post.title}</div>
                 <div className="text-xs text-gray-400 font-mono mt-0.5">/blog/{post.slug}</div>

@@ -3,6 +3,7 @@ import { MDXRemote } from "next-mdx-remote/rsc";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import BlogViewTracker from "@/components/blog/BlogViewTracker";
 
 export const revalidate = 60;
 
@@ -52,6 +53,7 @@ export default async function BlogPost({ params }: { params: Promise<{ slug: str
 
   return (
     <div className="min-h-screen bg-white">
+      <BlogViewTracker slug={post.slug} />
       <div className="max-w-2xl mx-auto px-4 py-16 sm:py-24">
         <Link href="/blog" className="text-sm text-gray-500 hover:text-gray-900 transition">← All posts</Link>
         <div className="mt-8 mb-10">
