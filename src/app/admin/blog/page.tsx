@@ -7,8 +7,8 @@ import { Loader2, Plus, Pencil, Trash2, Eye, EyeOff, ExternalLink } from "lucide
 
 type Post = {
   id: string; slug: string; title: string; description: string;
-  content: string; category: string; read_time: string;
-  published: boolean; published_at: string; created_at: string; views?: number;
+  content?: string; category: string; read_time: string; views?: number;
+  published: boolean; published_at: string; created_at: string;
 };
 
 const CATEGORIES = ["Hiring Guide", "Tenant Guide", "Platform", "How It Works", "News", "Tips"];
@@ -59,7 +59,7 @@ export default function AdminBlogPage() {
 
   async function save() {
     if (!form) return;
-    if (!form.title.trim() || !form.slug.trim() || !form.content.trim()) {
+    if (!form.title.trim() || !form.slug.trim() || !(form.content ?? '').trim()) {
       setError("Title, slug, and content are required.");
       return;
     }
