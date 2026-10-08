@@ -529,8 +529,8 @@ export default function HomePage() {
           </div>
 
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-gray-900 leading-[1.08] tracking-tight mb-6">
-            Know Who<br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-violet-600">You're Dealing With.</span>
+            Experiences shared.<br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-violet-600">Reputations built.</span>
           </h1>
 
           <Image
@@ -545,7 +545,7 @@ export default function HomePage() {
             The community review platform for people you deal with.
           </p>
           <p className="text-lg text-gray-500 max-w-lg mx-auto leading-relaxed mb-4">
-            DNounce is a review platform where both sides get heard. Share your experience about a contractor, freelancer, landlord, or any individual you had a professional experience with — they can respond publicly, and when it's contested, our community decides what's credible. Transparent. Fair. Both sides, always.
+            Build trust. Share experiences. Both sides heard.
           </p>
           <p className="text-sm text-gray-400 italic mb-8">Search a person · Share an experience · Defend your record</p>
           {/*
