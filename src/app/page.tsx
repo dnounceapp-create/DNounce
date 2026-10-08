@@ -541,6 +541,9 @@ export default function HomePage() {
             className="mx-auto mb-8"
           />
 
+          <p className="text-xl sm:text-2xl font-semibold text-gray-800 max-w-lg mx-auto mb-3">
+            The community review platform for people you deal with.
+          </p>
           <p className="text-lg text-gray-500 max-w-lg mx-auto leading-relaxed mb-4">
             DNounce is a review platform where both sides get heard. Share your experience about a contractor, freelancer, landlord, or any individual you had a professional experience with — they can respond publicly, and when it's contested, our community decides what's credible. Transparent. Fair. Both sides, always.
           </p>
