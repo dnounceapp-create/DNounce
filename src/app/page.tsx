@@ -545,7 +545,7 @@ export default function HomePage() {
             The community review platform for people you deal with.
           </p>
           <p className="text-lg text-gray-500 max-w-lg mx-auto leading-relaxed mb-4">
-            Build trust. Share experiences. Both sides heard.
+            Not just reviews. A fair process where every side is heard.
           </p>
           <p className="text-sm text-gray-400 italic mb-8">Search a person · Share an experience · Defend your record</p>
           {/*
