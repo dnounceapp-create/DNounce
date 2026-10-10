@@ -570,13 +570,20 @@ export default function HomePage() {
               <div key={item.label} className="flex items-center gap-1.5">{item.icon}<span>{item.label}</span></div>
             ))}
           </div>
-          <div className="mt-8 flex justify-center">
+          <div className="mt-8 flex justify-center items-center gap-4">
             <Link
               href="/loginsignup?redirectTo=/dashboard/submit"
               className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition"
             >
               <FilePlus className="h-4 w-4" />
               Submit A Record
+            </Link>
+            <span className="text-gray-300 font-light">|</span>
+            <Link
+              href="/loginsignup?redirectTo=/dashboard/myprofile"
+              className="inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-lg font-medium transition"
+            >
+              Own Your Reputation
             </Link>
           </div>
         </div>
