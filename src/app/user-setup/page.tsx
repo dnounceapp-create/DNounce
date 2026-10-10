@@ -350,9 +350,27 @@ export default function UserSetupPage() {
       const claimCode = sessionStorage.getItem('claim_code');
       if (claimRecordId && claimCode) {
         setTimeout(() => router.push(`/claim/${claimRecordId}`), 1200);
-      } else {
-        setTimeout(() => router.push("/dashboard/myrecords"), 1200);
+        return;
       }
+
+      // If redirectTo is myprofile, redirect to actual subject page instead
+      const params = new URLSearchParams(window.location.search);
+      const redirectTo = params.get('redirectTo');
+      if (redirectTo === '/dashboard/myprofile') {
+        const { data: subject } = await supabase
+          .from('subjects')
+          .select('subject_uuid, name, nickname, location')
+          .eq('owner_auth_user_id', userId)
+          .maybeSingle();
+        if (subject) {
+          const slug = (subject.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'profile';
+          const city = ((subject.location || '').split(',')[0].trim() || 'unknown').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+          setTimeout(() => router.push(`/subject/${subject.subject_uuid}/${slug}/${city}`), 1200);
+          return;
+        }
+      }
+
+      setTimeout(() => router.push("/dashboard/myrecords"), 1200);
     } catch (err: any) {
       console.error("Setup error:", err);
       setError(err.message || "Something went wrong, please try again.");
