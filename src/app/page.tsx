@@ -45,6 +45,7 @@ import {
   MapPin,
   ArrowRight,
   ChevronDown,
+  FilePlus,
 } from "lucide-react";
 
 function slugify(s?: string | null) {
@@ -568,6 +569,15 @@ export default function HomePage() {
             ].map((item) => (
               <div key={item.label} className="flex items-center gap-1.5">{item.icon}<span>{item.label}</span></div>
             ))}
+          </div>
+          <div className="mt-8 flex justify-center">
+            <Link
+              href="/loginsignup?redirectTo=/dashboard/submit"
+              className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition"
+            >
+              <FilePlus className="h-4 w-4" />
+              Submit A Record
+            </Link>
           </div>
         </div>
       </section>
