@@ -18,13 +18,12 @@ export async function POST(req: Request) {
 
     const { data: request } = await supabaseAdmin
       .from("record_requests")
-      .select("id, subject_uuid, requester_auth_user_id, status, expires_at")
+      .select("id, subject_uuid, requester_auth_user_id, status")
       .eq("token", token)
       .maybeSingle();
 
     if (!request) return NextResponse.json({ ok: false }, { status: 404 });
     if (request.status === "completed") return NextResponse.json({ ok: true });
-    if (new Date(request.expires_at) < new Date()) return NextResponse.json({ ok: false }, { status: 410 });
     if (request.requester_auth_user_id === user.id) return NextResponse.json({ ok: false }, { status: 403 });
 
     // Verify this user just filed a record about this subject.

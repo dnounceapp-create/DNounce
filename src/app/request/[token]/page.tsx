@@ -36,12 +36,12 @@ export default async function RequestLandingPage({ params }: { params: Promise<{
     );
   }
 
-  const expired = request.status === "expired" || new Date(request.expires_at) < new Date();
+  const expired = request.status === "expired";
   if (expired) {
     return (
       <Shell>
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">This link has expired</h1>
-        <p className="text-gray-500">Requests are valid for 30 days. Ask the person who sent it to send you a new one.</p>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">This request is no longer active</h1>
+        <p className="text-gray-500">This request is no longer active. Ask the person who sent it to send you a new one.</p>
       </Shell>
     );
   }
