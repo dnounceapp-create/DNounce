@@ -3,7 +3,7 @@
 import { CheckCircle, AlertTriangle, CircleAlert, Star } from "lucide-react";
 import { useMemo, useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { X } from "lucide-react";
+import { X, Send } from "lucide-react";
 import Image from "next/image";
 import { stageConfig, STAGE_ORDER } from "@/config/stageConfig";
 import { supabase } from "@/lib/supabaseClient";
@@ -509,8 +509,18 @@ export default function MyRecordsPage() {
     <div className="min-h-screen bg-gray-50">
       <main className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto">
         {/* Header */}
-        <div className="flex items-center gap-3 mb-6">
-          <h1 className="text-xl font-semibold text-gray-900">My Records</h1>
+        <div className="flex items-start justify-between gap-4 mb-6">
+          <div>
+            <h1 className="text-xl font-semibold text-gray-900">My Records</h1>
+            <p className="text-sm text-gray-500 mt-1">Records others have filed about you.</p>
+          </div>
+          <Link
+            href="/dashboard/request-record"
+            className="inline-flex items-center gap-2 border border-violet-600 text-violet-600 hover:bg-violet-50 px-4 py-2 rounded-lg font-medium transition text-sm shrink-0"
+          >
+            <Send className="h-4 w-4" />
+            Request a Record
+          </Link>
         </div>
         {/* Stats Row */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
