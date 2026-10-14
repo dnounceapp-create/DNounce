@@ -353,6 +353,14 @@ export default function UserSetupPage() {
         return;
       }
 
+      // Record request flow: send new users straight to the pre-selected submit page
+      const requestRedirect = sessionStorage.getItem('request_redirect');
+      if (requestRedirect && requestRedirect.startsWith('/dashboard/submit')) {
+        sessionStorage.removeItem('request_redirect');
+        setTimeout(() => router.push(requestRedirect), 1200);
+        return;
+      }
+
       // If redirectTo is myprofile, redirect to actual subject page instead
       const params = new URLSearchParams(window.location.search);
       const redirectTo = params.get('redirectTo');

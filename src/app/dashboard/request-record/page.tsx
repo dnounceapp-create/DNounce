@@ -1,14 +1,10 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 import { Send, Copy, Check, Share2, Loader2, ArrowLeft } from "lucide-react";
 
-const RELATIONSHIP_OPTIONS = [
-  'Client', 'Former Client', 'Tenant', 'Former Tenant', 'Employee',
-  'Former Employee', 'Customer', 'Patient', 'Student', 'Other'
-];
 
 function formatPhoneNumber(value: string) {
   const digits = value.replace(/\D/g, '').slice(0, 10);
@@ -29,6 +25,15 @@ export default function RequestRecordPage() {
   const [error, setError] = useState<string | null>(null);
   const [link, setLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [relationshipTypes, setRelationshipTypes] = useState<{ id: string; label: string }[]>([]);
+
+  useEffect(() => {
+    supabase
+      .from('relationship_types')
+      .select('id, label')
+      .order('created_at')
+      .then(({ data }) => setRelationshipTypes(data ?? []));
+  }, []);
 
   const phoneDigits = phone.replace(/\D/g, '');
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
@@ -134,7 +139,7 @@ export default function RequestRecordPage() {
             <label className="text-xs font-medium text-gray-600 mb-1 block">How do you know them? <span className="text-red-500">*</span></label>
             <select value={relationship} onChange={e => setRelationship(e.target.value)} className={`${inputClass} bg-white`}>
               <option value="">Select...</option>
-              {RELATIONSHIP_OPTIONS.map(r => <option key={r} value={r}>{r}</option>)}
+              {relationshipTypes.map(r => <option key={r.id} value={r.id}>{r.label}</option>)}
             </select>
           </div>
           <button type="button" onClick={handleSubmit} disabled={!canSubmit} className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-violet-600 hover:bg-violet-700 px-4 py-3 text-sm font-semibold text-white transition disabled:opacity-50">

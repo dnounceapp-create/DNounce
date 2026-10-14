@@ -188,6 +188,19 @@ export default function SubmitRecordPage() {
     }
   }, []);
 
+  // Record request flow: prefill relationship from ?relationship= once options have loaded
+  const relationshipPrefilled = useRef(false);
+  useEffect(() => {
+    if (relationshipPrefilled.current) return;
+    const relFromUrl = searchParams.get("relationship");
+    if (!relFromUrl || !searchParams.get("request")) return;
+    if (!relationshipTypes?.length) return;
+    if (relationshipTypes.some((rel: any) => rel.id === relFromUrl)) {
+      setSubmitRelationship(relFromUrl);
+      relationshipPrefilled.current = true;
+    }
+  }, [relationshipTypes, searchParams]);
+
   // Save form state to sessionStorage on every change
   useEffect(() => {
     sessionStorage.setItem("dnounce_submit_draft", JSON.stringify({
@@ -709,6 +722,18 @@ export default function SubmitRecordPage() {
       }
 
       sessionStorage.removeItem("dnounce_submit_draft");
+      // Record request flow: mark the request completed (never linked to the record, to protect anonymity)
+      const requestToken = searchParams.get("request");
+      if (requestToken) {
+        const { data: { session: s } } = await supabase.auth.getSession();
+        if (s) {
+          await fetch("/api/record-requests/complete", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${s.access_token}` },
+            body: JSON.stringify({ token: requestToken }),
+          }).catch(() => {});
+        }
+      }
       router.replace(`/record-submitted/${newRecord.id}`);
     } catch (err: any) {
       console.error("Submit error:", err);

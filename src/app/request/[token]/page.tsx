@@ -23,7 +23,7 @@ export default async function RequestLandingPage({ params }: { params: Promise<{
 
   const { data: request } = await supabaseAdmin
     .from("record_requests")
-    .select("token, status, expires_at, contributor_first_name, subject_uuid")
+    .select("token, status, expires_at, contributor_first_name, subject_uuid, relationship")
     .eq("token", token)
     .maybeSingle();
 
@@ -101,7 +101,7 @@ export default async function RequestLandingPage({ params }: { params: Promise<{
 
       <p className="text-sm text-gray-500 mb-4">You'll be notified at every stage, and you can stay anonymous throughout.</p>
 
-      <ShareExperienceButton token={token} />
+      <ShareExperienceButton token={token} subjectUuid={request.subject_uuid} relationship={request.relationship} />
     </Shell>
   );
 }

@@ -8,10 +8,6 @@ const supabaseAdmin = createClient(
 
 const SITE_URL = "https://www.dnounce.com";
 const DAILY_LIMIT = 10;
-const RELATIONSHIPS = [
-  "Client", "Former Client", "Tenant", "Former Tenant", "Employee",
-  "Former Employee", "Customer", "Patient", "Student", "Other",
-];
 
 function escapeHtml(s: string) {
   return s
@@ -60,7 +56,12 @@ export async function POST(req: Request) {
     if (!cleanFirst) return NextResponse.json({ error: "First name is required." }, { status: 400 });
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) return NextResponse.json({ error: "Please enter a valid email." }, { status: 400 });
     if (cleanPhone.length !== 10) return NextResponse.json({ error: "Please enter a 10-digit phone number." }, { status: 400 });
-    if (!RELATIONSHIPS.includes(relationship)) return NextResponse.json({ error: "Please choose how you know them." }, { status: 400 });
+    const { data: relType } = await supabaseAdmin
+      .from("relationship_types")
+      .select("id")
+      .eq("id", relationship ?? "")
+      .maybeSingle();
+    if (!relType) return NextResponse.json({ error: "Please choose how you know them." }, { status: 400 });
 
     // 3. Can't request a record from yourself
     if (user.email && user.email.toLowerCase() === cleanEmail) {
