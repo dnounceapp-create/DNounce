@@ -18,13 +18,14 @@ export async function POST(req: Request) {
 
     const { data: request } = await supabaseAdmin
       .from("record_requests")
-      .select("id, subject_uuid, requester_auth_user_id, status")
+      .select("id, subject_uuid, requester_auth_user_id, contributor_auth_user_id, status")
       .eq("token", token)
       .maybeSingle();
 
     if (!request) return NextResponse.json({ ok: false }, { status: 404 });
     if (request.status === "completed") return NextResponse.json({ ok: true });
     if (request.requester_auth_user_id === user.id) return NextResponse.json({ ok: false }, { status: 403 });
+    if (request.contributor_auth_user_id && request.contributor_auth_user_id !== user.id) return NextResponse.json({ ok: false }, { status: 403 });
 
     // Verify this user just filed a record about this subject.
     // Checked here only — the record is never linked to the request, which protects anonymity.
