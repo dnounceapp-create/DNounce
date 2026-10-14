@@ -227,7 +227,7 @@ export default function RequestRecordPage() {
                   <Avatar u={u} />
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-semibold text-gray-900 truncate">{u.first_name} {u.last_name}</div>
-                    <div className="text-xs text-gray-500 truncate">{u.location || 'DNounce member'}</div>
+                    {u.location && <div className="text-xs text-gray-500 truncate">{u.location}</div>}
                   </div>
                   <span className="text-xs font-semibold text-violet-600 shrink-0">Select</span>
                 </button>
@@ -241,7 +241,7 @@ export default function RequestRecordPage() {
               <Avatar u={selected} />
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-semibold text-gray-900 truncate">{selected.first_name} {selected.last_name}</div>
-                <div className="text-xs text-violet-600">DNounce member</div>
+                {selected.location && <div className="text-xs text-gray-500 truncate">{selected.location}</div>}
               </div>
               <button type="button" onClick={clearSelection} className="p-1 rounded-full hover:bg-violet-100 text-gray-500" title="Not them">
                 <X className="w-4 h-4" />
