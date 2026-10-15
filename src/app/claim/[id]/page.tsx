@@ -404,13 +404,13 @@ export default function ClaimOverridePage() {
           {/* Identity Preference */}
           <div className="mb-8 mt-8">
             <div className="rounded-2xl border bg-white p-5 sm:p-6 shadow-sm">
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
                   <div className="text-base sm:text-lg font-semibold text-gray-900">Identity Preference <span className="text-red-500">*</span></div>
                   <div className="mt-1 text-sm text-gray-600 leading-relaxed">Choose how your name is displayed if allowed based on your submission type.</div>
                 </div>
-                <div className="shrink-0 flex flex-col items-end gap-1">
-                  <div className="flex items-center gap-3">
+                <div className="shrink-0 flex flex-col items-start sm:items-end gap-1">
+                  <div className="flex flex-wrap items-center gap-3">
                     <span className="text-sm font-semibold text-gray-700">{identityPreference === 'hide' ? 'Showing as anonymous' : 'Showing my real name'}</span>
                     <button type="button" role="switch"
                       className={`relative inline-flex h-7 w-12 items-center rounded-full border transition ${identityPreference === 'hide' ? 'bg-black border-black' : 'bg-gray-200 border-gray-300'}`}

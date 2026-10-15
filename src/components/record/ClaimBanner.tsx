@@ -56,7 +56,7 @@ export default function ClaimBanner({ recordId }: { recordId: string }) {
           <div className="flex items-center gap-3">
             <div className="w-2 h-2 rounded-full bg-white animate-pulse flex-shrink-0" />
             <div>
-              <span className="text-sm font-semibold">Is this your complaint?</span>
+              <span className="text-sm font-semibold">Is this your record?</span>
               <span className="text-sm text-blue-100 ml-2">Claim this record and make it yours — update the details, set your anonymity, and let your voice be heard.</span>
             </div>
           </div>
