@@ -1086,14 +1086,6 @@ export default function SubjectProfilePage() {
                       <option value="voting">Voting Open</option>
                       <option value="decision">Kept</option>
                     </select>
-                    <select value={filters.ai_cred ?? ""} onChange={(e) => setFilters((f) => ({ ...f, ai_cred: e.target.value || undefined }))} className="w-full sm:w-auto min-w-[220px] rounded-xl border px-3 py-2 text-sm bg-white">
-                      <option value="">All anonymity statuses</option>
-                      <option value="Anonymity Granted">Anonymity Granted</option>
-                      <option value="Anonymity Granted">Anonymity Granted</option>
-                      <option value="Anonymity Not Granted">Anonymity Not Granted</option>
-                      <option value="Unclear">Unclear</option>
-                      <option value="Pending">Pending</option>
-                    </select>
                     <select value={filters.record_type ?? ""} onChange={(e) => setFilters((f) => ({ ...f, record_type: e.target.value || undefined }))} className="w-full sm:w-auto min-w-[160px] rounded-xl border px-3 py-2 text-sm bg-white">
                       <option value="">All record types</option>
                       <option value="evidence">Evidence</option>
@@ -1116,7 +1108,6 @@ export default function SubjectProfilePage() {
                   {(hasActiveFilters || hasNonDefaultSort) && (
                     <div className="flex flex-wrap items-center gap-2">
                       {filters.status && <span className="text-xs rounded-full border bg-gray-50 px-3 py-1">Stage: {filters.status}</span>}
-                      {filters.ai_cred && <span className="text-xs rounded-full border bg-gray-50 px-3 py-1">Anonymity Status: {filters.ai_cred}</span>}
                       {filters.record_type && <span className="text-xs rounded-full border bg-gray-50 px-3 py-1">Type: {filters.record_type}</span>}
                       {filters.time && <span className="text-xs rounded-full border bg-gray-50 px-3 py-1">Time: {filters.time}</span>}
                       {sort !== DEFAULT_SORT && <span className="text-xs rounded-full border bg-gray-50 px-3 py-1">Sort: {sort}</span>}
@@ -1127,18 +1118,10 @@ export default function SubjectProfilePage() {
                 {/* Breakdown */}
                 <div className="mb-6">
                   <h4 className="font-medium text-gray-900 mb-3">Record Breakdown</h4>
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="flex justify-center">
                     <div className="text-center">
                       <div className="text-2xl font-bold text-gray-900">{breakdown.total}</div>
                       <div className="text-sm text-gray-500">Total Records</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-gray-900">{breakdown.evidence}</div>
-                      <div className="text-sm text-gray-500">Anonymity Granted</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-gray-900">{breakdown.opinion}</div>
-                      <div className="text-sm text-gray-500">Anonymity Not Granted</div>
                     </div>
                   </div>
                 </div>
@@ -1161,8 +1144,6 @@ export default function SubjectProfilePage() {
                             <div className="text-sm font-semibold text-gray-900 truncate">{title}</div>
                           </div>
                           <div className="flex flex-wrap items-center gap-1.5">
-                            <span className="text-[11px] text-gray-500">Anonymity Status:</span>
-                            {credibilityBadge(cred)}
                           </div>
                         </div>
                         <div className="mt-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">

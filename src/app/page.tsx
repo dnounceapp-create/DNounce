@@ -714,7 +714,7 @@ export default function HomePage() {
               { step: "01", title: "Submit a record", desc: "Share your experience clearly and honestly." },
               { step: "02", title: "Anonymity review", desc: "Our system evaluates your submission and determines whether anonymity is granted or not." },
               { step: "03", title: "Subject notified", desc: "The person receives the record and can review it." },
-              { step: "04", title: "Published", desc: "The record goes live with its anonymity status applied." },
+              { step: "04", title: "Published", desc: "The record goes live, and the subject can respond." },
               { step: "05", title: "Dispute & debate", desc: "The subject can dispute the record, triggering a 72-hour debate." },
               { step: "06", title: "Community votes", desc: "The community decides if record is valid." },
             ].map((item) => (
@@ -1077,23 +1077,21 @@ export default function HomePage() {
           <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6">
             <div className="flex items-center gap-2 mb-4">
               <Shield className="h-5 w-5 text-blue-600" />
-              <h3 className="font-semibold text-blue-800">Anonymity Labels</h3>
+              <h3 className="font-semibold text-blue-800">How Contributor Names Work</h3>
             </div>
             <div className="grid md:grid-cols-2 gap-6 text-sm text-blue-700">
               <div>
-                <div className="font-medium mb-2">Anonymity Granted</div>
+                <div className="font-medium mb-2">Your name is hidden when</div>
                 <ul className="space-y-1 text-blue-600">
-                  <li>· Documented proof (emails, contracts)</li>
-                  <li>· Verifiable timestamps and sources</li>
-                  <li>· Multiple independent evidence points</li>
+                  <li>· You choose to stay anonymous, and</li>
+                  <li>· Your record includes evidence, or rates the experience above 5</li>
                 </ul>
               </div>
               <div>
-                <div className="font-medium mb-2">Anonymity Not Granted</div>
+                <div className="font-medium mb-2">Your name is shown when</div>
                 <ul className="space-y-1 text-blue-600">
-                  <li>· Personal accounts without documentation</li>
-                  <li>· Single-perspective experiences</li>
-                  <li>· Subjective interpretations</li>
+                  <li>· You choose to show it, or</li>
+                  <li>· Your record rates the experience 5 or lower with no evidence attached</li>
                 </ul>
               </div>
             </div>

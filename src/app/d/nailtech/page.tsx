@@ -706,12 +706,6 @@ export default function DemoNailTechPage() {
       <div className="border border-gray-200 rounded-2xl p-4 sm:p-5 bg-white space-y-4">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <h2 className="text-lg font-semibold text-gray-900">Submitted Record</h2>
-          <div className="flex flex-wrap items-center gap-1.5 self-start text-xs text-gray-500">
-            <span className="whitespace-nowrap">Anonymity Status:</span>
-            <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium bg-green-50 text-green-700 border-green-200 whitespace-nowrap">
-              Anonymity Granted
-            </span>
-          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-gray-600">

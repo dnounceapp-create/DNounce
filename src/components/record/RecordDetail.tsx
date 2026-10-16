@@ -5064,52 +5064,6 @@ export default function RecordDetail({
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <h2 className="text-lg font-semibold text-gray-900">Submitted Record</h2>
 
-          {(() => {
-            const raw = (record.anonymity_status || "").toString().trim();
-
-            const label = raw.includes("Anonymity Granted") || raw.includes("anonymity_granted")
-              ? "Anonymity Granted"
-              : raw.includes("Anonymity Not Granted") || raw.includes("anonymity_not_granted")
-              ? "Anonymity Not Granted"
-              : raw.includes("Anonymity Granted") || raw.includes("anonymity_granted") || raw.includes("unable")
-              ? "Anonymity Granted"
-              : raw.includes("Unclear")
-              ? "Unclear"
-              : raw
-              ? raw
-              : "Pending AI Review";
-
-            const badgeStyle =
-              label === "Anonymity Granted"
-                ? "bg-green-50 text-green-700 border-green-200"
-                : label === "Anonymity Not Granted"
-                ? "bg-red-50 text-red-700 border-red-200"
-                : label === "Anonymity Granted" || label === "Unclear"
-                ? "bg-yellow-50 text-yellow-700 border-yellow-200"
-                : "bg-gray-50 text-gray-600 border-gray-200";
-
-            const AnonymityStatusIcon =
-              label === "Anonymity Granted" ? CheckCircle
-              : label === "Anonymity Not Granted" ? AlertTriangle
-              : label === "Anonymity Granted" || label === "Unclear" ? AlertTriangle
-              : null;
-
-            const iconColor =
-              label === "Anonymity Granted" ? "text-green-600"
-              : label === "Anonymity Not Granted" ? "text-red-600"
-              : label === "Anonymity Granted" || label === "Unclear" ? "text-yellow-600"
-              : "";
-
-            return (
-              <div className="flex flex-wrap items-center gap-1.5 self-start sm:self-auto text-xs text-gray-500">
-                <span className="whitespace-nowrap">Anonymity Status:</span>
-                <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium whitespace-nowrap ${badgeStyle}`}>
-                  {AnonymityStatusIcon && <AnonymityStatusIcon size={11} className={iconColor} />}
-                  {label}
-                </span>
-              </div>
-            );
-          })()}
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-gray-600">

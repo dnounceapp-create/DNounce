@@ -444,18 +444,6 @@ export default function SubjectDemoSlugPage() {
                         </div>
                         <div className="text-sm text-gray-500">Total Records</div>
                       </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-gray-900">
-                          {BREAKDOWN.evidence}
-                        </div>
-                        <div className="text-sm text-gray-500">Anonymity Granted</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-gray-900">
-                          {BREAKDOWN.opinion}
-                        </div>
-                        <div className="text-sm text-gray-500">Anonymity Not Granted</div>
-                      </div>
                     </div>
                   </div>
 
@@ -473,10 +461,6 @@ export default function SubjectDemoSlugPage() {
                             </div>
                           </div>
                           <div className="flex flex-wrap items-center gap-1.5">
-                            <span className="text-[11px] text-gray-500">
-                              Anonymity Status:
-                            </span>
-                            {credibilityBadge(r.anonymity_status)}
                           </div>
                         </div>
                         <div className="mt-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">

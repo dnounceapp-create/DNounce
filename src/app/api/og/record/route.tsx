@@ -194,14 +194,6 @@ export async function GET(req: NextRequest) {
           {/* Header */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <span style={{ fontWeight: 700, fontSize: 15, color: "#111827" }}>Submitted Record</span>
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ fontSize: 11, color: "#6B7280" }}>Anonymity Status:</span>
-              <div style={{ display: "flex", alignItems: "center", gap: 4, background: credBg, border: `1px solid ${credBorder}`, borderRadius: 999, padding: "2px 8px" }}>
-                {credIcon === "warning" && <WarningIcon color={credColor} />}
-                {credIcon === "check" && <CheckIcon color={credColor} />}
-                <span style={{ fontSize: 11, fontWeight: 600, color: credColor }}>{credLabel}</span>
-              </div>
-            </div>
           </div>
 
           {/* Submitted + Record ID row */}
