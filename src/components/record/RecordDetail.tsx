@@ -4805,9 +4805,8 @@ export default function RecordDetail({
     (record as any)?.contributor?.id ?? (record as any)?.contributor?.[0]?.id ?? null;
   const reveal = shouldRevealContributorIdentity(record);
 
-  const contributorProfileHref = reveal && (contributorSubjectId || (record as any)?.contributorSubjectUuid)
-      ? `/subject/${contributorSubjectId || (record as any)?.contributorSubjectUuid}/${subjectSlug(contributorSubjectName, contributorSubjectNickname)}/${citySlug(subject?.location as string | null)}`
-      : null;
+  // Contributors are shown as "First L." only; never link to their full profile.
+  const contributorProfileHref: string | null = null;
 
   const storedDisplayName = ((record as any)?.contributor_display_name || (record as any)?.contributorDisplayName || '').trim();
   const profileName = `${contributorProfile?.first_name ?? ""} ${contributorProfile?.last_name ?? ""}`.trim();
