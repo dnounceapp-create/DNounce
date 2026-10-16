@@ -1644,19 +1644,18 @@ function TallyChip({ contributorCount, subjectCount, totalCount, contributorName
   const total = contributorCount + subjectCount;
   const contributorPct = total > 0 ? Math.round((contributorCount / total) * 100) : 0;
   const subjectPct = total > 0 ? Math.round((subjectCount / total) * 100) : 0;
-  const isSplit = Math.abs(contributorPct - subjectPct) <= 10;
-  const verdict = isSplit
-    ? "Community is split"
-    : contributorPct > subjectPct
-    ? `Leans ${contributorName}`
-    : `Leans ${subjectName}`;
+  // A count of what voters chose, never a conclusion stated by DNounce.
+  const summary = total > 0
+    ? `${contributorCount} sided with ${contributorName}, ${subjectCount} with ${subjectName}`
+    : "No votes yet";
 
   return (
     <div className="w-full max-w-xs rounded-2xl border bg-white px-3 py-2 text-xs font-semibold text-gray-700 shadow-none space-y-1.5">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-gray-900">{verdict}</span>
-        <span className="text-gray-400 font-normal">{totalCount} votes</span>
+        <span className="text-gray-900">{summary}</span>
+        <span className="text-gray-400 font-normal shrink-0">{totalCount} votes</span>
       </div>
+      <div className="text-[10px] font-normal text-gray-400">A count of community votes, not a finding of fact.</div>
       {total > 0 && (
         <>
           <div className="w-full h-1.5 rounded-full bg-gray-100 overflow-hidden flex">
