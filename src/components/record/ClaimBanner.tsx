@@ -21,14 +21,14 @@ export default function ClaimBanner({ recordId }: { recordId: string }) {
     setError(null);
 
     // Check code is valid and unused
-    const { data: claimCode } = await supabase
-      .from('record_claim_codes')
-      .select('id, used')
-      .eq('record_id', recordId)
-      .eq('code', code.trim())
-      .maybeSingle();
+    const res = await fetch('/api/claim-codes/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ recordId, code: code.trim() }),
+    });
+    const claimCode = await res.json().catch(() => ({ valid: false, used: false }));
 
-    if (!claimCode) { setError('Invalid code. Check the code and try again.'); setVerifying(false); return; }
+    if (!claimCode.valid) { setError('Invalid code. Check the code and try again.'); setVerifying(false); return; }
     if (claimCode.used) { setError('This code has already been used.'); setVerifying(false); return; }
 
     // Check if user is logged in

@@ -116,14 +116,14 @@ export default function ClaimOverridePage() {
         return;
       }
 
-      const { data: claimCode } = await supabase
-        .from('record_claim_codes')
-        .select('id, used')
-        .eq('record_id', recordId)
-        .eq('code', storedCode)
-        .maybeSingle();
+      const detailsRes = await fetch('/api/claim-codes/details', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ recordId, code: storedCode }),
+      });
+      const claimData = await detailsRes.json().catch(() => ({ valid: false }));
 
-      if (!claimCode || claimCode.used) {
+      if (!claimData.valid || claimData.used) {
         setError('This claim code is invalid or has already been used.');
         setLoading(false);
         return;
@@ -155,15 +155,7 @@ export default function ClaimOverridePage() {
         .maybeSingle();
       setDisplayName(`${userAcct?.first_name ?? ''} ${userAcct?.last_name ?? ''}`.trim());
 
-      // Load claimer info from claim code
-      const { data: claimData } = await supabase
-        .from('record_claim_codes')
-        .select('claimer_first_name, claimer_last_name, claimer_job_title, claimer_location, subject_phone, subject_email')
-        .eq('record_id', recordId)
-        .eq('code', storedCode)
-        .maybeSingle();
-
-      // Pre-fill subject contact if available
+      // Pre-fill subject contact if available (claimData already has these fields from the details call above)
       if (claimData?.subject_phone) setSubmitPhone(claimData.subject_phone);
       if (claimData?.subject_email) setSubmitEmail(claimData.subject_email);
 
