@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireSession, requireAdmin, authErrorResponse } from "@/lib/apiAuth";
 import { createClient } from "@supabase/supabase-js";
 
 export async function GET() {
@@ -6,6 +7,12 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  let caller;
+  try {
+    caller = await requireSession(req);
+  } catch (err) {
+    return authErrorResponse(err) ?? NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   try {
     const body = await req.json().catch(() => ({}));
     const { recordId, credibility: _credibilityFromClient } = body as {
@@ -34,6 +41,26 @@ export async function POST(req: Request) {
 
     // service role bypasses RLS
     const admin = createClient(supabaseUrl, serviceRoleKey);
+
+    // Only the person who wrote this record (or an admin) may advance it.
+    // The submit page calls this route right after a member inserts their
+    // own record, so requireAdmin alone would stall every new submission.
+    const { data: owned } = await admin
+      .from("records")
+      .select("created_by, contributor:contributors!records_contributor_id_fkey(auth_user_id)")
+      .eq("id", recordId)
+      .maybeSingle();
+    const ownerIds = [
+      owned?.created_by,
+      (owned?.contributor as any)?.auth_user_id,
+    ].filter(Boolean);
+    if (!ownerIds.includes(caller.id)) {
+      try {
+        await requireAdmin(req);
+      } catch (err) {
+        return authErrorResponse(err) ?? NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+    }
 
     const score =
       credibility === "Anonymity Granted"

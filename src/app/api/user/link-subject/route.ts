@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireSession, authErrorResponse } from "@/lib/apiAuth";
 import { createClient } from "@supabase/supabase-js";
 
 const supabaseAdmin = createClient(
@@ -7,12 +8,24 @@ const supabaseAdmin = createClient(
 );
 
 export async function POST(req: Request) {
+  let caller;
   try {
-    const { userId, phone, email } = await req.json();
-    if (!userId) return NextResponse.json({ error: 'Missing userId' }, { status: 400 });
+    caller = await requireSession(req);
+  } catch (err) {
+    return authErrorResponse(err) ?? NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  try {
+    // Who to link, and which phone/email to match on, come from the server only.
+    // The request body (userId, phone, email) is not read.
+    const userId = caller.id;
+    const { data: acct } = await supabaseAdmin
+      .from('user_accountdetails')
+      .select('phone')
+      .eq('user_id', userId)
+      .maybeSingle();
 
-    const cleanPhone = (phone || '').replace(/\D/g, '');
-    const cleanEmail = (email || '').trim().toLowerCase();
+    const cleanPhone = (acct?.phone || '').replace(/\D/g, '');
+    const cleanEmail = (caller.email || '').trim().toLowerCase();
 
     if (!cleanPhone && !cleanEmail) return NextResponse.json({ linked: false });
 

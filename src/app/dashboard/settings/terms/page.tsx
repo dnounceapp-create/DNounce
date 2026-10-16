@@ -29,7 +29,7 @@ export default function TermsPage() {
             },
             {
               title: "5. Privacy & Anonymous Submissions",
-              body: "We value your privacy. Our data collection and processing follow our Privacy Policy. For Anonymity Granted records submitted anonymously, DNounce applies a zero-knowledge architecture: your identity is converted into a one-way cryptographic hash at the time of submission, and the original identity is not stored. This process is irreversible. DNounce cannot recover or produce the identity of an anonymous Anonymity Granted contributor — not by policy choice, but by technical design."
+              body: "We value your privacy. Our data collection and processing follow our Privacy Policy. We hold your identity on file, encrypted and separately from your review. We do not publish it. If we receive a legally valid demand for it, we will tell you before we disclose anything, unless a court orders us not to. We do not promise to litigate on your behalf."
             },
             {
               title: "6. AI Classification",
@@ -45,7 +45,7 @@ export default function TermsPage() {
             },
             {
               title: "9. Legal Requests & Law Enforcement",
-              body: "DNounce will comply with valid legal requests for user data to the extent required by law. We will notify affected users when legally permitted. For anonymous Anonymity Granted submissions, there is no identity data to produce — the architecture ensures this is a technical fact, not a policy choice. Any attempt to use legal process to silence contributors or suppress records rather than seek genuine redress will be treated as a potential SLAPP (Strategic Lawsuit Against Public Participation), and DNounce reserves the right to oppose such actions vigorously."
+              body: "DNounce will comply with valid legal requests for user data to the extent required by law. We will notify affected users when legally permitted. Any attempt to use legal process to silence contributors or suppress records rather than seek genuine redress will be treated as a potential SLAPP (Strategic Lawsuit Against Public Participation), and DNounce reserves the right to oppose such actions vigorously."
             },
             {
               title: "10. Updates to Terms",

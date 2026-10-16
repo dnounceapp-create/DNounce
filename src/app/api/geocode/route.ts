@@ -1,6 +1,14 @@
 import { NextResponse } from "next/server";
+import { requireSession, authErrorResponse, rateLimitByIp } from "@/lib/apiAuth";
 
 export async function GET(req: Request) {
+  const limited = rateLimitByIp(req);
+  if (limited) return limited;
+  try {
+    await requireSession(req);
+  } catch (err) {
+    return authErrorResponse(err) ?? NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   const { searchParams } = new URL(req.url);
   const address = searchParams.get("address");
 

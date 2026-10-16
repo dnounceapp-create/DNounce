@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { cookies } from "next/headers";
+import { requireSession, authErrorResponse } from "@/lib/apiAuth";
 
 // Util: map simple content-types for common previews
 const contentTypeByExt: Record<string, string> = {
@@ -31,11 +31,20 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Missing params" }, { status: 400 });
   }
 
-  const cookieStore = await cookies();
-  const currentUserId = cookieStore.get("sb-user")?.value;
+  // The caller comes from the Supabase session. (This used to read a plain
+  // "sb-user" cookie, which any client could set to any value.)
+  let currentUserId: string;
+  try {
+    currentUserId = (await requireSession(req)).id;
+  } catch (err) {
+    return authErrorResponse(err) ?? NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
-  if (!currentUserId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // The path must sit inside this record's folder and the owner's subfolder,
+  // so an allowed caller cannot pass someone else's file path.
+  const segments = path.split("/");
+  if (!segments.includes(recordId) || !segments.includes(userId) || segments.includes("..")) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const allowed = await isUserAllowedToPreview({ currentUserId, recordId, role, userId });

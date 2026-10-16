@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
+import { requireSession, authErrorResponse } from "@/lib/apiAuth";
 
 export async function POST(req: Request) {
+  try {
+    await requireSession(req);
+  } catch (err) {
+    return authErrorResponse(err) ?? NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   try {
     const { recordId } = await req.json();
 

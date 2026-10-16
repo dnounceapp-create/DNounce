@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireAdmin, authErrorResponse } from "@/lib/apiAuth";
 import { createClient } from "@supabase/supabase-js";
 
 const supabaseAdmin = createClient(
@@ -7,6 +8,11 @@ const supabaseAdmin = createClient(
 );
 
 export async function POST(req: Request) {
+  try {
+    await requireAdmin(req);
+  } catch (err) {
+    return authErrorResponse(err) ?? NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   try {
     const formData = await req.formData();
     const recordId = formData.get('recordId') as string;

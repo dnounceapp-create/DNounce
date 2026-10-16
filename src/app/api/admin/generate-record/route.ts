@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireAdmin, authErrorResponse } from "@/lib/apiAuth";
 import { createClient } from "@supabase/supabase-js";
 
 const supabaseAdmin = createClient(
@@ -10,6 +11,11 @@ const DNOUNCE_MOD_CONTRIBUTOR_ID = 'ef0fdd91-38c6-438b-8229-f2efa16bdaa9';
 const DNOUNCE_MOD_AUTH_ID = 'b164ea4a-6ced-48dc-9546-cab73967d6b8';
 
 export async function POST(req: Request) {
+  try {
+    await requireAdmin(req);
+  } catch (err) {
+    return authErrorResponse(err) ?? NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   try {
     const body = await req.json();
     const { sourceUrl, notes, cFirstName, cLastName, cJobTitle, cLocation,

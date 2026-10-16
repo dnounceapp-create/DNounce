@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireSession, authErrorResponse, rateLimitByIp } from "@/lib/apiAuth";
 
 const LOCATIONIQ_KEY = process.env.LOCATIONIQ_KEY;
 const IPINFO_KEY = process.env.IPINFO_KEY;
@@ -83,6 +84,13 @@ function abbreviateState(stateName: string): string {
 }
 
 export async function GET(req: Request) {
+  const limited = rateLimitByIp(req);
+  if (limited) return limited;
+  try {
+    await requireSession(req);
+  } catch (err) {
+    return authErrorResponse(err) ?? NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   try {
     if (!LOCATIONIQ_KEY) {
       console.error("❌ Missing LocationIQ API key");

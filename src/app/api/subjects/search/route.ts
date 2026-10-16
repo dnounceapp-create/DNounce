@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireSession, authErrorResponse } from "@/lib/apiAuth";
 import { createClient } from "@supabase/supabase-js";
 
 type Body = {
@@ -12,6 +13,11 @@ function escapeLike(s: string) {
 }
 
 export async function POST(req: Request) {
+  try {
+    await requireSession(req);
+  } catch (err) {
+    return authErrorResponse(err) ?? NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   try {
     const body = (await req.json()) as Body;
 
@@ -81,7 +87,7 @@ export async function POST(req: Request) {
       const { data: s, error: sErr } = await admin
         .from("subjects")
         .select(
-          "subject_uuid, owner_auth_user_id, name, nickname, organization, location, avatar_url, phone, email"
+          "subject_uuid, owner_auth_user_id, name, nickname, organization, location, avatar_url"
         )
         .in("owner_auth_user_id", ids)
         .limit(50);
@@ -97,7 +103,7 @@ export async function POST(req: Request) {
       const { data: a, error: aErr } = await admin
         .from("user_accountdetails")
         .select(
-          "user_id, first_name, last_name, nickname, organization, location, avatar_url, phone"
+          "user_id, first_name, last_name, nickname, organization, location, avatar_url"
         )
         .in("user_id", ids)
         .limit(50);
@@ -127,8 +133,7 @@ export async function POST(req: Request) {
         organization: u?.organization ?? s.organization ?? null,
         location: u?.location ?? s.location ?? null,
         avatar_url: u?.avatar_url ?? s.avatar_url ?? null,
-        phone: u?.phone ?? s.phone ?? null, // ✅ from user_accountdetails.phone when available
-        email: null, // not needed for UI card; add if you want
+        // phone and email are never returned from this route
       };
     });
 
@@ -144,7 +149,7 @@ export async function POST(req: Request) {
 
       let q = admin
         .from("subjects")
-        .select("subject_uuid, name, nickname, organization, location, avatar_url, phone, email")
+        .select("subject_uuid, name, nickname, organization, location, avatar_url")
         .is("owner_auth_user_id", null)
         .limit(50);
 
@@ -166,7 +171,7 @@ export async function POST(req: Request) {
 
       const { data, error } = await admin
         .from("subjects")
-        .select("subject_uuid, name, nickname, organization, location, avatar_url, phone, email")
+        .select("subject_uuid, name, nickname, organization, location, avatar_url")
         .is("owner_auth_user_id", null)
         .ilike("email", emailPattern)
         .limit(50);
@@ -193,8 +198,7 @@ export async function POST(req: Request) {
         organization: s.organization ?? null,
         location: s.location ?? null,
         avatar_url: s.avatar_url ?? null,
-        phone: s.phone ?? null,
-        email: s.email ?? null,
+        // phone and email are never returned from this route
       }));
 
     return NextResponse.json({ users, externals: externalPreviews });

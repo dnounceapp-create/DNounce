@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireSession, authErrorResponse } from "@/lib/apiAuth";
 import { createClient } from "@supabase/supabase-js";
 
 // Contributors are always shown as "First L." — never a full name.
@@ -16,15 +17,31 @@ const supabaseAdmin = createClient(
 );
 
 export async function POST(req: Request) {
+  // The claim code is still the gate for WHICH record. WHO is claiming comes
+  // from the session; userId / contributorId in the body are ignored.
+  let caller;
+  try {
+    caller = await requireSession(req);
+  } catch (err) {
+    return authErrorResponse(err) ?? NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
   try {
     const {
-      recordId, code, userId, contributorId,
+      recordId, code,
       description, displayName, identityPreference,
       category, relationship, rating, location,
       firstName, lastName, nickname, organization, subjectId,
     } = await req.json();
 
-    if (!recordId || !code || !userId || !contributorId) {
+    const userId = caller.id;
+    const { data: contributorRow } = await supabaseAdmin
+      .from('contributors')
+      .select('id')
+      .eq('auth_user_id', userId)
+      .maybeSingle();
+    const contributorId = contributorRow?.id;
+
+    if (!recordId || !code || !contributorId) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 

@@ -81,8 +81,8 @@ export default function LegalPage() {
 
               <div>
                 <h3 className="font-semibold text-gray-900 mb-2">Contributor Identity & Anonymity</h3>
-                <p>DNounce supports a contributor identity preference system that determines how your name appears on records you submit. The display rules are as follows: if a record is classified as Anonymity Granted and you choose to display your name, your real name is shown. If a record is classified as Anonymity Granted and you choose to remain anonymous, your identity is structurally severed from the record using a one-way cryptographic process — your real identity is not stored and cannot be recovered, even by DNounce. If a record is classified as Anonymity Not Granted, your real name is always shown regardless of preference. If a record classification is unclear, an alias is shown regardless of preference. If you explicitly choose to display your name, your real name is always shown.</p>
-                <p className="mt-2">The anonymous submission architecture exists to protect the integrity of the community review process, not to shield any individual from accountability. Anonymous records go through the same community scrutiny, debate, and voting process as named records. DNounce does not selectively protect contributors — the system is structurally incapable of revealing the identity of anonymous Anonymity Granted contributors because that identity is never stored.</p>
+                <p>DNounce supports a contributor identity preference system that determines how your name appears on records you submit. The display rules are as follows: if a record is classified as Anonymity Granted and you choose to display your name, your real name is shown. If a record is classified as Anonymity Granted and you choose to remain anonymous, your name is not displayed on the record. We hold your identity on file, encrypted and separately from your review. We do not publish it. If we receive a legally valid demand for it, we will tell you before we disclose anything, unless a court orders us not to. We do not promise to litigate on your behalf. If a record is classified as Anonymity Not Granted, your real name is always shown regardless of preference. If a record classification is unclear, an alias is shown regardless of preference. If you explicitly choose to display your name, your real name is always shown.</p>
+                <p className="mt-2">The anonymous submission architecture exists to protect the integrity of the community review process, not to shield any individual from accountability. Anonymous records go through the same community scrutiny, debate, and voting process as named records. DNounce does not selectively protect contributors.</p>
               </div>
 
               <div>
@@ -123,8 +123,8 @@ export default function LegalPage() {
               </div>
 
               <div>
-                <h3 className="font-semibold text-gray-900 mb-2">Anonymous submissions & zero-knowledge architecture</h3>
-                <p>For Anonymity Granted records where a contributor chooses to remain anonymous, DNounce applies a zero-knowledge data architecture. Your user identity is converted into a one-way cryptographic hash before the record is stored. The original identity is not retained in the database. This process is irreversible — DNounce cannot reconstruct your identity from the hash, and no third party can compel us to produce data we do not have. Additionally, any files uploaded as part of an anonymous Anonymity Granted submission are processed to remove embedded metadata (including device information, GPS coordinates, and creation timestamps) before storage.</p>
+                <h3 className="font-semibold text-gray-900 mb-2">Anonymous submissions</h3>
+                <p>We hold your identity on file, encrypted and separately from your review. We do not publish it. If we receive a legally valid demand for it, we will tell you before we disclose anything, unless a court orders us not to. We do not promise to litigate on your behalf.</p>
               </div>
 
               <div>
@@ -134,7 +134,7 @@ export default function LegalPage() {
 
               <div>
                 <h3 className="font-semibold text-gray-900 mb-2">Your rights</h3>
-                <p>You can request to delete your account at any time from Settings. When you delete your account, your login and personal details are removed. However, records you submitted may remain on the platform as they involve other parties. For anonymous Anonymity Granted submissions, there is no identity data linked to the record to delete — the severing of identity occurred at the time of submission.</p>
+                <p>You can request to delete your account at any time from Settings. When you delete your account, your login and personal details are removed. However, records you submitted may remain on the platform as they involve other parties.</p>
               </div>
 
               <div>
@@ -171,7 +171,7 @@ export default function LegalPage() {
 
               <div>
                 <h3 className="font-semibold text-gray-900 mb-2">How anonymous evidence submissions work</h3>
-                <p>When a contributor submits an Anonymity Granted record anonymously, DNounce's system converts their identity into a one-way cryptographic hash at the moment of submission. The real identity is not stored anywhere in our database. This is not a policy decision that can be overridden — it is a structural property of the system. DNounce is architecturally incapable of identifying an anonymous Anonymity Granted contributor after the record is submitted. This design exists to protect the integrity of the community review process and to ensure that contributors who come forward with documented evidence can do so without fear of retaliation.</p>
+                <p>We hold your identity on file, encrypted and separately from your review. We do not publish it. If we receive a legally valid demand for it, we will tell you before we disclose anything, unless a court orders us not to. We do not promise to litigate on your behalf.</p>
               </div>
 
               <div>
@@ -186,7 +186,7 @@ export default function LegalPage() {
 
               <div>
                 <h3 className="font-semibold text-gray-900 mb-2">Law enforcement requests</h3>
-                <p>If we receive a valid legal request for user data, we will comply with it to the extent required by law. We will notify affected users when legally permitted to do so. We do not hand over data voluntarily without proper legal process. For anonymous Anonymity Granted submissions, there is no identity data to produce — the architecture ensures this is not a policy choice but a technical fact.</p>
+                <p>If we receive a valid legal request for user data, we will comply with it to the extent required by law. We will notify affected users when legally permitted to do so. We do not hand over data voluntarily without proper legal process.</p>
               </div>
             </div>
           </section>
@@ -212,13 +212,13 @@ export default function LegalPage() {
               </div>
 
               <div>
-                <h3 className="font-semibold text-gray-900 mb-2">Anonymous contributors cannot be unmasked</h3>
-                <p>For Anonymity Granted records submitted anonymously, DNounce does not possess the identity of the contributor. This is not a policy that can be overridden by court order — it is a technical fact. A subpoena compelling DNounce to produce the identity of an anonymous Anonymity Granted contributor cannot be complied with because that data does not exist in our systems. The cryptographic process that severs identity from the record is irreversible. Any party seeking to identify an anonymous contributor through DNounce will not succeed.</p>
+                <h3 className="font-semibold text-gray-900 mb-2">Requests for a contributor's identity</h3>
+                <p>We hold your identity on file, encrypted and separately from your review. We do not publish it. If we receive a legally valid demand for it, we will tell you before we disclose anything, unless a court orders us not to. We do not promise to litigate on your behalf.</p>
               </div>
 
               <div>
                 <h3 className="font-semibold text-gray-900 mb-2">For contributors — your protections</h3>
-                <p>Truthful statements are generally protected from defamation claims. Honest opinions based on real experiences are typically protected as fair comment. If you choose to submit anonymously under our Anonymity Granted anonymous architecture, your identity is structurally protected at the data level. That said, DNounce is not your legal shield — if you submit false information, you bear that liability. Write truthfully.</p>
+                <p>Truthful statements are generally protected from defamation claims. Honest opinions based on real experiences are typically protected as fair comment. DNounce is not your legal shield — if you submit false information, you bear that liability. Write truthfully.</p>
               </div>
 
               <div>

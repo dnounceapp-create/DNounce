@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireAdmin, authErrorResponse } from "@/lib/apiAuth";
 import { createClient } from "@supabase/supabase-js";
 
 const supabaseAdmin = createClient(
@@ -7,6 +8,11 @@ const supabaseAdmin = createClient(
 );
 
 export async function GET(req: Request) {
+  try {
+    await requireAdmin(req);
+  } catch (err) {
+    return authErrorResponse(err) ?? NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   try {
     const { searchParams } = new URL(req.url);
     const q = searchParams.get('q')?.trim() ?? '';
@@ -20,14 +26,14 @@ export async function GET(req: Request) {
       const col = isPhone ? 'phone' : 'email';
       const { data } = await supabaseAdmin
         .from('user_accountdetails')
-        .select('user_id, first_name, last_name, job_title, location, phone, email')
+        .select('user_id, first_name, last_name, job_title, location')
         .ilike(col, `%${q}%`)
         .limit(5);
       userRows = data ?? [];
     } else {
       const { data } = await supabaseAdmin
         .from('user_accountdetails')
-        .select('user_id, first_name, last_name, job_title, location, phone, email')
+        .select('user_id, first_name, last_name, job_title, location')
         .or(`first_name.ilike.%${q}%,last_name.ilike.%${q}%`)
         .limit(5);
       userRows = data ?? [];
@@ -49,8 +55,7 @@ export async function GET(req: Request) {
           nickname: subj.nickname,
           organization: subj.organization,
           location: subj.location || u.location,
-          phone: u.phone,
-          email: u.email,
+          // phone and email are never returned from this route
         });
       }
     }

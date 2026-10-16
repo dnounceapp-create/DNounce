@@ -6,7 +6,19 @@ const admin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-export async function GET() {
+export async function GET(req: Request) {
+  // Same check as /api/cleanup-ghost-users: Vercel Cron sends
+  // "Authorization: Bearer <CRON_SECRET>"; manual callers may send x-cron-secret.
+  const secret = req.headers.get("x-cron-secret");
+  const vercelCron = req.headers.get("authorization");
+  if (
+    !process.env.CRON_SECRET ||
+    (secret !== process.env.CRON_SECRET &&
+      vercelCron !== `Bearer ${process.env.CRON_SECRET}`)
+  ) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const { data: records, error } = await admin
       .from("records")
