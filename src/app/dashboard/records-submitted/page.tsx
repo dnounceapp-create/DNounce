@@ -322,7 +322,6 @@ export default function RecordsSubmittedPage() {
               <option>Deletion Request</option>
               <option>Debate</option>
               <option>Voting</option>
-              <option>Anonymity</option>
               <option value="Sided with Contributor">Sided with Contributor</option>
               <option value="Sided with Subject">Sided with Subject</option>
             </select>
@@ -337,18 +336,6 @@ export default function RecordsSubmittedPage() {
               <option>Last 24 hours</option>
               <option>Last 7 days</option>
               <option>Last 30 days</option>
-            </select>
-
-            <select
-              aria-label="Filter by credibility"
-              className="border rounded-md px-3 py-2 text-sm hover:shadow-sm w-full sm:w-auto"
-              value={filters.anonymitystatus || ""}
-              onChange={(e) => setFilters({ ...filters, anonymitystatus: e.target.value })}
-            >
-              <option value="">Anonymity Status</option>
-              <option>Anonymity Granted</option>
-              <option>Anonymity Not Granted</option>
-              <option>Anonymity Granted</option>
             </select>
 
             {hasActiveFilters && (
@@ -424,7 +411,7 @@ export default function RecordsSubmittedPage() {
           <div className="hidden md:grid grid-cols-3 px-6 py-3 font-semibold text-gray-600 text-sm">
             <div>Record Name</div>
             <div className="text-center">Status</div>
-            <div className="text-center">Anonymity Status</div>
+            <div className="text-center">Your Name</div>
           </div>
 
           {loadingData ? (
@@ -475,18 +462,12 @@ export default function RecordsSubmittedPage() {
                 </div>
 
                 <div className="mt-3 md:mt-0 text-left md:text-center">
-                  <span
-                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] sm:text-xs font-medium ${
-                      record.anonymity_status === "Anonymity Granted" || record.anonymity_status === "anonymity_granted"
-                        ? "bg-green-100 text-green-700"
-                        : record.anonymity_status === "Anonymity Not Granted" || record.anonymity_status === "anonymity_not_granted"
-                        ? "bg-red-100 text-red-700"
-                        : "bg-yellow-100 text-yellow-700"
-                    }`}
-                  >
-                    {(record.anonymity_status === "Anonymity Not Granted" || record.anonymity_status === "anonymity_not_granted") && <AlertTriangle size={12} className="text-red-700" />}
-                    {(record.anonymity_status === "Anonymity Granted" || record.anonymity_status === "anonymity_granted") && <CircleAlert size={12} className="text-yellow-700" />}
-                    {record.anonymity_status}
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] sm:text-xs font-medium bg-gray-100 text-gray-600">
+                    {record.anonymity_status === "Pending" || !record.anonymity_status
+                      ? "Pending"
+                      : record.record_alias !== "SuperHero123"
+                      ? "Shown"
+                      : "Hidden"}
                   </span>
                 </div>
               </div>

@@ -567,7 +567,6 @@ export default function MyRecordsPage() {
               <option>Deletion Request</option>
               <option>Debate</option>
               <option>Voting</option>
-              <option>Anonymity</option>
               <option value="Sided with Contributor">Sided with Contributor</option>
               <option value="Sided with Subject">Sided with Subject</option>
             </select>
@@ -584,21 +583,8 @@ export default function MyRecordsPage() {
               <option>Last 30 days</option>
             </select>
 
-            <select
-              aria-label="Filter by credibility"
-              className="border rounded-md px-3 py-2 text-sm hover:shadow-sm w-full sm:w-auto"
-              value={filters.anonymitystatus || ""}
-              onChange={(e) =>
-                setFilters({ ...filters, anonymitystatus: e.target.value })
-              }
-            >
-              <option value="">Anonymity Status</option>
-              <option>Anonymity Granted</option>
-              <option>Anonymity Not Granted</option>
-              <option>Anonymity Granted</option>
-            </select>
 
-            {Object.keys(filters).length > 0 && (
+{Object.keys(filters).length > 0 && (
               <button
                 onClick={clearFilters}
                 className="px-3 py-2 text-xs sm:text-sm font-medium rounded-full bg-gray-100 text-gray-800 hover:bg-gray-200 transition w-full sm:w-auto"
@@ -674,10 +660,9 @@ export default function MyRecordsPage() {
         {/* Record List */}
         <div className="bg-white shadow rounded-xl border border-gray-100">
           {/* Header row — hidden on mobile */}
-          <div className="hidden md:grid grid-cols-4 px-6 py-3 font-semibold text-gray-600 text-sm">
+          <div className="hidden md:grid grid-cols-3 px-6 py-3 font-semibold text-gray-600 text-sm">
             <div>Record Name</div>
             <div className="text-center">Status</div>
-            <div className="text-center">Anonymity Status</div>
             <div className="flex justify-center">Dispute Record</div>
           </div>
 
@@ -691,7 +676,7 @@ export default function MyRecordsPage() {
             paginatedRecords.map((record) => (
               <div
                 key={record.id}
-                className="md:grid md:grid-cols-4 md:items-center gap-3 px-4 sm:px-6 py-4 md:py-5 border-t first:border-t-0 hover:bg-gray-50/50 transition"
+                className="md:grid md:grid-cols-3 md:items-center gap-3 px-4 sm:px-6 py-4 md:py-5 border-t first:border-t-0 hover:bg-gray-50/50 transition"
               >
                 {/* Mobile: stacked card header */}
                 <div className="md:col-span-1">
@@ -738,27 +723,6 @@ export default function MyRecordsPage() {
                       —
                     </span>
                   )}
-                </div>
-
-                {/* Anonymity Status */}
-                <div className="mt-3 md:mt-0 text-left md:text-center">
-                  <span
-                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] sm:text-xs font-medium ${
-                      record.anonymity_status === "Anonymity Granted" || record.anonymity_status === "anonymity_granted"
-                        ? "bg-green-100 text-green-700"
-                        : record.anonymity_status === "Anonymity Not Granted" || record.anonymity_status === "anonymity_not_granted"
-                        ? "bg-red-100 text-red-700"
-                        : "bg-yellow-100 text-yellow-700"
-                    }`}
-                  >
-                    {(record.anonymity_status === "Anonymity Not Granted" || record.anonymity_status === "anonymity_not_granted") && (
-                      <AlertTriangle size={12} className="text-red-700" />
-                    )}
-                    {(record.anonymity_status === "Anonymity Granted" || record.anonymity_status === "anonymity_granted") && (
-                      <CircleAlert size={12} className="text-yellow-700" />
-                    )}
-                    {record.anonymity_status}
-                  </span>
                 </div>
 
                 {/* Action */}

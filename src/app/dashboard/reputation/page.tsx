@@ -132,12 +132,6 @@ function RecordRow({ record }: { record: RecordRef }) {
       className="block w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 hover:border-gray-300 hover:shadow-sm transition">
       <div className="flex items-start justify-between gap-2 flex-wrap">
         <span className="text-sm font-semibold text-gray-900">{displayTitle}</span>
-        {credBadge() && (
-          <div className="flex items-center gap-1 text-xs text-gray-500">
-            <span>Anonymity Status:</span>
-            {credBadge()}
-          </div>
-        )}
       </div>
       <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs text-gray-500">
         {record.category && <span>{record.category}</span>}

@@ -275,8 +275,6 @@ function ReputationReachSection({ data }: { data: AnalyticsData }) {
                     <div className="text-sm font-semibold text-gray-900 truncate">{r.title || r.category}</div>
                   </div>
                   <div className="flex flex-wrap items-center gap-1.5 shrink-0">
-                    <span className="text-[11px] text-gray-500">Anonymity Status:</span>
-                    <CredBadge cred={credLabel} />
                   </div>
                 </div>
 
@@ -376,24 +374,6 @@ function InsightsContent({ data }: { data: AnalyticsData }) {
               </div>
             ) : <p className="text-xs text-gray-400">No keyword data yet.</p>}
           </div>
-        </div>
-      </div>
-
-      <div>
-        <SectionHeader title="Your Anonymity Status Breakdown" />
-        <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
-          <p className="text-xs text-gray-500 mb-4">Anonymity status of the records you submitted</p>
-          {data.anonymityBreakdown.length > 0 ? (
-            <div className="space-y-2">
-              {data.anonymityBreakdown.map((c) => (
-                <div key={c.label} className="flex items-center gap-2 text-sm text-gray-700">
-                  <span className="font-medium">{c.label}</span>
-                  <span className="text-gray-400">—</span>
-                  <span className="font-bold text-gray-900">{c.count}</span>
-                </div>
-              ))}
-            </div>
-          ) : <p className="text-xs text-gray-400">No anonymity data yet.</p>}
         </div>
       </div>
 
@@ -827,24 +807,6 @@ function ProContent({ data }: { data: AnalyticsData }) {
       </div>
 
       <div>
-        <SectionHeader title="Your Anonymity Status Breakdown" />
-        <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
-          <p className="text-xs text-gray-500 mb-4">Anonymity status of the records you submitted</p>
-          {data.anonymityBreakdown.length > 0 ? (
-            <div className="space-y-2">
-              {data.anonymityBreakdown.map((c) => (
-                <div key={c.label} className="flex items-center gap-2 text-sm text-gray-700">
-                  <span className="font-medium">{c.label}</span>
-                  <span className="text-gray-400">—</span>
-                  <span className="font-bold text-gray-900">{c.count}</span>
-                </div>
-              ))}
-            </div>
-          ) : <p className="text-xs text-gray-400">No anonymity data yet.</p>}
-        </div>
-      </div>
-
-      <div>
         <SectionHeader title="Category Breakdown" />
         <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
           <p className="text-xs text-gray-500 mb-4">What labels users most associate you with</p>
@@ -943,7 +905,7 @@ export default function AnalyticsPage() {
           <div className="relative mt-2 min-h-[200px] sm:min-h-[320px]">
             <StandardLockedOverlay />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 blur-sm pointer-events-none select-none">
-              {["Profile Views", "Search Impressions", "Anonymity Status Breakdown", "Category Breakdown",
+              {["Profile Views", "Search Impressions", "Category Breakdown",
                 "Most Active Record", "Dispute Resolution", "Contributor Success Rate", "Comparison"]
                 .slice(0, typeof window !== "undefined" && window.innerWidth < 640 ? 3 : 8)
                 .map((label) => (
