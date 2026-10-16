@@ -95,7 +95,7 @@ export const stageConfig: Record<number, StageConfig> = {
   1: {
     label: "AI Verification in Progress",
     happens:
-      "The record is submitted by the contributor; DNounce’s AI reviews it for evidence strength, tone, and credibility before publication.",
+      "The record is submitted by the contributor; DNounce applies the contributor’s name preference before it moves forward.",
     timeline: {
       summary: "Up to 72h from submission",
       start: "onSubmission",
@@ -118,7 +118,7 @@ export const stageConfig: Record<number, StageConfig> = {
   2: {
     label: "Subject Notified",
     happens:
-      "The subject (person the record is about) is automatically notified of the pending record. The record remains private while both parties can view it with the AI-generated anonymity labels.",
+      "The subject (person the record is about) is automatically notified of the pending record. The record remains private while both parties can view it.",
     timeline: {
       summary: "Immediately after AI completes",
       start: "onAIComplete",
@@ -136,7 +136,7 @@ export const stageConfig: Record<number, StageConfig> = {
   3: {
     label: "Record Published",
     happens:
-      "The record is published and receives an AI-recommended anonymity labels, becoming publicly visible on DNounce.",
+      "The record is published and becomes publicly visible on DNounce.",
     timeline: {
       summary:
         "Up to 72 hours of AI verification plus 24 hours — whichever is longer.",
@@ -222,7 +222,7 @@ export const stageConfig: Record<number, StageConfig> = {
   7: {
     label: "Settled",
     happens:
-      "Final outcome implemented. If deleted, the subject’s anonymity and privacy protections are reactivated; if kept, the record remains under anonymized format.",
+      "Final outcome implemented. If removed, the record is taken down from public view; if kept, it stays published.",
     timeline: {
       summary: "Starts when voting ends",
       start: "onVotingEnd",

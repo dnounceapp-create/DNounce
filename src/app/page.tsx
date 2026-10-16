@@ -712,7 +712,7 @@ export default function HomePage() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {[
               { step: "01", title: "Submit a record", desc: "Share your experience clearly and honestly." },
-              { step: "02", title: "Anonymity review", desc: "Our system evaluates your submission and determines whether anonymity is granted or not." },
+              { step: "02", title: "Name check", desc: "We apply your name preference. Records rated 5 or lower with no evidence show your name." },
               { step: "03", title: "Subject notified", desc: "The person receives the record and can review it." },
               { step: "04", title: "Published", desc: "The record goes live, and the subject can respond." },
               { step: "05", title: "Dispute & debate", desc: "The subject can dispute the record, triggering a 72-hour debate." },
@@ -897,13 +897,13 @@ export default function HomePage() {
               {activeTab === "records" && (
                 <>
                   <div className="flex flex-wrap gap-2 mb-5">
-                    {["Newest","All stages","All anonymity","All types","All time"].map((label) => (
+                    {["Newest","All stages","All types","All time"].map((label) => (
                       <select key={label} disabled className="rounded-xl border border-gray-100 px-3 py-1.5 text-xs bg-white text-gray-300 cursor-not-allowed"><option>{label}</option></select>
                     ))}
                   </div>
 
                   <div className="grid grid-cols-3 gap-4 mb-6 text-center">
-                    {[["8","Total"],["5","Anonymity Granted"],["3","Anonymity Not Granted"]].map(([val, label]) => (
+                    {[["8","Total"],["3","Disputed"],["5","Not disputed"]].map(([val, label]) => (
                       <div key={label}>
                         <div className="text-2xl font-bold text-gray-900">{val}</div>
                         <div className="text-xs text-gray-400">{label}</div>
@@ -919,7 +919,6 @@ export default function HomePage() {
                       <div key={r.title} className="rounded-2xl border border-gray-100 bg-white p-4 hover:border-gray-200 transition">
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                           <div className="text-sm font-semibold text-gray-900">{r.title}</div>
-                          <span className={`inline-flex items-center gap-1 text-xs font-semibold border rounded-full px-2.5 py-0.5 whitespace-nowrap ${r.credColor}`}>{r.credIcon} {r.cred}</span>
                         </div>
                         <div className="mt-2 flex flex-wrap gap-2 text-xs text-gray-400">
                           <span>{r.category}</span><span>·</span><span>{r.date}</span><span>·</span><span>{r.comments} comments</span>
@@ -1005,7 +1004,7 @@ export default function HomePage() {
               <div className="bg-green-50 border border-green-200 rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <CheckCircle className="h-4 w-4 text-green-600" />
-                  <span className="text-sm font-semibold text-green-800">Leans credible</span>
+                  <span className="text-sm font-semibold text-green-800">6 sided with the contributor, 3 with the subject</span>
                 </div>
                 <ul className="space-y-5 text-xs text-gray-600">
                   <li>· The situation feels accurate</li>
