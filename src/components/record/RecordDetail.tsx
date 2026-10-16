@@ -161,7 +161,7 @@ function votingNoVoteMessage(args: {
   const { viewerRole, isCurrentlyVoting, votingEnded, hasVoted, stage } = args;
 
   if (stage >= 7 || votingEnded) {
-    return "Voting is closed. Results will be finalized in the decision stage.";
+    return "Voting is closed. Results will be announced soon.";
   }
 
   if (!isCurrentlyVoting) {
@@ -3665,7 +3665,7 @@ function VotingCourtroom({
               return (
                 <div className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700">
                   <span>⏳</span>
-                  <span>Verdict in {daysLeft > 0 ? `${daysLeft}d ${hoursLeft}h` : `${hoursLeft}h`}</span>
+                  <span>Results in {daysLeft > 0 ? `${daysLeft}d ${hoursLeft}h` : `${hoursLeft}h`}</span>
                 </div>
               );
             })()}
@@ -4040,7 +4040,7 @@ function VotingCourtroom({
 
         {(locked === "subject" || locked === "contributor") && !canInteractCommunitySection && (
           <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700">
-            You can reply here 7 days after the decision has been made.
+            You can reply here 7 days after the results are announced.
           </div>
         )}
 

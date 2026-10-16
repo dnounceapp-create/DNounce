@@ -231,17 +231,17 @@ export default function NotificationsPage() {
           </Section>
 
           {/* ── Verdict ── */}
-          <Section title="Verdict" subtitle="For records you voted on or are following.">
+          <Section title="Outcome" subtitle="For records you voted on or are following.">
             <ToggleRow
-              title="Verdict countdown — 24 hours before"
-              desc="Get notified the day before a verdict is announced on a record you voted on or follow."
+              title="Results countdown — 24 hours before"
+              desc="Get notified the day before results are announced on a record you voted on or follow."
               value={prefs.notif_verdict_announcement}
               onChange={set("notif_verdict_announcement")}
             />
             <ToggleRow
               locked
-              title="Verdict announced"
-              desc="When the verdict is officially revealed. Always sent to subject and contributor — cannot be turned off."
+              title="Results announced"
+              desc="When the results are revealed. Always sent to subject and contributor — cannot be turned off."
               value={true}
             />
           </Section>
@@ -261,8 +261,8 @@ export default function NotificationsPage() {
               onChange={set("notif_pinned_voting_open")}
             />
             <ToggleRow
-              title="Verdict announced"
-              desc="When the verdict on a pinned record is officially announced."
+              title="Results announced"
+              desc="When results on a pinned record are announced."
               value={prefs.notif_pinned_outcome}
               onChange={set("notif_pinned_outcome")}
             />
@@ -289,8 +289,8 @@ export default function NotificationsPage() {
               onChange={set("notif_following_voting_open")}
             />
             <ToggleRow
-              title="Verdict announced"
-              desc="When the verdict on a followed record is officially announced."
+              title="Results announced"
+              desc="When results on a followed record are announced."
               value={prefs.notif_following_outcome}
               onChange={set("notif_following_outcome")}
             />

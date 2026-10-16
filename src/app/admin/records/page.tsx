@@ -429,8 +429,8 @@ export default function AdminRecordsPage() {
             <DetailRow label="Debate Ends" value={fmtDate(selected.debate_ends_at)} />
             <DetailRow label="Voting Started" value={fmtDate(selected.voting_started_at)} />
             <DetailRow label="Voting Ends" value={fmtDate(selected.voting_ends_at)} />
-            <DetailRow label="Decision Made" value={fmtDate(selected.decision_made_at)} />
-            <DetailRow label="Decision Started" value={fmtDate(selected.decision_started_at)} />
+            <DetailRow label="Outcome Recorded" value={fmtDate(selected.decision_made_at)} />
+            <DetailRow label="Results Started" value={fmtDate(selected.decision_started_at)} />
             <DetailRow label="Finalized At" value={fmtDate(selected.finalized_at)} />
             <DetailRow label="Execution Ends" value={fmtDate(selected.execution_ends_at)} />
             <DetailRow label="Deleted At" value={fmtDate(selected.deleted_at)} />

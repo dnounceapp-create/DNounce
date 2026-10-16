@@ -851,7 +851,7 @@ export default function MyRecordsPage() {
           <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-md p-6 space-y-4">
             <h2 className="text-white font-semibold text-lg">Dispute this record?</h2>
             <p className="text-gray-400 text-sm leading-relaxed">
-              This will flag the record for deletion and notify the contributor. The record enters a formal deletion review process — debate, community voting, and a final decision.
+              This will flag the record for deletion and notify the contributor. The record enters a formal deletion review process — debate, community voting, and a final outcome.
             </p>
             <p className="text-orange-400 text-xs font-medium">This action cannot be undone.</p>
             <div className="flex gap-3 pt-2">
@@ -891,7 +891,7 @@ export default function MyRecordsPage() {
                 <li>The contributor reviews and may respond</li>
                 <li>Both parties can debate the record</li>
                 <li>Community sides with contributor or subject</li>
-                <li>A final decision is issued</li>
+                <li>The vote result is announced</li>
               </ul>
             </div>
             <button

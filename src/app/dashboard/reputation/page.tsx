@@ -82,7 +82,7 @@ const ALL_BADGES: { label: string; icon: string }[] = [
 const STATUS_LABELS: Record<string, string> = {
   ai_verification: "AI Verification", subject_notified: "Subject Notified",
   published: "Published", deletion_request: "Deletion Request",
-  debate: "Debate", voting: "Voting", decision: "Decision",
+  debate: "Debate", voting: "Voting", decision: "Results",
 };
 
 function ScoreRing({ score }: { score: number | null }) {

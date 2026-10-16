@@ -306,7 +306,7 @@ export default function AdminAnalyticsPage() {
       const stageLabels: Record<string, string> = {
         ai_verification: "AI Review", subject_notified: "Subject Notified",
         published: "Published", deletion_request: "Disputed",
-        debate: "In Debate", voting: "In Voting", decision: "Verdict Pending",
+        debate: "In Debate", voting: "In Voting", decision: "Results Pending",
       };
       const stageCounts: Record<string, number> = {};
       (stages.data ?? []).forEach((r: any) => {
@@ -509,10 +509,10 @@ export default function AdminAnalyticsPage() {
           <StatBox label="Month-over-Month Growth" value={`${momGrowth > 0 ? "+" : ""}${momGrowth}%`} sub={`${newUsersLastMonth} signups last month`} color={momGrowth >= 0 ? "green" : "red"} />
           <StatBox label="Total Records Submitted" value={totalRecords.toLocaleString()} color="blue" />
           <StatBox label="Active Disputes" value={activeDisputes} sub="Records in stages 4–6" color="orange" />
-          <StatBox label="Total Verdicts Reached" value={totalVerdicts} sub={keepDeleteRatio} color="purple" />
+          <StatBox label="Total Outcomes Reached" value={totalVerdicts} sub={keepDeleteRatio} color="purple" />
           <StatBox label="Dispute Rate" value={disputeRate !== null ? `${disputeRate}%` : "—"} sub="% of published records disputed" color="orange" />
-          <StatBox label="Avg. Days to Verdict" value={avgTimeToVerdict !== null ? `${avgTimeToVerdict} days` : "—"} sub="From submission to final decision" color="teal" />
-          <StatBox label="Verdicts Awaiting Announcement" value={pendingVerdicts} sub="Voting ended, verdict not yet revealed" color="yellow" />
+          <StatBox label="Avg. Days to Outcome" value={avgTimeToVerdict !== null ? `${avgTimeToVerdict} days` : "—"} sub="From submission to final outcome" color="teal" />
+          <StatBox label="Results Awaiting Announcement" value={pendingVerdicts} sub="Voting ended, results not yet revealed" color="yellow" />
           <StatBox label="Contributor vs Subject Ratio" value={keepDeleteRatio} sub={`${contributorCount} kept · ${subjectCount} deleted`} color="green" />
           <StatBox label="Low Quality Voter Rate" value={lowQualityVoterPct !== null ? `${lowQualityVoterPct}%` : "—"} sub="% of votes flagged or disqualified" color={lowQualityVoterPct !== null && lowQualityVoterPct > 20 ? "red" : "green"} />
         </div>

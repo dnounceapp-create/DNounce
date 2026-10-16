@@ -222,7 +222,7 @@ export const stageConfig: Record<number, StageConfig> = {
   7: {
     label: "Settled",
     happens:
-      "Final decision implemented. If deleted, the subject’s anonymity and privacy protections are reactivated; if kept, the record remains under anonymized format.",
+      "Final outcome implemented. If deleted, the subject’s anonymity and privacy protections are reactivated; if kept, the record remains under anonymized format.",
     timeline: {
       summary: "Starts when voting ends",
       start: "onVotingEnd",

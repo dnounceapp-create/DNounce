@@ -88,7 +88,7 @@ export default async function RequestLandingPage({ params }: { params: Promise<{
           <li><span className="font-semibold text-gray-900">2. It's published</span> to {name}'s profile.</li>
           <li><span className="font-semibold text-gray-900">3. If {name} disputes it,</span> you'll both have 72 hours to present your side and evidence in a debate.</li>
           <li><span className="font-semibold text-gray-900">4. Then the DNounce community</span> reviews both sides and votes within 48 hours on who they side with.</li>
-          <li><span className="font-semibold text-gray-900">5. The verdict is final</span> and shown publicly.</li>
+          <li><span className="font-semibold text-gray-900">5. The vote result is final</span> and shown publicly.</li>
         </ol>
       </div>
 

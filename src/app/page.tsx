@@ -564,7 +564,7 @@ export default function HomePage() {
           <div className="mt-12 flex flex-wrap justify-center gap-6 text-sm text-gray-400">
             {[
               { icon: <CheckCircle className="w-4 h-4 text-green-500" />, label: "Both sides shown" },
-              { icon: <Users className="w-4 h-4 text-blue-500" />, label: "Community verdict" },
+              { icon: <Users className="w-4 h-4 text-blue-500" />, label: "Community vote" },
               { icon: <MessageSquare className="w-4 h-4 text-violet-500" />, label: "Right to respond" },
             ].map((item) => (
               <div key={item.label} className="flex items-center gap-1.5">{item.icon}<span>{item.label}</span></div>

@@ -41,7 +41,7 @@ export default function TermsPage() {
             },
             {
               title: "8. Limitation of Liability",
-              body: "DNounce is protected under Section 230 of the Communications Decency Act (47 U.S.C. § 230) as a neutral platform. We are not liable for the content of user submissions, the outcome of community votes, or any damages arising from records posted on the platform. Community verdicts are user-generated decisions — not editorial decisions by DNounce. We are not liable for any indirect, incidental, or consequential damages arising from your use or inability to use the platform."
+              body: "DNounce is protected under Section 230 of the Communications Decency Act (47 U.S.C. § 230) as a neutral platform. We are not liable for the content of user submissions, the outcome of community votes, or any damages arising from records posted on the platform. Community outcomes are user-generated decisions — not editorial decisions by DNounce. We are not liable for any indirect, incidental, or consequential damages arising from your use or inability to use the platform."
             },
             {
               title: "9. Legal Requests & Law Enforcement",

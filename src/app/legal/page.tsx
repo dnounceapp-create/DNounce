@@ -71,7 +71,7 @@ export default function LegalPage() {
 
               <div>
                 <h3 className="font-semibold text-gray-900 mb-2">What we're not responsible for</h3>
-                <p>DNounce is a platform — we don't write the records, we host them. We are not responsible for the accuracy, truthfulness, or legality of user submissions. We provide tools for community review and dispute resolution, but we do not verify claims. All verdicts are determined solely by community vote — not by DNounce. Use information on this platform as one data point, not a definitive verdict.</p>
+                <p>DNounce is a platform — we don't write the records, we host them. We are not responsible for the accuracy, truthfulness, or legality of user submissions. We provide tools for community review and dispute resolution, but we do not verify claims. All outcomes are determined solely by community vote — not by DNounce. Use information on this platform as one data point, not a definitive outcome.</p>
               </div>
 
               <div>

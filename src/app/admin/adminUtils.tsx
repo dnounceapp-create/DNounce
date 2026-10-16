@@ -49,7 +49,7 @@ export function fmtVal(val: any): string {
 export const STATUS_LABELS: Record<string, string> = {
   ai_verification: "AI Verification", subject_notified: "Subject Notified",
   published: "Published", deletion_request: "Deletion Request",
-  debate: "Debate", voting: "Voting", decision: "Decision",
+  debate: "Debate", voting: "Voting", decision: "Results",
 };
 const STATUS_STYLES: Record<string, string> = {
   published: "bg-green-900 text-green-300 border-green-700",
@@ -376,12 +376,12 @@ const STAGE_CONFIG: Record<string, {
     ],
   },
   decision: {
-    label: "Record Final Decision", color: "purple",
+    label: "Record Final Outcome", color: "purple",
     desc: "Voting is closed and the final outcome is recorded. This determines whether the record is kept or deleted.",
     fields: [
-      { key: "_warn", type: "warning", label: "", help: "This is permanent. Once a decision is recorded, the record enters the execution stage." },
+      { key: "_warn", type: "warning", label: "", help: "This is permanent. Once an outcome is recorded, the record enters the execution stage." },
       { key: "final_outcome", label: "Final Outcome", type: "select", required: true, options: [{ value: "sided_with_contributor", label: "✅ Sided with Contributor" }, { value: "sided_with_subject", label: "🔵 Sided with Subject" }] },
-      { key: "decision_started_at", label: "Decision Made At", type: "datetime-local", required: true },
+      { key: "decision_started_at", label: "Outcome Recorded At", type: "datetime-local", required: true },
       { key: "finalized_at", label: "Finalized At", type: "datetime-local", required: true },
       { key: "note", label: "Notes", type: "textarea", required: false },
     ],

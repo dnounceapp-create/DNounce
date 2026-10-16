@@ -181,7 +181,7 @@ export default function AdminDashboard() {
             <StatCard label="Disputed" value={counts.r_deletion} href="/admin/records" color="border-red-900" />
             <StatCard label="In Debate" value={counts.r_debate} sub="Active debate window" href="/admin/records" color="border-orange-900" />
             <StatCard label="In Voting" value={counts.r_voting} sub="Votes currently open" href="/admin/records" color="border-blue-900" />
-            <StatCard label="Verdict Pending" value={counts.r_decision} sub="Awaiting announcement" href="/admin/records" color="border-purple-900" />
+            <StatCard label="Results Pending" value={counts.r_decision} sub="Awaiting announcement" href="/admin/records" color="border-purple-900" />
           </div>
         </div>
 

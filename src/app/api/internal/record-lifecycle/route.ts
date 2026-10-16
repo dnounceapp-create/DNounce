@@ -190,8 +190,8 @@ export async function GET() {
               if (subjectOwner?.owner_auth_user_id) {
                 countdownNotifs.push({
                   user_id: subjectOwner.owner_auth_user_id,
-                  title: "Verdict drops in 24 hours",
-                  body: "The community verdict on a record about you will be announced tomorrow. Come back to see the result.",
+                  title: "Results in 24 hours",
+                  body: "The community vote results on a record about you will be announced tomorrow.",
                   type: "verdict_countdown",
                   record_id: r.id,
                 });
@@ -208,8 +208,8 @@ export async function GET() {
               if (contributor?.auth_user_id) {
                 countdownNotifs.push({
                   user_id: contributor.auth_user_id,
-                  title: "Verdict drops in 24 hours",
-                  body: "The community verdict on a record you submitted will be announced tomorrow.",
+                  title: "Results in 24 hours",
+                  body: "The community vote results on a record you submitted will be announced tomorrow.",
                   type: "verdict_countdown",
                   record_id: r.id,
                 });
@@ -224,8 +224,8 @@ export async function GET() {
             (voters ?? []).forEach((v: any) => {
               countdownNotifs.push({
                 user_id: v.user_id,
-                title: "Verdict drops in 24 hours",
-                body: "A record you voted on is announcing its verdict tomorrow. Come back to see the result.",
+                title: "Results in 24 hours",
+                body: "Results for a record you voted on will be announced tomorrow.",
                 type: "verdict_countdown",
                 record_id: r.id,
               });
@@ -239,8 +239,8 @@ export async function GET() {
             (followers ?? []).forEach((f: any) => {
               countdownNotifs.push({
                 user_id: f.user_id,
-                title: "Verdict drops in 24 hours",
-                body: "A record you are following is announcing its verdict tomorrow. Come back to see the result.",
+                title: "Results in 24 hours",
+                body: "Results for a record you follow will be announced tomorrow.",
                 type: "verdict_countdown",
                 record_id: r.id,
               });
@@ -274,8 +274,8 @@ export async function GET() {
               if (subjectOwner?.owner_auth_user_id) {
                 notifs.push({
                   user_id: subjectOwner.owner_auth_user_id,
-                  title: "The verdict is in",
-                  body: "The community has reached a decision on a record about you. See the result now.",
+                  title: "The results are in",
+                  body: "Voting has finished on a record about you. See the results now.",
                   type: "verdict_announced",
                   record_id: r.id,
                 });
@@ -292,8 +292,8 @@ export async function GET() {
               if (contributor?.auth_user_id) {
                 notifs.push({
                   user_id: contributor.auth_user_id,
-                  title: "The verdict is in",
-                  body: "The community has reached a decision on a record you submitted. See the result now.",
+                  title: "The results are in",
+                  body: "Voting has finished on a record you submitted. See the results now.",
                   type: "verdict_announced",
                   record_id: r.id,
                 });
@@ -308,8 +308,8 @@ export async function GET() {
             (voters ?? []).forEach((v: any) => {
               notifs.push({
                 user_id: v.user_id,
-                title: "The verdict is in",
-                body: "The community has reached a decision on a record you voted on. See the result now.",
+                title: "The results are in",
+                body: "Voting has finished on a record you voted on. See the results now.",
                 type: "verdict_announced",
                 record_id: r.id,
               });
@@ -323,8 +323,8 @@ export async function GET() {
             (followers ?? []).forEach((f: any) => {
               notifs.push({
                 user_id: f.user_id,
-                title: "The verdict is in",
-                body: "A record you are following has reached a verdict. See the result now.",
+                title: "The results are in",
+                body: "Voting has finished on a record you follow. See the results now.",
                 type: "verdict_announced",
                 record_id: r.id,
               });
