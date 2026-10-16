@@ -98,7 +98,7 @@ Deno.serve(async (req) => {
 
           ${contributorIsHidden ? `
           <h3 style="color: #111; margin-top: 24px;">Why "Somebody"?</h3>
-          <p>This record was classified as Anonymity Granted, which means DNounce has structurally protected the contributor's identity. Their name is not available to DNounce, you, or anyone else — including under legal compulsion. The focus is on the content of the record, not who filed it.</p>
+          <p>This record was submitted anonymously, so the contributor's name is not shown publicly. The focus is on the content of the record, not who filed it.</p>
           ` : ""}
 
           <h3 style="color: #111; margin-top: 24px;">Your Rights and Next Steps:</h3>
@@ -121,12 +121,12 @@ Deno.serve(async (req) => {
 
     } else if (notification.type === "verdict_countdown" && notification.record_id) {
       const recordUrl = `${APP_URL}/record/${notification.record_id}`;
-      subject = "⏳ Verdict drops in 24 hours";
+      subject = "⏳ Results in 24 hours";
       html = `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #333;">
           <h2 style="color: #111;">Hello ${firstName},</h2>
-          <p>The community verdict on a record involving you will be announced in <strong>24 hours</strong>.</p>
-          <p>Come back tomorrow to see the final decision.</p>
+          <p>The community vote results on a record involving you will be announced in <strong>24 hours</strong>.</p>
+          <p>Come back tomorrow to see the results.</p>
           <a href="${recordUrl}" style="display:inline-block; margin:16px 0; padding:10px 20px; background:#111; color:#fff; border-radius:999px; text-decoration:none; font-size:13px; font-weight:600;">View Record →</a>
           <p style="margin-top: 32px;">Sincerely,<br/><strong>The DNounce Team</strong></p>
           <p style="margin-top: 32px; font-size: 12px; color: #999;">
@@ -137,13 +137,13 @@ Deno.serve(async (req) => {
 
     } else if (notification.type === "verdict_announced" && notification.record_id) {
       const recordUrl = `${APP_URL}/record/${notification.record_id}`;
-      subject = "🏛️ The verdict is in — see the result";
+      subject = "The results are in"; 
       html = `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #333;">
           <h2 style="color: #111;">Hello ${firstName},</h2>
-          <p>The community has reached a final decision on a record involving you.</p>
-          <p>The verdict is now public. Click below to see the result.</p>
-          <a href="${recordUrl}" style="display:inline-block; margin:16px 0; padding:10px 20px; background:#111; color:#fff; border-radius:999px; text-decoration:none; font-size:13px; font-weight:600;">See the Verdict →</a>
+          <p>Voting has finished on a record involving you.</p>
+          <p>The vote results are now public. Click below to see them.</p>
+          <a href="${recordUrl}" style="display:inline-block; margin:16px 0; padding:10px 20px; background:#111; color:#fff; border-radius:999px; text-decoration:none; font-size:13px; font-weight:600;">See the Results →</a>
           <p style="margin-top: 32px;">Sincerely,<br/><strong>The DNounce Team</strong></p>
           <p style="margin-top: 32px; font-size: 12px; color: #999;">
             <a href="${APP_URL}/dashboard/settings/notifications" style="color: #999;">Manage notification preferences</a>
@@ -157,7 +157,7 @@ Deno.serve(async (req) => {
       html = `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #333;">
           <h2 style="color: #111;">Hello ${firstName},</h2>
-          <p>The 7-day post-verdict window has passed. You can now engage with this record — post a community statement, reply to others, and participate in the discussion.</p>
+          <p>The 7-day period after the results has passed. You can now engage with this record — post a community statement, reply to others, and participate in the discussion.</p>
           <a href="${recordUrl}" style="display:inline-block; margin-top:16px; padding:10px 20px; background:#111; color:#fff; border-radius:999px; text-decoration:none; font-size:13px; font-weight:600;">View Record →</a>
           <p style="margin-top: 32px;">Sincerely,<br/><strong>The DNounce Team</strong></p>
           <p style="margin-top: 32px; font-size: 12px; color: #999;">
@@ -177,7 +177,7 @@ Deno.serve(async (req) => {
           <ol style="line-height: 2;">
             <li><strong>Debate opens in 24 hours.</strong> You'll have a 72-hour window to defend your record with evidence and respond to the subject's side.</li>
             <li><strong>Community voting follows.</strong> After the debate, the community votes to keep or delete the record.</strong></li>
-            <li><strong>Verdict announced.</strong> The final outcome is announced 7 days after voting ends.</li>
+            <li><strong>Results announced.</strong> The vote results are announced 7 days after voting ends.</li>
           </ol>
           <p>We recommend reviewing your record and gathering any supporting evidence before the debate opens.</p>
           <a href="${recordUrl}" style="display:inline-block; margin:16px 0; padding:10px 20px; background:#111; color:#fff; border-radius:999px; text-decoration:none; font-size:13px; font-weight:600;">View Record →</a>
