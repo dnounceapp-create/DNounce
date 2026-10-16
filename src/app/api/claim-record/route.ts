@@ -1,6 +1,15 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+// Contributors are always shown as "First L." — never a full name.
+function toFirstInitial(n?: string | null) {
+  if ((n ?? "").trim() === "DNounce Community") return "DNounce Community";
+  const parts = (n ?? "").trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "";
+  return parts.length > 1 ? `${parts[0]} ${parts[parts.length - 1][0].toUpperCase()}.` : parts[0];
+}
+
+
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -73,8 +82,8 @@ export async function POST(req: Request) {
             .eq('record_id', recordId);
           const hasAttachments = (count ?? 0) > 0;
           const anonStatus = (!hasAttachments && rating && rating <= 5) ? 'Anonymity Not Granted' : 'Anonymity Granted';
-          if (anonStatus === 'Anonymity Not Granted') return displayName?.trim() || 'SuperHero123';
-          if (identityPreference !== 'hide') return displayName?.trim() || 'SuperHero123';
+          if (anonStatus === 'Anonymity Not Granted') return toFirstInitial(displayName) || 'SuperHero123';
+          if (identityPreference !== 'hide') return toFirstInitial(displayName) || 'SuperHero123';
           return 'SuperHero123';
         })(),
         ai_completed_at: new Date().toISOString(),

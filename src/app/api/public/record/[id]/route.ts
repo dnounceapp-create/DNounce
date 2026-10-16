@@ -1,6 +1,15 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+// Contributors are always shown as "First L." — never a full name.
+function toFirstInitial(n?: string | null) {
+  if ((n ?? "").trim() === "DNounce Community") return "DNounce Community";
+  const parts = (n ?? "").trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "";
+  return parts.length > 1 ? `${parts[0]} ${parts[parts.length - 1][0].toUpperCase()}.` : parts[0];
+}
+
+
 export const dynamic = "force-dynamic";
 
 const supabaseAdmin = createClient(
@@ -115,7 +124,7 @@ export async function GET(
   return NextResponse.json({
     ...data,
     contributorDisplayName,
-    contributor_display_name: (data as any).contributor_display_name || contributorDisplayName,
+    contributor_display_name: toFirstInitial((data as any).contributor_display_name || contributorDisplayName),
     contributorAvatarUrl: profile?.avatar_url ?? null,
     contributorSubjectUuid,
   });

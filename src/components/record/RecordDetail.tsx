@@ -4655,16 +4655,16 @@ export default function RecordDetail({
         
         if (shouldFetchContributorProfile && contributorUserId) {
           const { data: cAcct } = await supabase
-            .from("user_public_profiles")
-            .select("first_name,last_name,avatar_url")
+            .from("contributor_display_names")
+            .select("display_name")
             .eq("user_id", contributorUserId)
             .maybeSingle();
-          console.log("🔍 cAcct from user_public_profiles:", cAcct, "for userId:", contributorUserId);
 
+          // Contributors appear as "First L." with no photo.
           setContributorProfile({
-            first_name: cAcct?.first_name ?? null,
-            last_name: cAcct?.last_name ?? null,
-            avatar_url: cAcct?.avatar_url ?? null,
+            first_name: cAcct?.display_name ?? null,
+            last_name: null,
+            avatar_url: null,
           });
 
           // Fetch contributor's subject UUID + name/nickname for profile link
@@ -4810,7 +4810,14 @@ export default function RecordDetail({
 
   const storedDisplayName = ((record as any)?.contributor_display_name || (record as any)?.contributorDisplayName || '').trim();
   const profileName = `${contributorProfile?.first_name ?? ""} ${contributorProfile?.last_name ?? ""}`.trim();
-  const contributorRealName = (storedDisplayName && storedDisplayName !== 'SuperHero123') ? storedDisplayName : profileName || 'SuperHero123';
+  // Always show contributors as "First L." — never a full name.
+  const toFirstInitial = (n: string) => {
+    if (n.trim() === "DNounce Community") return "DNounce Community";
+    const parts = n.trim().split(/\s+/);
+    return parts.length > 1 ? `${parts[0]} ${parts[parts.length - 1][0].toUpperCase()}.` : parts[0];
+  };
+  const contributorRealName = profileName
+    || ((storedDisplayName && storedDisplayName !== 'SuperHero123') ? toFirstInitial(storedDisplayName) : 'SuperHero123');
   const contributorPublicName = reveal ? contributorRealName || "SuperHero123" : "SuperHero123";
 
   const contributorSelfName =

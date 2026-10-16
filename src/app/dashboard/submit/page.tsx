@@ -34,6 +34,15 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 
+// Contributors are always shown as "First L." — never a full name.
+function toFirstInitial(n?: string | null) {
+  if ((n ?? "").trim() === "DNounce Community") return "DNounce Community";
+  const parts = (n ?? "").trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "";
+  return parts.length > 1 ? `${parts[0]} ${parts[parts.length - 1][0].toUpperCase()}.` : parts[0];
+}
+
+
 function slugify(s?: string | null) {
   return (s || "")
     .normalize("NFKD")
@@ -672,7 +681,7 @@ export default function SubmitRecordPage() {
           description: description.trim() || null,
           agree_terms: agreedToTerms,
           contributor_identity_preference: identityPreference === "show",
-          contributor_display_name: contributorFullName,
+          contributor_display_name: toFirstInitial(contributorFullName),
           contributor_avatar_url: account?.avatar_url || null,
         })
         .select("id")
