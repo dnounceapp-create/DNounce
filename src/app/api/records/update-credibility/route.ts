@@ -8,12 +8,14 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const body = await req.json().catch(() => ({}));
-    const { recordId, credibility } = body as {
+    const { recordId, credibility: _credibilityFromClient } = body as {
       recordId?: string;
       credibility?: string;
     };
+    // Contributor names are always shown on new records (first name + last initial).
+    const credibility: string = "Anonymity Not Granted";
 
-    if (!recordId || !credibility) {
+    if (!recordId || !_credibilityFromClient) {
       return NextResponse.json(
         { error: "Missing recordId or credibility" },
         { status: 400 }

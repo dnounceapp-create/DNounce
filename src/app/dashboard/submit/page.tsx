@@ -680,7 +680,7 @@ export default function SubmitRecordPage() {
           rating: rating || null,
           description: description.trim() || null,
           agree_terms: agreedToTerms,
-          contributor_identity_preference: identityPreference === "show",
+          contributor_identity_preference: true, // Contributor names are always shown on new records (first name + last initial).
           contributor_display_name: toFirstInitial(contributorFullName),
           contributor_avatar_url: account?.avatar_url || null,
         })
@@ -693,11 +693,13 @@ export default function SubmitRecordPage() {
         return;
       }
 
-      const credibility = classifyRecord({
+      classifyRecord({
         description: description.trim(),
         rating,
         hasAttachments: files.length > 0,
       });
+      // Contributor names are always shown on new records (first name + last initial).
+      const credibility: string = "Anonymity Not Granted";
 
       await fetch("/api/records/update-credibility", {
         method: "POST",

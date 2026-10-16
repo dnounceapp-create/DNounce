@@ -30,14 +30,15 @@ export async function POST(req: Request) {
     }
 
     // 2) Compute credibility
-    const credibility = classifyRecord({
+    classifyRecord({
       description: record.description,
       rating: record.rating,
       hasAttachments: false, // keep simple for now
     });
+    // Contributor names are always shown on new records (first name + last initial).
+    const credibility: string = "Anonymity Not Granted";
 
-    const ai_vendor_1_score =
-      credibility === "Anonymity Granted" ? 0.9 : 0.6;
+    const ai_vendor_1_score = 0.6;
 
     // 3) Update the record
     const { data: updated, error: updateError } = await supabaseAdmin
