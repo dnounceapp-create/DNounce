@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
 
       const { data: record, error: recordError } = await supabase
         .from("records")
-        .select("id, record_type, anonymity_status, category, contributor_display_name, contributor_identity_preference")
+        .select("id, category, contributor_display_name, contributor_identity_preference")
         .eq("id", notification.record_id)
         .single();
 
@@ -53,21 +53,17 @@ Deno.serve(async (req) => {
 
       const recordId = record.id;
       const recordUrl = `${APP_URL}/record/${recordId}`;
-      const isEvidence = record.anonymity_status === "Anonymity Granted";
-      const recordTypeLabel = isEvidence
-        ? "Anonymity Granted"
-        : record.anonymity_status === "Anonymity Not Granted"
-        ? "Anonymity Not Granted"
-        : "Pending Review";
       const category = record.category || "unknown";
 
-      const showContributor = !isEvidence && !record.contributor_identity_preference;
+      // Contributor names are shown as "First L." on every new and claimed record.
+      // Only old records explicitly set to hide the name (preference === false) stay hidden.
+      const showContributor =
+        record.contributor_identity_preference !== false && !!record.contributor_display_name;
       const contributorLabel = showContributor
-        ? (record.contributor_display_name || "Somebody")
-        : "Somebody";
+        ? record.contributor_display_name
+        : "A DNounce member";
 
-      const contributorIsHidden = contributorLabel === "Somebody";
-      const relationshipLine = `"${contributorLabel}" labeled you as a ${category}`;
+      const relationshipLine = `${contributorLabel} labeled you as a ${category}`;
 
       subject = "Action Required – DNounce Subject Alert";
 
@@ -79,7 +75,6 @@ Deno.serve(async (req) => {
 
           <ul style="line-height: 2;">
             <li><strong>Record ID:</strong> ${recordId}</li>
-            <li><strong>Record Type:</strong> ${recordTypeLabel}</li>
             <li><strong>Submitted by:</strong> ${relationshipLine}</li>
           </ul>
 
@@ -95,11 +90,6 @@ Deno.serve(async (req) => {
             font-weight: 600;
             letter-spacing: 0.01em;
           ">View Record →</a>
-
-          ${contributorIsHidden ? `
-          <h3 style="color: #111; margin-top: 24px;">Why "Somebody"?</h3>
-          <p>This record was submitted anonymously, so the contributor's name is not shown publicly. The focus is on the content of the record, not who filed it.</p>
-          ` : ""}
 
           <h3 style="color: #111; margin-top: 24px;">Your Rights and Next Steps:</h3>
           <ol style="line-height: 2;">
