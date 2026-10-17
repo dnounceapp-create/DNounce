@@ -2,9 +2,16 @@ import { NextResponse } from "next/server";
 import { requireSession, requireAdmin, authErrorResponse } from "@/lib/apiAuth";
 import { createClient } from "@supabase/supabase-js";
 
-export async function GET() {
-  return NextResponse.json({ ok: true, route: "update-credibility" });
-}
+/**
+ * Moves a newly submitted record to "Subject Notified".
+ *
+ * There is no AI or anonymity step any more: this is the hand-off that starts
+ * the 24-hour notice window. advance_record_stages() in the database publishes
+ * from `subject_notified` once `submitted_at` is 24 hours old.
+ *
+ * (The path name is historical; the submit page calls it.)
+ */
+const PRE_LIFECYCLE_STATUSES = [null, "", "pending", "ai_verification"];
 
 export async function POST(req: Request) {
   let caller;
@@ -13,47 +20,28 @@ export async function POST(req: Request) {
   } catch (err) {
     return authErrorResponse(err) ?? NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
   try {
-    const body = await req.json().catch(() => ({}));
-    const { recordId, credibility: _credibilityFromClient } = body as {
-      recordId?: string;
-      credibility?: string;
-    };
-    // Contributor names are always shown on new records (first name + last initial).
-    const credibility: string = "Anonymity Not Granted";
-
-    if (!recordId || !_credibilityFromClient) {
-      return NextResponse.json(
-        { error: "Missing recordId or credibility" },
-        { status: 400 }
-      );
+    const { recordId } = (await req.json().catch(() => ({}))) as { recordId?: string };
+    if (!recordId) {
+      return NextResponse.json({ error: "Missing recordId" }, { status: 400 });
     }
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const admin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
 
-    if (!supabaseUrl || !serviceRoleKey) {
-      return NextResponse.json(
-        { error: "Server env vars missing (SUPABASE url or service role key)" },
-        { status: 500 }
-      );
-    }
-
-    // service role bypasses RLS
-    const admin = createClient(supabaseUrl, serviceRoleKey);
-
-    // Only the person who wrote this record (or an admin) may advance it.
-    // The submit page calls this route right after a member inserts their
-    // own record, so requireAdmin alone would stall every new submission.
-    const { data: owned } = await admin
+    const { data: rec } = await admin
       .from("records")
-      .select("created_by, contributor:contributors!records_contributor_id_fkey(auth_user_id)")
+      .select("status, created_by, dnounce_mod_record, contributor_claimed, contributor:contributors!records_contributor_id_fkey(auth_user_id)")
       .eq("id", recordId)
       .maybeSingle();
-    const ownerIds = [
-      owned?.created_by,
-      (owned?.contributor as any)?.auth_user_id,
-    ].filter(Boolean);
+
+    if (!rec) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+    // Only the person who wrote this record (or an admin) may start its clock.
+    const ownerIds = [rec.created_by, (rec.contributor as any)?.auth_user_id].filter(Boolean);
     if (!ownerIds.includes(caller.id)) {
       try {
         await requireAdmin(req);
@@ -62,65 +50,36 @@ export async function POST(req: Request) {
       }
     }
 
-    const score =
-      credibility === "Anonymity Granted"
-        ? 0.9
-        : credibility === "Anonymity Not Granted"
-        ? 0.6
-        : 0.3;
+    // Never move a record that is already in the lifecycle (so it can't be reset),
+    // and never start the clock on an unclaimed DNounce Mod record.
+    if (!PRE_LIFECYCLE_STATUSES.includes((rec.status ?? "") as any)) {
+      return NextResponse.json({ ok: true, unchanged: true });
+    }
+    if (rec.dnounce_mod_record && !rec.contributor_claimed) {
+      return NextResponse.json({ ok: true, unchanged: true, reason: "awaiting_claim" });
+    }
 
-    const { data, error } = await admin
+    const now = new Date().toISOString();
+    const { error } = await admin
       .from("records")
       .update({
-        anonymity_status: credibility,
-        ai_vendor_1_result: credibility,
-        ai_vendor_1_score: score,
-        ai_completed_at: new Date().toISOString(),
-      
-        // advance workflow: once AI classification exists, notify subject stage
         status: "subject_notified",
-      })      
-      .eq("id", recordId)
-      .select("id, record_type, anonymity_status, ai_vendor_1_result, ai_vendor_1_score")
-      .single();
+        subject_notified_at: now,
+        // Still read by the record page's stage fallback; harmless to keep.
+        ai_completed_at: now,
+        // Legacy columns: written exactly as before so the database trigger that
+        // emails the subject sees the same update. Every new record shows the
+        // contributor's name. These go in the Phase 2 database pass.
+        anonymity_status: "Anonymity Not Granted",
+        ai_vendor_1_result: "Anonymity Not Granted",
+        ai_vendor_1_score: 0.6,
+      })
+      .eq("id", recordId);
 
-    if (error) {
-      return NextResponse.json(
-        { error: error.message, details: error },
-        { status: 500 }
-      );
-    }
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-    // Zero-knowledge safety net: if AG + anonymous preference, sever contributor link
-    if (credibility === "Anonymity Granted") {
-      const { data: rec } = await admin
-        .from("records")
-        .select("contributor_id, contributor_identity_preference, contributor:contributors!records_contributor_id_fkey(auth_user_id)")
-        .eq("id", recordId)
-        .maybeSingle();
-
-      if (rec?.contributor_identity_preference === false && rec?.contributor_id) {
-        const authUserId = (rec.contributor as any)?.auth_user_id;
-        if (authUserId) {
-          const { computeContributorHash } = await import("@/lib/contributorHash");
-          const hashHex = await computeContributorHash(authUserId);
-
-          await admin
-            .from("records")
-            .update({
-              anon_contributor_hash: hashHex,
-              contributor_id: null,
-            })
-            .eq("id", recordId);
-        }
-      }
-    }
-
-    return NextResponse.json({ ok: true, record: data });
+    return NextResponse.json({ ok: true });
   } catch (err: any) {
-    return NextResponse.json(
-      { error: err?.message || "Unknown error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: err?.message || "Unknown error" }, { status: 500 });
   }
 }

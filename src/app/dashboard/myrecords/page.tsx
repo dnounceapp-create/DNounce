@@ -126,16 +126,18 @@ function StageStepper({
 }
 
 function statusToStage(status: string): number {
+  // There is no AI/anonymity step: submission goes straight to Subject Notified (2).
+  // ai_verification is only a holding state for unclaimed DNounce Mod records.
   const map: Record<string, number> = {
-    ai_verification: 1,
+    ai_verification: 2,
     subject_notified: 2,
     published: 3,
-    disputed: 4,
+    deletion_request: 4,
     debate: 5,
     voting: 6,
     decision: 7,
   };
-  return map[status] ?? 1;
+  return map[status] ?? 2;
 }
 
 export default function MyRecordsPage() {
@@ -212,8 +214,8 @@ export default function MyRecordsPage() {
         const mapped: RecordItem[] = rawRecords.map((r: any) => ({
           id: r.id,
           contributor_alias: (() => {
-            const cred = r.ai_vendor_1_result || r.anonymity_status || "";
-            const reveal = (cred === "Anonymity Not Granted" || cred === "anonymity_not_granted") || ((cred === "Anonymity Granted" || cred === "anonymity_granted") && r.contributor_identity_preference === true);
+            // Names always show, except old records whose contributor was promised anonymity.
+            const reveal = r.contributor_identity_preference !== false;
             return reveal ? (r.contributor_display_name || "SuperHero123") : "SuperHero123";
           })(),
           subject_name: r.subjects?.name || "Unknown",
@@ -313,7 +315,6 @@ export default function MyRecordsPage() {
     if (!status) return () => true;
 
     const map: Record<string, (record: RecordItem) => boolean> = {
-      "AI Verification": (record) => record.stage === 1,
       "Subject Notified": (record) => record.stage === 2,
       Published: (record) => record.stage === 3,
       "Deletion Request": (record) => record.stage === 4,
@@ -561,7 +562,6 @@ export default function MyRecordsPage() {
               onChange={(e) => setFilters({ ...filters, status: e.target.value })}
             >
               <option value="">Status</option>
-              <option>AI Verification</option>
               <option>Subject Notified</option>
               <option>Published</option>
               <option>Deletion Request</option>

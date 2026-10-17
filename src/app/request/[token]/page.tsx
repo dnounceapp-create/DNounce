@@ -99,7 +99,7 @@ export default async function RequestLandingPage({ params }: { params: Promise<{
         </p>
       </div>
 
-      <p className="text-sm text-gray-500 mb-4">You'll be notified at every stage, and you can stay anonymous throughout.</p>
+      <p className="text-sm text-gray-500 mb-4">You'll be notified at every stage. Your first name and last initial will appear on the record.</p>
 
       <ShareExperienceButton token={token} subjectUuid={request.subject_uuid} relationship={request.relationship} />
     </Shell>

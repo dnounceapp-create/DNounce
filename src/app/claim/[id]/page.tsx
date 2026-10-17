@@ -92,11 +92,6 @@ export default function ClaimOverridePage() {
   const [previewFile, setPreviewFile] = useState<{url: string; name: string; type: string} | null>(null);
   const [existingAttachments, setExistingAttachments] = useState<{id: string; path: string; label: string; mime_type: string; size_bytes: number}[]>([]);
 
-  // Identity
-  const [identityPreference, setIdentityPreference] = useState<'hide' | 'show'>('hide');
-  const [identityTouched, setIdentityTouched] = useState(false);
-  const [confirmIdentityOpen, setConfirmIdentityOpen] = useState(false);
-  const pendingIdentity = useRef<'hide' | 'show' | null>(null);
   const [displayName, setDisplayName] = useState('');
 
   const termsRef = useRef<HTMLDivElement>(null);
@@ -146,7 +141,6 @@ export default function ClaimOverridePage() {
       setRating(record.rating ?? 0);
       setSubmitLocation(record.location ?? '');
       setSubjectId(record.subject_id);
-      setIdentityPreference(record.contributor_identity_preference ? 'show' : 'hide');
 
       const { data: userAcct } = await supabase
         .from('user_accountdetails')
@@ -254,7 +248,6 @@ export default function ClaimOverridePage() {
         contributorId: contributor.id,
         description: description.trim(),
         displayName: displayName,
-        identityPreference,
         category: submitCategory.trim(),
         relationship: submitRelationship.trim(),
         rating,
@@ -299,7 +292,7 @@ export default function ClaimOverridePage() {
       <div className="max-w-md w-full rounded-2xl border border-green-200 bg-green-50 p-8 text-center">
         <CheckCircle className="w-8 h-8 text-green-500 mx-auto mb-4" />
         <div className="text-base font-semibold text-green-900 mb-2">Record claimed successfully!</div>
-        <div className="text-sm text-green-700 mb-1">Your record has been updated and is now going through AI verification.</div>
+        <div className="text-sm text-green-700 mb-1">Your record has been updated. The person it's about has been notified, and it will be published in 24 hours.</div>
         <div className="text-sm text-gray-400">Redirecting you back to the record...</div>
       </div>
     </div>
@@ -393,53 +386,9 @@ export default function ClaimOverridePage() {
             <p className="mt-3 text-sm text-gray-500">Selected rating: {rating ? rating.toFixed(1) : '—'} / 10</p>
           </div>
 
-          {/* Identity Preference */}
-          <div className="mb-8 mt-8">
-            <div className="rounded-2xl border bg-white p-5 sm:p-6 shadow-sm">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div className="min-w-0">
-                  <div className="text-base sm:text-lg font-semibold text-gray-900">Identity Preference <span className="text-red-500">*</span></div>
-                  <div className="mt-1 text-sm text-gray-600 leading-relaxed">Choose how your name is displayed if allowed based on your submission type.</div>
-                </div>
-                <div className="shrink-0 flex flex-col items-start sm:items-end gap-1">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <span className="text-sm font-semibold text-gray-700">{identityPreference === 'hide' ? 'Showing as anonymous' : 'Showing my real name'}</span>
-                    <button type="button" role="switch"
-                      className={`relative inline-flex h-7 w-12 items-center rounded-full border transition ${identityPreference === 'hide' ? 'bg-black border-black' : 'bg-gray-200 border-gray-300'}`}
-                      onClick={() => {
-                        const next: 'hide' | 'show' = identityPreference === 'show' ? 'hide' : 'show';
-                        if (identityTouched) { pendingIdentity.current = next; setConfirmIdentityOpen(true); return; }
-                        setIdentityPreference(next); setIdentityTouched(true);
-                      }}>
-                      <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${identityPreference === 'hide' ? 'translate-x-6' : 'translate-x-1'}`} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-              <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
-                <div className="font-semibold text-sm">Important</div>
-                <div className="mt-1 text-sm leading-relaxed">Your preference may be overridden:
-                  <ul className="mt-2 list-disc pl-5 space-y-1">
-                    <li><span className="font-semibold">Anonymity Granted:</span> Your choice is respected.</li>
-                    <li><span className="font-semibold">Anonymity Not Granted:</span> Always shows Real Name.</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-            {confirmIdentityOpen && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-                <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
-                  <div className="text-base font-semibold text-gray-900">Are you sure?</div>
-                  <div className="mt-2 text-sm text-gray-600 leading-relaxed">
-                    You're about to change your identity preference to <span className="font-semibold">{pendingIdentity.current === 'hide' ? 'Showing as anonymous' : 'Showing my real name'}</span>.
-                  </div>
-                  <div className="mt-4 flex gap-3">
-                    <button type="button" onClick={() => setConfirmIdentityOpen(false)} className="flex-1 rounded-xl border px-4 py-2 text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
-                    <button type="button" onClick={() => { if (pendingIdentity.current) setIdentityPreference(pendingIdentity.current); setIdentityTouched(true); setConfirmIdentityOpen(false); }} className="flex-1 rounded-xl bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800">Confirm</button>
-                  </div>
-                </div>
-              </div>
-            )}
+          {/* Contributor name notice */}
+          <div className="mb-8 mt-8 rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700 leading-relaxed">
+            <span className="font-semibold">Your name:</span> Your first name and last initial will appear publicly on this record. The person you're writing about will see it. You're responsible for what you write.
           </div>
 
           {/* Evidence Upload */}
@@ -542,15 +491,14 @@ export default function ClaimOverridePage() {
           <div className="space-y-3">
             <div className="flex items-start gap-3">
               <input type="checkbox" checked={agreedToTerms} onChange={e => setAgreedToTerms(e.target.checked)} className="mt-1" />
-              <label className="text-xs text-gray-400">I agree to the <button type="button" className="text-blue-500 hover:underline">Terms of Service</button> and confirm that my submission is truthful, that I understand DNounce's anonymity determination is a structural tool only, and that I — not DNounce — bear full legal responsibility for this submission.</label>
+              <label className="text-xs text-gray-400">I agree to the <button type="button" className="text-blue-500 hover:underline">Terms of Service</button> and confirm that my submission is truthful, and that I — not DNounce — bear full legal responsibility for this submission.</label>
             </div>
             <div ref={termsRef} className="h-36 overflow-y-auto border border-gray-100 rounded-xl p-4 text-xs text-gray-400 bg-gray-50 leading-relaxed">
               <p className="font-semibold mb-2 text-gray-600">Important Legal Notice</p>
               <p className="mb-2">By submitting this record, you acknowledge that DNounce is a neutral platform operating under Section 230 of the Communications Decency Act. You — not DNounce — are solely responsible for the accuracy and legality of your submission.</p>
               <p className="mb-2">You certify that your submission is truthful to the best of your knowledge and based on either verifiable evidence or honest personal opinion. Submitting knowingly false or malicious content may result in permanent account suspension and exposes you to legal liability.</p>
-              <p className="mb-2">Anonymity Determination: Your submission will be evaluated and assigned either Anonymity Granted or Anonymity Not Granted. This is a structural determination only — it does not mean DNounce has verified or endorsed your submission.</p>
-              <p className="mb-2">The subject will be notified and has the right to respond and dispute through our structured community process.</p>
-              <p>Any attempt to use legal process to suppress this record or unmask an anonymous contributor may be treated as a SLAPP. DNounce reserves the right to oppose such actions vigorously.</p>
+              <p className="mb-2">Your name: Your first name and last initial will appear publicly on this record. The person you&apos;re writing about will see it.</p>
+              <p>The subject will be notified and has the right to respond and dispute through our structured community process.</p>
             </div>
           </div>
 

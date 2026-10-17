@@ -28,16 +28,16 @@ export default function TermsPage() {
               body: "All materials, branding, and content belong to their respective owners. You may not reproduce, redistribute, or modify any assets without prior written consent. You retain ownership of content you submit, and grant DNounce a license to display and distribute it on the platform."
             },
             {
-              title: "5. Privacy & Anonymous Submissions",
-              body: "We value your privacy. Our data collection and processing follow our Privacy Policy. We hold your identity on file, encrypted and separately from your review. We do not publish it. If we receive a legally valid demand for it, we will tell you before we disclose anything, unless a court orders us not to. We do not promise to litigate on your behalf."
+              title: "5. Privacy",
+              body: "We value your privacy. Our data collection and processing follow our Privacy Policy. For older records whose contributor was promised anonymity, we hold your identity on file, encrypted and separately from your review. We do not publish it. If we receive a legally valid demand for it, we will tell you before we disclose anything, unless a court orders us not to. We do not promise to litigate on your behalf."
             },
             {
-              title: "6. AI Classification",
-              body: "DNounce uses an automated system to evaluate submitted records and determine anonymity eligibility. Records are assigned either Anonymity Granted or Anonymity Not Granted. This classification is a structural analysis of language patterns only. It is not a determination of truth, accuracy, or credibility. It does not constitute DNounce taking a position on any record. All verdicts are determined solely by community vote. DNounce is not the publisher, editor, or endorser of any record on the platform."
+              title: "6. Record Lifecycle",
+              body: "When you submit a record, the person it is about is notified and the record is published 24 hours later. DNounce does not classify, verify, or endorse records. If a record is disputed, community votes are user-generated and shown as counts. DNounce is not the publisher, editor, or endorser of any record on the platform."
             },
             {
-              title: "7. Contributor Identity & Display Rules",
-              body: "DNounce uses a contributor identity preference system. The following rules apply: Anonymity Granted records show your real name if you chose to display it, or an alias if you chose anonymity. Anonymity Not Granted records always show your real name regardless of preference. Records with an unclear classification always show an alias. If you explicitly chose to display your name, your real name is always shown. These rules exist to maintain community accountability while protecting contributors who come forward with documented evidence."
+              title: "7. Contributor Names",
+              body: "Your first name and last initial appear publicly on every record you submit. The person you are writing about will see it. You are responsible for what you write. Older records whose contributor was promised anonymity stay hidden."
             },
             {
               title: "8. Limitation of Liability",

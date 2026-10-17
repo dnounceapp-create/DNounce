@@ -75,14 +75,8 @@ export default function LegalPage() {
               </div>
 
               <div>
-                <h3 className="font-semibold text-gray-900 mb-2">AI Classification</h3>
-                <p>DNounce uses an automated system to determine anonymity eligibility for submitted records. Submissions are evaluated and assigned either Anonymity Granted or Anonymity Not Granted. This classification is a structural analysis of language patterns only — it is not a determination of truth, accuracy, or credibility. A classification of "Anonymity Granted" means the submission contains structured documentation language. It does not mean DNounce has reviewed, verified, or endorsed the content. DNounce takes no editorial position on any record. By submitting a record, you acknowledge that the AI classification is a neutral structural tool and does not represent DNounce's opinion.</p>
-              </div>
-
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-2">Contributor Identity & Anonymity</h3>
-                <p>DNounce supports a contributor identity preference system that determines how your name appears on records you submit. The display rules are as follows: if a record is classified as Anonymity Granted and you choose to display your name, your real name is shown. If a record is classified as Anonymity Granted and you choose to remain anonymous, your name is not displayed on the record. We hold your identity on file, encrypted and separately from your review. We do not publish it. If we receive a legally valid demand for it, we will tell you before we disclose anything, unless a court orders us not to. We do not promise to litigate on your behalf. If a record is classified as Anonymity Not Granted, your real name is always shown regardless of preference. If a record classification is unclear, an alias is shown regardless of preference. If you explicitly choose to display your name, your real name is always shown.</p>
-                <p className="mt-2">The anonymous submission architecture exists to protect the integrity of the community review process, not to shield any individual from accountability. Anonymous records go through the same community scrutiny, debate, and voting process as named records. DNounce does not selectively protect contributors.</p>
+                <h3 className="font-semibold text-gray-900 mb-2">Contributor names</h3>
+                <p>Your first name and last initial appear publicly on every record you submit. The person you&apos;re writing about will see it. You&apos;re responsible for what you write. Older records whose contributor was promised anonymity stay hidden; for those, we hold your identity on file, encrypted and separately from your review. We do not publish it. If we receive a legally valid demand for it, we will tell you before we disclose anything, unless a court orders us not to. We do not promise to litigate on your behalf.</p>
               </div>
 
               <div>
@@ -123,8 +117,8 @@ export default function LegalPage() {
               </div>
 
               <div>
-                <h3 className="font-semibold text-gray-900 mb-2">Anonymous submissions</h3>
-                <p>We hold your identity on file, encrypted and separately from your review. We do not publish it. If we receive a legally valid demand for it, we will tell you before we disclose anything, unless a court orders us not to. We do not promise to litigate on your behalf.</p>
+                <h3 className="font-semibold text-gray-900 mb-2">Older anonymous records</h3>
+                <p>For older records whose contributor was promised anonymity: We hold your identity on file, encrypted and separately from your review. We do not publish it. If we receive a legally valid demand for it, we will tell you before we disclose anything, unless a court orders us not to. We do not promise to litigate on your behalf.</p>
               </div>
 
               <div>
@@ -160,18 +154,8 @@ export default function LegalPage() {
 
             <div className="space-y-6 text-sm text-gray-600 leading-relaxed">
               <div>
-                <h3 className="font-semibold text-gray-900 mb-2">How records are classified</h3>
-                <p>Every submitted record goes through our automated language-based classification system. It analyzes the text and labels it as Anonymity Granted, Anonymity Not Granted, or Anonymity Granted. This is a structural pattern analysis — not a human judgment call, not an editorial decision, and not a determination of whether the claim is true or false. The label reflects the nature of the language used in the submission. DNounce does not take a position on any record through its classification system.</p>
-              </div>
-
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-2">How contributor identity works</h3>
-                <p>DNounce uses a contributor identity preference system that determines how a contributor's name appears on their submitted records. The rules are straightforward: Anonymity Not Granted records always show the contributor's real name. Anonymity Granted records show the contributor's real name if they chose to display it, or an alias if they chose anonymity. Records with an unclear classification always show an alias. This system exists to balance community accountability with contributor protection — it is not DNounce taking a side. The community, not DNounce, determines the outcome of every record through a structured vote.</p>
-              </div>
-
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-2">How anonymous evidence submissions work</h3>
-                <p>We hold your identity on file, encrypted and separately from your review. We do not publish it. If we receive a legally valid demand for it, we will tell you before we disclose anything, unless a court orders us not to. We do not promise to litigate on your behalf.</p>
+                <h3 className="font-semibold text-gray-900 mb-2">How contributor names work</h3>
+                <p>Every new record shows the contributor&apos;s first name and last initial. Older records whose contributor was promised anonymity stay hidden. If a record is disputed, the community votes on who they side with, and votes are shown as counts. DNounce does not take a side.</p>
               </div>
 
               <div>
@@ -208,7 +192,7 @@ export default function LegalPage() {
 
               <div>
                 <h3 className="font-semibold text-gray-900 mb-2">Anti-SLAPP Protection</h3>
-                <p>DNounce actively opposes the use of litigation as a tool to silence community accountability. Any attempt to use legal process to unmask anonymous contributors, suppress records, or compel DNounce to act against its platform principles will be treated as a potential Strategic Lawsuit Against Public Participation (SLAPP). DNounce reserves the right to oppose such actions vigorously, including filing motions to quash subpoenas and seeking attorney's fees under applicable anti-SLAPP statutes. If you are attempting to use legal process to silence a contributor rather than seeking genuine redress, be advised that DNounce will not facilitate that effort.</p>
+                <p>DNounce actively opposes the use of litigation as a tool to silence community accountability. Any attempt to use legal process to suppress records, or compel DNounce to act against its platform principles will be treated as a potential Strategic Lawsuit Against Public Participation (SLAPP). DNounce reserves the right to oppose such actions vigorously, including filing motions to quash subpoenas and seeking attorney's fees under applicable anti-SLAPP statutes. If you are attempting to use legal process to silence a contributor rather than seeking genuine redress, be advised that DNounce will not facilitate that effort.</p>
               </div>
 
               <div>
@@ -228,7 +212,7 @@ export default function LegalPage() {
 
               <div>
                 <h3 className="font-semibold text-gray-900 mb-2">Defamation</h3>
-                <p>Defamation is a false statement of fact presented as true that damages someone's reputation. Opinions are generally not defamatory. Records with Anonymity Granted status and factual support are generally protected. DNounce's AI classification of a record as "Anonymity Granted" is not a legal determination and does not constitute DNounce endorsing the record's truth. If you believe a record about you is defamatory, consult a lawyer — we cannot give legal advice, but we can provide information about a record through proper legal process.</p>
+                <p>Defamation is a false statement of fact presented as true that damages someone's reputation. Opinions are generally not defamatory. DNounce does not endorse the truth of any record. If you believe a record about you is defamatory, consult a lawyer — we cannot give legal advice, but we can provide information about a record through proper legal process.</p>
               </div>
 
               <div>

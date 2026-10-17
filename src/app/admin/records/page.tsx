@@ -213,7 +213,7 @@ export default function AdminRecordsPage() {
   const identityFields: SmartField[] = [
     { key: "id", label: "Record ID", type: "readonly" },
     { key: "_warn", type: "warning", label: "", help: "This controls whether the contributor's real name is shown. Anonymity Granted: contributor's preference is respected. Anonymity Not Granted: always shows real name." },
-    { key: "contributor_identity_preference", label: "Show contributor's real name", type: "boolean", required: true, help: "Yes = show real name publicly. No = show as 'Somebody'." },
+    { key: "contributor_identity_preference", label: "Show contributor name (First L.)", type: "boolean", required: true, help: "Yes for every new and claimed record. No only for old records whose contributor was promised anonymity." },
     { key: "contributor_display_name", label: "Override Display Name", type: "text", help: "Optional. Leave blank to use the contributor's actual name." },
   ];
 
@@ -391,7 +391,7 @@ export default function AdminRecordsPage() {
             <DetailRow label="Auth User ID" value={(selected.contributor as any)?.auth_user_id} mono copyable />
             <DetailRow label="Alias" value={(selected.contributor as any)?.alias} />
             <DetailRow label="Display Name" value={selected.contributor_display_name} />
-            <DetailRow label="Identity Preference" value={selected.contributor_identity_preference ? "Show real name publicly" : "Anonymous (shown as 'Somebody')"} />
+            <DetailRow label="Identity Preference" value={selected.contributor_identity_preference === false ? "Hidden (old anonymous record)" : "Shown as First L."} />
           </DetailSection>
 
           <DetailSection title="Record Details">

@@ -304,7 +304,7 @@ export default function AdminAnalyticsPage() {
       setPageViewsByType(pivoted);
 
       const stageLabels: Record<string, string> = {
-        ai_verification: "AI Review", subject_notified: "Subject Notified",
+        ai_verification: "Awaiting Claim", subject_notified: "Subject Notified",
         published: "Published", deletion_request: "Disputed",
         debate: "In Debate", voting: "In Voting", decision: "Results Pending",
       };

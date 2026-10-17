@@ -176,7 +176,7 @@ export default function AdminDashboard() {
           <h2 className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-3">Records by Stage</h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
             <StatCard label="Total Records" value={counts.r_total} href="/admin/records" color="border-gray-700" />
-            <StatCard label="Under AI Review" value={counts.r_ai} href="/admin/records" color="border-gray-700" />
+            <StatCard label="Awaiting Claim" value={counts.r_ai} href="/admin/records" color="border-gray-700" />
             <StatCard label="Published" value={counts.r_published} href="/admin/records" color="border-green-900" />
             <StatCard label="Disputed" value={counts.r_deletion} href="/admin/records" color="border-red-900" />
             <StatCard label="In Debate" value={counts.r_debate} sub="Active debate window" href="/admin/records" color="border-orange-900" />

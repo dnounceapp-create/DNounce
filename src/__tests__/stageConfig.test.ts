@@ -126,15 +126,14 @@ describe("evaluateVoterBadges", () => {
 // ─── stageConfig ─────────────────────────────────────────────────────────────
 
 describe("stageConfig", () => {
-  it("has all 7 stages defined", () => {
-    expect(Object.keys(stageConfig)).toHaveLength(7);
+  it("has all 6 stages defined", () => {
+    expect(Object.keys(stageConfig)).toHaveLength(6);
     STAGE_ORDER.forEach((s) => {
       expect(stageConfig[s]).toBeDefined();
     });
   });
 
-  it("stages 1 and 2 are not public", () => {
-    expect(stageConfig[1].flags.isPublic).toBe(false);
+  it("stage 2 is not public", () => {
     expect(stageConfig[2].flags.isPublic).toBe(false);
   });
 
@@ -144,8 +143,8 @@ describe("stageConfig", () => {
     });
   });
 
-  it("stages 1, 2, 4, 5 have interactions locked", () => {
-    [1, 2, 4, 5].forEach((s) => {
+  it("stages 2, 4, 5 have interactions locked", () => {
+    [2, 4, 5].forEach((s) => {
       expect(stageConfig[s].flags.interactionsLocked).toBe(true);
     });
   });
@@ -193,8 +192,8 @@ describe("stageShortLabel", () => {
     expect(stageShortLabel[7]).toBe("Settled");
   });
 
-  it("stage 1 mentions AI", () => {
-    expect(stageShortLabel[1].toLowerCase()).toContain("ai");
+  it("there is no stage 1 (AI verification was removed)", () => {
+    expect(stageShortLabel[1]).toBeUndefined();
   });
 });
 

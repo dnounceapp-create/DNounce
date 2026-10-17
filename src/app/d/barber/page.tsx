@@ -151,7 +151,6 @@ function AgreeDisagree({
 /* ─── LifecycleChips ────────────────────────────────── */
 
 const STAGES = [
-  { id: 1, label: "AI Verification" },
   { id: 2, label: "Subject Notified" },
   { id: 3, label: "Record Published" },
   { id: 4, label: "Record in Dispute" },

@@ -42,7 +42,6 @@ const PLANS = [
       "Everything in Standard",
       "Profile view counts",
       "Record impression tracking",
-      "Anonymity breakdown",
       "Stage timeline analytics",
       "Vote outcome history",
       "Score history chart",

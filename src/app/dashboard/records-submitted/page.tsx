@@ -109,16 +109,18 @@ function RecordMeta({ record }: { record: RecordItem }) {
 }
 
 function statusToStage(status: string): number {
+  // There is no AI/anonymity step: submission goes straight to Subject Notified (2).
+  // ai_verification is only a holding state for unclaimed DNounce Mod records.
   const map: Record<string, number> = {
-    ai_verification: 1,
+    ai_verification: 2,
     subject_notified: 2,
     published: 3,
-    disputed: 4,
+    deletion_request: 4,
     debate: 5,
     voting: 6,
     decision: 7,
   };
-  return map[status] ?? 1;
+  return map[status] ?? 2;
 }
 
 export default function RecordsSubmittedPage() {
@@ -170,8 +172,8 @@ export default function RecordsSubmittedPage() {
         const mapped: RecordItem[] = rawRecords.map((r: any) => ({
           id: r.id,
           record_alias: (() => {
-            const cred = r.ai_vendor_1_result || r.anonymity_status || "";
-            const reveal = (cred === "Anonymity Not Granted" || cred === "anonymity_not_granted") || ((cred === "Anonymity Granted" || cred === "anonymity_granted") && r.contributor_identity_preference === true);
+            // Names always show, except old records whose contributor was promised anonymity.
+            const reveal = r.contributor_identity_preference !== false;
             return reveal ? (r.contributor_display_name || "SuperHero123") : "SuperHero123";
           })(),
           subject_name: r.subjects?.name || "Unknown",
@@ -209,7 +211,6 @@ export default function RecordsSubmittedPage() {
   const statusToPredicate = (status?: string) => {
     if (!status) return () => true;
     const map: Record<string, (r: RecordItem) => boolean> = {
-      "AI Verification": (r) => r.stage === 1,
       "Subject Notified": (r) => r.stage === 2,
       Published: (r) => r.stage === 3,
       "Deletion Request": (r) => r.stage === 4,
@@ -316,7 +317,6 @@ export default function RecordsSubmittedPage() {
               onChange={(e) => setFilters({ ...filters, status: e.target.value })}
             >
               <option value="">Status</option>
-              <option>AI Verification</option>
               <option>Subject Notified</option>
               <option>Published</option>
               <option>Deletion Request</option>
@@ -408,10 +408,9 @@ export default function RecordsSubmittedPage() {
 
         {/* Record List */}
         <div className="bg-white shadow rounded-xl border border-gray-100">
-          <div className="hidden md:grid grid-cols-3 px-6 py-3 font-semibold text-gray-600 text-sm">
+          <div className="hidden md:grid grid-cols-2 px-6 py-3 font-semibold text-gray-600 text-sm">
             <div>Record Name</div>
             <div className="text-center">Status</div>
-            <div className="text-center">Your Name</div>
           </div>
 
           {loadingData ? (
@@ -424,7 +423,7 @@ export default function RecordsSubmittedPage() {
             paginatedRecords.map((record) => (
               <div
                 key={record.id}
-                className="md:grid md:grid-cols-3 md:items-center gap-3 px-4 sm:px-6 py-4 md:py-5 border-t first:border-t-0 hover:bg-gray-50/50 transition"
+                className="md:grid md:grid-cols-2 md:items-center gap-3 px-4 sm:px-6 py-4 md:py-5 border-t first:border-t-0 hover:bg-gray-50/50 transition"
               >
                 <div className="md:col-span-1">
                   <Link href={`/record/${record.id}`} className="font-medium text-gray-900 text-sm sm:text-base hover:underline">
@@ -461,15 +460,6 @@ export default function RecordsSubmittedPage() {
                   )}
                 </div>
 
-                <div className="mt-3 md:mt-0 text-left md:text-center">
-                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] sm:text-xs font-medium bg-gray-100 text-gray-600">
-                    {record.anonymity_status === "Pending" || !record.anonymity_status
-                      ? "Pending"
-                      : record.record_alias !== "SuperHero123"
-                      ? "Shown"
-                      : "Hidden"}
-                  </span>
-                </div>
               </div>
             ))
           )}

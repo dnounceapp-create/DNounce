@@ -80,7 +80,7 @@ const ALL_BADGES: { label: string; icon: string }[] = [
 ];
 
 const STATUS_LABELS: Record<string, string> = {
-  ai_verification: "AI Verification", subject_notified: "Subject Notified",
+  ai_verification: "Awaiting Claim", subject_notified: "Subject Notified",
   published: "Published", deletion_request: "Deletion Request",
   debate: "Debate", voting: "Voting", decision: "Results",
 };
@@ -258,8 +258,8 @@ export default function ReputationPage() {
         const anonHash = await computeContributorHash(userId);
         const { data } = await supabase.from("records").select("id,status,category,final_outcome,anonymity_status,ai_vendor_1_result,created_at,record_alias,contributor_display_name,contributor_identity_preference,subject:subjects(name)").or(`contributor_id.eq.${contributorId ?? "00000000-0000-0000-0000-000000000000"},anon_contributor_hash.eq.${anonHash}`).order("created_at", { ascending: false }).limit(20);
         const mapped = (data ?? []).map((r: any) => ({ id: r.id, subject_name: r.subject?.name ?? "Unknown", contributor_alias: (() => {
-  const cred = r.ai_vendor_1_result || r.anonymity_status || "";
-  const reveal = (cred === "Anonymity Not Granted" || cred === "anonymity_not_granted") || ((cred === "Anonymity Granted" || cred === "anonymity_granted") && r.contributor_identity_preference === true);
+  // Names always show, except old records whose contributor was promised anonymity.
+  const reveal = r.contributor_identity_preference !== false;
   return reveal ? (r.contributor_display_name || "SuperHero123") : "SuperHero123";
 })(), category: r.category, status: r.status, final_outcome: r.final_outcome, anonymity_status: r.anonymity_status ?? null, created_at: r.created_at, comment_count: 0 }));
         const counts = await Promise.all(mapped.map(async (r) => {
@@ -274,8 +274,8 @@ records = mapped.map((r, i) => ({ ...r, comment_count: counts[i] }));
         if (ids.length) {
           const { data } = await supabase.from("records").select("id,status,category,final_outcome,anonymity_status,ai_vendor_1_result,created_at,record_alias,contributor_display_name,contributor_identity_preference,subject:subjects(name)").in("id", ids);
           const mapped = (data ?? []).map((r: any) => ({ id: r.id, subject_name: r.subject?.name ?? "Unknown", contributor_alias: (() => {
-  const cred = r.ai_vendor_1_result || r.anonymity_status || "";
-  const reveal = (cred === "Anonymity Not Granted" || cred === "anonymity_not_granted") || ((cred === "Anonymity Granted" || cred === "anonymity_granted") && r.contributor_identity_preference === true);
+  // Names always show, except old records whose contributor was promised anonymity.
+  const reveal = r.contributor_identity_preference !== false;
   return reveal ? (r.contributor_display_name || "SuperHero123") : "SuperHero123";
 })(), category: r.category, status: r.status, final_outcome: r.final_outcome, anonymity_status: r.anonymity_status ?? null, created_at: r.created_at, comment_count: 0 }));
           const counts = await Promise.all(mapped.map(async (r) => {
@@ -291,8 +291,8 @@ records = mapped.map((r, i) => ({ ...r, comment_count: counts[i] }));
         if (ids.length) {
           const { data } = await supabase.from("records").select("id,status,category,final_outcome,anonymity_status,ai_vendor_1_result,created_at,record_alias,contributor_display_name,contributor_identity_preference,subject:subjects(name)").in("id", ids);
           const mapped = (data ?? []).map((r: any) => ({ id: r.id, subject_name: r.subject?.name ?? "Unknown", contributor_alias: (() => {
-  const cred = r.ai_vendor_1_result || r.anonymity_status || "";
-  const reveal = (cred === "Anonymity Not Granted" || cred === "anonymity_not_granted") || ((cred === "Anonymity Granted" || cred === "anonymity_granted") && r.contributor_identity_preference === true);
+  // Names always show, except old records whose contributor was promised anonymity.
+  const reveal = r.contributor_identity_preference !== false;
   return reveal ? (r.contributor_display_name || "SuperHero123") : "SuperHero123";
 })(), category: r.category, status: r.status, final_outcome: r.final_outcome, anonymity_status: r.anonymity_status ?? null, created_at: r.created_at, comment_count: 0 }));
           const counts = await Promise.all(mapped.map(async (r) => {
@@ -307,8 +307,8 @@ records = mapped.map((r, i) => ({ ...r, comment_count: counts[i] }));
         if (subjectRow?.subject_uuid) {
           const { data } = await supabase.from("records").select("id,status,category,final_outcome,anonymity_status,ai_vendor_1_result,created_at,record_alias,contributor_display_name,contributor_identity_preference,subject:subjects(name)").eq("subject_id", subjectRow.subject_uuid).order("created_at", { ascending: false }).limit(20);
           const mapped = (data ?? []).map((r: any) => ({ id: r.id, subject_name: r.subject?.name ?? "Unknown", contributor_alias: (() => {
-  const cred = r.ai_vendor_1_result || r.anonymity_status || "";
-  const reveal = (cred === "Anonymity Not Granted" || cred === "anonymity_not_granted") || ((cred === "Anonymity Granted" || cred === "anonymity_granted") && r.contributor_identity_preference === true);
+  // Names always show, except old records whose contributor was promised anonymity.
+  const reveal = r.contributor_identity_preference !== false;
   return reveal ? (r.contributor_display_name || "SuperHero123") : "SuperHero123";
 })(), category: r.category, status: r.status, final_outcome: r.final_outcome, anonymity_status: r.anonymity_status ?? null, created_at: r.created_at, comment_count: 0 }));
           const counts = await Promise.all(mapped.map(async (r) => {

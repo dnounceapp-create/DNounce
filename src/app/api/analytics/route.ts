@@ -311,7 +311,7 @@ export async function GET(req: NextRequest) {
       const rawCred = (r.ai_vendor_1_result ?? r.anonymity_status ?? "").toString();
       const credBucket = rawCred.toLowerCase().includes("evidence") ? "Anonymity Granted"
         : rawCred.toLowerCase().includes("opinion") ? "Anonymity Not Granted" : rawCred;
-      const showRealName = credBucket === "Anonymity Not Granted" || (credBucket === "Anonymity Granted" && r.contributor_identity_preference === true);
+      const showRealName = r.contributor_identity_preference !== false; // names always show except old promised-anonymous records
       const contributorLabel = showRealName ? (r.contributor_display_name || "SuperHero123") : "SuperHero123";
       return {
         id: r.id,

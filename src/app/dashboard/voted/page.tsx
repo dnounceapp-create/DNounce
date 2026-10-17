@@ -120,16 +120,18 @@ function RecordMeta({ record }: { record: VotedRecord }) {
 }
 
 function statusToStage(status: string): number {
+  // There is no AI/anonymity step: submission goes straight to Subject Notified (2).
+  // ai_verification is only a holding state for unclaimed DNounce Mod records.
   const map: Record<string, number> = {
-    ai_verification: 1,
+    ai_verification: 2,
     subject_notified: 2,
     published: 3,
-    disputed: 4,
+    deletion_request: 4,
     debate: 5,
     voting: 6,
     decision: 7,
   };
-  return map[status] ?? 1;
+  return map[status] ?? 2;
 }
 
 export default function VotedRecordsPage() {
@@ -183,8 +185,8 @@ export default function VotedRecordsPage() {
             vote_choice: v.choice,
             vote_explanation: v.explanation || "",
             record_alias: (() => {
-              const cred = rec?.ai_vendor_1_result || rec?.anonymity_status || "";
-              const reveal = (cred === "Anonymity Not Granted" || cred === "anonymity_not_granted") || ((cred === "Anonymity Granted" || cred === "anonymity_granted") && rec?.contributor_identity_preference === true);
+              // Names always show, except old records whose contributor was promised anonymity.
+              const reveal = rec?.contributor_identity_preference !== false;
               return reveal ? (rec?.contributor_display_name || "SuperHero123") : "SuperHero123";
             })(),
             subject_name: sub?.name || "Unknown",
@@ -221,7 +223,6 @@ export default function VotedRecordsPage() {
   const statusToPredicate = (status?: string) => {
     if (!status) return () => true;
     const map: Record<string, (r: VotedRecord) => boolean> = {
-      "AI Verification": (r) => r.stage === 1,
       "Subject Notified": (r) => r.stage === 2,
       Published: (r) => r.stage === 3,
       "Deletion Request": (r) => r.stage === 4,
@@ -326,7 +327,6 @@ export default function VotedRecordsPage() {
               onChange={(e) => setFilters({ ...filters, status: e.target.value })}
             >
               <option value="">Status</option>
-              <option>AI Verification</option>
               <option>Subject Notified</option>
               <option>Published</option>
               <option>Deletion Request</option>

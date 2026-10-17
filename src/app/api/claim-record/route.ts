@@ -28,7 +28,7 @@ export async function POST(req: Request) {
   try {
     const {
       recordId, code,
-      description, displayName, identityPreference,
+      description, displayName,
       category, relationship, rating, location,
       firstName, lastName, nickname, organization, subjectId,
     } = await req.json();

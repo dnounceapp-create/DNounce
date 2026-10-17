@@ -34,7 +34,7 @@ import AgreeDisagree from "@/components/reactions/AgreeDisagree";
 import MentionTextarea, { notifyMentions } from "@/components/MentionTextarea";
 
 const PUBLIC_STAGE_ORDER = [3, 6, 7] as const;
-const FULL_STAGE_ORDER = [1, 2, 3, 4, 5, 6, 7] as const;
+const FULL_STAGE_ORDER = [2, 3, 4, 5, 6, 7] as const;
 const POST_PUBLISH_STAGE_ORDER = [3, 4, 5, 6, 7] as const;
 
 type ViewerRole = "public" | "contributor" | "subject" | "voter" | "citizen";
@@ -62,7 +62,7 @@ function normalizeAnonymityStatus(raw: any) {
 
 function getRecordStage(record: any): number {
   const status = normalizeStatus(record?.status);
-  if (status === "ai_verification") return 1;
+  if (status === "ai_verification") return 2; // holding state for unclaimed Mod records; no AI step
   if (status === "subject_notified") return 2;
   if (status === "published") return 3;
   if (status === "deletion_request") return 4;
@@ -73,7 +73,7 @@ function getRecordStage(record: any): number {
   const aiDone = !!record?.ai_completed_at;
   const isPublished = record?.is_published === true || !!record?.published_at;
 
-  if (!aiDone) return 1;
+  if (!aiDone) return 2;
   if (aiDone && !isPublished) return 2;
   return 3;
 }
@@ -193,12 +193,9 @@ function shortId(id: string) {
 }
 
 function shouldRevealContributorIdentity(record: any): boolean {
-  const cred = normalizeAnonymityStatus(record?.anonymity_status);
-  const choseName = record?.contributor_identity_preference === true;
-
-  if (cred === "Anonymity Not Granted") return true;
-  if (cred === "Anonymity Granted") return choseName;
-  return false; // Anonymity Granted → always alias
+  // Contributor names ("First L.") always show, except old records whose
+  // contributor was promised anonymity (identity preference explicitly false).
+  return record?.contributor_identity_preference !== false;
 }
 
 function getVisibleStagesForViewer(args: { viewerRole: ViewerRole; stage: number }) {

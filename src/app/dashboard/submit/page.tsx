@@ -19,7 +19,6 @@ import {
 } from "lucide-react";
 
 import { supabase } from "@/lib/supabaseClient";
-import { classifyRecord } from "@/lib/ai/classifyRecord";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -156,13 +155,6 @@ export default function SubmitRecordPage() {
 
   const [files, setFiles] = useState<File[]>([]);
   const [previewFile, setPreviewFile] = useState<{url: string; name: string; type: string} | null>(null);
-  // Identity preference (required)
-  const [identityPreference, setIdentityPreference] = useState<"hide" | "show">("show");
-  const [identityTouched, setIdentityTouched] = useState(false);
-  
-  // confirm when changing after initial choice
-  const [confirmIdentityOpen, setConfirmIdentityOpen] = useState(false);
-  const pendingIdentity = useRef<"hide" | "show" | null>(null);  
 
   // selection
   const [selectedPerson, setSelectedPerson] = useState<PersonPreview | null>(null);
@@ -548,7 +540,6 @@ export default function SubmitRecordPage() {
 
       const missingFields: string[] = [];
       if (!description.trim()) missingFields.push("Experience details");
-      if (!identityPreference) missingFields.push("Identity preference");
       if (!agreedToTerms) missingFields.push("Agree to Terms of Service");
       if (!rating || rating <= 0) missingFields.push("Rating (1–10)");
       if (!submitRelationship) missingFields.push("Relationship");
@@ -693,34 +684,13 @@ export default function SubmitRecordPage() {
         return;
       }
 
-      classifyRecord({
-        description: description.trim(),
-        rating,
-        hasAttachments: files.length > 0,
-      });
-      // Contributor names are always shown on new records (first name + last initial).
-      const credibility: string = "Anonymity Not Granted";
-
+      // Moves the record to "Subject Notified" (server-side, owner-checked).
       await fetch("/api/records/update-credibility", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ recordId: newRecord.id, credibility }),
+        body: JSON.stringify({ recordId: newRecord.id }),
       }).catch(() => {});
 
-      // Zero-knowledge: sever contributor identity for anonymous AG submissions
-      if (credibility === "Anonymity Granted" && identityPreference === "hide") {
-        const { computeContributorHash } = await import("@/lib/contributorHash");
-        const hashHex = await computeContributorHash(userData.user.id);
-
-        await supabase
-          .from("records")
-          .update({
-            anon_contributor_hash: hashHex,
-            contributor_id: null,
-            contributor_identity_preference: false,
-          })
-          .eq("id", newRecord.id);
-      }
 
       try {
         await uploadEvidenceFiles(newRecordId, contributorId);
@@ -1051,126 +1021,9 @@ export default function SubmitRecordPage() {
 
             <p className="mt-3 text-sm sm:text-base text-gray-500">Selected rating: {rating ? rating.toFixed(1) : "—"} / 10</p>
               </div>
-              {/* Identity Preference (REQUIRED) */}
-              <div className="mb-8 mt-8">
-                <div className="rounded-2xl border bg-white p-5 sm:p-6 shadow-sm">
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="min-w-0">
-                      <div className="text-base sm:text-lg font-semibold text-gray-900">
-                        Identity Preference <span className="text-red-500">*</span>
-                      </div>
-                      <div className="mt-1 text-sm text-gray-600 leading-relaxed">
-                        Choose how your name is displayed{" "}
-                        <span className="font-semibold">if allowed</span> based on your submission type.
-                      </div>
-                    </div>
-
-                    {/* On/Off Toggle */}
-                    <div className="shrink-0 flex flex-col items-start sm:items-end gap-1">
-                      <div className="flex flex-wrap items-center gap-3">
-                        <span className="text-sm font-semibold text-gray-700">
-                          {identityPreference === "hide" ? "Showing as anonymous" : "Showing my real name"}
-                        </span>
-
-                        <button
-                          type="button"
-                          role="switch"
-                          aria-checked={identityPreference === "hide"}
-                          className={[
-                            "relative inline-flex h-7 w-12 items-center rounded-full border transition",
-                            identityPreference === "hide"
-                              ? "bg-black border-black"
-                              : "bg-gray-200 border-gray-300",
-                          ].join(" ")}
-                          onClick={() => {
-                            const next: "hide" | "show" =
-                              identityPreference === "show" ? "hide" : "show";
-
-                            // confirm if changing after initial choice
-                            if (identityTouched) {
-                              pendingIdentity.current = next;
-                              setConfirmIdentityOpen(true);
-                              return;
-                            }
-
-                            setIdentityPreference(next);
-                            setIdentityTouched(true);
-                          }}
-                        >
-                          <span
-                            className={[
-                              "inline-block h-5 w-5 transform rounded-full bg-white shadow transition",
-                              identityPreference === "hide" ? "translate-x-6" : "translate-x-1",
-                            ].join(" ")}
-                          />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Friendly explanation + rules */}
-                  <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
-                    <div className="font-semibold text-sm">Important</div>
-                    <div className="mt-1 text-sm leading-relaxed">
-                      Your preference may be overridden:
-                      <ul className="mt-2 list-disc pl-5 space-y-1">
-                        <li>
-                          <span className="font-semibold">Anonymity Granted:</span> Your choice is respected.
-                        </li>
-                        <li>
-                          <span className="font-semibold">Anonymity Not Granted:</span> Always shows Real Name.
-                        </li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Confirm modal */}
-                {confirmIdentityOpen && (
-                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-                    <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
-                      <div className="text-base font-semibold text-gray-900">Are you sure?</div>
-                      <div className="mt-2 text-sm text-gray-600 leading-relaxed">
-                        You’re about to change your identity preference to{" "}
-                        <span className="font-semibold">
-                          {pendingIdentity.current === "hide" ? "Showing as anonymous" : "Showing my real name"}
-                        </span>
-                        .
-                        <div className="mt-2 text-xs text-gray-500">
-                          This may still be overridden depending on Anonymity Status.
-                        </div>
-                      </div>
-
-                      <div className="mt-4 flex gap-2 justify-end">
-                        <button
-                          type="button"
-                          className="rounded-lg border px-3 py-2 text-sm hover:bg-gray-50"
-                          onClick={() => {
-                            pendingIdentity.current = null;
-                            setConfirmIdentityOpen(false);
-                          }}
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="button"
-                          className="rounded-lg bg-black px-3 py-2 text-sm text-white hover:bg-gray-900"
-                          onClick={() => {
-                            const next = pendingIdentity.current;
-                            if (next) {
-                              setIdentityPreference(next);
-                              setIdentityTouched(true);
-                            }
-                            pendingIdentity.current = null;
-                            setConfirmIdentityOpen(false);
-                          }}
-                        >
-                          Yes, change it
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
+              {/* Contributor name notice */}
+              <div className="mb-8 mt-8 rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700 leading-relaxed">
+                <span className="font-semibold">Your name:</span> Your first name and last initial will appear publicly on this record. The person you're writing about will see it. You're responsible for what you write.
               </div>
 
           {/* Evidence Upload */}
@@ -1274,7 +1127,7 @@ export default function SubmitRecordPage() {
                 >
                   Terms of Service
                 </button>{" "}
-                and confirm that my submission is truthful, that I understand DNounce's AI classification is a structural tool only, and that I — not DNounce — bear full legal responsibility for this submission.
+                and confirm that my submission is truthful, and that I — not DNounce — bear full legal responsibility for this submission.
               </label>
             </div>
 
@@ -1286,11 +1139,9 @@ export default function SubmitRecordPage() {
               <h4 className="font-semibold mb-2">Important Legal Notice:</h4>
               <p className="mb-2">By submitting this record, you acknowledge that DNounce is a neutral public platform operating under Section 230 of the Communications Decency Act (47 U.S.C. § 230). DNounce is not the publisher, editor, or endorser of any user-submitted content. You — not DNounce — are solely responsible for the accuracy and legality of your submission.</p>
               <p className="mb-2">You certify that your submission is truthful to the best of your knowledge and based on either verifiable evidence or honest personal opinion. Submitting knowingly false, fabricated, or malicious content may result in permanent account suspension and exposes you to legal liability.</p>
-              <p className="mb-2">AI Classification Disclaimer: Your submission will be analyzed by DNounce's automated AI system and assigned either Anonymity Granted or Anonymity Not Granted. This classification is a structural analysis of language patterns only. It is not a determination of truth or accuracy, and it does not represent DNounce taking any position on your submission. All outcomes are decided solely by community vote.</p>
-              <p className="mb-2">Contributor Identity: Your name will be displayed according to DNounce's contributor identity rules. Anonymity Not Granted records always display your real name. Anonymity Granted records display your real name if you chose to show it, or an alias if you chose anonymity. We hold your identity on file, encrypted and separately from your review. We do not publish it. If we receive a legally valid demand for it, we will tell you before we disclose anything, unless a court orders us not to. We do not promise to litigate on your behalf.</p>
+              <p className="mb-2">Your name: Your first name and last initial will appear publicly on this record. The person you&apos;re writing about will see it. You&apos;re responsible for what you write.</p>
               <p className="mb-2">The subject will be notified of this submission and will have the right to respond and dispute through our structured community process. You agree to engage in that process in good faith if contacted.</p>
               <p className="mb-2">You retain copyright of your original content but grant DNounce a non-exclusive license to display and distribute it as part of our platform services. We do not sell your content to third parties.</p>
-              <p className="mb-2">Any attempt to use legal process to suppress this record or unmask an anonymous contributor rather than seek genuine redress may be treated as a Strategic Lawsuit Against Public Participation (SLAPP). DNounce reserves the right to oppose such actions vigorously.</p>
             </div>
 
             <button

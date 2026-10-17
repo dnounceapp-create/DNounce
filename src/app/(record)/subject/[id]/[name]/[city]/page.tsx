@@ -850,9 +850,8 @@ export default function SubjectProfilePage() {
     const bucket = normalizeCredBucket(rawCred);
     const realName = (r.contributor_display_name || "").trim();
     const alias = (r.record_alias || "").trim();
-    let showRealName = false;
-    if (bucket === "Anonymity Granted") showRealName = !!r.contributor_identity_preference;
-    else if (bucket === "Anonymity Not Granted") showRealName = true;
+    // Names always show, except old records whose contributor was promised anonymity.
+    const showRealName = r.contributor_identity_preference !== false;
     if (showRealName) return realName || "SuperHero123";
     return "SuperHero123";
   }
@@ -1084,13 +1083,7 @@ export default function SubjectProfilePage() {
                       <option value="deletion_request">Deletion Requested</option>
                       <option value="debate">Under Debate</option>
                       <option value="voting">Voting Open</option>
-                      <option value="decision">Kept</option>
-                    </select>
-                    <select value={filters.record_type ?? ""} onChange={(e) => setFilters((f) => ({ ...f, record_type: e.target.value || undefined }))} className="w-full sm:w-auto min-w-[160px] rounded-xl border px-3 py-2 text-sm bg-white">
-                      <option value="">All record types</option>
-                      <option value="evidence">Evidence</option>
-                      <option value="opinion">Opinion</option>
-                      <option value="pending">Pending</option>
+                      <option value="decision">Settled</option>
                     </select>
                     <select value={filters.time ?? ""} onChange={(e) => setFilters((f) => ({ ...f, time: e.target.value || undefined }))} className="w-full sm:w-auto min-w-[150px] rounded-xl border px-3 py-2 text-sm bg-white">
                       <option value="">All time</option>

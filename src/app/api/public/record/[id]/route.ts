@@ -105,9 +105,8 @@ export async function GET(
   const realName = (data as any).contributor_display_name || profileName || "SuperHero123";
 
   let contributorDisplayName = "SuperHero123";
-  if (cred === "Anonymity Not Granted") contributorDisplayName = realName;
-  else if (cred === "Anonymity Granted") contributorDisplayName = choseName ? realName : "SuperHero123";
-  else contributorDisplayName = "SuperHero123";
+  // Names always show, except old records whose contributor was promised anonymity.
+  if ((data as any).contributor_identity_preference !== false && realName) contributorDisplayName = realName;
 
   const reveal = contributorDisplayName !== "SuperHero123";
 

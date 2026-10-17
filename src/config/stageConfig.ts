@@ -1,7 +1,6 @@
 export type RoleType = "subject" | "contributor" | "voter" | "citizen";
 
 export const stageShortLabel: Record<number, string> = {
-  1: "AI Verification in Progress",
   2: "Subject Notified",
   3: "Record Published",
   4: "Record in Dispute",
@@ -40,7 +39,8 @@ export interface StageConfig {
   ui: StageUI;
 }
 
-export const STAGE_ORDER = [1, 2, 3, 4, 5, 6, 7] as const;
+// Stage 1 (AI verification) was removed: submission goes straight to Subject Notified.
+export const STAGE_ORDER = [2, 3, 4, 5, 6, 7] as const;
 
 /** Helper — earliest publish rule */
 export function computeEarliestPublishAt(
@@ -92,29 +92,6 @@ export function evaluateVoterBadges(input: {
 
 /** Canonical DNounce Record Lifecycle */
 export const stageConfig: Record<number, StageConfig> = {
-  1: {
-    label: "AI Verification in Progress",
-    happens:
-      "The record is submitted by the contributor; DNounce applies the contributor’s name preference before it moves forward.",
-    timeline: {
-      summary: "Up to 72h from submission",
-      start: "onSubmission",
-      durationHours: 72,
-    },
-    flags: { isPublic: false, interactionsLocked: true },
-    actions: {
-      subject: ["❌ No access yet — record not visible."],
-      contributor: [
-        "✅ Can view submission in “Records Submitted”.",
-        "❌ Cannot edit during AI review.",
-        "🗑️ Can request record removal if desired.",
-      ],
-      voter: ["🚫 Not applicable — voters not active yet."],
-      citizen: ["🚫 Not visible."],
-    },
-    ui: { chipClass: "bg-blue-100 text-blue-700" },
-  },
-
   2: {
     label: "Subject Notified",
     happens:
@@ -139,7 +116,7 @@ export const stageConfig: Record<number, StageConfig> = {
       "The record is published and becomes publicly visible on DNounce.",
     timeline: {
       summary:
-        "Up to 72 hours of AI verification plus 24 hours — whichever is longer.",
+        "24 hours after the subject is notified.",
       start: "onPublish",
     },
     flags: { isPublic: true, interactionsLocked: false },

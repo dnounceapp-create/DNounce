@@ -174,7 +174,6 @@ export default async function RecordOGImage({
               DNounce
             </span>
             <div style={{ flex: 1, display: "flex" }} />
-            <CredBadge cred={cred} />
           </div>
 
           {/* Subject name */}

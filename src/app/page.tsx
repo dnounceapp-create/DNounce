@@ -711,12 +711,11 @@ export default function HomePage() {
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {[
-              { step: "01", title: "Submit a record", desc: "Share your experience clearly and honestly." },
-              { step: "02", title: "Name check", desc: "We apply your name preference. Records rated 5 or lower with no evidence show your name." },
-              { step: "03", title: "Subject notified", desc: "The person receives the record and can review it." },
-              { step: "04", title: "Published", desc: "The record goes live, and the subject can respond." },
-              { step: "05", title: "Dispute & debate", desc: "The subject can dispute the record, triggering a 72-hour debate." },
-              { step: "06", title: "Community votes", desc: "The community decides if record is valid." },
+              { step: "01", title: "Submit a record", desc: "Share your experience clearly and honestly. Your first name and last initial will appear publicly on the record." },
+              { step: "02", title: "Subject notified", desc: "The person is notified right away and has 24 hours before the record goes public." },
+              { step: "03", title: "Published", desc: "The record goes live, and the subject can respond." },
+              { step: "04", title: "Dispute & debate", desc: "The subject can dispute the record, triggering a 72-hour debate." },
+              { step: "05", title: "Community votes", desc: "The community votes on who they side with. Votes are shown as counts." },
             ].map((item) => (
               <div key={item.step} className="bg-white rounded-2xl p-6 border border-gray-100">
                 <div className="text-xs font-mono text-gray-400 mb-3">{item.step}</div>
@@ -913,8 +912,8 @@ export default function HomePage() {
 
                   <div className="space-y-3">
                     {[
-                      { title: "Unresolved Repairs and Poor Communication", category: "Mechanic", date: "Dec 15, 2024", comments: 24, cred: "Anonymity Granted", credColor: "text-green-700 bg-green-50 border-green-200", credIcon: <CheckCircle className="w-3 h-3" />, desc: "I've attached repair invoices and email exchanges that show how my car was kept for weeks without updates or resolution." },
-                      { title: "Average Service Experience", category: "Mechanic", date: "Dec 10, 2024", comments: 12, cred: "Anonymity Not Granted", credColor: "text-orange-700 bg-orange-50 border-orange-200", credIcon: <AlertTriangle className="w-3 h-3" />, desc: "In my opinion, the service was just okay. Nothing terrible happened, but I expected more professionalism." },
+                      { title: "Unresolved Repairs and Poor Communication", category: "Mechanic", date: "Dec 15, 2024", comments: 24, desc: "I've attached repair invoices and email exchanges that show how my car was kept for weeks without updates or resolution." },
+                      { title: "Average Service Experience", category: "Mechanic", date: "Dec 10, 2024", comments: 12, desc: "In my opinion, the service was just okay. Nothing terrible happened, but I expected more professionalism." },
                     ].map((r) => (
                       <div key={r.title} className="rounded-2xl border border-gray-100 bg-white p-4 hover:border-gray-200 transition">
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
@@ -1073,28 +1072,6 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Shield className="h-5 w-5 text-blue-600" />
-              <h3 className="font-semibold text-blue-800">How Contributor Names Work</h3>
-            </div>
-            <div className="grid md:grid-cols-2 gap-6 text-sm text-blue-700">
-              <div>
-                <div className="font-medium mb-2">Your name is hidden when</div>
-                <ul className="space-y-1 text-blue-600">
-                  <li>· You choose to stay anonymous, and</li>
-                  <li>· Your record includes evidence, or rates the experience above 5</li>
-                </ul>
-              </div>
-              <div>
-                <div className="font-medium mb-2">Your name is shown when</div>
-                <ul className="space-y-1 text-blue-600">
-                  <li>· You choose to show it, or</li>
-                  <li>· Your record rates the experience 5 or lower with no evidence attached</li>
-                </ul>
-              </div>
-            </div>
-          </div>
         </div>
       </section>
 
@@ -1130,7 +1107,7 @@ export default function HomePage() {
               <div className="space-y-2.5 text-sm text-gray-600">
                 <p><span className="font-medium text-gray-800">Section 230:</span> DNounce is protected from liability for user-generated content under 47 U.S.C. § 230.</p>
                 <p><span className="font-medium text-gray-800">Good faith moderation:</span> Content moderation is conducted in good faith.</p>
-                <p><span className="font-medium text-gray-800">Legal compliance:</span> We comply with legitimate court orders while protecting user rights.</p>
+                <p><span className="font-medium text-gray-800">Against suppression:</span> DNounce opposes attempts to use legal process to silence lawful speech about matters of public interest.</p>
               </div>
             </div>
           </div>
@@ -1225,16 +1202,15 @@ export default function HomePage() {
                 <label className="text-xs text-gray-400">
                   I agree to the{" "}
                   <button type="button" onClick={() => document.getElementById("legal-section")?.scrollIntoView({ behavior: "smooth" })} className="text-blue-500 hover:underline">Terms of Service</button>{" "}
-                  and confirm that my submission is truthful, that I understand DNounce's anonymity determination is a structural tool only, and that I — not DNounce — bear full legal responsibility for this submission.
+                  and confirm that my submission is truthful, and that I — not DNounce — bear full legal responsibility for this submission.
                 </label>
               </div>
               <div className="h-36 overflow-y-auto border border-gray-100 rounded-xl p-4 text-xs text-gray-400 bg-gray-50 leading-relaxed">
                 <p className="font-semibold mb-2 text-gray-600">Important Legal Notice</p>
                 <p className="mb-2">By submitting this record, you acknowledge that DNounce is a neutral platform operating under Section 230 of the Communications Decency Act. You — not DNounce — are solely responsible for the accuracy and legality of your submission.</p>
                 <p className="mb-2">You certify that your submission is truthful to the best of your knowledge and based on either verifiable evidence or honest personal opinion. Submitting knowingly false or malicious content may result in permanent account suspension and exposes you to legal liability.</p>
-                <p className="mb-2">Anonymity Determination: Your submission will be evaluated and assigned either Anonymity Granted or Anonymity Not Granted. This is a structural determination only — it does not mean DNounce has verified or endorsed your submission. All outcomes are decided solely by community vote.</p>
-                <p className="mb-2">The subject will be notified and has the right to respond and dispute through our structured community process.</p>
-                <p>Any attempt to use legal process to suppress this record or unmask an anonymous contributor may be treated as a SLAPP. DNounce reserves the right to oppose such actions vigorously.</p>
+                <p className="mb-2">Your name: Your first name and last initial will appear publicly on the record. The person you're writing about will see it.</p>
+                <p>The subject will be notified and has the right to respond and dispute through our structured community process.</p>
               </div>
             </div>
 

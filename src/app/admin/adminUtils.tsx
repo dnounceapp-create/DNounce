@@ -47,7 +47,7 @@ export function fmtVal(val: any): string {
 
 // ─── Status / Cred Badges ─────────────────────────────────────────────────────
 export const STATUS_LABELS: Record<string, string> = {
-  ai_verification: "AI Verification", subject_notified: "Subject Notified",
+  ai_verification: "Awaiting Claim", subject_notified: "Subject Notified",
   published: "Published", deletion_request: "Deletion Request",
   debate: "Debate", voting: "Voting", decision: "Results",
 };
@@ -323,7 +323,7 @@ const STAGE_CONFIG: Record<string, {
   fields: SmartField[];
 }> = {
   ai_verification: {
-    label: "Reset to AI Verification", color: "gray",
+    label: "Reset to Awaiting Claim", color: "gray",
     desc: "The record will be pulled from public view and sent back to the AI review queue. Anonymity Status label will be cleared.",
     fields: [
       { key: "_warn", type: "warning", label: "", help: "This will make the record private immediately. The subject and contributor will be notified." },

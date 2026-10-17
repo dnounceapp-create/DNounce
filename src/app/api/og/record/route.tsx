@@ -120,9 +120,8 @@ export async function GET(req: NextRequest) {
   const submittedDate = formatDate(record?.created_at || "");
 
   const c2 = rawCred.toLowerCase();
-  const revealContributor =
-    c2.includes("anonymity not granted") || c2.includes("opinion") ||
-    ((c2.includes("anonymity granted") || c2.includes("evidence") || c2.includes("unable")) && record?.contributor_identity_preference === true);
+  // Names always show, except old records whose contributor was promised anonymity.
+  const revealContributor = record?.contributor_identity_preference !== false;
   const contributorName = revealContributor
     ? (record?.contributor_display_name || "SuperHero123")
     : "SuperHero123";
