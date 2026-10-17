@@ -81,7 +81,7 @@ describe("evaluateVoterBadges", () => {
       voterFlagPercent: 33,
       publicApprovalPercent: 50,
     });
-    expect(result).toContain("CONVICTED Lost Voting Right");
+    expect(result).toContain("Lost voting rights");
   });
 
   it("does NOT return conviction badge when only flagPercent met", () => {
@@ -90,7 +90,7 @@ describe("evaluateVoterBadges", () => {
       voterFlagPercent: 33,
       publicApprovalPercent: 49,
     });
-    expect(result).not.toContain("CONVICTED Lost Voting Right");
+    expect(result).not.toContain("Lost voting rights");
   });
 
   it("does NOT return conviction badge when only approvalPercent met", () => {
@@ -99,7 +99,7 @@ describe("evaluateVoterBadges", () => {
       voterFlagPercent: 32,
       publicApprovalPercent: 50,
     });
-    expect(result).not.toContain("CONVICTED Lost Voting Right");
+    expect(result).not.toContain("Lost voting rights");
   });
 
   it("returns both badges when all thresholds met", () => {
@@ -109,7 +109,7 @@ describe("evaluateVoterBadges", () => {
       publicApprovalPercent: 50,
     });
     expect(result).toContain("⚠ Low-Quality Voter");
-    expect(result).toContain("CONVICTED Lost Voting Right");
+    expect(result).toContain("Lost voting rights");
     expect(result).toHaveLength(2);
   });
 

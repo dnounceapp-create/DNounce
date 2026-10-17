@@ -679,18 +679,18 @@ export default function HomePage() {
                 direction="left"
                 items={worstVoters}
                 renderCard={(v) => (
+                  // Shown by voting alias only (no real name or job title). Links to the record they were convicted on.
                   <div
-                    onClick={() => v.subject_uuid && router.push(`/subject/${v.subject_uuid}/${slugify(v.subject_name ?? '')}`)}
-                    className="cursor-pointer w-[170px] bg-white border border-red-200 rounded-2xl p-4 hover:shadow-sm transition opacity-90"
+                    onClick={() => v.record_id && router.push(`/record/${v.record_id}`)}
+                    className={`w-[170px] bg-white border border-red-200 rounded-2xl p-4 opacity-90 ${v.record_id ? "cursor-pointer hover:shadow-sm transition" : ""}`}
                   >
                     <div className="flex items-center gap-2 mb-2">
                       <div className="w-7 h-7 rounded-full bg-red-50 flex items-center justify-center text-red-600 text-xs font-semibold flex-shrink-0">✕</div>
                       <div className="min-w-0">
-                        <div className="text-[11px] font-semibold text-gray-900 truncate">{v.first_name} {v.last_name}</div>
-                        <div className="text-[10px] text-red-600 font-medium">Convicted</div>
+                        <div className="text-[11px] font-semibold text-gray-900 truncate">{v.alias || "Anonymous voter"}</div>
+                        <div className="text-[10px] text-red-600 font-medium">Lost voting rights</div>
                       </div>
                     </div>
-                    <div className="text-[10px] text-gray-400 mb-1">{v.job_title}</div>
                     <div className="text-[11px] font-semibold text-red-600">↓ {v.downticks} downticks</div>
                   </div>
                 )}
@@ -1033,7 +1033,7 @@ export default function HomePage() {
             </div>
             <div className="space-y-3 text-sm text-gray-600">
               <p><span className="font-medium text-gray-900">20% downvotes</span> on your explanation → <span className="text-amber-600">⚠ Low-Quality Voter</span> badge for the record.</p>
-              <p><span className="font-medium text-gray-900">33% voter flags + 50% public approval</span> → <span className="text-red-600 font-semibold">Convicted</span> — voting right removed for that record.</p>
+              <p><span className="font-medium text-gray-900">33% voter flags + 50% public approval</span> → <span className="text-red-600 font-semibold">Lost voting rights</span> on that record.</p>
               <p className="text-gray-400">Poor explanations permanently lower your Voter Score. Write thoughtful, detailed reasoning.</p>
             </div>
           </div>

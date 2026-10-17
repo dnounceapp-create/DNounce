@@ -73,7 +73,7 @@ const ALL_BADGES: { label: string; icon: string }[] = [
   { label: "Rising Star",     icon: "⭐" },
   { label: "Controversial",   icon: "🌶️" },
   { label: "Low-Quality Voter", icon: "⚠️" },
-  { label: "Convicted",       icon: "🔴" },
+  { label: "Lost voting rights", icon: "🔴" },
   { label: "Fan Favorite",    icon: "⭐" },
   { label: "Expert",          icon: "🎓" },
   { label: "Struggling",      icon: "📉" },
@@ -222,7 +222,8 @@ export default function ReputationPage() {
         overall_score:     finalUserScores?.overall_score ?? null,
       });
       if (finalUserScores?.updated_at) setLastUpdated(finalUserScores.updated_at);
-      setBadges(badgesRes.data || []);
+      // "Convicted" was renamed to "Lost voting rights"; read old rows under the new name.
+      setBadges((badgesRes.data || []).map((b: any) => b.label === "Convicted" ? { ...b, label: "Lost voting rights" } : b));
     } catch (err) {
       console.error("Failed to load reputation:", err);
     } finally {
@@ -267,7 +268,7 @@ export default function ReputationPage() {
           return results.reduce((sum, res) => sum + (res.count ?? 0), 0);
         }));
 records = mapped.map((r, i) => ({ ...r, comment_count: counts[i] }));
-      } else if (["Top Voter", "Low-Quality Voter", "Convicted"].includes(label)) {
+      } else if (["Top Voter", "Low-Quality Voter", "Lost voting rights", "Convicted"].includes(label)) {
         const { data: votes } = await supabase.from("record_votes").select("record_id").eq("user_id", userId).limit(20);
         const ids = (votes ?? []).map((v: any) => v.record_id).filter(Boolean);
         if (ids.length) {

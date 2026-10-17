@@ -3609,7 +3609,7 @@ function VotingCourtroom({
           return (
             <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800 ml-2 border border-red-300" title="This vote does NOT count toward the final tally">
               <span className="w-1.5 h-1.5 rounded-full bg-red-600"></span>
-              DISQUALIFIED • Lost Voting Right
+              Lost voting rights
             </span>
           );
         }
@@ -3650,7 +3650,7 @@ function VotingCourtroom({
                     <TallyChip contributorCount={contributorCount} subjectCount={subjectCount} totalCount={totalCount} contributorName={contributorDisplayName} subjectName={record?.subject?.name ?? "Subject"} />
                     {Object.values(voteBadges).filter(b => b.is_convicted).length > 0 && (
                       <div className="absolute top-full right-0 mt-1 hidden group-hover:block bg-gray-800 text-white text-xs rounded-lg p-2 whitespace-nowrap z-10">
-                        {Object.values(voteBadges).filter(b => b.is_convicted).length} convicted vote(s) excluded from tally
+                        {Object.values(voteBadges).filter(b => b.is_convicted).length} vote(s) that lost voting rights, excluded from tally
                       </div>
                     )}
                   </div>

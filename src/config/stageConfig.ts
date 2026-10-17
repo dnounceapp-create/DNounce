@@ -64,7 +64,7 @@ export const voterQualityRules = {
   convictionBadge: {
     voterFlagPercentThreshold: 33,
     publicApprovalPercentThreshold: 50,
-    label: "CONVICTED Lost Voting Right",
+    label: "Lost voting rights",
     scope: "per-record" as const,
   },
   voting: {
@@ -209,7 +209,7 @@ export const stageConfig: Record<number, StageConfig> = {
       voter: [
         "✅ Can side with contributor or subject and must add short reasoning.",
         "⚠ 5+ downvotes → 'Low-Quality Voter'.",
-        "🧨 ≥33% voter flags + ≥50% public approval → 'CONVICTED Lost Voting Right'.",
+        "🧨 ≥33% voter flags + ≥50% public approval → 'Lost voting rights'.",
       ],
       citizen: [
         "👁️ Can view record and comments.",

@@ -180,7 +180,7 @@ export default function NotificationsPage() {
           <Section title="Critical Alerts" subtitle="These cannot be turned off. They ensure you never miss something that requires your action.">
             <ToggleRow locked title="Record stage changes" desc="Every time a record you're involved in moves to a new stage — as subject or contributor." value={true} />
             <ToggleRow locked title="Vote flagged" desc="When your vote explanation is flagged as low quality by the community." value={true} />
-            <ToggleRow locked title="Vote convicted" desc="When your vote is disqualified and removed from the final tally." value={true} />
+            <ToggleRow locked title="Lost voting rights" desc="When your vote is disqualified and removed from the final tally." value={true} />
           </Section>
 
           {/* ── Tags ── */}

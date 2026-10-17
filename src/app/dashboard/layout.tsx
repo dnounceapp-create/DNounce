@@ -1143,20 +1143,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   direction="left"
                   items={worstVoters}
                   renderCard={(v) => (
+                    // Shown by voting alias only (no real name or job title). Links to the record they were convicted on.
                     <div
-                      onClick={() => v.subject_uuid && router.push(`/subject/${v.subject_uuid}/${slugify(v.subject_name)}`)}
-                      className="cursor-pointer w-[170px] min-w-[170px] max-w-[170px] bg-white border border-red-200 rounded-2xl p-3 hover:shadow-sm transition opacity-90"
+                      onClick={() => v.record_id && router.push(`/record/${v.record_id}`)}
+                      className={`w-[170px] min-w-[170px] max-w-[170px] bg-white border border-red-200 rounded-2xl p-3 opacity-90 ${v.record_id ? "cursor-pointer hover:shadow-sm transition" : ""}`}
                     >
                       <div className="flex items-center gap-2 mb-1">
-                        <div className="w-6 h-6 rounded-full bg-red-50 flex items-center justify-center text-red-600 text-[10px] font-semibold flex-shrink-0">
-                          {(v.first_name?.[0] ?? '') + (v.last_name?.[0] ?? '')}
-                        </div>
+                        <div className="w-6 h-6 rounded-full bg-red-50 flex items-center justify-center text-red-600 text-[10px] font-semibold flex-shrink-0">✕</div>
                         <div className="min-w-0">
-                          <div className="text-[11px] font-semibold text-gray-900 truncate">{v.first_name} {v.last_name}</div>
-                          <div className="text-[10px] text-red-600 font-medium">Convicted</div>
+                          <div className="text-[11px] font-semibold text-gray-900 truncate">{v.alias || "Anonymous voter"}</div>
+                          <div className="text-[10px] text-red-600 font-medium">Lost voting rights</div>
                         </div>
                       </div>
-                      <div className="text-[10px] text-gray-400 mb-1 truncate">{v.job_title}</div>
                       <div className="text-[11px] font-semibold text-red-600">↓ {v.downticks} downticks</div>
                     </div>
                   )}
