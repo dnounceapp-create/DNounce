@@ -48,6 +48,15 @@ function slugify(s?: string | null) {
     .replace(/(^-|-$)/g, "");
 }
 
+// Where a voter card on the "voters today" lists should take you:
+// the real record they voted on, or, for demo voters, the demo record page
+// for their category (e.g. "Personal Trainer" -> /d/personal-trainer).
+function voterRecordHref(v: any): string | null {
+  if (v?.record_id) return `/record/${v.record_id}`;
+  if (v?.record_category) return `/d/${slugify(v.record_category)}`;
+  return null;
+}
+
 function subjectSlug(name?: string | null, nickname?: string | null) {
   const combined = [name, nickname].filter(Boolean).join(" ");
   return slugify(combined) || "profile";
@@ -1111,7 +1120,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   items={topVoters}
                   renderCard={(v) => (
                     <div
-                      onClick={() => v.subject_uuid && router.push(`/subject/${v.subject_uuid}/${slugify(v.subject_name)}`)}
+                      onClick={() => { const href = voterRecordHref(v); if (href) router.push(href); }}
                       className="cursor-pointer w-[170px] min-w-[170px] max-w-[170px] bg-white border border-green-200 rounded-2xl p-3 hover:shadow-sm transition"
                     >
                       <div className="flex items-center gap-2 mb-1">
@@ -1145,8 +1154,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   renderCard={(v) => (
                     // Shown by voting alias only (no real name or job title). Links to the record they were convicted on.
                     <div
-                      onClick={() => v.record_id && router.push(`/record/${v.record_id}`)}
-                      className={`w-[170px] min-w-[170px] max-w-[170px] bg-white border border-red-200 rounded-2xl p-3 opacity-90 ${v.record_id ? "cursor-pointer hover:shadow-sm transition" : ""}`}
+                      onClick={() => { const href = voterRecordHref(v); if (href) router.push(href); }}
+                      className={`w-[170px] min-w-[170px] max-w-[170px] bg-white border border-red-200 rounded-2xl p-3 opacity-90 ${voterRecordHref(v) ? "cursor-pointer hover:shadow-sm transition" : ""}`}
                     >
                       <div className="flex items-center gap-2 mb-1">
                         <div className="w-6 h-6 rounded-full bg-red-50 flex items-center justify-center text-red-600 text-[10px] font-semibold flex-shrink-0">✕</div>
