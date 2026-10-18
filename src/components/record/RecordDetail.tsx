@@ -3777,7 +3777,7 @@ function VotingCourtroom({
               const replies = repliesByVote[String(v.id)] || [];
 
               return (
-                <div key={v.id} className="border-b border-gray-200 pb-5 last:border-b-0 last:pb-0">
+                <div key={v.id} data-voter-alias={v.author_alias || undefined} className="border-b border-gray-200 pb-5 last:border-b-0 last:pb-0">
 
                   {/* Header: alias + badge + timestamp inline, choice pill on right */}
                   <div className="flex items-center gap-2 flex-wrap">

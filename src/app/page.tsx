@@ -58,11 +58,12 @@ function slugify(s?: string | null) {
 }
 
 // Where a voter card on the "voters today" lists should take you:
-// the real record they voted on, or, for demo voters, the demo record page
+// the real record they voted on, scrolled to their vote, or, for demo voters, the demo record page
 // for their category (e.g. "Personal Trainer" -> /d/personal-trainer).
 function voterRecordHref(v: any): string | null {
-  if (v?.record_id) return `/record/${v.record_id}`;
-  if (v?.record_category) return `/d/${slugify(v.record_category)}`;
+  const voter = v?.alias ? `?voter=${encodeURIComponent(v.alias)}` : "";
+  if (v?.record_id) return `/record/${v.record_id}${voter}`;
+  if (v?.record_category) return `/d/${slugify(v.record_category)}${voter}`;
   return null;
 }
 

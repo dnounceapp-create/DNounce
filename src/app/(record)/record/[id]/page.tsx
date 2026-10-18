@@ -1,4 +1,5 @@
 import RecordDetail from "@/components/record/RecordDetail";
+import ScrollToVoter from "@/components/record/ScrollToVoter";
 import ClaimBanner from "@/components/record/ClaimBanner";
 import { createClient } from "@supabase/supabase-js";
 import type { Metadata } from "next";
@@ -86,6 +87,7 @@ export default async function RecordPage({
   return (
     <>
       {showClaimBanner && <ClaimBanner recordId={id} />}
+      <ScrollToVoter />
       <Suspense fallback={<RecordSkeleton />}>
         <RecordDetail recordId={id} embedded={false} />
       </Suspense>

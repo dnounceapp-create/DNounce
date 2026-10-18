@@ -22,6 +22,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
+import ScrollToVoter from "@/components/record/ScrollToVoter";
 
 /* ─── Types ─────────────────────────────────────────── */
 
@@ -606,6 +607,7 @@ export default function DemoSlugPage() {
 
   return (
     <div className="min-h-screen bg-white">
+      <ScrollToVoter />
 
       {/* ── Header ── */}
       <header className="bg-white/90 backdrop-blur-md border-b border-gray-100 fixed top-0 left-0 w-full z-50">
@@ -961,7 +963,7 @@ export default function DemoSlugPage() {
             [...allVotes].reverse().map((v) => {
               const rx = getReaction(v.id, v);
               return (
-                <div key={v.id} className="border-b border-gray-200 py-6 first:pt-0 last:border-b-0 last:pb-0">
+                <div key={v.id} data-voter-alias={v.alias} className="border-b border-gray-200 py-6 first:pt-0 last:border-b-0 last:pb-0">
                   <div className="flex items-start gap-2 flex-wrap">
                     <div className="flex-1 min-w-0">
                       <span className="text-xs font-semibold text-gray-900 break-all">
