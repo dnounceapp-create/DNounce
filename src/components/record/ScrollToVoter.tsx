@@ -21,7 +21,10 @@ export default function ScrollToVoter() {
       );
       if (el) {
         window.clearInterval(timer);
-        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        // Instant jump: a smooth scroll gets cancelled by the stage tracker's own
+        // smooth scroll on load. Repeat once in case late content shifts the page.
+        el.scrollIntoView({ block: "center" });
+        window.setTimeout(() => el.scrollIntoView({ block: "center" }), 600);
         const ring = ["ring-2", "ring-amber-400", "ring-offset-4", "rounded-xl"];
         el.classList.add(...ring);
         window.setTimeout(() => el.classList.remove(...ring), 4000);
