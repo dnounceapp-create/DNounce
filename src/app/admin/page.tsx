@@ -41,7 +41,7 @@ export default function AdminDashboard() {
       supabase.from("users").select("*", { count: "exact", head: true }),
       supabase.from("users").select("*", { count: "exact", head: true }).eq("is_banned", true),
       supabase.from("users").select("*", { count: "exact", head: true }).eq("admin", true),
-      supabase.from("subjects").select("*", { count: "exact", head: true }),
+      supabase.from("subjects").select("subject_uuid", { count: "exact", head: true }),
       supabase.from("contributors").select("*", { count: "exact", head: true }),
       supabase.from("record_votes").select("*", { count: "exact", head: true }),
       supabase.from("record_votes").select("*", { count: "exact", head: true }).eq("choice", "side_with_contributor"),

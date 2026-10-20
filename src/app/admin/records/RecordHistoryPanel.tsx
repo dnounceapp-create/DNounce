@@ -19,7 +19,7 @@ export default function RecordHistoryPanel({ recordId, onClose }: Props) {
         communityStmts, communityReplies, reactions, notifications,
         pinned, follows, recordAtts, outcomes,
       ] = await Promise.all([
-        supabase.from("records").select("*, subject:subjects(*), contributor:contributors!records_contributor_id_fkey(*)").eq("id", recordId).maybeSingle(),
+        supabase.from("records").select("*, subject:subjects(subject_uuid, name, nickname, job_title, organization, location, avatar_url, public_code, created_at, owner_auth_user_id), contributor:contributors!records_contributor_id_fkey(*)").eq("id", recordId).maybeSingle(),
         supabase.from("record_stages").select("*").eq("record_id", recordId).order("created_at", { ascending: true }),
         supabase.from("record_votes").select("*").eq("record_id", recordId).order("created_at", { ascending: true }),
         supabase.from("record_vote_replies").select("*").eq("record_id", recordId).order("created_at", { ascending: true }),

@@ -369,7 +369,7 @@ export default function SubmitRecordPage() {
     (async () => {
       const { data, error } = await supabase
         .from("subjects")
-        .select("subject_uuid, name, nickname, organization, location, avatar_url, phone, email")
+        .select("subject_uuid, name, nickname, organization, location, avatar_url")
         .eq("subject_uuid", subjectIdFromUrl)
         .maybeSingle();
 
@@ -383,8 +383,6 @@ export default function SubmitRecordPage() {
         organization: data.organization,
         location: data.location,
         avatar_url: data.avatar_url,
-        phone: data.phone,
-        email: data.email,
       };
 
       setSelectedPerson(preselected);
@@ -394,8 +392,7 @@ export default function SubmitRecordPage() {
       setSubmitNickname(data.nickname || "");
       setSubmitOrganization(data.organization || "");
       setSubmitLocation(data.location || "");
-      setSubmitPhone(data.phone ? formatPhoneNumber(data.phone) : "");
-      setSubmitEmail(data.email || "");
+      // Subject email/phone are private; the contributor enters them if they know them.
 
       setAutoSearched(true);
     })();

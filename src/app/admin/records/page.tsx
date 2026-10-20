@@ -52,10 +52,30 @@ export default function AdminRecordsPage() {
       ai_vendor_1_result, ai_vendor_2_result, ai_vendor_3_result, ai_vendor_1_score,
       contributor_identity_preference, contributor_display_name,
       contributor_id, subject_id, created_by, contributor_alias_id,
-      subject:subjects(subject_uuid, name, nickname, organization, location, email, phone, owner_auth_user_id, avatar_url),
+      subject:subjects(subject_uuid, name, nickname, organization, location, owner_auth_user_id, avatar_url),
       contributor:contributors!records_contributor_id_fkey(id, user_id, alias, auth_user_id)
     `).order("created_at", { ascending: false }).limit(500);
-    setRecords((data as any[]) ?? []);
+    const rows = (data as any[]) ?? [];
+    // Subject email/phone are admin-only: fetched through the server route, then merged in.
+    try {
+      const { data: { session: s } } = await supabase.auth.getSession();
+      const subjectIds = rows.map(r => r.subject?.subject_uuid).filter(Boolean);
+      if (s && subjectIds.length) {
+        const res = await fetch("/api/admin/subject-contacts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${s.access_token}` },
+          body: JSON.stringify({ subjectIds }),
+        });
+        if (res.ok) {
+          const { contacts } = await res.json();
+          for (const r of rows) {
+            const c = r.subject && contacts?.[r.subject.subject_uuid];
+            if (c) r.subject = { ...r.subject, email: c.email, phone: c.phone };
+          }
+        }
+      }
+    } catch { /* contacts are optional for the list */ }
+    setRecords(rows);
     setLoading(false);
   }
 
@@ -140,12 +160,16 @@ export default function AdminRecordsPage() {
       updateData = { deleted_at: null };
     }
     if (type === "subject") {
-      const { error } = await supabase.from("subjects").update({
-        name: updated.subject_name, nickname: updated.subject_nickname || null,
-        organization: updated.subject_organization || null, location: updated.subject_location || null,
-        email: updated.subject_email || null, phone: updated.subject_phone || null,
-      }).eq("subject_uuid", updated.subject_uuid);
-      if (error) throw error;
+      const res = await fetch("/api/admin/subject-contacts", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session!.access_token}` },
+        body: JSON.stringify({
+          subject_uuid: updated.subject_uuid, name: updated.subject_name, nickname: updated.subject_nickname,
+          organization: updated.subject_organization, location: updated.subject_location,
+          email: updated.subject_email, phone: updated.subject_phone,
+        }),
+      });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({})))?.error || "Subject update failed");
       await supabase.from("admin_audit_log").insert({ admin_user_id: session!.user.id, admin_level: adminLevel, action: "edit_subject", target_type: "subjects", target_id: updated.subject_uuid, old_value: selected?.subject, new_value: { ...updated, note } });
       showToast("success", "Subject updated"); await load();
       if (selected) setSelected((p: any) => ({ ...p, subject: { ...p.subject, name: updated.subject_name, nickname: updated.subject_nickname, organization: updated.subject_organization, location: updated.subject_location, email: updated.subject_email, phone: updated.subject_phone } }));
