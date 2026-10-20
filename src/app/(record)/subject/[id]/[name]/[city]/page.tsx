@@ -198,11 +198,9 @@ type ClaimState =
 
 function ClaimBanner({
   subjectId,
-  subjectEmail,
   onClaimed,
 }: {
   subjectId: string;
-  subjectEmail: string | null;
   onClaimed: () => void;
 }) {
   const router = useRouter();
@@ -221,45 +219,15 @@ function ClaimBanner({
         return;
       }
 
-      // Check if this user already owns it
-      const { data: subj } = await supabase
-        .from("subjects")
-        .select("owner_auth_user_id, email")
-        .eq("subject_uuid", subjectId)
-        .maybeSingle();
-
-      if (!subj) return;
-
-      if (subj.owner_auth_user_id === user.id) {
-        setClaimState("already-owner");
-        return;
-      }
-
-      if (subj.owner_auth_user_id) {
-        setClaimState("claimed-other");
-        return;
-      }
-
-      // Profile is unclaimed — check for existing pending claim
-      const { data: existingClaim } = await supabase
-        .from("subject_claims")
-        .select("id, status")
-        .eq("subject_uuid", subjectId)
-        .eq("claimant_auth_user_id", user.id)
-        .maybeSingle();
-
-      if (existingClaim?.status === "pending") {
-        setClaimState("pending");
-        return;
-      }
-
-      // Check email match
-      const emailMatch =
-        subj.email &&
-        user.email &&
-        subj.email.toLowerCase() === user.email.toLowerCase();
-
-      setClaimState(emailMatch ? "unclaimed-match" : "unclaimed-no-match");
+      // The subject's email is checked on the server and never sent to the browser.
+      const res = await fetch("/api/subjects/claim-status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subjectId }),
+      });
+      if (!res.ok) return;
+      const { state } = await res.json();
+      if (state) setClaimState(state as ClaimState);
     }
 
     check();
@@ -271,34 +239,17 @@ function ClaimBanner({
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setLoading(false); return; }
 
-    const { error: updateErr } = await supabase
-      .from("subjects")
-      .update({ owner_auth_user_id: user.id })
-      .eq("subject_uuid", subjectId)
-      .is("owner_auth_user_id", null);
+    const res = await fetch("/api/subjects/auto-claim", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ subjectId }),
+    });
 
-    if (updateErr) {
+    if (!res.ok) {
       setError("Something went wrong. Please try again.");
       setLoading(false);
       return;
     }
-
-    await supabase.from("admin_audit_log").insert({
-      admin_user_id: user.id,
-      admin_level: 0,
-      action: "auto_claim",
-      target_type: "subject",
-      target_id: subjectId,
-      note: "Auto-claimed via email match",
-    });
-
-    await supabase.from("notifications").insert({
-      user_id: user.id,
-      title: "Your profile claim was approved",
-      body: `You now own the subject profile on DNounce. You can manage it from your dashboard.`,
-      type: "claim_approved",
-      record_id: null,
-    });
 
     setClaimState("auto-claimed");
     setLoading(false);
@@ -572,7 +523,7 @@ export default function SubjectProfilePage() {
 
       const { data: subj, error: subjErr } = await supabase
         .from("subjects")
-        .select("subject_uuid,name,nickname,job_title,organization,location,avatar_url,email,owner_auth_user_id")
+        .select("subject_uuid,name,nickname,job_title,organization,location,avatar_url,owner_auth_user_id")
         .eq("subject_uuid", subjectId)
         .maybeSingle();
 
@@ -902,7 +853,6 @@ export default function SubjectProfilePage() {
       {isUnclaimed && (
         <ClaimBanner
           subjectId={subjectId!}
-          subjectEmail={subject.email ?? null}
           onClaimed={() => setClaimRefresh((n) => n + 1)}
         />
       )}
