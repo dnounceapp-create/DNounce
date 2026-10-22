@@ -46,7 +46,11 @@ export default function RecordSubmittedPage() {
 
     (async () => {
       try {
-        const res = await fetch(`/api/public/record/${recordId}`);
+        // The record isn't published yet, so the route only answers for its author.
+        const { data: { session } } = await supabase.auth.getSession();
+        const res = await fetch(`/api/public/record/${recordId}`, {
+          headers: session ? { Authorization: `Bearer ${session.access_token}` } : {},
+        });
         setDbExists(res.ok);
       } catch {
         setDbExists(false);
