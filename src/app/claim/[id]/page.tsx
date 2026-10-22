@@ -124,11 +124,8 @@ export default function ClaimOverridePage() {
         return;
       }
 
-      const { data: record } = await supabase
-        .from('records')
-        .select('description, contributor_display_name, anonymity_status, contributor_claimed, dnounce_mod_record, contributor_override_used, category, relationship, rating, location, subject_id, contributor_identity_preference')
-        .eq('id', recordId)
-        .maybeSingle();
+      // Record content comes from the code-checked server route, not a direct read.
+      const record = claimData.record as any;
 
       if (!record) { setError('Record not found.'); setLoading(false); return; }
       if (!record.dnounce_mod_record) { setError('This record cannot be claimed.'); setLoading(false); return; }

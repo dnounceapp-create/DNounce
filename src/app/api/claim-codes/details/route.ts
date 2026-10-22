@@ -29,7 +29,16 @@ export async function POST(req: Request) {
     if (!data) return NextResponse.json({ valid: false });
     if (data.used) return NextResponse.json({ valid: true, used: true });
 
+    // The record itself is not public before it is claimed, so the claim page
+    // gets its content here, only after the code has been checked.
+    const { data: record } = await supabaseAdmin
+      .from("records")
+      .select("description, contributor_display_name, anonymity_status, contributor_claimed, dnounce_mod_record, contributor_override_used, category, relationship, rating, location, subject_id, contributor_identity_preference")
+      .eq("id", recordId)
+      .maybeSingle();
+
     return NextResponse.json({
+      record: record ?? null,
       valid: true,
       used: false,
       id: data.id,
