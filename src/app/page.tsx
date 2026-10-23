@@ -876,14 +876,6 @@ export default function HomePage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 sm:grid-cols-5 gap-4 text-center">
-                  {[["82","Subject"],["76","Overall"],["88","Contributor"],["70","Voter"],["91","Citizen"]].map(([val, label]) => (
-                    <div key={label}>
-                      <div className="text-xl font-bold text-gray-900">{val}</div>
-                      <div className="text-[11px] text-gray-400">{label}</div>
-                    </div>
-                  ))}
-                </div>
               </div>
 
               <div className="rounded-xl border border-gray-100 bg-gray-50 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">

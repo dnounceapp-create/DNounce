@@ -324,7 +324,7 @@ const STAGE_CONFIG: Record<string, {
 }> = {
   ai_verification: {
     label: "Reset to Awaiting Claim", color: "gray",
-    desc: "The record will be pulled from public view and sent back to the AI review queue. Anonymity Status label will be cleared.",
+    desc: "The record will be hidden from public view and held until it is claimed or moved on again.",
     fields: [
       { key: "_warn", type: "warning", label: "", help: "This will make the record private immediately. The subject and contributor will be notified." },
       { key: "note", label: "Reason for reset", type: "textarea", required: true, help: "Be specific — this is logged and visible to all admins." },
@@ -332,10 +332,8 @@ const STAGE_CONFIG: Record<string, {
   },
   subject_notified: {
     label: "Mark Subject as Notified", color: "yellow",
-    desc: "AI verification is complete. The subject is being notified and the record enters a 7-day review window.",
+    desc: "The person it's about is notified. The record goes public automatically 24 hours after it was submitted.",
     fields: [
-      { key: "ai_completed_at", label: "AI Completed At", type: "datetime-local", required: true, help: "When did the AI finish reviewing this record?" },
-      { key: "anonymity_status", label: "Anonymity Status", type: "select", required: true, options: [{ value: "Anonymity Granted", label: "Anonymity Granted" }, { value: "Anonymity Not Granted", label: "Anonymity Not Granted" }, { value: "Unclear", label: "Unclear" }] },
       { key: "note", label: "Reason", type: "textarea", required: true },
     ],
   },
@@ -343,8 +341,7 @@ const STAGE_CONFIG: Record<string, {
     label: "Publish Record", color: "green",
     desc: "The record will be publicly visible on DNounce. This is a major action.",
     fields: [
-      { key: "_warn", type: "warning", label: "", help: "Publishing makes this record visible to the entire internet. Ensure AI review is complete and credibility is correct." },
-      { key: "anonymity_status", label: "Anonymity Status", type: "select", required: true, options: [{ value: "Anonymity Granted", label: "Anonymity Granted" }, { value: "Anonymity Not Granted", label: "Anonymity Not Granted" }, { value: "Unclear", label: "Unclear" }] },
+      { key: "_warn", type: "warning", label: "", help: "Publishing makes this record visible to the entire internet." },
       { key: "published_at", label: "Publish Date/Time", type: "datetime-local", required: true },
       { key: "note", label: "Reason (if overriding normal flow)", type: "textarea", required: false },
     ],

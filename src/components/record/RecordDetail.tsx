@@ -48,19 +48,6 @@ function normalizeStatus(raw: any) {
   return (raw || "").toString().trim().toLowerCase();
 }
 
-function normalizeAnonymityStatus(raw: any) {
-  const s = (raw || "")
-    .toString()
-    .trim()
-    .toLowerCase()
-    .replace(/[‐-‒–—−]/g, "-");
-
-  if (s.includes("anonymity not granted") || s.includes("opinion based") || s.includes("anonymity_not_granted")) return "Anonymity Not Granted";
-  if (s.includes("anonymity granted") || s.includes("evidence based") || s.includes("anonymity_granted")) return "Anonymity Granted";
-  if (s.includes("unclear")) return "Unclear";
-  return "Pending AI Review";
-}
-
 function getRecordStage(record: any): number {
   const status = normalizeStatus(record?.status);
   if (status === "ai_verification") return 2; // holding state for unclaimed Mod records; no AI step
