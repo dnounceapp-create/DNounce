@@ -725,8 +725,8 @@ export default function HomePage() {
               { step: "02", title: "Private preview", desc: "We let the person know right away. Only they can see it for 24 hours." },
               { step: "03", title: "Public", desc: "The record goes live, and they can reply." },
               { step: "04", title: "Challenge", desc: "If they see it differently, they can challenge it. Then you both get 3 days to share your side." },
-              { step: "05", title: "Community vote", desc: "For 2 days, the community reads both sides and picks who they side with." },
-              { step: "06", title: "Results", desc: "The record stays up either way and shows where people landed." },
+              { step: "05", title: "Strangers weigh in", desc: "For 2 days, people who've never met either of them read both stories and take a side." },
+              { step: "06", title: "See who won people over", desc: "The record stays up, now with the community's answer on it — or a tie, if they couldn't decide." },
             ].map((item) => (
               <div key={item.step} className="bg-white rounded-2xl p-6 border border-gray-100">
                 <div className="text-xs font-mono text-gray-400 mb-3">{item.step}</div>
@@ -913,7 +913,7 @@ export default function HomePage() {
                   </div>
 
                   <div className="grid grid-cols-3 gap-4 mb-6 text-center">
-                    {[["8","Total"],["3","Disputed"],["5","Not disputed"]].map(([val, label]) => (
+                    {[["8","Total"],["3","Challenged"],["5","Not challenged"]].map(([val, label]) => (
                       <div key={label}>
                         <div className="text-2xl font-bold text-gray-900">{val}</div>
                         <div className="text-xs text-gray-400">{label}</div>
