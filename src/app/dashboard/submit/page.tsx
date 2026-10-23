@@ -562,7 +562,7 @@ export default function SubmitRecordPage() {
         if (!emailPattern.test(email)) {
           toast({
             title: "Invalid Email",
-            description: "Please enter a valid email address for the subject.",
+            description: "Please enter a valid email address for them.",
           });
           return;
         }
@@ -579,7 +579,7 @@ export default function SubmitRecordPage() {
       }
 
       if (!selectedPerson) {
-        toast({ title: "Person Required", description: "Please choose a DNounce user or create an external subject." });
+        toast({ title: "Person Required", description: "Please pick someone from the list, or add them as someone new." });
         return;
       }
 
@@ -614,7 +614,7 @@ export default function SubmitRecordPage() {
             .single();
 
           if (newSubjectError || !newSubject) {
-            toast({ title: "Error", description: "We couldn't save the external subject. Please try again." });
+            toast({ title: "Error", description: "We couldn't save that person. Please try again." });
             return;
           }
           subjectId = newSubject.subject_uuid;
@@ -738,7 +738,7 @@ export default function SubmitRecordPage() {
           {/* Contact Info */}
           <div className="mb-8 sm:mb-10 bg-gray-50 border border-gray-200 rounded-2xl p-5 sm:p-8 shadow-sm">
             <div className="flex flex-col text-center mb-5 sm:mb-6">
-              <h2 className="text-base sm:text-lg font-semibold text-gray-800">Subject Contact Information</h2>
+              <h2 className="text-base sm:text-lg font-semibold text-gray-800">Their contact info</h2>
               <p className="text-xs sm:text-sm text-gray-500 leading-relaxed max-w-lg mx-auto">
                 Enter a phone number and/or email. We’ll automatically search for matching DNounce users or existing subjects.
               </p>
@@ -776,8 +776,8 @@ export default function SubmitRecordPage() {
 
           {/* Subject Info */}
           <div className="mb-5 sm:mb-6 text-center">
-            <h2 className="text-base sm:text-lg font-semibold text-gray-800">Subject's Basic Information</h2>
-            <p className="text-xs sm:text-sm text-gray-500 leading-relaxed">Help identify the subject of this record.</p>
+            <h2 className="text-base sm:text-lg font-semibold text-gray-800">About them</h2>
+            <p className="text-xs sm:text-sm text-gray-500 leading-relaxed">Help us find the right person.</p>
           </div>
 
           <div
@@ -1137,7 +1137,7 @@ export default function SubmitRecordPage() {
               <p className="mb-2">By submitting this record, you acknowledge that DNounce is a neutral public platform operating under Section 230 of the Communications Decency Act (47 U.S.C. § 230). DNounce is not the publisher, editor, or endorser of any user-submitted content. You — not DNounce — are solely responsible for the accuracy and legality of your submission.</p>
               <p className="mb-2">You certify that your submission is truthful to the best of your knowledge and based on either verifiable evidence or honest personal opinion. Submitting knowingly false, fabricated, or malicious content may result in permanent account suspension and exposes you to legal liability.</p>
               <p className="mb-2">Your name: Your first name and last initial will appear publicly on this record. The person you&apos;re writing about will see it. You&apos;re responsible for what you write.</p>
-              <p className="mb-2">The subject will be notified of this submission and will have the right to respond and dispute through our structured community process. You agree to engage in that process in good faith if contacted.</p>
+              <p className="mb-2">We&apos;ll let the person know. They can reply, or challenge the record so both sides get heard. If they challenge it, you agree to share your side in good faith.</p>
               <p className="mb-2">You retain copyright of your original content but grant DNounce a non-exclusive license to display and distribute it as part of our platform services. We do not sell your content to third parties.</p>
             </div>
 

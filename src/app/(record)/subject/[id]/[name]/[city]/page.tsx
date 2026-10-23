@@ -29,6 +29,7 @@ import Image from "next/image";
 import dynamic from "next/dynamic";
 
 
+import { outcomeLabel, outcomeChipClass } from "@/lib/outcome";
 function getPlatformIcon(platformRaw: string) {
   const p = (platformRaw || "").toLowerCase();
   if (p === "instagram") return FaInstagram;
@@ -94,12 +95,12 @@ function stageFromStatus(status?: string | null) {
 
 function prettyStage(status?: string | null) {
   const s = (status || "").toLowerCase();
-  if (s === "published") return "Published";
-  if (s === "deletion_request") return "Deletion Requested";
-  if (s === "debate") return "Under Debate";
-  if (s === "voting") return "Voting Open";
-  if (s === "decision") return "Kept";
-  return "In Review";
+  if (s === "published") return "Public";
+  if (s === "deletion_request") return "Challenged";
+  if (s === "debate") return "Both sides";
+  if (s === "voting") return "Community vote";
+  if (s === "decision") return "Results";
+  return "Public";
 }
 
 function withinTimeBucket(dateIso: string | undefined, bucket: string | undefined) {
@@ -542,7 +543,7 @@ export default function SubjectProfilePage() {
           id, created_at, submitted_at, published_at, description,
           anonymity_status, ai_vendor_1_result, is_published, status,
           voting_ends_at, rating, category, record_type, record_alias,
-          contributor_display_name, contributor_identity_preference
+          contributor_display_name, contributor_identity_preference, final_outcome
         `)
         .eq("subject_id", subjectId)
         .in("status", ["published", "deletion_request", "debate", "voting", "decision"])
@@ -615,19 +616,9 @@ export default function SubjectProfilePage() {
 
       const rows: SubjectRecord[] = (recs || []) as any;
 
-      const rowsWithOutcome = await Promise.all(
-        rows.map(async (r) => {
-          if (r.status !== "decision") return { ...r, hide: false };
-          if (r.voting_ends_at && Date.now() < new Date(r.voting_ends_at).getTime()) return { ...r, hide: false };
-          const { data: tally } = await supabase.rpc("vote_tally", { p_record_id: r.id });
-          const t = Array.isArray(tally) ? tally[0] : tally;
-          const keep = Number(t?.contributor_count ?? 0);
-          const del = Number(t?.subject_count ?? 0);
-          return { ...r, hide: del > keep };
-        })
-      );
-
-      const visible = rowsWithOutcome.filter((r: any) => !r.hide) as SubjectRecord[];
+      // Every record stays on the profile, whatever the community decided.
+      // Settled records are labeled with which side most voters took.
+      const visible = rows;
       setRecords(visible);
 
       const counts = await Promise.all(
@@ -718,7 +709,7 @@ export default function SubjectProfilePage() {
       });
 
     } catch (e: any) {
-      setErr(e?.message || "Failed to load subject profile");
+      setErr(e?.message || "We couldn't load this profile. Please try again.");
       setSubject(null);
       setRecords([]);
       setSocialLinks([]);
@@ -902,7 +893,7 @@ export default function SubjectProfilePage() {
                 {/* Subject ID + QR row */}
                 <div className="mt-3 flex items-center gap-3 w-full">
                   <div className="flex items-center gap-2 text-xs text-gray-600 min-w-0">
-                    <span className="font-semibold text-gray-800">Subject ID:</span>
+                    <span className="font-semibold text-gray-800">Profile ID:</span>
                     <span className="font-mono truncate max-w-[220px] sm:max-w-[320px]">
                       {shortId(subject.subject_uuid)}
                     </span>
@@ -916,7 +907,7 @@ export default function SubjectProfilePage() {
                         } catch (e) { console.error("Copy failed", e); }
                       }}
                       className="inline-flex items-center justify-center rounded-full border p-1.5 text-gray-600 hover:bg-gray-100"
-                      title="Copy full subject ID"
+                      title="Copy full profile ID"
                     >
                       {copiedSubjectId ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
                     </button>
@@ -1029,11 +1020,11 @@ export default function SubjectProfilePage() {
                     </select>
                     <select value={filters.status ?? ""} onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value || undefined }))} className="w-full sm:w-auto min-w-[180px] rounded-xl border px-3 py-2 text-sm bg-white">
                       <option value="">All stages</option>
-                      <option value="published">Published</option>
-                      <option value="deletion_request">Deletion Requested</option>
-                      <option value="debate">Under Debate</option>
-                      <option value="voting">Voting Open</option>
-                      <option value="decision">Settled</option>
+                      <option value="published">Public</option>
+                      <option value="deletion_request">Challenged</option>
+                      <option value="debate">Both sides</option>
+                      <option value="voting">Community vote</option>
+                      <option value="decision">Results</option>
                     </select>
                     <select value={filters.time ?? ""} onChange={(e) => setFilters((f) => ({ ...f, time: e.target.value || undefined }))} className="w-full sm:w-auto min-w-[150px] rounded-xl border px-3 py-2 text-sm bg-white">
                       <option value="">All time</option>
@@ -1075,7 +1066,7 @@ export default function SubjectProfilePage() {
                     const title = recordTitle(r);
                     const stageNum = stageFromStatus(r.status);
                     const showStagePill = stageNum >= 4 && stageNum <= 6;
-                    const showKeptPill = stageNum === 7;
+                    const showOutcomePill = stageNum === 7;
                     const comments = Number(commentCounts[r.id] ?? 0);
                     const dateRef = r.published_at || r.submitted_at || r.created_at;
                     const cred = credRecommendationText(r);
@@ -1093,7 +1084,11 @@ export default function SubjectProfilePage() {
                           <div className="flex flex-wrap items-center gap-2">
                             {r.category && <span className="text-xs text-gray-700">{r.category}</span>}
                             {showStagePill && <span className="text-xs rounded-full border bg-gray-50 px-2 py-1 text-gray-700">{prettyStage(r.status)}</span>}
-                            {showKeptPill && <span className="text-xs rounded-full border bg-gray-50 px-2 py-1 text-gray-700">Kept</span>}
+                            {showOutcomePill && (
+                              <span className={`text-xs rounded-full px-2 py-1 ${outcomeChipClass(r.final_outcome)}`}>
+                                {outcomeLabel(r.final_outcome, { contributor: contributorLabelByRules(r), subject: subject?.name }) ?? "Results coming soon"}
+                              </span>
+                            )}
                             <span className="text-xs text-gray-500">{dateRef ? `📅 ${new Date(dateRef).toLocaleDateString()}` : ""}</span>
                             <span className="text-xs text-gray-500">💬 {comments} {comments === 1 ? "comment" : "comments"}</span>
                           </div>
@@ -1180,7 +1175,7 @@ export default function SubjectProfilePage() {
               <div>
                 <h4 className="font-medium text-gray-900 mb-3">Social Media</h4>
                 {socialLinks.length === 0 ? (
-                  <p className="text-gray-500 text-sm">{subject?.name || "This subject"} doesn't have any social media on display.</p>
+                  <p className="text-gray-500 text-sm">{subject?.name || "This person"} doesn't have any social media on display.</p>
                 ) : (
                   <div className="space-y-3">
                     {socialLinks.map((s) => {

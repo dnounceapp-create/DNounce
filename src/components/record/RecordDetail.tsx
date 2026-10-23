@@ -33,6 +33,7 @@ import { stageConfig } from "@/config/stageConfig";
 import AgreeDisagree from "@/components/reactions/AgreeDisagree";
 import MentionTextarea, { notifyMentions } from "@/components/MentionTextarea";
 
+import { outcomeLabel, outcomeChipClass } from "@/lib/outcome";
 const PUBLIC_STAGE_ORDER = [3, 6, 7] as const;
 const FULL_STAGE_ORDER = [2, 3, 4, 5, 6, 7] as const;
 const POST_PUBLISH_STAGE_ORDER = [3, 4, 5, 6, 7] as const;
@@ -136,16 +137,16 @@ function debateNoPostMessage(args: { viewerRole: ViewerRole; status: string; sta
   }
 
   if (viewerRole === "public") {
-    return "Sign in to participate. Only the subject and contributor can post during debate.";
+    return "Sign in to follow along. Only the writer and the person it's about can post here.";
   }
   if (viewerRole === "citizen" || viewerRole === "voter") {
-    return "View-only for you. Only the subject and contributor can post during debate.";
+    return "You can read along. Only the writer and the person it's about can post here.";
   }
   if (viewerRole === "subject") {
-    return "You are the subject. You can post during debate while it’s open.";
+    return "This record is about you. Share your side here while it's open.";
   }
   if (viewerRole === "contributor") {
-    return "You are the contributor. You can post during debate while it’s open.";
+    return "You wrote this record. Share your side here while it's open.";
   }
 
   return "View-only.";
@@ -173,10 +174,10 @@ function votingNoVoteMessage(args: {
   }
 
   if (viewerRole === "subject") {
-    return "You are the subject. You can’t vote on your own record.";
+    return "This record is about you, so you can’t vote on it.";
   }
   if (viewerRole === "contributor") {
-    return "You are the contributor. You can’t vote on a record you submitted.";
+    return "You wrote this record, so you can’t vote on it.";
   }
 
   if ((viewerRole === "citizen" || viewerRole === "voter") && hasVoted) {
@@ -1973,7 +1974,7 @@ function DebateCourtroom({
     <section className="border border-gray-200 rounded-2xl p-4 sm:p-5 bg-white">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="text-sm font-semibold text-gray-900">Debate Section</div>
+          <div className="text-sm font-semibold text-gray-900">Both sides</div>
           <div className="text-[11px] text-gray-500">Anything cannot be modified once posted.</div>
         </div>
 
@@ -1984,7 +1985,7 @@ function DebateCourtroom({
 
       <div className="mt-4">
         {loading ? (
-          <div className="text-sm text-gray-600">Loading debate…</div>
+          <div className="text-sm text-gray-600">Loading…</div>
         ) : tree.length === 0 ? (
           <div className="text-sm text-gray-600">No statements yet. {canPost ? "Post the first statement below." : ""}</div>
         ) : (
@@ -3631,9 +3632,9 @@ function VotingCourtroom({
       <VotingSectionCard>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <div className="text-sm font-semibold text-gray-900">Voting Section</div>
+            <div className="text-sm font-semibold text-gray-900">Community vote</div>
             <div className="text-[11px] text-gray-500">
-              To side with a party, a reason is required.
+              Pick who you side with and say why in a sentence or two.
             </div>
           </div>
 
@@ -3643,7 +3644,12 @@ function VotingCourtroom({
               const verdictRevealed = !isVotingWindow && (!verdictAt || new Date() >= verdictAt);
               if (verdictRevealed) {
                 return (
-                  <div className="relative group max-w-full">
+                  <div className="relative group max-w-full space-y-1.5">
+                    {outcomeLabel(record?.final_outcome) && (
+                      <div className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${outcomeChipClass(record?.final_outcome)}`}>
+                        {outcomeLabel(record?.final_outcome, { contributor: contributorDisplayName, subject: record?.subject?.name })}
+                      </div>
+                    )}
                     <TallyChip contributorCount={contributorCount} subjectCount={subjectCount} totalCount={totalCount} contributorName={contributorDisplayName} subjectName={record?.subject?.name ?? "Subject"} />
                     {Object.values(voteBadges).filter(b => b.is_convicted).length > 0 && (
                       <div className="absolute top-full right-0 mt-1 hidden group-hover:block bg-gray-800 text-white text-xs rounded-lg p-2 whitespace-nowrap z-10">
@@ -4527,6 +4533,7 @@ export default function RecordDetail({
             voting_ends_at,
             verdict_announced_at,
             decision_started_at,
+            final_outcome,
             contributor_id,
             contributor_identity_preference,
             subject:subjects (
@@ -4938,14 +4945,14 @@ export default function RecordDetail({
       <div className="border border-gray-200 rounded-2xl p-4 sm:p-5 bg-white relative">
           <div className="flex items-center gap-2 mb-3">
             <User className="w-4 h-4 text-blue-600" />
-            <h2 className="text-sm font-semibold text-gray-900">Subject</h2>
+            <h2 className="text-sm font-semibold text-gray-900">About</h2>
           </div>
 
           <button
             type="button"
             onClick={() => openReport("subject", subject?.subject_uuid ?? "", subject?.name ?? "Subject")}
             className="absolute top-4 right-4 inline-flex items-center gap-1 text-[11px] font-medium text-gray-400 hover:text-red-500 transition-colors"
-            title="Report subject"
+            title="Report this person"
           >
             <ShieldAlert className="h-3 w-3" />
             Report
@@ -4984,14 +4991,14 @@ export default function RecordDetail({
         <div className="border border-gray-200 rounded-2xl p-4 sm:p-5 bg-white relative">
           <div className="flex items-center gap-2 mb-3">
             <User className="w-4 h-4 text-green-600" />
-            <h2 className="text-sm font-semibold text-gray-900">Contributor</h2>
+            <h2 className="text-sm font-semibold text-gray-900">Written by</h2>
           </div>
 
           <button
             type="button"
             onClick={() => openReport("contributor", contributorId ?? "", view.contributor.name)}
             className="absolute top-4 right-4 inline-flex items-center gap-1 text-[11px] font-medium text-gray-400 hover:text-red-500 transition-colors"
-            title="Report contributor"
+            title="Report the writer"
           >
             <ShieldAlert className="h-3 w-3" />
             Report
@@ -5192,7 +5199,7 @@ export default function RecordDetail({
           ) : (
             <div className="pt-4 border-t text-sm text-gray-700">
               <span className="font-semibold">Attachments:</span> {unifiedAttachments.length} file(s)
-              <div className="text-xs text-gray-500 mt-1">Sign in as the subject or contributor to view attachments.</div>
+              <div className="text-xs text-gray-500 mt-1">Only the writer and the person it&apos;s about can see attachments. Sign in if that&apos;s you.</div>
             </div>
           )
         ) : null}

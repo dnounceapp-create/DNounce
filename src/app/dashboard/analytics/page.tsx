@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
+import { outcomeSide } from "@/lib/outcome";
 type PlanId = "standard" | "insights" | "pro";
 
 interface RecordEngagement {
@@ -257,8 +258,8 @@ function ReputationReachSection({ data }: { data: AnalyticsData }) {
           ) : sorted.map((r) => {
             const credLabel = normalizeCredLabel(r.anonymity_status);
             const outcomeLabel =
-              r.final_outcome === "sided_with_contributor" ? "Sided with contributor" :
-              r.final_outcome === "sided_with_subject" ? "Sided with subject" : null;
+              outcomeSide(r.final_outcome) === "contributor" ? "Most people sided with the writer" :
+              outcomeSide(r.final_outcome) === "subject" ? "Most people sided with the person it's about" : null;
             const dateStr = r.submitted_at
               ? new Date(r.submitted_at).toLocaleDateString()
               : null;
@@ -440,7 +441,7 @@ function InsightsContent({ data }: { data: AnalyticsData }) {
             <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-8 h-8 rounded-lg bg-purple-50 text-purple-500 flex items-center justify-center shrink-0"><MessageSquare className="w-4 h-4" /></div>
-                <p className="text-xs font-semibold text-gray-700">Longest Debate</p>
+                <p className="text-xs font-semibold text-gray-700">Longest back-and-forth</p>
               </div>
               <p className="text-sm font-bold text-gray-900">{data.longestDebateRecord.category}</p>
               <p className="text-xs text-gray-400 mt-1">{data.longestDebateRecord.messageCount} debate statements</p>
@@ -450,9 +451,9 @@ function InsightsContent({ data }: { data: AnalyticsData }) {
             <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-8 h-8 rounded-lg bg-purple-50 text-purple-500 flex items-center justify-center shrink-0"><MessageSquare className="w-4 h-4" /></div>
-                <p className="text-xs font-semibold text-gray-700">Longest Debate</p>
+                <p className="text-xs font-semibold text-gray-700">Longest back-and-forth</p>
               </div>
-              <p className="text-xs text-gray-400">No debate activity yet.</p>
+              <p className="text-xs text-gray-400">No challenges yet.</p>
             </div>
           )}
           <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
@@ -524,7 +525,7 @@ function ProContent({ data }: { data: AnalyticsData }) {
       ["Submit Clicks", pro.totalSubmitClicks],
       ["Profile to Submit Rate", `${pro.profileToSubmitRate}%`],
       ["Social Link Clicks", pro.totalSocialClicks],
-      ["Dispute Resolution Rate", data.disputeResolutionRate !== null ? `${data.disputeResolutionRate}%` : "—"],
+      ["Challenges you won", data.disputeResolutionRate !== null ? `${data.disputeResolutionRate}%` : "—"],
       ["Contributor Success Rate", data.contributorSuccessRate !== null ? `${data.contributorSuccessRate}%` : "—"],
       ["Streak Weeks", pro.streakWeeks],
       ["Voter Quality Score", pro.voterQualityScore !== null ? `${pro.voterQualityScore}%` : "—"],
@@ -674,7 +675,7 @@ function ProContent({ data }: { data: AnalyticsData }) {
             </div>
             <div>
               <p className="text-3xl font-bold text-gray-900">{pro.streakWeeks} <span className="text-base font-normal text-gray-400">weeks</span></p>
-              <p className="text-xs text-gray-500 mt-0.5">Consecutive weeks without a deletion request on your profile</p>
+              <p className="text-xs text-gray-500 mt-0.5">Weeks in a row with no challenges on your profile</p>
             </div>
           </div>
         </div>
@@ -799,10 +800,10 @@ function ProContent({ data }: { data: AnalyticsData }) {
       </div>
 
       <div>
-        <SectionHeader title="Contributor & Subject Success" />
+        <SectionHeader title="How your records turned out" />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <StatCard icon={<Target className="w-5 h-5" />} label="Contributor Success Rate" value={data.contributorSuccessRate !== null ? `${data.contributorSuccessRate}%` : "—"} sub={`${data.sided_contributor} with contributor · ${data.sided_subject} with subject`} color="green" />
-          <StatCard icon={<ShieldCheck className="w-5 h-5" />} label="Subject Success Rate" value={data.disputeResolutionRate !== null ? `${data.disputeResolutionRate}%` : "—"} sub="Disputes about you resolved in your favor" color="blue" />
+          <StatCard icon={<ShieldCheck className="w-5 h-5" />} label="Challenges you won" value={data.disputeResolutionRate !== null ? `${data.disputeResolutionRate}%` : "—"} sub="Of the records you challenged, how often most people sided with you" color="blue" />
         </div>
       </div>
 
@@ -906,7 +907,7 @@ export default function AnalyticsPage() {
             <StandardLockedOverlay />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 blur-sm pointer-events-none select-none">
               {["Profile Views", "Search Impressions", "Category Breakdown",
-                "Most Active Record", "Dispute Resolution", "Contributor Success Rate", "Comparison"]
+                "Most Active Record", "Challenge Results", "Contributor Success Rate", "Comparison"]
                 .slice(0, typeof window !== "undefined" && window.innerWidth < 640 ? 3 : 8)
                 .map((label) => (
                 <LockedCard key={label} label={label} />

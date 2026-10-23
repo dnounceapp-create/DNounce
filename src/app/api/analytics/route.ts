@@ -3,6 +3,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { computeContributorHash } from "@/lib/contributorHash";
 
+import { outcomeSide } from "@/lib/outcome";
 export async function GET(req: NextRequest) {
   try {
     const cookieStore = await cookies();
@@ -164,8 +165,8 @@ export async function GET(req: NextRequest) {
     // ─── Record outcomes ──────────────────────────────────────────────────
 
     const totalRecordsAboutMe = recordsAboutMe.length;
-    const kept = recordsAboutMe.filter((r: any) => r.final_outcome === "sided_with_contributor").length;
-    const deleted = recordsAboutMe.filter((r: any) => r.final_outcome === "sided_with_subject").length;
+    const kept = recordsAboutMe.filter((r: any) => outcomeSide(r.final_outcome) === "contributor").length;
+    const deleted = recordsAboutMe.filter((r: any) => outcomeSide(r.final_outcome) === "subject").length;
     const pending = recordsAboutMe.filter((r: any) => !r.final_outcome).length;
     const pctKept = totalRecordsAboutMe > 0 ? Math.round((kept / totalRecordsAboutMe) * 100) : 0;
     const pctDeleted = totalRecordsAboutMe > 0 ? Math.round((deleted / totalRecordsAboutMe) * 100) : 0;
@@ -332,7 +333,8 @@ export async function GET(req: NextRequest) {
     // ─── Dispute resolution ───────────────────────────────────────────────
 
     const disputed = recordsAboutMe.filter((r: any) => ["debate", "voting", "decision"].includes(r.status));
-    const resolvedInFavor = disputed.filter((r: any) => r.final_outcome === "sided_with_contributor").length;
+    // Records about this user: "in your favor" means most voters sided with them (the subject).
+    const resolvedInFavor = disputed.filter((r: any) => outcomeSide(r.final_outcome) === "subject").length;
     const disputeResolutionRate = disputed.length > 0 ? Math.round((resolvedInFavor / disputed.length) * 100) : null;
 
     const decidedRecords = recordsAboutMe.filter((r: any) => r.voting_started_at && r.decision_made_at);
@@ -347,8 +349,8 @@ export async function GET(req: NextRequest) {
     // ─── Contributor success rate ──────────────────────────────────────────
 
     const totalSubmitted = recordsSubmitted.length;
-    const sided_contributor = recordsSubmitted.filter((r: any) => r.final_outcome === "sided_with_contributor").length;
-    const sided_subject = recordsSubmitted.filter((r: any) => r.final_outcome === "sided_with_subject").length;
+    const sided_contributor = recordsSubmitted.filter((r: any) => outcomeSide(r.final_outcome) === "contributor").length;
+    const sided_subject = recordsSubmitted.filter((r: any) => outcomeSide(r.final_outcome) === "subject").length;
     const contributorSuccessRate = totalSubmitted > 0 ? Math.round((sided_contributor / totalSubmitted) * 100) : null;
 
     // ─── Most active role ──────────────────────────────────────────────────

@@ -309,7 +309,7 @@ export default function SubjectDemoNailtechPage() {
                   {/* Subject ID + QR row */}
                   <div className="mt-3 flex items-center gap-3 w-full">
                     <div className="flex items-center gap-2 text-xs text-gray-600 min-w-0">
-                      <span className="font-semibold text-gray-800">Subject ID:</span>
+                      <span className="font-semibold text-gray-800">Profile ID:</span>
                       <span className="font-mono truncate max-w-[220px] sm:max-w-[320px]">
                         {shortId(SUBJECT.subject_uuid)}
                       </span>
@@ -325,7 +325,7 @@ export default function SubjectDemoNailtechPage() {
                           }
                         }}
                         className="inline-flex items-center justify-center rounded-full border p-1.5 text-gray-600 hover:bg-gray-100"
-                        title="Copy full subject ID"
+                        title="Copy full profile ID"
                       >
                         {copiedSubjectId ? (
                           <Check className="h-3.5 w-3.5" />

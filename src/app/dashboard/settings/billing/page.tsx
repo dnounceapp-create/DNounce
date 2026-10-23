@@ -24,7 +24,7 @@ const PLANS = [
     color: "gray",
     features: [
       "Submit and manage records",
-      "Vote on disputes",
+      "Vote on challenged records",
       "Full record history",
       "Citizen commenting",
       "No analytics access",
@@ -63,7 +63,7 @@ const PLANS = [
       "Geographic viewer breakdown",
       "Contributor patterns",
       "Voter engagement trends",
-      "Dispute resolution stats",
+      "Challenge results stats",
       "Comparison vs similar profiles",
       "Competitor benchmarking by zip code",
       "Weekly email digest",

@@ -7,6 +7,15 @@ const APP_URL = Deno.env.get("APP_URL")!;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
+// Shared pieces so every email looks and sounds the same.
+const button = (href: string, label: string) =>
+  `<a href="${href}" style="display:inline-block; margin:16px 0; padding:10px 20px; background:#111; color:#fff; border-radius:999px; text-decoration:none; font-size:13px; font-weight:600;">${label}</a>`;
+const signOff = `<p style="margin-top: 32px;">— The DNounce team</p>`;
+const footer = (href: string) =>
+  `<p style="margin-top: 32px; font-size: 12px; color: #999;"><a href="${href}" style="color: #999;">Change which emails you get</a></p>`;
+const wrap = (inner: string) =>
+  `<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #333; line-height: 1.6;">${inner}</div>`;
+
 Deno.serve(async (req) => {
   try {
     const payload = await req.json();
@@ -63,154 +72,105 @@ Deno.serve(async (req) => {
         ? record.contributor_display_name
         : "A DNounce member";
 
-      const relationshipLine = `${contributorLabel} labeled you as a ${category}`;
+      const writer = showContributor ? contributorLabel : "Someone";
 
-      subject = "Action Required – DNounce Subject Alert";
-
-      html = `
-        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #333;">
-          <h2 style="color: #111;">Hello ${firstName},</h2>
-
-          <p>You are receiving this message because a record has been submitted on DNounce about you! DNounce is where real reputations are built. People share their experiences — good, bad, and everything in between — subjects respond with their side, and the community decides who they side with.</p>
-
-          <ul style="line-height: 2;">
-            <li><strong>Record ID:</strong> ${recordId}</li>
-            <li><strong>Submitted by:</strong> ${relationshipLine}</li>
-          </ul>
-
-          <a href="${recordUrl}" style="
-            display: inline-block;
-            margin: 8px 0 16px;
-            padding: 8px 18px;
-            background: #111;
-            color: #fff;
-            border-radius: 999px;
-            text-decoration: none;
-            font-size: 13px;
-            font-weight: 600;
-            letter-spacing: 0.01em;
-          ">View Record →</a>
-
-          <h3 style="color: #111; margin-top: 24px;">Your Rights and Next Steps:</h3>
-          <ol style="line-height: 2;">
-            <li><strong>View the Record:</strong> Go to <a href="${recordUrl}">${recordUrl}</a> to review the details.</li>
-            <li><strong>Respond with Evidence:</strong> You will have an opportunity to submit your own evidence during the record process.</li>
-            <li><strong>Request Deletion:</strong> If you believe this record does not belong on your profile, you can request deletion. This will initiate a structured debate process.</li>
-          </ol>
-
-          <h3 style="color: #111; margin-top: 24px;">Transparency Note:</h3>
-          <p>If you are unsure about the legitimacy of this message, you can always go directly to <a href="https://dnounce.com">dnounce.com</a> and search your Record ID (${recordId}) to verify this notification.</p>
-
-          <p style="margin-top: 32px;">Sincerely,<br/><strong>The DNounce Team</strong></p>
-
-          <p style="margin-top: 32px; font-size: 12px; color: #999;">
-            <a href="${APP_URL}/dashboard/settings" style="color: #999;">Manage notification preferences</a>
-          </p>
-        </div>
-      `;
+      subject = `${writer} wrote a record about you`;
+      html = wrap(`
+        <p>Hi ${firstName},</p>
+        <p>${writer} shared an experience about you on DNounce${category !== "unknown" ? ` (as a ${category})` : ""}. Only you can see it for the next 24 hours — then it goes public.</p>
+        ${button(recordUrl, "Read the record →")}
+        <p><strong>What you can do</strong></p>
+        <ul>
+          <li>Read it now, privately.</li>
+          <li>Once it's public, reply — or challenge it if you see things differently. If you challenge it, you and ${writer} each get 3 days to share your side, then the community weighs in.</li>
+        </ul>
+        <p>Whatever happens, the record stays up and shows where people landed.</p>
+        <p style="font-size: 13px; color: #666;">Not sure this email is real? Go to <a href="https://dnounce.com">dnounce.com</a> yourself and search for record ${recordId}.</p>
+        ${signOff}
+        ${footer(`${APP_URL}/dashboard/settings/notifications`)}
+      `);
 
     } else if (notification.type === "verdict_countdown" && notification.record_id) {
       const recordUrl = `${APP_URL}/record/${notification.record_id}`;
-      subject = "⏳ Results in 24 hours";
-      html = `
-        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #333;">
-          <h2 style="color: #111;">Hello ${firstName},</h2>
-          <p>The community vote results on a record involving you will be announced in <strong>24 hours</strong>.</p>
-          <p>Come back tomorrow to see the results.</p>
-          <a href="${recordUrl}" style="display:inline-block; margin:16px 0; padding:10px 20px; background:#111; color:#fff; border-radius:999px; text-decoration:none; font-size:13px; font-weight:600;">View Record →</a>
-          <p style="margin-top: 32px;">Sincerely,<br/><strong>The DNounce Team</strong></p>
-          <p style="margin-top: 32px; font-size: 12px; color: #999;">
-            <a href="${APP_URL}/dashboard/settings/notifications" style="color: #999;">Manage notification preferences</a>
-          </p>
-        </div>
-      `;
+      subject = "Results tomorrow";
+      html = wrap(`
+        <p>Hi ${firstName},</p>
+        <p>The results on a record you're part of come out tomorrow. Check back then to see where people landed.</p>
+        ${button(recordUrl, "See the record →")}
+        ${signOff}
+        ${footer(`${APP_URL}/dashboard/settings/notifications`)}
+      `);
 
     } else if (notification.type === "verdict_announced" && notification.record_id) {
       const recordUrl = `${APP_URL}/record/${notification.record_id}`;
-      subject = "The results are in"; 
-      html = `
-        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #333;">
-          <h2 style="color: #111;">Hello ${firstName},</h2>
-          <p>Voting has finished on a record involving you.</p>
-          <p>The vote results are now public. Click below to see them.</p>
-          <a href="${recordUrl}" style="display:inline-block; margin:16px 0; padding:10px 20px; background:#111; color:#fff; border-radius:999px; text-decoration:none; font-size:13px; font-weight:600;">See the Results →</a>
-          <p style="margin-top: 32px;">Sincerely,<br/><strong>The DNounce Team</strong></p>
-          <p style="margin-top: 32px; font-size: 12px; color: #999;">
-            <a href="${APP_URL}/dashboard/settings/notifications" style="color: #999;">Manage notification preferences</a>
-          </p>
-        </div>
-      `;
+      subject = "The results are in";
+      html = wrap(`
+        <p>Hi ${firstName},</p>
+        <p>The community has weighed in on a record you're part of. See where people landed — the record stays up either way.</p>
+        ${button(recordUrl, "See the results →")}
+        ${signOff}
+        ${footer(`${APP_URL}/dashboard/settings/notifications`)}
+      `);
 
     } else if (notification.type === "verdict_community_unlock" && notification.record_id) {
       const recordUrl = `${APP_URL}/record/${notification.record_id}`;
-      subject = "You can now engage with this record";
-      html = `
-        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #333;">
-          <h2 style="color: #111;">Hello ${firstName},</h2>
-          <p>The 7-day period after the results has passed. You can now engage with this record — post a community statement, reply to others, and participate in the discussion.</p>
-          <a href="${recordUrl}" style="display:inline-block; margin-top:16px; padding:10px 20px; background:#111; color:#fff; border-radius:999px; text-decoration:none; font-size:13px; font-weight:600;">View Record →</a>
-          <p style="margin-top: 32px;">Sincerely,<br/><strong>The DNounce Team</strong></p>
-          <p style="margin-top: 32px; font-size: 12px; color: #999;">
-            <a href="${APP_URL}/dashboard/settings" style="color: #999;">Manage notification preferences</a>
-          </p>
-        </div>
-      `;
+      subject = "You can join the conversation again";
+      html = wrap(`
+        <p>Hi ${firstName},</p>
+        <p>It's been a week since the results came out. You can now post and reply in the record's community section.</p>
+        ${button(recordUrl, "Go to the record →")}
+        ${signOff}
+        ${footer(`${APP_URL}/dashboard/settings/notifications`)}
+      `);
 
     } else if (notification.type === "stage_4_contributor" && notification.record_id) {
       const recordUrl = `${APP_URL}/record/${notification.record_id}`;
-      subject = "Action Required — Your Record Has Been Disputed";
-      html = `
-        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #333;">
-          <h2 style="color: #111;">Hello ${firstName},</h2>
-          <p>The subject of a record you submitted has formally disputed it and requested deletion.</p>
-          <p>Here's what happens next:</p>
-          <ol style="line-height: 2;">
-            <li><strong>Debate opens in 24 hours.</strong> You'll have a 72-hour window to defend your record with evidence and respond to the subject's side.</li>
-            <li><strong>Community voting follows.</strong> After the debate, the community votes to keep or delete the record.</strong></li>
-            <li><strong>Results announced.</strong> The vote results are announced 7 days after voting ends.</li>
-          </ol>
-          <p>We recommend reviewing your record and gathering any supporting evidence before the debate opens.</p>
-          <a href="${recordUrl}" style="display:inline-block; margin:16px 0; padding:10px 20px; background:#111; color:#fff; border-radius:999px; text-decoration:none; font-size:13px; font-weight:600;">View Record →</a>
-          <p style="margin-top: 32px;">Sincerely,<br/><strong>The DNounce Team</strong></p>
-          <p style="margin-top: 32px; font-size: 12px; color: #999;">
-            <a href="${APP_URL}/dashboard/settings/notifications" style="color: #999;">Manage notification preferences</a>
-          </p>
-        </div>
-      `;
+      // The database writes the title with the person's name ("Sam S. challenged your record").
+      subject = notification.title || "Your record was challenged";
+      html = wrap(`
+        <p>Hi ${firstName},</p>
+        <p>${notification.body || "The person your record is about sees things differently and challenged it."}</p>
+        <p><strong>What happens next</strong></p>
+        <ol>
+          <li><strong>In 24 hours</strong>, you both get 3 days to share your side, with evidence if you have it.</li>
+          <li><strong>Then the community votes</strong> for 2 days on who they side with.</li>
+          <li><strong>A week later</strong>, the results show on the record.</li>
+        </ol>
+        <p>Your record stays up whatever happens. Now's a good time to gather anything that backs up your side.</p>
+        ${button(recordUrl, "See your record →")}
+        ${signOff}
+        ${footer(`${APP_URL}/dashboard/settings/notifications`)}
+      `);
 
     } else if (notification.type === "claim_approved") {
-      subject = "Your Profile Claim Was Approved";
+      subject = "Your profile is yours";
       html = `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #333;">
-          <h2 style="color: #111;">Hello ${firstName},</h2>
-          <p>Great news — your profile claim has been approved. You now own your subject profile on DNounce.</p>
-          <p>As the profile owner you can:</p>
+          <p>Hi ${firstName},</p>
+          <p>Good news — your profile on DNounce is now yours.</p>
+          <p>You can now:</p>
           <ul style="line-height: 2;">
             <li>Update your profile information</li>
-            <li>Respond to records submitted about you</li>
-            <li>Manage your public reputation page</li>
+            <li>Reply to records about you, or challenge them</li>
+            <li>Manage your public page</li>
           </ul>
           <a href="${APP_URL}/dashboard/myrecords" style="display:inline-block; margin:16px 0; padding:10px 20px; background:#111; color:#fff; border-radius:999px; text-decoration:none; font-size:13px; font-weight:600;">Go to Dashboard →</a>
-          <p style="margin-top: 32px;">Sincerely,<br/><strong>The DNounce Team</strong></p>
-          <p style="margin-top: 32px; font-size: 12px; color: #999;">
-            <a href="${APP_URL}/dashboard/settings/notifications" style="color: #999;">Manage notification preferences</a>
-          </p>
+          ${signOff}
+          ${footer(`${APP_URL}/dashboard/settings/notifications`)}
         </div>
       `;
 
     } else if (notification.type === "claim_rejected") {
-      subject = "Update on Your Profile Claim";
+      subject = "About your profile claim";
       html = `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #333;">
-          <h2 style="color: #111;">Hello ${firstName},</h2>
-          <p>After review, we were unable to approve your profile claim at this time.</p>
+          <p>Hi ${firstName},</p>
+          <p>We couldn't approve your profile claim this time.</p>
           <p><strong>Reason:</strong> ${notification.body || "No reason provided."}</p>
-          <p>If you believe this decision was made in error or you have additional documentation to support your claim, please contact our support team.</p>
+          <p>If you think we got it wrong, or you have more to show us, reach out and we'll take another look.</p>
           <a href="${APP_URL}/dashboard/settings/support" style="display:inline-block; margin:16px 0; padding:10px 20px; background:#111; color:#fff; border-radius:999px; text-decoration:none; font-size:13px; font-weight:600;">Contact Support →</a>
-          <p style="margin-top: 32px;">Sincerely,<br/><strong>The DNounce Team</strong></p>
-          <p style="margin-top: 32px; font-size: 12px; color: #999;">
-            <a href="${APP_URL}/dashboard/settings/notifications" style="color: #999;">Manage notification preferences</a>
-          </p>
+          ${signOff}
+          ${footer(`${APP_URL}/dashboard/settings/notifications`)}
         </div>
       `;
 
@@ -218,15 +178,13 @@ Deno.serve(async (req) => {
       subject = "Your free trial ends in 3 days";
       html = `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #333;">
-          <h2 style="color: #111;">Hello ${firstName},</h2>
+          <p>Hi ${firstName},</p>
           <p>${notification.body}</p>
           <p>If you enjoy DNounce, no action is needed — you'll be charged automatically when your trial ends.</p>
           <p>If you'd like to cancel before being charged, you can do so from your dashboard.</p>
           <a href="${APP_URL}/dashboard/settings/billing" style="display:inline-block; margin:16px 0; padding:10px 20px; background:#111; color:#fff; border-radius:999px; text-decoration:none; font-size:13px; font-weight:600;">Manage Subscription →</a>
-          <p style="margin-top: 32px;">Sincerely,<br/><strong>The DNounce Team</strong></p>
-          <p style="margin-top: 32px; font-size: 12px; color: #999;">
-            <a href="${APP_URL}/dashboard/settings/notifications" style="color: #999;">Manage notification preferences</a>
-          </p>
+          ${signOff}
+          ${footer(`${APP_URL}/dashboard/settings/notifications`)}
         </div>
       `;
 
@@ -236,13 +194,11 @@ Deno.serve(async (req) => {
       subject = notification.title || "A DNounce update";
       html = `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #333;">
-          <h2 style="color: #111;">Hello ${firstName},</h2>
+          <p>Hi ${firstName},</p>
           <p>${notification.body || "You have a new notification on DNounce."}</p>
           ${recordUrl ? `<a href="${recordUrl}" style="display:inline-block; margin-top:16px; padding:10px 20px; background:#111; color:#fff; border-radius:999px; text-decoration:none; font-size:13px; font-weight:600;">View Record →</a>` : ""}
-          <p style="margin-top: 32px;">Sincerely,<br/><strong>The DNounce Team</strong></p>
-          <p style="margin-top: 32px; font-size: 12px; color: #999;">
-            <a href="${APP_URL}/dashboard/settings" style="color: #999;">Manage notification preferences</a>
-          </p>
+          ${signOff}
+          ${footer(`${APP_URL}/dashboard/settings/notifications`)}
         </div>
       `;
     }

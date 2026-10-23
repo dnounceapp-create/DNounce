@@ -178,27 +178,27 @@ export default function NotificationsPage() {
 
           {/* ── Critical Alerts ── */}
           <Section title="Critical Alerts" subtitle="These cannot be turned off. They ensure you never miss something that requires your action.">
-            <ToggleRow locked title="Record stage changes" desc="Every time a record you're involved in moves to a new stage — as subject or contributor." value={true} />
+            <ToggleRow locked title="Record stage changes" desc="Every time a record you wrote, or one about you, moves to its next step." value={true} />
             <ToggleRow locked title="Vote flagged" desc="When your vote explanation is flagged as low quality by the community." value={true} />
             <ToggleRow locked title="Lost voting rights" desc="When your vote is disqualified and removed from the final tally." value={true} />
           </Section>
 
           {/* ── Tags ── */}
           <Section title="Tags" subtitle="When someone mentions or tags you anywhere on DNounce.">
-            <ToggleRow title="Tagged in a statement or reply" desc="When someone tags you in a debate statement, vote reply, or community comment." value={prefs.notif_tagged} onChange={set("notif_tagged")} />
+            <ToggleRow title="Tagged in a statement or reply" desc="When someone tags you in a post, vote reply, or comment." value={prefs.notif_tagged} onChange={set("notif_tagged")} />
           </Section>
 
           {/* ── Debate ── */}
-          <Section title="Debate Activity" subtitle="For records where you are the subject or contributor.">
+          <Section title="When both sides share" subtitle="For records you wrote, or ones about you.">
             <ToggleRow
               title="New opening statement"
-              desc="When the other party posts their first statement in the debate."
+              desc="When the other person first shares their side."
               value={prefs.notif_debate_new_statement}
               onChange={set("notif_debate_new_statement")}
             />
             <ToggleRow
               title="Reply to your statement"
-              desc="When the other party replies to one of your debate statements."
+              desc="When the other person replies to something you shared."
               value={prefs.notif_debate_reply}
               onChange={set("notif_debate_reply")}
             />
@@ -241,7 +241,7 @@ export default function NotificationsPage() {
             <ToggleRow
               locked
               title="Results announced"
-              desc="When the results are revealed. Always sent to subject and contributor — cannot be turned off."
+              desc="When the results come out. Always sent to the writer and the person it's about — can't be turned off."
               value={true}
             />
           </Section>
@@ -249,8 +249,8 @@ export default function NotificationsPage() {
           {/* ── Pinned ── */}
           <Section title="Pinned Records" subtitle="Records you've pinned to your dashboard.">
             <ToggleRow
-              title="Debate opens"
-              desc="When a pinned record enters the debate stage."
+              title="Record challenged"
+              desc="When a record you pinned is challenged and both sides start sharing."
               value={prefs.notif_pinned_debate_open}
               onChange={set("notif_pinned_debate_open")}
             />
@@ -268,7 +268,7 @@ export default function NotificationsPage() {
             />
             <ToggleRow
               title="All activity"
-              desc="Every debate reply, vote reply, community reply, and flag on pinned records. Off by default — can be noisy."
+              desc="Every reply, vote reply, comment, and flag on records you pinned. Off by default — can be noisy."
               value={prefs.notif_pinned_all_activity}
               onChange={set("notif_pinned_all_activity")}
             />
@@ -277,8 +277,8 @@ export default function NotificationsPage() {
           {/* ── Following ── */}
           <Section title="Following Records" subtitle="Records you're following for updates.">
             <ToggleRow
-              title="Debate opens"
-              desc="When a followed record enters the debate stage."
+              title="Record challenged"
+              desc="When a record you follow is challenged and both sides start sharing."
               value={prefs.notif_following_debate_open}
               onChange={set("notif_following_debate_open")}
             />
@@ -296,7 +296,7 @@ export default function NotificationsPage() {
             />
             <ToggleRow
               title="All activity"
-              desc="Every debate reply, vote reply, community reply, and flag on followed records. Off by default — can be noisy."
+              desc="Every reply, vote reply, comment, and flag on records you follow. Off by default — can be noisy."
               value={prefs.notif_following_all_activity}
               onChange={set("notif_following_all_activity")}
             />

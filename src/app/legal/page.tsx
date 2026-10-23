@@ -155,12 +155,12 @@ export default function LegalPage() {
             <div className="space-y-6 text-sm text-gray-600 leading-relaxed">
               <div>
                 <h3 className="font-semibold text-gray-900 mb-2">How contributor names work</h3>
-                <p>Every new record shows the contributor&apos;s first name and last initial. Older records whose contributor was promised anonymity stay hidden. If a record is disputed, the community votes on who they side with, and votes are shown as counts. DNounce does not take a side.</p>
+                <p>Every new record shows the contributor&apos;s first name and last initial. Older records whose contributor was promised anonymity stay hidden. If a record is challenged, the community votes on who they side with, and votes are shown as counts. DNounce does not take a side.</p>
               </div>
 
               <div>
                 <h3 className="font-semibold text-gray-900 mb-2">How moderation works</h3>
-                <p>Records that are disputed go through a structured process: a debate period between the contributor and subject, followed by a community vote. Admins can intervene when records violate guidelines. All admin actions are logged internally. No record is removed or altered based on commercial interests or pressure from any party.</p>
+                <p>When a record is challenged, the writer and the person it&apos;s about each get 3 days to share their side, followed by a 2-day community vote. The record stays up whatever the result. Admins can intervene when records violate guidelines. All admin actions are logged internally. No record is removed or altered based on commercial interests or pressure from any party.</p>
               </div>
 
               <div>
@@ -207,7 +207,7 @@ export default function LegalPage() {
 
               <div>
                 <h3 className="font-semibold text-gray-900 mb-2">For subjects — your rights</h3>
-                <p>You have the right to be notified when a record is submitted about you. You have the right to respond, dispute, and request deletion through our structured process. If a record is provably false and causes harm, your legal remedy is against the person who submitted it — not against DNounce. DNounce is immune from defamation liability for user-submitted content under Section 230. If you believe a record is false, use our dispute process. The community will decide.</p>
+                <p>You have the right to be notified when a record is submitted about you. You have the right to reply and to challenge it. Challenged records stay on DNounce and show which side the community took. If a record is provably false and causes harm, your legal remedy is against the person who submitted it — not against DNounce. DNounce is immune from defamation liability for user-submitted content under Section 230. If you believe a record is false, challenge it. The community will decide who they side with.</p>
               </div>
 
               <div>

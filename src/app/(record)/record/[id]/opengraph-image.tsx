@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
 import { createClient } from "@supabase/supabase-js";
 
+import { publicStageLabel, isPubliclyVisible } from "@/lib/outcome";
 export const runtime = "nodejs";
 export const alt = "DNounce Record";
 export const size = { width: 1200, height: 630 };
@@ -30,13 +31,10 @@ function Stars({ rating, max = 10 }: { rating: number; max?: number }) {
 }
 
 function CredBadge({ cred }: { cred: string }) {
-  const c = (cred || "").toLowerCase();
-  let bg = "#374151";
-  let color = "#D1D5DB";
-  let label = cred;
-
-  if (c.includes("anonymity not granted") || c.includes("opinion")) { bg = "#7F1D1D"; color = "#FCA5A5"; label = "Anonymity Not Granted"; }
-  else if (c.includes("anonymity granted") || c.includes("evidence") || c.includes("unable")) { bg = "#065F46"; color = "#6EE7B7"; label = "Anonymity Granted"; }
+  // Neutral stage label (the old anonymity badge is gone).
+  const bg = "#374151";
+  const color = "#D1D5DB";
+  const label = cred;
 
   return (
     <div
@@ -65,16 +63,18 @@ export default async function RecordOGImage({
 }) {
   const { id } = await params;
 
-  const { data: record } = await supabaseAdmin
+  const { data: fetched } = await supabaseAdmin
     .from("records")
     .select(`
       description, category, location, relationship, rating,
-      anonymity_status, ai_vendor_1_result,
+      status, is_published, published_at, deleted_at, final_outcome,
       subjects(name, nickname, organization, location),
       record_attachments(path, mime_type)
     `)
     .eq("id", id)
     .maybeSingle();
+  // Unpublished or deleted records get a blank card: no description, names or images.
+  const record = isPubliclyVisible(fetched) ? fetched : null;
 
   const subject = (record?.subjects as any) ?? {};
   const subjectName = subject.name ?? "Unknown Subject";
@@ -82,7 +82,7 @@ export default async function RecordOGImage({
   const org = record?.category || subject.organization || "Independent";
   const loc = record?.location || subject.location || "";
   const rating = Number(record?.rating ?? 0);
-  const cred = record?.ai_vendor_1_result || record?.anonymity_status || "Pending";
+  const cred = record ? publicStageLabel((record as any).status, (record as any).final_outcome) : "DNounce";
   const relationship = record?.relationship || "";
   const description = (record?.description || "").slice(0, 200);
 

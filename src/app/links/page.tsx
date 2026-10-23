@@ -114,7 +114,7 @@ export default function LinksPage() {
             Real experiences. Both sides heard. The community decides.
           </h1>
           <p className="text-sm text-gray-600">
-            Browse real disputes and cast your vote.
+            Read both sides of real records and cast your vote.
           </p>
         </div>
 

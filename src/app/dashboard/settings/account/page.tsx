@@ -2172,7 +2172,7 @@ export default function AccountSecurityPage() {
               <p>This action <span className="font-semibold text-gray-900">cannot be reversed.</span></p>
               <ul className="space-y-2 list-none">
                 <li className="flex items-start gap-2"><span className="text-red-400 mt-0.5">✕</span> Your login, account details, and preferences will be permanently deleted.</li>
-                <li className="flex items-start gap-2"><span className="text-yellow-500 mt-0.5">!</span> Your subject profile will remain visible and public — other users can still submit records to it and search for you by phone or email.</li>
+                <li className="flex items-start gap-2"><span className="text-yellow-500 mt-0.5">!</span> Your profile will stay visible and public — other users can still submit records to it and search for you by phone or email.</li>
                 <li className="flex items-start gap-2"><span className="text-yellow-500 mt-0.5">!</span> You will no longer receive email or text notifications until you create a new account and reclaim your profile.</li>
                 <li className="flex items-start gap-2"><span className="text-blue-400 mt-0.5">i</span> You can reclaim your profile in the future by signing up again with the same information.</li>
               </ul>

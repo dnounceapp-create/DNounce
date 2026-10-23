@@ -12,11 +12,11 @@ const faqs = [
   },
   {
     q: "What happens after I submit a record?",
-    a: "The person you wrote about is notified right away. 24 hours later the record is published, and they can respond or dispute it.",
+    a: "We let the person you wrote about know right away. 24 hours later it goes public, and they can reply or challenge it.",
   },
   {
-    q: "I'm a subject — how do I dispute a record?",
-    a: "Once you're notified of a record, log in and request deletion from your dashboard. This triggers a 72-hour debate window between you and the contributor, followed by a community vote.",
+    q: "Someone wrote about me. How do I challenge it?",
+    a: "Once it's public, go to My Records and tap Challenge. In 24 hours you and the writer each get 3 days to share your side, then the community votes for 2 days. The record stays up either way and shows where people landed.",
   },
   {
     q: "Can I delete my account?",
@@ -28,18 +28,18 @@ const faqs = [
   },
   {
     q: "How does the community vote work?",
-    a: "After a 72-hour debate between the contributor and subject, the community sides with either the contributor or the subject. Your vote explanation is also judged — poor explanations can result in a Low-Quality Voter badge.",
+    a: "After both sides have shared their story, people read it all and pick who they side with, with a short reason. Other voters rate those reasons — careless ones can earn a Low-Quality Voter badge.",
   },
   {
     q: "I think a record about me is false. What can I do?",
-    a: "Use the dispute process — it's designed exactly for this. If you believe the record is defamatory and want to pursue legal action against the contributor, consult a lawyer. We'll cooperate with valid legal processes.",
+    a: "Challenge it — that's exactly what it's for. If you believe it's defamatory and want to take legal action against the writer, talk to a lawyer. We'll cooperate with valid legal processes.",
   },
   {
     q: "My account was suspended. What do I do?",
     a: "Email support@dnounce.com with your account details and a clear explanation. We'll review and get back to you within 3 business days.",
   },
   {
-    q: "How do I claim my subject profile?",
+    q: "How do I claim my profile?",
     a: "Profile claiming is coming soon. You'll be able to verify ownership of your profile and manage how it appears on DNounce.",
   },
 ];
@@ -189,7 +189,7 @@ export default function SupportPage() {
                       <option value="general">General Question</option>
                       <option value="account">Account Issue</option>
                       <option value="record">Record / Submission</option>
-                      <option value="dispute">Dispute / Deletion</option>
+                      <option value="dispute">Challenge a record</option>
                       <option value="technical">Technical Problem</option>
                       <option value="other">Other</option>
                     </select>

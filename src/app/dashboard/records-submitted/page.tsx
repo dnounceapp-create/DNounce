@@ -8,6 +8,7 @@ import { stageConfig, STAGE_ORDER } from "@/config/stageConfig";
 import { supabase } from "@/lib/supabaseClient";
 import { computeContributorHash } from "@/lib/contributorHash";
 
+import { outcomeLabel, outcomeChipClass, outcomeSide } from "@/lib/outcome";
 const DEFAULT_SORT = "Newest Submitted" as const;
 
 type RecordItem = {
@@ -16,15 +17,11 @@ type RecordItem = {
   subject_name: string;
   submitted_at: string;
   stage: number | null;
-  outcome: "side_with_contributor" | "side_with_subject" | null;
+  outcome: string | null;
   anonymity_status: string;
   last_activity_at: string;
 };
 
-const outcomeLabels: Record<string, { label: string; color: string }> = {
-  side_with_contributor: { label: "Community sided with contributor", color: "bg-green-200 text-green-800" },
-  side_with_subject: { label: "Community sided with subject", color: "bg-red-200 text-red-800" },
-};
 
 const filterLabels: Record<string, string> = {
   status: "Status",
@@ -187,8 +184,8 @@ export default function RecordsSubmittedPage() {
         setRecords(mapped);
         setStats({
           total: mapped.length,
-          sided_contributor: mapped.filter((r) => r.outcome === "side_with_contributor").length,
-          sided_subject: mapped.filter((r) => r.outcome === "side_with_subject").length,
+          sided_contributor: mapped.filter((r) => outcomeSide(r.outcome) === "contributor").length,
+          sided_subject: mapped.filter((r) => outcomeSide(r.outcome) === "subject").length,
         });
       } catch (err) {
         console.error("Failed to fetch submitted records:", err);
@@ -211,14 +208,14 @@ export default function RecordsSubmittedPage() {
   const statusToPredicate = (status?: string) => {
     if (!status) return () => true;
     const map: Record<string, (r: RecordItem) => boolean> = {
-      "Subject Notified": (r) => r.stage === 2,
-      Published: (r) => r.stage === 3,
-      "Deletion Request": (r) => r.stage === 4,
-      Debate: (r) => r.stage === 5,
-      Voting: (r) => r.stage === 6,
+      "Private preview": (r) => r.stage === 2,
+      Public: (r) => r.stage === 3,
+      Challenged: (r) => r.stage === 4,
+      "Both sides": (r) => r.stage === 5,
+      "Community vote": (r) => r.stage === 6,
       Anonymity: (r) => r.stage === 7,
-"Sided with Contributor": (r) => r.outcome === "side_with_contributor",
-"Sided with Subject": (r) => r.outcome === "side_with_subject",
+"Sided with the writer": (r) => outcomeSide(r.outcome) === "contributor",
+"Sided with the person it's about": (r) => outcomeSide(r.outcome) === "subject",
     };
     return map[status] ?? (() => true);
   };
@@ -317,13 +314,13 @@ export default function RecordsSubmittedPage() {
               onChange={(e) => setFilters({ ...filters, status: e.target.value })}
             >
               <option value="">Status</option>
-              <option>Subject Notified</option>
-              <option>Published</option>
-              <option>Deletion Request</option>
-              <option>Debate</option>
-              <option>Voting</option>
-              <option value="Sided with Contributor">Sided with Contributor</option>
-              <option value="Sided with Subject">Sided with Subject</option>
+              <option>Private preview</option>
+              <option>Public</option>
+              <option>Challenged</option>
+              <option>Both sides</option>
+              <option>Community vote</option>
+              <option value="Sided with the writer">Most sided with the writer</option>
+              <option value="Sided with the person it's about">Most sided with the person it's about</option>
             </select>
 
             <select
@@ -369,7 +366,7 @@ export default function RecordsSubmittedPage() {
                 <option>Oldest Submitted</option>
                 <option>Stage (1 → 7)</option>
                 <option>Record ID</option>
-                <option>Subject (A → Z)</option>
+                <option>Name (A → Z)</option>
                 <option>Last Activity</option>
               </select>
               {hasNonDefaultSort && (
@@ -452,8 +449,8 @@ export default function RecordsSubmittedPage() {
                       );
                     })()
                   ) : record.outcome ? (
-                    <span className={`inline-block px-2 py-1 rounded-full text-[11px] sm:text-xs font-medium ${outcomeLabels[record.outcome]?.color || "bg-gray-100 text-gray-600"}`}>
-                      {outcomeLabels[record.outcome]?.label || record.outcome}
+                    <span className={`inline-block px-2 py-1 rounded-full text-[11px] sm:text-xs font-medium ${outcomeChipClass(record.outcome)}`}>
+                      {(outcomeLabel(record.outcome, { contributor: "you" }) ?? record.outcome)}
                     </span>
                   ) : (
                     <span className="inline-block px-2 py-1 rounded-full text-[11px] sm:text-xs font-medium bg-gray-100 text-gray-600">—</span>

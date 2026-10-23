@@ -7,6 +7,7 @@ import { X } from "lucide-react";
 import { stageConfig, STAGE_ORDER } from "@/config/stageConfig";
 import { supabase } from "@/lib/supabaseClient";
  
+import { outcomeLabel, outcomeChipClass, outcomeSide } from "@/lib/outcome";
 const DEFAULT_SORT = "Newest Followed" as const;
  
 type FollowedRecord = {
@@ -17,14 +18,10 @@ type FollowedRecord = {
   subject_name: string;
   submitted_at: string;
   stage: number | null;
-  outcome: "side_with_contributor" | "side_with_subject" | null;
+  outcome: string | null;
   anonymity_status: string;
 };
  
-const outcomeLabels: Record<string, { label: string; color: string }> = {
-  side_with_contributor: { label: "Community sided with contributor", color: "bg-green-200 text-green-800" },
-  side_with_subject: { label: "Community sided with subject", color: "bg-red-200 text-red-800" },
-};
  
 const filterLabels: Record<string, string> = {
   status: "Status",
@@ -196,14 +193,14 @@ export default function FollowingRecordsPage() {
   const statusToPredicate = (status?: string) => {
     if (!status) return () => true;
     const map: Record<string, (r: FollowedRecord) => boolean> = {
-      "Subject Notified": (r) => r.stage === 2,
-      Published: (r) => r.stage === 3,
-      "Deletion Request": (r) => r.stage === 4,
-      Debate: (r) => r.stage === 5,
-      Voting: (r) => r.stage === 6,
+      "Private preview": (r) => r.stage === 2,
+      Public: (r) => r.stage === 3,
+      Challenged: (r) => r.stage === 4,
+      "Both sides": (r) => r.stage === 5,
+      "Community vote": (r) => r.stage === 6,
       Anonymity: (r) => r.stage === 7,
-"Sided with Contributor": (r) => r.outcome === "side_with_contributor",
-"Sided with Subject": (r) => r.outcome === "side_with_subject",
+"Sided with the writer": (r) => outcomeSide(r.outcome) === "contributor",
+"Sided with the person it's about": (r) => outcomeSide(r.outcome) === "subject",
     };
     return map[status] ?? (() => true);
   };
@@ -273,13 +270,13 @@ export default function FollowingRecordsPage() {
               onChange={(e) => setFilters({ ...filters, status: e.target.value })}
             >
               <option value="">Status</option>
-              <option>Subject Notified</option>
-              <option>Published</option>
-              <option>Deletion Request</option>
-              <option>Debate</option>
-              <option>Voting</option>
-              <option value="Sided with Contributor">Sided with Contributor</option>
-              <option value="Sided with Subject">Sided with Subject</option>
+              <option>Private preview</option>
+              <option>Public</option>
+              <option>Challenged</option>
+              <option>Both sides</option>
+              <option>Community vote</option>
+              <option value="Sided with the writer">Most sided with the writer</option>
+              <option value="Sided with the person it's about">Most sided with the person it's about</option>
             </select>
  
             {hasActiveFilters && (
@@ -306,7 +303,7 @@ export default function FollowingRecordsPage() {
                 <option>Newest Followed</option>
                 <option>Oldest Followed</option>
                 <option>Newest Submitted</option>
-                <option>Subject (A → Z)</option>
+                <option>Name (A → Z)</option>
               </select>
               {hasNonDefaultSort && (
                 <button onClick={() => setSort(DEFAULT_SORT)} className="px-3 py-2 text-xs sm:text-sm font-medium rounded-full bg-gray-100 text-gray-800 hover:bg-gray-200 transition">
@@ -371,8 +368,8 @@ export default function FollowingRecordsPage() {
                       return <span className={`inline-block px-2 py-1 rounded-full text-[11px] sm:text-xs font-medium ${s.ui.chipClass}`}>{s.label}</span>;
                     })()
                   ) : record.outcome ? (
-                    <span className={`inline-block px-2 py-1 rounded-full text-[11px] sm:text-xs font-medium ${outcomeLabels[record.outcome]?.color || "bg-gray-100 text-gray-600"}`}>
-                      {outcomeLabels[record.outcome]?.label || record.outcome}
+                    <span className={`inline-block px-2 py-1 rounded-full text-[11px] sm:text-xs font-medium ${outcomeChipClass(record.outcome)}`}>
+                      {(outcomeLabel(record.outcome) ?? record.outcome)}
                     </span>
                   ) : (
                     <span className="inline-block px-2 py-1 rounded-full text-[11px] sm:text-xs font-medium bg-gray-100 text-gray-600">—</span>

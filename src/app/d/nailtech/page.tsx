@@ -151,12 +151,12 @@ function AgreeDisagree({
 /* ─── LifecycleChips ────────────────────────────────── */
 
 const STAGES = [
-  { id: 2, label: "Subject Notified" },
-  { id: 3, label: "Record Published" },
-  { id: 4, label: "Record in Dispute" },
-  { id: 5, label: "Debate Phase" },
-  { id: 6, label: "Voting in Progress" },
-  { id: 7, label: "Settled" },
+  { id: 2, label: "Private preview" },
+  { id: 3, label: "Public" },
+  { id: 4, label: "Challenged" },
+  { id: 5, label: "Both sides" },
+  { id: 6, label: "Community vote" },
+  { id: 7, label: "Results" },
 ];
 
 function LifecycleChips({ current }: { current: number }) {
@@ -1062,7 +1062,7 @@ export default function DemoNailTechPage() {
                 {shareCopied ? "Copied!" : "Copy link"}
               </button>
               <a
-                href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(recordUrl)}&text=${encodeURIComponent("Should this record stand or be removed? You decide 👇")}`}
+                href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(recordUrl)}&text=${encodeURIComponent("Who do you side with? You decide 👇")}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-center gap-2 rounded-xl border bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"

@@ -8,6 +8,7 @@ import Image from "next/image";
 import { stageConfig, STAGE_ORDER } from "@/config/stageConfig";
 import { supabase } from "@/lib/supabaseClient";
 
+import { outcomeLabel, outcomeChipClass, outcomeSide } from "@/lib/outcome";
 const DEFAULT_SORT = "Newest Submitted" as const;
 
 type RecordItem = {
@@ -16,15 +17,11 @@ type RecordItem = {
   subject_name: string;
   submitted_at: string;
   stage: number | null;
-  outcome: "side_with_contributor" | "side_with_subject" | null;
+  outcome: string | null;
   anonymity_status: "Anonymity Granted" | "Anonymity Not Granted" | "Anonymity Granted" | string;
   last_activity_at: string;
 };
 
-const outcomeLabels: Record<string, { label: string; color: string }> = {
-  side_with_contributor: { label: "Community sided with contributor", color: "bg-green-200 text-green-800" },
-  side_with_subject: { label: "Community sided with subject", color: "bg-red-200 text-red-800" },
-};
 
 // Human labels for chips
 const filterLabels: Record<string, string> = {
@@ -229,8 +226,8 @@ export default function MyRecordsPage() {
         setRecords(mapped);
         setStats({
           my_total_records: mapped.length,
-          sided_contributor: mapped.filter((r) => r.outcome === "side_with_contributor").length,
-          sided_subject: mapped.filter((r) => r.outcome === "side_with_subject").length,
+          sided_contributor: mapped.filter((r) => outcomeSide(r.outcome) === "contributor").length,
+          sided_subject: mapped.filter((r) => outcomeSide(r.outcome) === "subject").length,
         });
       } catch (err) {
         console.error("Failed to fetch records:", err);
@@ -315,14 +312,14 @@ export default function MyRecordsPage() {
     if (!status) return () => true;
 
     const map: Record<string, (record: RecordItem) => boolean> = {
-      "Subject Notified": (record) => record.stage === 2,
-      Published: (record) => record.stage === 3,
-      "Deletion Request": (record) => record.stage === 4,
-      Debate: (record) => record.stage === 5,
-      Voting: (record) => record.stage === 6,
+      "Private preview": (record) => record.stage === 2,
+      Public: (record) => record.stage === 3,
+      Challenged: (record) => record.stage === 4,
+      "Both sides": (record) => record.stage === 5,
+      "Community vote": (record) => record.stage === 6,
       Anonymity: (record) => record.stage === 7,
-"Sided with Contributor": (record) => record.outcome === "side_with_contributor",
-"Sided with Subject": (record) => record.outcome === "side_with_subject",
+"Sided with the writer": (record) => outcomeSide(record.outcome) === "contributor",
+"Sided with the person it's about": (record) => outcomeSide(record.outcome) === "subject",
     };
     return map[status] ?? (() => true);
   };
@@ -417,36 +414,15 @@ export default function MyRecordsPage() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) throw new Error("Not signed in.");
 
-      // Update the record status to deletion_request
-      const { error } = await supabase
-        .from("records")
-        .update({
-          dispute_started_at: new Date().toISOString(),
-          status: "deletion_request",
-        })
-        .eq("id", id)
-        .eq("subject_id", subjectId ?? "");
-
-      if (error) throw error;
-
-      // Get the record to find contributor for notification
-      const { data: rec } = await supabase
-        .from("records")
-        .select("contributor:contributors!records_contributor_id_fkey(user_id, auth_user_id)")
-        .eq("id", id)
-        .maybeSingle();
-
-      const contributorAuthId = (rec?.contributor as any)?.auth_user_id;
-
-      // Notify contributor
-      if (contributorAuthId) {
-        await supabase.from("notifications").insert({
-          user_id: contributorAuthId,
-          title: "Your record has been disputed",
-          body: "The subject has requested deletion of a record you submitted. It has entered the deletion request stage.",
-          type: "stage_4_contributor",
-          record_id: id,
-        });
+      // Runs on the server: subjects can't change records from the browser.
+      const res = await fetch("/api/records/dispute", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ recordId: id }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body?.error || "We couldn't send your challenge. Please try again.");
       }
 
       // Update local state: move record to stage 4
@@ -458,9 +434,9 @@ export default function MyRecordsPage() {
 
       // Show success confirmation modal
       setDisputeSuccessId(id);
-      setDisputeToast({ type: "success", msg: "Dispute submitted. The contributor has been notified." });
+      setDisputeToast({ type: "success", msg: "Challenge sent. We let the writer know." });
     } catch (err: any) {
-      setDisputeToast({ type: "error", msg: err?.message || "Failed to submit dispute." });
+      setDisputeToast({ type: "error", msg: err?.message || "We couldn't send your challenge. Please try again." });
     } finally {
       setDisputingId(null);
       setTimeout(() => setDisputeToast(null), 4000);
@@ -562,13 +538,13 @@ export default function MyRecordsPage() {
               onChange={(e) => setFilters({ ...filters, status: e.target.value })}
             >
               <option value="">Status</option>
-              <option>Subject Notified</option>
-              <option>Published</option>
-              <option>Deletion Request</option>
-              <option>Debate</option>
-              <option>Voting</option>
-              <option value="Sided with Contributor">Sided with Contributor</option>
-              <option value="Sided with Subject">Sided with Subject</option>
+              <option>Private preview</option>
+              <option>Public</option>
+              <option>Challenged</option>
+              <option>Both sides</option>
+              <option>Community vote</option>
+              <option value="Sided with the writer">Most sided with the writer</option>
+              <option value="Sided with the person it's about">Most sided with the person it's about</option>
             </select>
 
             <select
@@ -618,7 +594,7 @@ export default function MyRecordsPage() {
                 <option>Oldest Submitted</option>
                 <option>Stage (1 → 7)</option>
                 <option>Record ID</option>
-                <option>Subject (A → Z)</option>
+                <option>Name (A → Z)</option>
                 <option>Last Activity</option>
               </select>
 
@@ -663,14 +639,14 @@ export default function MyRecordsPage() {
           <div className="hidden md:grid grid-cols-3 px-6 py-3 font-semibold text-gray-600 text-sm">
             <div>Record Name</div>
             <div className="text-center">Status</div>
-            <div className="flex justify-center">Dispute Record</div>
+            <div className="flex justify-center">Challenge</div>
           </div>
 
           {loadingData ? (
             <div className="p-6 text-center text-gray-500">Loading records…</div>
           ) : displayRecords.length === 0 ? (
             <div className="p-6 text-center text-gray-500">
-              No records found against you.
+              No records about you yet.
             </div>
           ) : (
             paginatedRecords.map((record) => (
@@ -714,9 +690,9 @@ export default function MyRecordsPage() {
                     })()
                   ) : record.outcome ? (
                     <span
-                      className={`inline-block px-2 py-1 rounded-full text-[11px] sm:text-xs font-medium ${outcomeLabels[record.outcome].color}`}
+                      className={`inline-block px-2 py-1 rounded-full text-[11px] sm:text-xs font-medium ${outcomeChipClass(record.outcome)}`}
                     >
-                      {outcomeLabels[record.outcome].label}
+                      {(outcomeLabel(record.outcome, { subject: "you" }) ?? record.outcome)}
                     </span>
                   ) : (
                     <span className="inline-block px-2 py-1 rounded-full text-[11px] sm:text-xs font-medium bg-gray-100 text-gray-600">
@@ -733,7 +709,7 @@ export default function MyRecordsPage() {
                       disabled={disputingId === record.id}
                       className="px-3 py-2 bg-orange-500 text-white text-xs sm:text-sm rounded-md hover:bg-orange-600 active:scale-[0.99] transition disabled:opacity-50"
                     >
-                      {disputingId === record.id ? "Submitting…" : "Dispute Record"}
+                      {disputingId === record.id ? "Sending…" : "Challenge"}
                     </button>
                   ) : (
                     <span className="text-[11px] sm:text-xs text-gray-400">—</span>
@@ -813,11 +789,11 @@ export default function MyRecordsPage() {
       {disputeConfirmId && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
           <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-md p-6 space-y-4">
-            <h2 className="text-white font-semibold text-lg">Dispute this record?</h2>
+            <h2 className="text-white font-semibold text-lg">Challenge this record?</h2>
             <p className="text-gray-400 text-sm leading-relaxed">
-              This will flag the record for deletion and notify the contributor. The record enters a formal deletion review process — debate, community voting, and a final outcome.
+              We'll let the writer know. In 24 hours, you'll both get 3 days to share your side. Then the community votes for 2 days. Whatever happens, the record stays up and shows where people landed.
             </p>
-            <p className="text-orange-400 text-xs font-medium">This action cannot be undone.</p>
+            <p className="text-orange-400 text-xs font-medium">You can&apos;t undo this.</p>
             <div className="flex gap-3 pt-2">
               <button
                 onClick={() => setDisputeConfirmId(null)}
@@ -830,7 +806,7 @@ export default function MyRecordsPage() {
                 disabled={!!disputingId}
                 className="flex-1 px-4 py-2.5 rounded-xl bg-orange-500 text-white hover:bg-orange-600 text-sm font-semibold transition disabled:opacity-50"
               >
-                {disputingId ? "Submitting…" : "Yes, Dispute Record"}
+                {disputingId ? "Sending…" : "Yes, challenge it"}
               </button>
             </div>
           </div>
@@ -844,18 +820,18 @@ export default function MyRecordsPage() {
               <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center shrink-0">
                 <CheckCircle className="w-5 h-5 text-orange-500" />
               </div>
-              <h2 className="text-gray-900 font-semibold text-lg">Dispute Submitted</h2>
+              <h2 className="text-gray-900 font-semibold text-lg">Challenge sent</h2>
             </div>
             <p className="text-gray-600 text-sm leading-relaxed">
-              Your dispute has been recorded. The contributor has been notified and the formal review process has begun.
+              We let the writer know. We&apos;ll email you when it&apos;s time to share your side.
             </p>
             <div className="bg-orange-50 border border-orange-200 rounded-xl p-3">
-              <p className="text-orange-700 text-xs font-medium">What happens next?</p>
+              <p className="text-orange-700 text-xs font-medium">What happens next</p>
               <ul className="mt-1.5 space-y-1 text-orange-600 text-xs list-disc list-inside">
-                <li>The contributor reviews and may respond</li>
-                <li>Both parties can debate the record</li>
-                <li>Community sides with contributor or subject</li>
-                <li>The vote result is announced</li>
+                <li>In 24 hours, you both get 3 days to share your side</li>
+                <li>Then the community votes for 2 days</li>
+                <li>A week later, the results show on the record</li>
+                <li>The record stays up either way</li>
               </ul>
             </div>
             <button

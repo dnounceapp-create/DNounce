@@ -1,12 +1,12 @@
 export type RoleType = "subject" | "contributor" | "voter" | "citizen";
 
 export const stageShortLabel: Record<number, string> = {
-  2: "Subject Notified",
-  3: "Record Published",
-  4: "Record in Dispute",
-  5: "Debate Phase",
-  6: "Voting in Progress",
-  7: "Settled",
+  2: "Private preview",
+  3: "Public",
+  4: "Challenged",
+  5: "Both sides",
+  6: "Community vote",
+  7: "Results",
 };
 
 
@@ -93,113 +93,107 @@ export function evaluateVoterBadges(input: {
 /** Canonical DNounce Record Lifecycle */
 export const stageConfig: Record<number, StageConfig> = {
   2: {
-    label: "Subject Notified",
+    label: "Private preview",
     happens:
-      "The subject (person the record is about) is automatically notified of the pending record. The record remains private while both parties can view it.",
+      "The person it's about has been told. For 24 hours, only they and the writer can see it.",
     timeline: {
-      summary: "Immediately after AI completes",
-      start: "onAIComplete",
+      summary: "Right after it's submitted",
+      start: "onSubmission",
     },
     flags: { isPublic: false, interactionsLocked: true },
     actions: {
-      subject: ["👀 Can privately view and prepare evidence before publication."],
-      contributor: ["👀 Can review privately and refine sources or tone."],
-      voter: ["🚫 Not active yet."],
-      citizen: ["🚫 Not visible."],
+      subject: ["👀 Read it privately before it goes public."],
+      contributor: ["👀 Read it over before it goes public."],
+      voter: ["🚫 Nothing to do yet."],
+      citizen: ["🚫 Not visible yet."],
     },
     ui: { chipClass: "bg-purple-100 text-purple-700" },
   },
 
   3: {
-    label: "Record Published",
-    happens:
-      "The record is published and becomes publicly visible on DNounce.",
+    label: "Public",
+    happens: "Anyone can see the record now.",
     timeline: {
-      summary:
-        "24 hours after the subject is notified.",
+      summary: "24 hours after the person it's about is told",
       start: "onPublish",
     },
     flags: { isPublic: true, interactionsLocked: false },
     actions: {
-      subject: [
-        "⚖️ Can Dispute Record or Comment under moderation rules.",
-      ],
-      contributor: ["🗑️ Can request removal of their own record if desired."],
-      voter: ["🚫 Not active unless the record is escalated."],
-      citizen: [
-        "💬 Can interact normally (comment, react, flag) as a public participant until escalation.",
-      ],
+      subject: ["⚖️ Comment, or challenge the record if you see it differently."],
+      contributor: ["🗑️ You can take your own record down if you change your mind."],
+      voter: ["🚫 Nothing to vote on unless it's challenged."],
+      citizen: ["💬 Comment and react."],
     },
     ui: { chipClass: "bg-green-100 text-green-700" },
   },
 
   4: {
-    label: "Record in Dispute",
+    label: "Challenged",
     happens:
-      "Subject disputes record; system locks down for debate setup and notifies contributor.",
+      "The person it's about challenged it, and the writer has been told. In 24 hours, both sides get to talk.",
     timeline: {
-      summary: "Immediate transition when subject disputes",
+      summary: "As soon as it's challenged",
       start: "onSubjectDispute",
     },
     flags: { isPublic: true, interactionsLocked: true },
     actions: {
-      subject: ["Triggers escalation."],
-      contributor: ["Prepares response."],
-      voter: ["View-only."],
-      citizen: ["View-only (interactions locked once escalated)."],
+      subject: ["Get your side and any evidence ready."],
+      contributor: ["Get your side and any evidence ready."],
+      voter: ["Read along."],
+      citizen: ["Read along. Comments are paused for now."],
     },
     ui: { chipClass: "bg-pink-100 text-pink-700" },
   },
 
   5: {
-    label: "Debate Phase",
+    label: "Both sides",
     happens:
-      "Both parties argue the case with evidence during this active dispute period.",
+      "The writer and the person it's about each share their side, with evidence if they have it.",
     timeline: {
-      summary: "72h (starts when the contributor is notified of the dispute)",
+      summary: "3 days, starting 24 hours after the challenge",
       start: "onContributorNotifiedOfDispute",
       durationHours: 72,
     },
     flags: { isPublic: true, interactionsLocked: true },
     actions: {
-      subject: ["Submit arguments/evidence supporting deletion."],
-      contributor: ["Defend post with sources/reasoning."],
-      voter: ["View-only."],
-      citizen: ["View-only (no comments/reactions during active dispute)."],
+      subject: ["Share your side and any evidence."],
+      contributor: ["Share your side and any evidence."],
+      voter: ["Read both sides."],
+      citizen: ["Read both sides. Comments are paused for now."],
     },
     ui: { chipClass: "bg-orange-100 text-orange-700" },
   },
 
   6: {
-    label: "Voting in Progress",
+    label: "Community vote",
     happens:
-      "The record enters community voting — the community sides with either the contributor or the subject.",
+      "People read both sides and pick who they side with, with a short reason.",
     timeline: {
-      summary: "48h (starts when debate ends)",
+      summary: "2 days, right after both sides finish",
       start: "onDebateEnd",
       durationHours: 48,
     },
     flags: { isPublic: true, interactionsLocked: false },
     actions: {
-      subject: ["⏳ Can view progress but not interact."],
-      contributor: ["⏳ Can observe voting results but cannot intervene."],
+      subject: ["⏳ Watch the vote. You can't vote on your own record."],
+      contributor: ["⏳ Watch the vote. You can't vote on your own record."],
       voter: [
-        "✅ Can side with contributor or subject and must add short reasoning.",
-        "⚠ 5+ downvotes → 'Low-Quality Voter'.",
-        "🧨 ≥33% voter flags + ≥50% public approval → 'Lost voting rights'.",
+        "✅ Pick a side and say why in a sentence or two.",
+        "⚠ 5+ downvotes on your reason → 'Low-Quality Voter'.",
+        "🧨 Votes the community flags as bad faith lose their voting rights.",
       ],
       citizen: [
-        "👁️ Can view record and comments.",
-        "💡 Can interact only if eligible to vote.",
+        "👁️ Read the record and comments.",
+        "💡 Vote if you're eligible.",
       ],
     },
     ui: { chipClass: "bg-indigo-100 text-indigo-700" },
   },
 
   7: {
-    label: "Settled",
+    label: "Results",
     happens:
-      "Final outcome implemented. If removed, the record is taken down from public view; if kept, it stays published.",
+      "Voting is over. A week later, the record shows where people landed. The record stays up either way.",
     timeline: {
       summary: "Starts when voting ends",
       start: "onVotingEnd",
@@ -207,18 +201,18 @@ export const stageConfig: Record<number, StageConfig> = {
     flags: { isPublic: true, interactionsLocked: false },
     actions: {
       subject: [
-        "✅ Can view final outcome immediately.",
-        "⏱ Can interact again after 1 week.",
+        "✅ See the results once they're out.",
+        "⏱ Join the conversation again a week later.",
       ],
       contributor: [
-        "✅ Can view final outcome immediately.",
-        "⏱ Can interact again after 1 week.",
+        "✅ See the results once they're out.",
+        "⏱ Join the conversation again a week later.",
       ],
       voter: [
-        "👁️ Can see final result but cannot vote anymore.",
-        "💬 Can interact again after cooldown.",
+        "👁️ See the results. Voting is closed.",
+        "💬 Join the conversation again later.",
       ],
-      citizen: ["🌐 Can view and interact publicly as part of the final archive."],
+      citizen: ["🌐 Read, comment and react."],
     },
     ui: { chipClass: "bg-gray-100 text-gray-700" },
   },
@@ -232,11 +226,11 @@ export interface OutcomeLabel {
 
 export const outcomeLabels: OutcomeLabel[] = [
   {
-    label: "Community sided with contributor",
+    label: "Most people sided with the writer",
     color: "bg-green-100 text-green-700 border border-black/30",
   },
   {
-    label: "Community sided with subject",
+    label: "Most people sided with the person it's about",
     color: "bg-red-100 text-red-700 border border-black/30",
   },
 ];

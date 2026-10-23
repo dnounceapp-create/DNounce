@@ -13,7 +13,7 @@ export default function TermsPage() {
           {[
             {
               title: "1. Acceptance of Terms",
-              body: "By using DNounce, you agree to comply with these Terms and Conditions and all applicable laws. By submitting a record, you further acknowledge that DNounce's AI classification system is a structural tool only — it does not represent DNounce's opinion, endorsement, or verification of any submitted content. If you do not agree to these terms, please stop using the service immediately."
+              body: "By using DNounce, you agree to comply with these Terms and Conditions and all applicable laws. By submitting a record, you acknowledge that DNounce does not verify, endorse, or take a position on any submitted content, and that community votes are counts of opinion, not findings of fact. If you do not agree to these terms, please stop using the service immediately."
             },
             {
               title: "2. Use of Service",
@@ -33,7 +33,7 @@ export default function TermsPage() {
             },
             {
               title: "6. Record Lifecycle",
-              body: "When you submit a record, the person it is about is notified and the record is published 24 hours later. DNounce does not classify, verify, or endorse records. If a record is disputed, community votes are user-generated and shown as counts. DNounce is not the publisher, editor, or endorser of any record on the platform."
+              body: "When you submit a record, the person it is about is notified and the record is published 24 hours later. DNounce does not classify, verify, or endorse records. If a record is challenged, community votes are user-generated and shown as counts. DNounce is not the publisher, editor, or endorser of any record on the platform."
             },
             {
               title: "7. Contributor Names",

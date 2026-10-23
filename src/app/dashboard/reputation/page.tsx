@@ -59,7 +59,7 @@ const BADGE_STYLES: Record<string, { bg: string; text: string; border: string }>
 };
 
 const SCORE_CARDS = [
-  { key: "subject_score" as keyof Scores, label: "Subject Score", desc: "Record outcomes, disputes & ratings against you", icon: Shield, color: "text-blue-500" },
+  { key: "subject_score" as keyof Scores, label: "Subject Score", desc: "Ratings, challenges and results on records about you", icon: Shield, color: "text-blue-500" },
   { key: "contributor_score" as keyof Scores, label: "Contributor Score", desc: "How well your submitted records hold up", icon: TrendingUp, color: "text-green-500" },
   { key: "voter_score" as keyof Scores, label: "Voter Score", desc: "Community reactions to your votes", icon: Star, color: "text-purple-500" },
   { key: "citizen_score" as keyof Scores, label: "Citizen Score", desc: "Reactions to your community statements & replies", icon: Users, color: "text-orange-500" },
@@ -80,8 +80,8 @@ const ALL_BADGES: { label: string; icon: string }[] = [
 ];
 
 const STATUS_LABELS: Record<string, string> = {
-  ai_verification: "Awaiting Claim", subject_notified: "Subject Notified",
-  published: "Published", deletion_request: "Deletion Request",
+  ai_verification: "Awaiting Claim", subject_notified: "Private preview",
+  published: "Published", deletion_request: "Challenged",
   debate: "Debate", voting: "Voting", decision: "Results",
 };
 

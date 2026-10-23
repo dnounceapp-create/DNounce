@@ -189,7 +189,7 @@ describe("stageShortLabel", () => {
   });
 
   it("stage 7 is Settled", () => {
-    expect(stageShortLabel[7]).toBe("Settled");
+    expect(stageShortLabel[7]).toBe("Results");
   });
 
   it("there is no stage 1 (AI verification was removed)", () => {

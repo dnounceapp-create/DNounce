@@ -2,6 +2,7 @@ import { ImageResponse } from "next/og";
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest } from "next/server";
 
+import { publicStageLabel, isPubliclyVisible } from "@/lib/outcome";
 export const runtime = "nodejs";
 
 const supabaseAdmin = createClient(
@@ -80,16 +81,18 @@ export async function GET(req: NextRequest) {
   const id = searchParams.get("id");
   if (!id) return new Response("Missing id", { status: 400 });
 
-  const { data: record } = await supabaseAdmin
+  const { data: fetched } = await supabaseAdmin
     .from("records")
     .select(`
       description, category, location, relationship, rating,
-      anonymity_status, ai_vendor_1_result, created_at,
+      created_at, status, is_published, published_at, deleted_at, final_outcome,
       contributor_display_name, contributor_identity_preference,
       subjects(name, nickname, organization, location, avatar_url)
     `)
     .eq("id", id)
     .maybeSingle();
+  // Unpublished or deleted records get a blank card: no description, no names.
+  const record = isPubliclyVisible(fetched) ? fetched : null;
 
   const subject = (record?.subjects as any) ?? {};
   const subjectName = subject.name ?? "Unknown Subject";
@@ -98,19 +101,10 @@ export async function GET(req: NextRequest) {
   const subjectLoc = record?.location || subject.location || "Unknown Location";
   const subjectAvatar = subject.avatar_url ?? null;
 
-  const rawCred = record?.ai_vendor_1_result || record?.anonymity_status || "";
-  const c = rawCred.toLowerCase();
-  let credLabel = "Pending AI Review";
-  let credBg = "#F3F4F6"; let credColor = "#6B7280"; let credBorder = "#E5E7EB";
-  let credIcon: "warning" | "check" | "none" = "none";
-
-  if (c.includes("anonymity not granted") || c.includes("opinion")) {
-    credLabel = "Anonymity Not Granted"; credBg = "#FEF2F2"; credColor = "#DC2626";
-    credBorder = "#FECACA"; credIcon = "warning";
-  } else if (c.includes("anonymity granted") || c.includes("evidence") || c.includes("unable")) {
-    credLabel = "Anonymity Granted"; credBg = "#F0FDF4"; credColor = "#15803D";
-    credBorder = "#BBF7D0"; credIcon = "check";
-  }
+  // Neutral stage label (the old anonymity badge is gone).
+  const credLabel = record ? publicStageLabel((record as any).status, (record as any).final_outcome) : "DNounce";
+  const credBg = "#F3F4F6"; const credColor = "#374151"; const credBorder = "#E5E7EB";
+  const credIcon = "none" as "warning" | "check" | "none";
 
   const rating = Number(record?.rating ?? 0);
   const category = record?.category || "";
@@ -119,12 +113,12 @@ export async function GET(req: NextRequest) {
   const description = rawDescription.length > 500 ? rawDescription.slice(0, 500) + "…" : rawDescription;
   const submittedDate = formatDate(record?.created_at || "");
 
-  const c2 = rawCred.toLowerCase();
   // Names always show, except old records whose contributor was promised anonymity.
   const revealContributor = record?.contributor_identity_preference !== false;
-  const contributorName = revealContributor
-    ? (record?.contributor_display_name || "SuperHero123")
-    : "SuperHero123";
+  // Always "First L.", even if an older row stored a full name.
+  const parts = String(record?.contributor_display_name || "").trim().split(/\s+/).filter(Boolean);
+  const firstL = parts.length > 1 ? `${parts[0]} ${parts[parts.length - 1][0].toUpperCase()}.` : (parts[0] || "");
+  const contributorName = revealContributor && firstL ? firstL : "SuperHero123";
 
   const logoUrl = `${process.env.NEXT_PUBLIC_SITE_URL || "https://dnounce.com"}/logo.png`;
 
@@ -148,7 +142,7 @@ export async function GET(req: NextRequest) {
               <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" stroke="#2563EB" strokeWidth="2" strokeLinecap="round" fill="none"/>
               <circle cx="12" cy="7" r="4" stroke="#2563EB" strokeWidth="2" fill="none"/>
             </svg>
-            <span style={{ fontSize: 12, color: "#2563EB", fontWeight: 600 }}>Subject</span>
+            <span style={{ fontSize: 12, color: "#2563EB", fontWeight: 600 }}>About</span>
           </div>
           {subjectAvatar ? (
             <img src={subjectAvatar} style={{ width: 38, height: 38, borderRadius: "50%", objectFit: "cover", border: "1px solid #E5E7EB", flexShrink: 0 }} />
@@ -173,7 +167,7 @@ export async function GET(req: NextRequest) {
               <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" stroke="#16A34A" strokeWidth="2" strokeLinecap="round" fill="none"/>
               <circle cx="12" cy="7" r="4" stroke="#16A34A" strokeWidth="2" fill="none"/>
             </svg>
-            <span style={{ fontSize: 12, color: "#16A34A", fontWeight: 600 }}>Contributor</span>
+            <span style={{ fontSize: 12, color: "#16A34A", fontWeight: 600 }}>Written by</span>
           </div>
           <div style={{ width: 38, height: 38, borderRadius: "50%", background: "#F3F4F6", border: "1px solid #E5E7EB", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             <svg width={20} height={20} viewBox="0 0 24 24" style={{ display: "flex" }}>

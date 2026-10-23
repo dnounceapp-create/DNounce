@@ -25,8 +25,8 @@ function buildEmailHtml(firstName: string, requesterName: string, link: string) 
 <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#111827;line-height:1.6;">
   <p>Hi ${first},</p>
   <p><strong>${name}</strong> asked you to share your experience with them on DNounce, a community review platform where both sides are heard.</p>
-  <p>Your record can be positive, negative, or anywhere in between. ${name} won't be able to edit or remove what you write, and you can choose to stay anonymous.</p>
-  <p><strong>If ${name} disputes your record,</strong> you'll both get a chance to share your side and any evidence in a short debate. Then the DNounce community reviews both sides and votes within 48 hours on who they side with. The vote result is final and shown publicly.</p>
+  <p>Your record can be positive, negative, or anywhere in between. ${name} won't be able to edit or remove what you write. Your first name and last initial will show on it.</p>
+  <p><strong>If ${name} challenges your record,</strong> you'll both get 3 days to share your side and any evidence. Then the community reads both sides and votes for 2 days on who they side with. The record stays up either way and shows where people landed.</p>
   <p><strong>Who is the community?</strong><br/>Other DNounce members who aren't involved in the record. They read both sides, look at the evidence, and vote. Neither you nor ${name} can vote on your own record. Voters are also rated on how fair and consistent their votes are, so careless or biased voting hurts their own standing.</p>
   <p style="margin:28px 0;">
     <a href="${link}" style="background:#7c3aed;color:#ffffff;text-decoration:none;padding:12px 22px;border-radius:10px;font-weight:600;display:inline-block;">Share Your Experience &rarr;</a>

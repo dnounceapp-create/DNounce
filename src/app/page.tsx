@@ -722,10 +722,11 @@ export default function HomePage() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {[
               { step: "01", title: "Submit a record", desc: "Share your experience clearly and honestly. Your first name and last initial will appear publicly on the record." },
-              { step: "02", title: "Subject notified", desc: "The person is notified right away and has 24 hours before the record goes public." },
-              { step: "03", title: "Published", desc: "The record goes live, and the subject can respond." },
-              { step: "04", title: "Dispute & debate", desc: "The subject can dispute the record, triggering a 72-hour debate." },
-              { step: "05", title: "Community votes", desc: "The community votes on who they side with. Votes are shown as counts." },
+              { step: "02", title: "Private preview", desc: "We let the person know right away. Only they can see it for 24 hours." },
+              { step: "03", title: "Public", desc: "The record goes live, and they can reply." },
+              { step: "04", title: "Challenge", desc: "If they see it differently, they can challenge it. Then you both get 3 days to share your side." },
+              { step: "05", title: "Community vote", desc: "For 2 days, the community reads both sides and picks who they side with." },
+              { step: "06", title: "Results", desc: "The record stays up either way and shows where people landed." },
             ].map((item) => (
               <div key={item.step} className="bg-white rounded-2xl p-6 border border-gray-100">
                 <div className="text-xs font-mono text-gray-400 mb-3">{item.step}</div>
@@ -1007,13 +1008,13 @@ export default function HomePage() {
               <MessageSquare className="h-5 w-5 text-blue-500" />
               <h3 className="font-semibold text-gray-900">How should this be viewed?</h3>
             </div>
-            <p className="text-sm text-gray-500 mb-6">The subject disputed the record and completed the debate process. You decide.</p>
+            <p className="text-sm text-gray-500 mb-6">They challenged the record and both sides have had their say. Who do you side with?</p>
 
             <div className="grid md:grid-cols-2 gap-4">
               <div className="bg-green-50 border border-green-200 rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <CheckCircle className="h-4 w-4 text-green-600" />
-                  <span className="text-sm font-semibold text-green-800">6 sided with the contributor, 3 with the subject</span>
+                  <span className="text-sm font-semibold text-green-800">6 sided with the writer, 3 with the person it&apos;s about</span>
                 </div>
                 <ul className="space-y-5 text-xs text-gray-600">
                   <li>· The situation feels accurate</li>
@@ -1106,8 +1107,8 @@ export default function HomePage() {
             <div className="bg-white border border-blue-200 rounded-2xl p-6">
               <h3 className="font-semibold text-blue-800 mb-3">For subjects</h3>
               <div className="space-y-2.5 text-sm text-gray-600">
-                <p><span className="font-medium text-gray-800">Right to respond:</span> You're notified immediately and can challenge any record.</p>
-                <p><span className="font-medium text-gray-800">Dispute process:</span> 72-hour debate and community review to challenge inaccurate information.</p>
+                <p><span className="font-medium text-gray-800">You hear first:</span> We tell you right away, and you see it 24 hours before anyone else.</p>
+                <p><span className="font-medium text-gray-800">Tell your side:</span> Challenge any record. You both get 3 days to share your side, then the community weighs in.</p>
                 <p><span className="font-medium text-gray-800">Legal recourse:</span> You retain all legal rights against knowingly false statements.</p>
               </div>
             </div>
@@ -1143,7 +1144,7 @@ export default function HomePage() {
             <div className="bg-gray-50 rounded-2xl p-5 space-y-4">
               <div>
                 <h3 className="text-sm font-semibold text-gray-900 mb-0.5">Contact information</h3>
-                <p className="text-xs text-gray-500">Used to find existing profiles and notify the subject.</p>
+                <p className="text-xs text-gray-500">Used to find their profile and let them know.</p>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
@@ -1220,7 +1221,7 @@ export default function HomePage() {
                 <p className="mb-2">By submitting this record, you acknowledge that DNounce is a neutral platform operating under Section 230 of the Communications Decency Act. You — not DNounce — are solely responsible for the accuracy and legality of your submission.</p>
                 <p className="mb-2">You certify that your submission is truthful to the best of your knowledge and based on either verifiable evidence or honest personal opinion. Submitting knowingly false or malicious content may result in permanent account suspension and exposes you to legal liability.</p>
                 <p className="mb-2">Your name: Your first name and last initial will appear publicly on the record. The person you're writing about will see it.</p>
-                <p>The subject will be notified and has the right to respond and dispute through our structured community process.</p>
+                <p>We&apos;ll let the person know. They can reply, or challenge the record so both sides get heard.</p>
               </div>
             </div>
 

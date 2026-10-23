@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { RefreshCw, Database, TrendingUp, Users, DollarSign, ShieldCheck, BarChart2, Activity } from "lucide-react";
+import { outcomeSide } from "@/lib/outcome";
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
@@ -305,7 +306,7 @@ export default function AdminAnalyticsPage() {
 
       const stageLabels: Record<string, string> = {
         ai_verification: "Awaiting Claim", subject_notified: "Subject Notified",
-        published: "Published", deletion_request: "Disputed",
+        published: "Published", deletion_request: "Challenged",
         debate: "In Debate", voting: "In Voting", decision: "Results Pending",
       };
       const stageCounts: Record<string, number> = {};
@@ -339,8 +340,8 @@ export default function AdminAnalyticsPage() {
       setActiveDisputes(disputed.filter((r: any) => !r.decision_made_at).length);
       const verdicts = allRecordsData.filter((r: any) => r.final_outcome);
       setTotalVerdicts(verdicts.length);
-      setKeepCount(verdicts.filter((r: any) => r.final_outcome === "sided_with_contributor").length);
-      setDeleteCount(verdicts.filter((r: any) => r.final_outcome === "sided_with_subject").length);
+      setKeepCount(verdicts.filter((r: any) => outcomeSide(r.final_outcome) === "contributor").length);
+      setDeleteCount(verdicts.filter((r: any) => outcomeSide(r.final_outcome) === "subject").length);
       if (published.length > 0) setDisputeRate(Math.round((disputed.length / published.length) * 100));
       const completedWithDates = verdicts.filter((r: any) => r.created_at && r.decision_made_at);
       if (completedWithDates.length > 0) {
@@ -448,7 +449,7 @@ export default function AdminAnalyticsPage() {
   const momGrowth = newUsersLastMonth > 0
     ? Math.round(((newUsersThisMonth - newUsersLastMonth) / newUsersLastMonth) * 100)
     : newUsersThisMonth > 0 ? 100 : 0;
-  const keepDeleteRatio = contributorCount + subjectCount > 0 ? `${Math.round((contributorCount / (contributorCount + subjectCount)) * 100)}% kept` : "—";
+  const keepDeleteRatio = contributorCount + subjectCount > 0 ? `${Math.round((contributorCount / (contributorCount + subjectCount)) * 100)}% contributor` : "—";
   const paidSubscribers = subscriberCounts.insights + subscriberCounts.pro;
   const conversionRate = totalUsers > 0 ? ((paidSubscribers / totalUsers) * 100).toFixed(1) : "0";
 
@@ -513,7 +514,7 @@ export default function AdminAnalyticsPage() {
           <StatBox label="Dispute Rate" value={disputeRate !== null ? `${disputeRate}%` : "—"} sub="% of published records disputed" color="orange" />
           <StatBox label="Avg. Days to Outcome" value={avgTimeToVerdict !== null ? `${avgTimeToVerdict} days` : "—"} sub="From submission to final outcome" color="teal" />
           <StatBox label="Results Awaiting Announcement" value={pendingVerdicts} sub="Voting ended, results not yet revealed" color="yellow" />
-          <StatBox label="Contributor vs Subject Ratio" value={keepDeleteRatio} sub={`${contributorCount} kept · ${subjectCount} deleted`} color="green" />
+          <StatBox label="Contributor vs Subject Ratio" value={keepDeleteRatio} sub={`${contributorCount} sided with contributor · ${subjectCount} with subject`} color="green" />
           <StatBox label="Low Quality Voter Rate" value={lowQualityVoterPct !== null ? `${lowQualityVoterPct}%` : "—"} sub="% of votes flagged or disqualified" color={lowQualityVoterPct !== null && lowQualityVoterPct > 20 ? "red" : "green"} />
         </div>
       </section>

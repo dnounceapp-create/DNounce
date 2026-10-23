@@ -84,11 +84,11 @@ export default async function RequestLandingPage({ params }: { params: Promise<{
       <div className="rounded-2xl border border-gray-200 bg-white p-6 mb-6">
         <h2 className="text-base font-semibold text-gray-900 mb-4">What happens after you submit</h2>
         <ol className="space-y-3 text-sm text-gray-600">
-          <li><span className="font-semibold text-gray-900">1. Your record is reviewed</span> and {name} is notified.</li>
-          <li><span className="font-semibold text-gray-900">2. It's published</span> to {name}'s profile.</li>
-          <li><span className="font-semibold text-gray-900">3. If {name} disputes it,</span> you'll both have 72 hours to present your side and evidence in a debate.</li>
-          <li><span className="font-semibold text-gray-900">4. Then the DNounce community</span> reviews both sides and votes within 48 hours on who they side with.</li>
-          <li><span className="font-semibold text-gray-900">5. The vote result is final</span> and shown publicly.</li>
+          <li><span className="font-semibold text-gray-900">1. We let {name} know.</span> Only they can see it for 24 hours.</li>
+          <li><span className="font-semibold text-gray-900">2. It goes public</span> on {name}'s profile.</li>
+          <li><span className="font-semibold text-gray-900">3. If {name} challenges it,</span> you'll both get 3 days to share your side and any evidence.</li>
+          <li><span className="font-semibold text-gray-900">4. Then the community</span> reads both sides and votes for 2 days on who they side with.</li>
+          <li><span className="font-semibold text-gray-900">5. The record stays up</span> and shows where people landed.</li>
         </ol>
       </div>
 

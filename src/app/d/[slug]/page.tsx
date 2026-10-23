@@ -150,12 +150,12 @@ function AgreeDisagree({
 /* ─── LifecycleChips ────────────────────────────────── */
 
 const STAGES = [
-  { id: 2, label: "Subject Notified" },
-  { id: 3, label: "Record Published" },
-  { id: 4, label: "Record in Dispute" },
-  { id: 5, label: "Debate Phase" },
-  { id: 6, label: "Voting in Progress" },
-  { id: 7, label: "Settled" },
+  { id: 2, label: "Private preview" },
+  { id: 3, label: "Public" },
+  { id: 4, label: "Challenged" },
+  { id: 5, label: "Both sides" },
+  { id: 6, label: "Community vote" },
+  { id: 7, label: "Results" },
 ];
 
 function LifecycleChips({ current }: { current: number }) {
@@ -673,7 +673,7 @@ export default function DemoSlugPage() {
         <div className="border border-gray-200 rounded-2xl p-4 sm:p-5 bg-white relative">
           <div className="flex items-center gap-2 mb-3">
             <User className="w-4 h-4 text-blue-600" />
-            <h2 className="text-sm font-semibold text-gray-900">Subject</h2>
+            <h2 className="text-sm font-semibold text-gray-900">About</h2>
           </div>
           <div className="flex items-start gap-4">
             <div className="w-11 h-11 bg-gray-100 rounded-full border border-gray-200 flex items-center justify-center shrink-0">
@@ -690,7 +690,7 @@ export default function DemoSlugPage() {
         <div className="border border-gray-200 rounded-2xl p-4 sm:p-5 bg-white relative">
           <div className="flex items-center gap-2 mb-3">
             <User className="w-4 h-4 text-green-600" />
-            <h2 className="text-sm font-semibold text-gray-900">Contributor</h2>
+            <h2 className="text-sm font-semibold text-gray-900">Written by</h2>
           </div>
           <div className="flex items-start gap-4">
             <div className="w-11 h-11 bg-gray-100 rounded-full border border-gray-200 flex items-center justify-center shrink-0">
@@ -827,7 +827,7 @@ export default function DemoSlugPage() {
       <section className="border border-gray-200 rounded-2xl p-4 sm:p-5 bg-white">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <div className="text-sm font-semibold text-gray-900">Debate Section</div>
+            <div className="text-sm font-semibold text-gray-900">Both sides</div>
             <div className="text-[11px] text-gray-500">Anything cannot be modified once posted.</div>
           </div>
           <div className="inline-flex items-center gap-2 rounded-full border bg-white px-3 py-1 text-xs font-semibold text-gray-700 shrink-0">
@@ -1065,7 +1065,7 @@ export default function DemoSlugPage() {
                 {shareCopied ? "Copied!" : "Copy link"}
               </button>
               <a
-                href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(recordUrl)}&text=${encodeURIComponent("Should this record stand or be removed? You decide 👇")}`}
+                href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(recordUrl)}&text=${encodeURIComponent("Who do you side with? You decide 👇")}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-center gap-2 rounded-xl border bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"

@@ -48,7 +48,7 @@ export function fmtVal(val: any): string {
 // ─── Status / Cred Badges ─────────────────────────────────────────────────────
 export const STATUS_LABELS: Record<string, string> = {
   ai_verification: "Awaiting Claim", subject_notified: "Subject Notified",
-  published: "Published", deletion_request: "Deletion Request",
+  published: "Published", deletion_request: "Challenged",
   debate: "Debate", voting: "Voting", decision: "Results",
 };
 const STATUS_STYLES: Record<string, string> = {
@@ -350,7 +350,7 @@ const STAGE_CONFIG: Record<string, {
     ],
   },
   deletion_request: {
-    label: "Flag as Deletion Request", color: "red",
+    label: "Mark as Challenged", color: "red",
     desc: "The subject is formally requesting deletion. The record will be locked and prepared for debate.",
     fields: [
       { key: "dispute_started_at", label: "Dispute Started At", type: "datetime-local", required: true },
@@ -380,7 +380,7 @@ const STAGE_CONFIG: Record<string, {
     desc: "Voting is closed and the final outcome is recorded. This determines whether the record is kept or deleted.",
     fields: [
       { key: "_warn", type: "warning", label: "", help: "This is permanent. Once an outcome is recorded, the record enters the execution stage." },
-      { key: "final_outcome", label: "Final Outcome", type: "select", required: true, options: [{ value: "sided_with_contributor", label: "✅ Sided with Contributor" }, { value: "sided_with_subject", label: "🔵 Sided with Subject" }] },
+      { key: "final_outcome", label: "Final Outcome", type: "select", required: true, options: [{ value: "keep", label: "Community sided with contributor" }, { value: "delete", label: "Community sided with subject (record stays)" }] },
       { key: "decision_started_at", label: "Outcome Recorded At", type: "datetime-local", required: true },
       { key: "finalized_at", label: "Finalized At", type: "datetime-local", required: true },
       { key: "note", label: "Notes", type: "textarea", required: false },
