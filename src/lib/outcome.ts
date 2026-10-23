@@ -5,15 +5,23 @@
  * saying which side most voters took. It is a count of votes, not a finding of
  * fact by DNounce.
  *
- * The database stores `keep` (most voters sided with the contributor) and
- * `delete` (most voters sided with the subject). The names are historical: a
+ * The database stores `keep` (most voters sided with the contributor),
+ * `delete` (most voters sided with the subject), `tie` (evenly split), or null
+ * when nobody voted (no label is shown). The names are historical: a
  * `delete` outcome does NOT remove the record. Older code also wrote
  * `sided_with_*` / `side_with_*`; every spelling is accepted here.
  */
 export type OutcomeSide = "contributor" | "subject";
 
+export const TIE_LABEL = "It's a tie — people couldn't decide who to side with";
+
+export function isTie(raw?: string | null): boolean {
+  return (raw ?? "").toLowerCase() === "tie";
+}
+
 export function outcomeSide(raw?: string | null): OutcomeSide | null {
   const s = (raw ?? "").toLowerCase();
+  if (s === "tie") return null;
   if (s === "keep" || s.includes("contributor")) return "contributor";
   if (s === "delete" || s.includes("subject")) return "subject";
   return null;
@@ -37,6 +45,7 @@ export function outcomeLabel(
   raw?: string | null,
   names?: { contributor?: string | null; subject?: string | null }
 ): string | null {
+  if (isTie(raw)) return TIE_LABEL;
   const side = outcomeSide(raw);
   if (!side) return null;
   const name = (side === "contributor" ? names?.contributor : names?.subject)?.trim();
