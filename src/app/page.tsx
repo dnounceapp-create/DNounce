@@ -759,7 +759,7 @@ export default function HomePage() {
                 ["Nickname",   nickname,        setNickname,        "JD"],
                 ["Organization", organization, setOrganization,    "Acme Corp"],
                 ["Category",   category,        setCategory,        "Barber"],
-                ["Subject ID", searchSubjectId, setSearchSubjectId, ""],
+                ["Profile ID", searchSubjectId, setSearchSubjectId, ""],
                 ["Record ID",  searchRecordId,  setSearchRecordId,  ""],
               ] as [string, string, (v: string) => void, string][]).map(([label, value, setter, placeholder]) => (
                 <div key={label} className="flex flex-col gap-1">
@@ -869,7 +869,7 @@ export default function HomePage() {
                     <p className="text-sm text-gray-500">AutoFix Garage</p>
                     <p className="text-sm text-gray-400 flex items-center gap-1 mt-0.5"><MapPin className="w-3.5 h-3.5" /> San Francisco, CA</p>
                     <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
-                      <span className="font-medium text-gray-600">ID:</span>
+                      <span className="font-medium text-gray-600">Profile ID:</span>
                       <span className="font-mono">abc123…xyz789</span>
                       <button disabled className="rounded-full border p-1 text-gray-300 cursor-not-allowed"><Copy className="h-3 w-3" /></button>
                     </div>
@@ -891,7 +891,7 @@ export default function HomePage() {
               <div className="flex border-b border-gray-100 mb-5 text-sm font-medium">
                 {(["records","reputations","social"] as const).map((tab) => (
                   <button key={tab} onClick={() => setActiveTab(tab)} className={`flex-1 text-center py-2.5 transition-colors ${activeTab === tab ? "text-gray-900 border-b-2 border-gray-900" : "text-gray-400 hover:text-gray-600"}`}>
-                    {tab === "records" ? "Records" : tab === "reputations" ? "Badges" : "Social"}
+                    {tab === "records" ? "Records" : tab === "reputations" ? "Badges" : "Social media"}
                   </button>
                 ))}
               </div>
@@ -899,35 +899,37 @@ export default function HomePage() {
               {activeTab === "records" && (
                 <>
                   <div className="flex flex-wrap gap-2 mb-5">
-                    {["Newest","All stages","All types","All time"].map((label) => (
+                    {["Newest","All stages","All time"].map((label) => (
                       <select key={label} disabled className="rounded-xl border border-gray-100 px-3 py-1.5 text-xs bg-white text-gray-300 cursor-not-allowed"><option>{label}</option></select>
                     ))}
                   </div>
 
-                  <div className="grid grid-cols-3 gap-4 mb-6 text-center">
-                    {[["8","Total"],["3","Challenged"],["5","Not challenged"]].map(([val, label]) => (
-                      <div key={label}>
-                        <div className="text-2xl font-bold text-gray-900">{val}</div>
-                        <div className="text-xs text-gray-400">{label}</div>
-                      </div>
-                    ))}
+                  <div className="mb-6">
+                    <div className="text-sm font-medium text-gray-900 mb-3">Record Breakdown</div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-gray-900">8</div>
+                      <div className="text-xs text-gray-400">Total Records</div>
+                    </div>
                   </div>
 
                   <div className="space-y-3">
                     {[
-                      { title: "Unresolved Repairs and Poor Communication", category: "Mechanic", date: "Dec 15, 2024", comments: 24, desc: "I've attached repair invoices and email exchanges that show how my car was kept for weeks without updates or resolution." },
-                      { title: "Average Service Experience", category: "Mechanic", date: "Dec 10, 2024", comments: 12, desc: "In my opinion, the service was just okay. Nothing terrible happened, but I expected more professionalism." },
+                      { title: "Unresolved Repairs and Poor Communication", category: "Mechanic", date: "12/15/2024", comments: 24, pill: "Community vote", pillClass: "border bg-gray-50 text-gray-700", desc: "I've attached repair invoices and email exchanges that show how my car was kept for weeks without updates or resolution." },
+                      { title: "Average Service Experience", category: "Mechanic", date: "12/10/2024", comments: 12, pill: "Most people sided with John E.", pillClass: "bg-indigo-100 text-indigo-800", desc: "In my opinion, the service was just okay. Nothing terrible happened, but I expected more professionalism." },
                     ].map((r) => (
                       <div key={r.title} className="rounded-2xl border border-gray-100 bg-white p-4 hover:border-gray-200 transition">
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                           <div className="text-sm font-semibold text-gray-900">{r.title}</div>
                         </div>
-                        <div className="mt-2 flex flex-wrap gap-2 text-xs text-gray-400">
-                          <span>{r.category}</span><span>·</span><span>{r.date}</span><span>·</span><span>{r.comments} comments</span>
+                        <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                          <span className="text-gray-700">{r.category}</span>
+                          <span className={`rounded-full px-2 py-1 ${r.pillClass}`}>{r.pill}</span>
+                          <span className="text-gray-500">📅 {r.date}</span>
+                          <span className="text-gray-500">💬 {r.comments} comments</span>
                         </div>
                         <div className="mt-3 text-sm text-gray-600 line-clamp-2">{r.desc}</div>
                         <div className="mt-3 flex gap-2">
-                          <button disabled className="rounded-lg border px-3 py-1 text-xs text-gray-300 cursor-not-allowed">View</button>
+                          <button disabled className="rounded-lg border px-3 py-1 text-xs text-gray-300 cursor-not-allowed">View record</button>
                           <button disabled className="rounded-lg border px-3 py-1 text-xs text-gray-300 cursor-not-allowed">Expand</button>
                         </div>
                       </div>
@@ -967,7 +969,7 @@ export default function HomePage() {
 
               {activeTab === "social" && (
                 <div>
-                  <h4 className="text-sm font-medium text-gray-700 mb-3">Social</h4>
+                  <h4 className="text-sm font-medium text-gray-700 mb-3">Social media</h4>
                   <div className="space-y-2">
                     {[{ platform: "Instagram", handle: "@johnexample", icon: "📸" }, { platform: "X / Twitter", handle: "@johnexample", icon: "🐦" }].map((s) => (
                       <div key={s.platform} className="flex items-center gap-3 rounded-xl border border-gray-100 p-4">
@@ -991,40 +993,38 @@ export default function HomePage() {
       <section id="voting-section" className="bg-gray-50 py-20 px-5 scroll-mt-20">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-10">
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">Community Perspective</h2>
-            <p className="text-gray-500">Your input helps others understand how to interpret this situation.</p>
+            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">Community vote</h2>
+            <p className="text-gray-500">When a record is challenged, people who aren&apos;t involved read both sides and pick one.</p>
           </div>
 
           <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-4">
-            <div className="flex items-center gap-2 mb-4">
-              <MessageSquare className="h-5 w-5 text-blue-500" />
-              <h3 className="font-semibold text-gray-900">How should this be viewed?</h3>
+            <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2 mb-5">
+              <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
+              <p className="text-xs font-medium text-amber-700">Example only — this is what voting looks like on a record</p>
             </div>
-            <p className="text-sm text-gray-500 mb-6">They challenged the record and both sides have had their say. Who do you side with?</p>
-
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="bg-green-50 border border-green-200 rounded-xl p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <CheckCircle className="h-4 w-4 text-green-600" />
-                  <span className="text-sm font-semibold text-green-800">6 sided with the writer, 3 with the person it&apos;s about</span>
-                </div>
-                <ul className="space-y-5 text-xs text-gray-600">
-                  <li>· The situation feels accurate</li>
-                  <li>· The context seems fair</li>
-                  <li>· This could help others understand similar experiences</li>
-                </ul>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-5">
+              <div>
+                <div className="text-sm font-semibold text-gray-900">Community vote</div>
+                <div className="text-[11px] text-gray-500">Pick who you side with and say why in a sentence or two.</div>
               </div>
-              <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <AlertTriangle className="h-4 w-4 text-red-600" />
-                  <span className="text-sm font-semibold text-red-800">Leans unfair</span>
+              <div className="w-full max-w-xs rounded-2xl border bg-white px-3 py-2 text-xs font-semibold text-gray-700 space-y-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-gray-900">6 sided with Jane D., 3 with John E.</span>
+                  <span className="text-gray-400 font-normal shrink-0">9 votes</span>
                 </div>
-                <ul className="space-y-5 text-xs text-gray-600">
-                  <li>· The intent seems negative or exaggerated</li>
-                  <li>· Record appears vindictive</li>
-                  <li>· Keeping it causes unjust harm</li>
-                </ul>
+                <div className="text-[10px] font-normal text-gray-400">A count of community votes, not a finding of fact.</div>
+                <div className="w-full h-1.5 rounded-full bg-gray-100 overflow-hidden flex">
+                  <div className="h-full bg-blue-500" style={{ width: "67%" }} />
+                  <div className="h-full bg-indigo-400" style={{ width: "33%" }} />
+                </div>
               </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <button disabled className="rounded-xl border px-3 py-2.5 text-sm font-medium text-gray-400 cursor-not-allowed">Side with Jane D.</button>
+              <button disabled className="rounded-xl border px-3 py-2.5 text-sm font-medium text-gray-400 cursor-not-allowed">Side with John E.</button>
+            </div>
+            <div className="rounded-xl border border-gray-100 bg-gray-50 p-3 text-xs text-gray-600">
+              <span className="font-semibold text-gray-800">quietfox@dnounce_217</span> sided with Jane D.: &ldquo;The invoices show weeks with no update. That matches what she describes.&rdquo;
             </div>
           </div>
 
@@ -1034,9 +1034,9 @@ export default function HomePage() {
               <h3 className="font-semibold text-gray-900">Voter quality matters</h3>
             </div>
             <div className="space-y-3 text-sm text-gray-600">
-              <p><span className="font-medium text-gray-900">20% downvotes</span> on your explanation → <span className="text-amber-600">⚠ Low-Quality Voter</span> badge for the record.</p>
-              <p><span className="font-medium text-gray-900">33% voter flags + 50% public approval</span> → <span className="text-red-600 font-semibold">Lost voting rights</span> on that record.</p>
-              <p className="text-gray-400">Poor explanations permanently lower your Voter Score. Write thoughtful, detailed reasoning.</p>
+              <p>Other people rate your reason. If enough of them downvote it → <span className="text-amber-600">⚠ Low-Quality Voter</span> badge on that record.</p>
+              <p>If the community flags your vote as bad faith → <span className="text-red-600 font-semibold">Lost voting rights</span> on that record, and your vote isn&apos;t counted.</p>
+              <p className="text-gray-400">Votes show your alias, never your real name. Write a real reason.</p>
             </div>
           </div>
         </div>
@@ -1135,7 +1135,7 @@ export default function HomePage() {
             {/* Contact Info */}
             <div className="bg-gray-50 rounded-2xl p-5 space-y-4">
               <div>
-                <h3 className="text-sm font-semibold text-gray-900 mb-0.5">Contact information</h3>
+                <h3 className="text-sm font-semibold text-gray-900 mb-0.5">Their contact info</h3>
                 <p className="text-xs text-gray-500">Used to find their profile and let them know.</p>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

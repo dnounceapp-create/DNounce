@@ -998,7 +998,7 @@ export default function SubjectProfilePage() {
                       : "text-gray-500 hover:text-gray-700"
                   }`}
                 >
-                  {tab === "records" ? "Records About Me" : tab === "reputations" ? "Reputations & Badges" : "Social Media"}
+                  {tab === "records" ? "Records" : tab === "reputations" ? "Badges" : "Social media"}
                 </button>
               ))}
             </div>
