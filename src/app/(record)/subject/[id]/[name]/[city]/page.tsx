@@ -1084,7 +1084,7 @@ export default function SubjectProfilePage() {
                           <div className="flex flex-wrap items-center gap-2">
                             {r.category && <span className="text-xs text-gray-700">{r.category}</span>}
                             {showStagePill && <span className="text-xs rounded-full border bg-gray-50 px-2 py-1 text-gray-700">{prettyStage(r.status)}</span>}
-                            {/* No label when nobody had a majority (no votes, or a tie). */}
+                            {/* No label when nobody voted. Ties get their own label. */}
                             {showOutcomePill && outcomeLabel(r.final_outcome) && (
                               <span className={`text-xs rounded-full px-2 py-1 ${outcomeChipClass(r.final_outcome)}`}>
                                 {outcomeLabel(r.final_outcome, { contributor: contributorLabelByRules(r), subject: subject?.name })}

@@ -33,7 +33,7 @@ import { stageConfig } from "@/config/stageConfig";
 import AgreeDisagree from "@/components/reactions/AgreeDisagree";
 import MentionTextarea, { notifyMentions } from "@/components/MentionTextarea";
 
-import { outcomeLabel, outcomeChipClass } from "@/lib/outcome";
+import { outcomeLabel, outcomeChipClass, isTie, TIE_HINT } from "@/lib/outcome";
 const PUBLIC_STAGE_ORDER = [3, 6, 7] as const;
 const FULL_STAGE_ORDER = [2, 3, 4, 5, 6, 7] as const;
 const POST_PUBLISH_STAGE_ORDER = [3, 4, 5, 6, 7] as const;
@@ -3649,6 +3649,9 @@ function VotingCourtroom({
                       <div className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${outcomeChipClass(record?.final_outcome)}`}>
                         {outcomeLabel(record?.final_outcome, { contributor: contributorDisplayName, subject: record?.subject?.name })}
                       </div>
+                    )}
+                    {isTie(record?.final_outcome) && (
+                      <div className="text-[11px] text-gray-500">{TIE_HINT}</div>
                     )}
                     <TallyChip contributorCount={contributorCount} subjectCount={subjectCount} totalCount={totalCount} contributorName={contributorDisplayName} subjectName={record?.subject?.name ?? "Subject"} />
                     {Object.values(voteBadges).filter(b => b.is_convicted).length > 0 && (

@@ -8,7 +8,7 @@ import Image from "next/image";
 import { stageConfig, STAGE_ORDER } from "@/config/stageConfig";
 import { supabase } from "@/lib/supabaseClient";
 
-import { outcomeLabel, outcomeChipClass, outcomeSide } from "@/lib/outcome";
+import { outcomeLabel, outcomeChipClass, outcomeSide, isTie } from "@/lib/outcome";
 const DEFAULT_SORT = "Newest Submitted" as const;
 
 type RecordItem = {
@@ -320,6 +320,7 @@ export default function MyRecordsPage() {
       Anonymity: (record) => record.stage === 7,
 "Sided with the writer": (record) => outcomeSide(record.outcome) === "contributor",
 "Sided with the person it's about": (record) => outcomeSide(record.outcome) === "subject",
+"It's a tie": (record) => isTie(record.outcome),
     };
     return map[status] ?? (() => true);
   };
@@ -545,6 +546,7 @@ export default function MyRecordsPage() {
               <option>Community vote</option>
               <option value="Sided with the writer">Most sided with the writer</option>
               <option value="Sided with the person it's about">Most sided with the person it's about</option>
+              <option value="It's a tie">It's a tie</option>
             </select>
 
             <select

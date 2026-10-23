@@ -13,7 +13,9 @@
  */
 export type OutcomeSide = "contributor" | "subject";
 
-export const TIE_LABEL = "It's a tie — people couldn't decide who to side with";
+export const TIE_LABEL = "It's a tie — the community is split right down the middle";
+/** Shown under the tie label on the record page, to invite people to read both sides. */
+export const TIE_HINT = "Same number of votes for each side. Read both stories and see where you land.";
 
 export function isTie(raw?: string | null): boolean {
   return (raw ?? "").toLowerCase() === "tie";
@@ -53,6 +55,7 @@ export function outcomeLabel(
 }
 
 export function outcomeChipClass(raw?: string | null): string {
+  if (isTie(raw)) return "bg-amber-100 text-amber-800";
   const side = outcomeSide(raw);
   return side ? OUTCOME_CHIP[side] : "bg-gray-100 text-gray-600";
 }

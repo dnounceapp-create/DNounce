@@ -7,7 +7,7 @@ import { X } from "lucide-react";
 import { stageConfig, STAGE_ORDER } from "@/config/stageConfig";
 import { supabase } from "@/lib/supabaseClient";
  
-import { outcomeLabel, outcomeChipClass, outcomeSide } from "@/lib/outcome";
+import { outcomeLabel, outcomeChipClass, outcomeSide, isTie } from "@/lib/outcome";
 const DEFAULT_SORT = "Newest Pinned" as const;
  
 type PinnedRecord = {
@@ -201,6 +201,7 @@ export default function PinnedRecordsPage() {
       Anonymity: (r) => r.stage === 7,
 "Sided with the writer": (r) => outcomeSide(r.outcome) === "contributor",
 "Sided with the person it's about": (r) => outcomeSide(r.outcome) === "subject",
+"It's a tie": (r) => isTie(r.outcome),
     };
     return map[status] ?? (() => true);
   };
@@ -277,6 +278,7 @@ export default function PinnedRecordsPage() {
               <option>Community vote</option>
               <option value="Sided with the writer">Most sided with the writer</option>
               <option value="Sided with the person it's about">Most sided with the person it's about</option>
+              <option value="It's a tie">It's a tie</option>
             </select>
  
             {hasActiveFilters && (

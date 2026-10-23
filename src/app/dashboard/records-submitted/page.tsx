@@ -8,7 +8,7 @@ import { stageConfig, STAGE_ORDER } from "@/config/stageConfig";
 import { supabase } from "@/lib/supabaseClient";
 import { computeContributorHash } from "@/lib/contributorHash";
 
-import { outcomeLabel, outcomeChipClass, outcomeSide } from "@/lib/outcome";
+import { outcomeLabel, outcomeChipClass, outcomeSide, isTie } from "@/lib/outcome";
 const DEFAULT_SORT = "Newest Submitted" as const;
 
 type RecordItem = {
@@ -216,6 +216,7 @@ export default function RecordsSubmittedPage() {
       Anonymity: (r) => r.stage === 7,
 "Sided with the writer": (r) => outcomeSide(r.outcome) === "contributor",
 "Sided with the person it's about": (r) => outcomeSide(r.outcome) === "subject",
+"It's a tie": (r) => isTie(r.outcome),
     };
     return map[status] ?? (() => true);
   };
@@ -321,6 +322,7 @@ export default function RecordsSubmittedPage() {
               <option>Community vote</option>
               <option value="Sided with the writer">Most sided with the writer</option>
               <option value="Sided with the person it's about">Most sided with the person it's about</option>
+              <option value="It's a tie">It's a tie</option>
             </select>
 
             <select
