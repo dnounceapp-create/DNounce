@@ -65,7 +65,7 @@ const PLANS = [
       "Vote speed and quality",
       "Challenge results stats",
       "Your rank in your ZIP code",
-      "Weekly email digest",
+      "Weekly email digest (coming soon)",
     ],
   },
 ];
