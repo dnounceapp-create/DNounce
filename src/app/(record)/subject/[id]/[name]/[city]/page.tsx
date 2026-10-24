@@ -940,10 +940,10 @@ export default function SubjectProfilePage() {
             <div className="mt-6 mb-4 rounded-2xl border bg-gray-50 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div>
                 <div className="text-sm font-semibold text-gray-900">
-                  Want to share an experience about this subject?
+                  Want to share an experience about this person?
                 </div>
                 <div className="text-xs text-gray-600 mt-1">
-                  Sign in to submit a record. This subject will be pre-selected.
+                  Sign in to submit a record. They'll already be filled in.
                 </div>
               </div>
               <div className="flex justify-center sm:justify-end">
@@ -1162,7 +1162,7 @@ export default function SubjectProfilePage() {
 
             {activeTab === "social" && (
               <div>
-                <h4 className="font-medium text-gray-900 mb-3">Social Media</h4>
+                <h4 className="font-medium text-gray-900 mb-3">Social media</h4>
                 {socialLinks.length === 0 ? (
                   <p className="text-gray-500 text-sm">{subject?.name || "This person"} doesn't have any social media on display.</p>
                 ) : (
