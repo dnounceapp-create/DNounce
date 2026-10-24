@@ -216,7 +216,7 @@ export default function FollowingRecordsPage() {
       case "Newest Followed": return (a, b) => new Date(b.followed_at).getTime() - new Date(a.followed_at).getTime();
       case "Oldest Followed": return (a, b) => new Date(a.followed_at).getTime() - new Date(b.followed_at).getTime();
       case "Newest Submitted": return (a, b) => new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime();
-      case "Subject (A → Z)": return (a, b) => a.subject_name.localeCompare(b.subject_name);
+      case "Name (A → Z)": return (a, b) => a.subject_name.localeCompare(b.subject_name);
       default: return () => 0;
     }
   };

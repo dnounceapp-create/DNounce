@@ -29,7 +29,7 @@ import Image from "next/image";
 import dynamic from "next/dynamic";
 
 
-import { outcomeLabel, outcomeChipClass } from "@/lib/outcome";
+import { outcomeLabel, outcomeChipClass, badgeName, visibleBadges } from "@/lib/outcome";
 import RecordOutcomeSummary from "@/components/profile/RecordOutcomeSummary";
 function getPlatformIcon(platformRaw: string) {
   const p = (platformRaw || "").toLowerCase();
@@ -531,7 +531,7 @@ export default function SubjectProfilePage() {
 
       if (subjErr) throw subjErr;
       if (!subj) {
-        setErr("Subject not found.");
+        setErr("We couldn't find this profile.");
         setSubject(null);
         setRecords([]);
         setSocialLinks([]);
@@ -689,7 +689,7 @@ export default function SubjectProfilePage() {
           .from("badges")
           .select("id, label, color, icon")
           .eq("user_id", ownerAuthUserId);
-        setSubjectBadges(badgeData || []);
+        setSubjectBadges(visibleBadges(badgeData));
       }
 
       // Check if this is a demo voter persona — overlay their voter/overall scores.
@@ -861,7 +861,7 @@ export default function SubjectProfilePage() {
                     {subject.avatar_url ? (
                       <img
                         src={subject.avatar_url}
-                        alt="Subject avatar"
+                        alt="Profile photo"
                         className="w-full h-full object-cover select-none pointer-events-none"
                         style={{ WebkitUserSelect: "none", userSelect: "none" }}
                       />
@@ -1150,7 +1150,7 @@ export default function SubjectProfilePage() {
                       return Object.values(counts).map((b) => (
                         <div key={b.label} className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border bg-gray-50 text-sm font-medium text-gray-700">
                           <span>{b.icon}</span>
-                          <span>{b.label}</span>
+                          <span>{badgeName(b.label)}</span>
                           <span className="text-gray-400 font-normal">{b.count}</span>
                         </div>
                       ));

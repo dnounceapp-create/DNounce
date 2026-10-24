@@ -69,7 +69,7 @@ function SearchResultsContent() {
     <div className="max-w-4xl mx-auto p-6">
       <h1 className="text-2xl font-bold mb-4">Search Results</h1>
       {results.length === 0 ? (
-        <p className="text-gray-500">No subjects found.</p>
+        <p className="text-gray-500">No profiles found.</p>
       ) : (
         <div className="space-y-4">
           {results.map((subject) => (

@@ -217,7 +217,7 @@ export default function ClaimOverridePage() {
         .select('id')
         .single();
       if (contribErr || !newContributor) {
-        setError('Could not create your contributor account. Please contact support.');
+        setError("We couldn't set up your account. Please contact support.");
         setSaving(false);
         return;
       }
@@ -289,7 +289,7 @@ export default function ClaimOverridePage() {
       <div className="max-w-md w-full rounded-2xl border border-green-200 bg-green-50 p-8 text-center">
         <CheckCircle className="w-8 h-8 text-green-500 mx-auto mb-4" />
         <div className="text-base font-semibold text-green-900 mb-2">Record claimed successfully!</div>
-        <div className="text-sm text-green-700 mb-1">Your record has been updated. The person it's about has been notified, and it will be published in 24 hours.</div>
+        <div className="text-sm text-green-700 mb-1">Your record has been updated. We let the person it's about know. It goes public in 24 hours.</div>
         <div className="text-sm text-gray-400">Redirecting you back to the record...</div>
       </div>
     </div>

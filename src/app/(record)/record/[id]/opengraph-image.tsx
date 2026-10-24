@@ -77,7 +77,7 @@ export default async function RecordOGImage({
   const record = isPubliclyVisible(fetched) ? fetched : null;
 
   const subject = (record?.subjects as any) ?? {};
-  const subjectName = subject.name ?? "Unknown Subject";
+  const subjectName = subject.name ?? "Someone";
   const subjectNickname = subject.nickname ? ` (${subject.nickname})` : "";
   const org = record?.category || subject.organization || "Independent";
   const loc = record?.location || subject.location || "";

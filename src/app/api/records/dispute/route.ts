@@ -14,7 +14,7 @@ import { requireSession, authErrorResponse } from "@/lib/apiAuth";
  * whichever side the community takes, the record stays and is labeled.
  *
  * (The internal status name is still `deletion_request`; 49 places compare
- * stage numbers and status names, so it is kept. Users only ever see "Disputed".)
+ * stage numbers and status names, so it is kept. Users only ever see "Challenged".)
  */
 export async function POST(req: Request) {
   let caller;

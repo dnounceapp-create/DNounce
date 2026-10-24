@@ -665,7 +665,7 @@ export default function DemoRealtorPage() {
         <div className="border border-gray-200 rounded-2xl p-4 sm:p-5 bg-white relative">
           <div className="flex items-center gap-2 mb-3">
             <User className="w-4 h-4 text-blue-600" />
-            <h2 className="text-sm font-semibold text-gray-900">Subject</h2>
+            <h2 className="text-sm font-semibold text-gray-900">About</h2>
           </div>
           <div className="flex items-start gap-4">
             <div className="w-11 h-11 bg-gray-100 rounded-full border border-gray-200 flex items-center justify-center shrink-0">
@@ -682,7 +682,7 @@ export default function DemoRealtorPage() {
         <div className="border border-gray-200 rounded-2xl p-4 sm:p-5 bg-white relative">
           <div className="flex items-center gap-2 mb-3">
             <User className="w-4 h-4 text-green-600" />
-            <h2 className="text-sm font-semibold text-gray-900">Contributor</h2>
+            <h2 className="text-sm font-semibold text-gray-900">Written by</h2>
           </div>
           <div className="flex items-start gap-4">
             <div className="w-11 h-11 bg-gray-100 rounded-full border border-gray-200 flex items-center justify-center shrink-0">
@@ -819,12 +819,12 @@ export default function DemoRealtorPage() {
       <section className="border border-gray-200 rounded-2xl p-4 sm:p-5 bg-white">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <div className="text-sm font-semibold text-gray-900">Debate Section</div>
-            <div className="text-[11px] text-gray-500">Anything cannot be modified once posted.</div>
+            <div className="text-sm font-semibold text-gray-900">Both sides</div>
+            <div className="text-[11px] text-gray-500">Posts can&apos;t be edited once shared.</div>
           </div>
           <div className="inline-flex items-center gap-2 rounded-full border bg-white px-3 py-1 text-xs font-semibold text-gray-700 shrink-0">
             <span className="h-2 w-2 rounded-full bg-gray-400" />
-            Debate ended
+            Both sides have finished
           </div>
         </div>
 
@@ -849,7 +849,7 @@ export default function DemoRealtorPage() {
         </div>
 
         <div className="mt-3 text-xs text-gray-500">
-          Debate is closed. Discussion is now read-only.
+          Both sides have had their say. This part is read-only now.
         </div>
       </section>
 
@@ -857,7 +857,7 @@ export default function DemoRealtorPage() {
       <section className="border border-gray-200 rounded-2xl p-4 sm:p-5 bg-white">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <div className="text-sm font-semibold text-gray-900">Voting Section</div>
+            <div className="text-sm font-semibold text-gray-900">Community vote</div>
             <div className="text-[11px] text-gray-500">
               To side with a party, a reason is required.
             </div>
@@ -948,7 +948,7 @@ export default function DemoRealtorPage() {
 
         {/* Vote statements */}
         <div className="mt-6 pt-6 border-t border-gray-100">
-          <div className="text-sm font-semibold text-gray-900 mb-5">Vote Statements</div>
+          <div className="text-sm font-semibold text-gray-900 mb-5">Why people voted</div>
           {allVotes.length === 0 ? (
             <div className="text-sm text-gray-500">No votes yet.</div>
           ) : (

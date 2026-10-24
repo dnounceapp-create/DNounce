@@ -118,3 +118,25 @@ export function summarizeRecords(records: OutcomeSummaryRecord[]) {
   };
 }
 
+
+/**
+ * Badge names as people see them. The database keeps the original labels
+ * (the badge rules use them); only the displayed name changes here.
+ * "Expert" is hidden for now (KJ, 2026-10-24) — nothing is deleted.
+ */
+const BADGE_DISPLAY: Record<string, string> = {
+  "Top Contributor": "Top Writer",
+  "Top Subject": "Well Regarded",
+  "Top Citizen": "Top Community Member",
+  "Convicted": "Lost voting rights",
+};
+const HIDDEN_BADGES = new Set(["Expert"]);
+
+export function badgeName(label?: string | null): string {
+  const l = (label ?? "").trim();
+  return BADGE_DISPLAY[l] ?? l;
+}
+
+export function visibleBadges<T extends { label?: string | null }>(badges: T[] | null | undefined): T[] {
+  return (badges ?? []).filter((b) => !HIDDEN_BADGES.has((b.label ?? "").trim()));
+}

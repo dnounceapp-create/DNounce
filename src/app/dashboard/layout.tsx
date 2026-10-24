@@ -546,7 +546,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     ["organization", "Organization", "e.g. Acme Corp"],
                     ["location", "Location", "e.g. Astoria, NY"],
                     ["category", "Category", "e.g. Barber"],
-                    ["subjectId", "Subject ID", ""],
+                    ["subjectId", "Profile ID", ""],
                     ["recordId", "Record ID", ""],
                   ] as [keyof typeof adv, string, string][]).map(([key, label, placeholder]) => (
                     <div key={key} className="flex flex-col gap-1">

@@ -21,7 +21,7 @@ export default function TermsPage() {
             },
             {
               title: "3. User Accounts",
-              body: "You are responsible for safeguarding your account credentials. We may suspend or terminate accounts that violate these Terms, submit knowingly false records, or exhibit abusive behavior toward subjects or other community members."
+              body: "You are responsible for safeguarding your account credentials. We may suspend or terminate accounts that violate these Terms, submit knowingly false records, or exhibit abusive behavior toward the people records are about or other community members."
             },
             {
               title: "4. Intellectual Property",
@@ -29,15 +29,15 @@ export default function TermsPage() {
             },
             {
               title: "5. Privacy",
-              body: "We value your privacy. Our data collection and processing follow our Privacy Policy. For older records whose contributor was promised anonymity, we hold your identity on file, encrypted and separately from your review. We do not publish it. If we receive a legally valid demand for it, we will tell you before we disclose anything, unless a court orders us not to. We do not promise to litigate on your behalf."
+              body: "We value your privacy. Our data collection and processing follow our Privacy Policy. For older records whose writer was promised anonymity, we hold your identity on file, encrypted and separately from your review. We do not publish it. If we receive a legally valid demand for it, we will tell you before we disclose anything, unless a court orders us not to. We do not promise to litigate on your behalf."
             },
             {
               title: "6. Record Lifecycle",
               body: "When you submit a record, the person it is about is notified and the record is published 24 hours later. DNounce does not classify, verify, or endorse records. If a record is challenged, community votes are user-generated and shown as counts. DNounce is not the publisher, editor, or endorser of any record on the platform."
             },
             {
-              title: "7. Contributor Names",
-              body: "Your first name and last initial appear publicly on every record you submit. The person you are writing about will see it. You are responsible for what you write. Older records whose contributor was promised anonymity stay hidden."
+              title: "7. Writer Names",
+              body: "Your first name and last initial appear publicly on every record you submit. The person you are writing about will see it. You are responsible for what you write. Older records whose writer was promised anonymity stay hidden."
             },
             {
               title: "8. Limitation of Liability",
@@ -45,7 +45,7 @@ export default function TermsPage() {
             },
             {
               title: "9. Legal Requests & Law Enforcement",
-              body: "DNounce will comply with valid legal requests for user data to the extent required by law. We will notify affected users when legally permitted. Any attempt to use legal process to silence contributors or suppress records rather than seek genuine redress will be treated as a potential SLAPP (Strategic Lawsuit Against Public Participation), and DNounce reserves the right to oppose such actions vigorously."
+              body: "DNounce will comply with valid legal requests for user data to the extent required by law. We will notify affected users when legally permitted. Any attempt to use legal process to silence writers or suppress records rather than seek genuine redress will be treated as a potential SLAPP (Strategic Lawsuit Against Public Participation), and DNounce reserves the right to oppose such actions vigorously."
             },
             {
               title: "10. Updates to Terms",

@@ -20,7 +20,7 @@ export async function generateMetadata({
     .maybeSingle();
 
   if (!subject) {
-    return { title: "Subject Profile | DNounce" };
+    return { title: "Profile | DNounce" };
   }
 
   const displayName = subject.nickname

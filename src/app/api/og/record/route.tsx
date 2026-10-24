@@ -95,7 +95,7 @@ export async function GET(req: NextRequest) {
   const record = isPubliclyVisible(fetched) ? fetched : null;
 
   const subject = (record?.subjects as any) ?? {};
-  const subjectName = subject.name ?? "Unknown Subject";
+  const subjectName = subject.name ?? "Someone";
   const subjectNickname = subject.nickname ? ` (${subject.nickname})` : "";
   const subjectOrg = subject.organization || "Independent";
   const subjectLoc = record?.location || subject.location || "Unknown Location";

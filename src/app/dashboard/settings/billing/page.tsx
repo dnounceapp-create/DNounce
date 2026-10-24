@@ -26,7 +26,7 @@ const PLANS = [
       "Submit and manage records",
       "Vote on challenged records",
       "Full record history",
-      "Citizen commenting",
+      "Commenting on records",
       "No analytics access",
     ],
     locked: ["Analytics dashboard"],

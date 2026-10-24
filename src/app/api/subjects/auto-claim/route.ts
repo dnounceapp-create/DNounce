@@ -57,7 +57,7 @@ export async function POST(req: Request) {
   await admin.from("notifications").insert({
     user_id: caller.id,
     title: "Your profile claim was approved",
-    body: "You now own the subject profile on DNounce. You can manage it from your dashboard.",
+    body: "Your profile on DNounce is now yours. You can manage it from your dashboard.",
     type: "claim_approved",
     record_id: null,
   });

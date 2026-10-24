@@ -505,7 +505,7 @@ export default function CommunityPollDetailPage() {
 
             {/* Vote statements */}
             <section className="rounded-2xl border border-gray-200 bg-white p-5 mt-6">
-              <div className="text-sm font-semibold text-gray-900 mb-5">Vote Statements</div>
+              <div className="text-sm font-semibold text-gray-900 mb-5">Why people voted</div>
               {votes.length === 0 ? (
                 <div className="text-sm text-gray-500">No votes yet.</div>
               ) : (

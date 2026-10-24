@@ -356,10 +356,10 @@ export async function GET(req: NextRequest) {
     // ─── Most active role ──────────────────────────────────────────────────
 
     const roleActivity = {
-      "Record Contributor": totalSubmitted,
+      "Writer": totalSubmitted,
       "Community Voter": votes.length,
-      "Citizen": citizenStatements.length,
-      "Debate Participant": debateStatements.length,
+      "Community member": citizenStatements.length,
+      "Shared their side": debateStatements.length,
     };
     const mostActiveRole = Object.entries(roleActivity).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
 

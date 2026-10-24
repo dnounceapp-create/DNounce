@@ -27,6 +27,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { badgeName, visibleBadges } from "@/lib/outcome";
 import {
   Search,
   Upload,
@@ -343,7 +344,7 @@ export default function HomePage() {
         .from("badges")
         .select("id, label, icon, color")
         .limit(3);
-      if (!badgeError && badgeData) setRandomBadges(badgeData);
+      if (!badgeError && badgeData) setRandomBadges(visibleBadges(badgeData));
     }
     fetchRandomData();
   }, []);
@@ -957,7 +958,7 @@ export default function HomePage() {
                     <div className="flex flex-wrap gap-2">
                       {randomBadges.map((badge) => (
                         <div key={badge.id} className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-gray-100 bg-gray-50 text-sm font-medium text-gray-700">
-                          <span>{badge.icon}</span><span>{badge.label}</span>
+                          <span>{badge.icon}</span><span>{badgeName(badge.label)}</span>
                         </div>
                       ))}
                     </div>
@@ -1057,7 +1058,7 @@ export default function HomePage() {
                 <h3 className="font-semibold text-green-800">Appropriate</h3>
               </div>
               <ul className="space-y-2.5 text-sm text-green-700">
-                {["Excellent client or customer service","Disputes with supporting evidence","Professional relationship experiences","Patterns of reliability or accountability","First-hand experiences you can describe clearly"].map((item) => (
+                {["Excellent client or customer service","Disagreements backed by evidence","Professional relationship experiences","Patterns of reliability or accountability","First-hand experiences you can describe clearly"].map((item) => (
                   <li key={item} className="flex items-start gap-2"><span className="mt-0.5 shrink-0">✅</span><span>{item}</span></li>
                 ))}
               </ul>
@@ -1088,7 +1089,7 @@ export default function HomePage() {
 
           <div className="space-y-4">
             <div className="bg-white border border-green-200 rounded-2xl p-6">
-              <h3 className="font-semibold text-green-800 mb-3">For contributors</h3>
+              <h3 className="font-semibold text-green-800 mb-3">For writers</h3>
               <div className="space-y-2.5 text-sm text-gray-600">
                 <p><span className="font-medium text-gray-800">Truth defense:</span> Truthful submissions are protected against defamation claims.</p>
                 <p><span className="font-medium text-gray-800">Fair comment:</span> Opinions based on disclosed facts are generally protected.</p>
@@ -1097,7 +1098,7 @@ export default function HomePage() {
             </div>
 
             <div className="bg-white border border-blue-200 rounded-2xl p-6">
-              <h3 className="font-semibold text-blue-800 mb-3">For subjects</h3>
+              <h3 className="font-semibold text-blue-800 mb-3">For the person it&apos;s about</h3>
               <div className="space-y-2.5 text-sm text-gray-600">
                 <p><span className="font-medium text-gray-800">You hear first:</span> We tell you right away, and you see it 24 hours before anyone else.</p>
                 <p><span className="font-medium text-gray-800">Tell your side:</span> Challenge any record. You both get 3 days to share your side, then the community weighs in.</p>

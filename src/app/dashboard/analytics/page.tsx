@@ -406,7 +406,7 @@ function InsightsContent({ data }: { data: AnalyticsData }) {
                 <p className="text-xs font-semibold text-gray-700">Most Active Record</p>
               </div>
               <p className="text-sm font-bold text-gray-900">{data.mostActiveRecord.category}</p>
-              <p className="text-xs text-gray-400 mt-1">{data.mostActiveRecord.votes} votes · {data.mostActiveRecord.statements} citizen statements</p>
+              <p className="text-xs text-gray-400 mt-1">{data.mostActiveRecord.votes} votes · {data.mostActiveRecord.statements} community statements</p>
               <Link href={`/record/${data.mostActiveRecord.id}`} className="mt-2 inline-flex items-center gap-1 text-xs text-blue-600 hover:underline">View record <ArrowRight className="w-3 h-3" /></Link>
             </div>
           ) : (
@@ -526,7 +526,7 @@ function ProContent({ data }: { data: AnalyticsData }) {
       ["Profile to Submit Rate", `${pro.profileToSubmitRate}%`],
       ["Social Link Clicks", pro.totalSocialClicks],
       ["Challenges you won", data.disputeResolutionRate !== null ? `${data.disputeResolutionRate}%` : "—"],
-      ["Contributor Success Rate", data.contributorSuccessRate !== null ? `${data.contributorSuccessRate}%` : "—"],
+      ["Your records where most people sided with you", data.contributorSuccessRate !== null ? `${data.contributorSuccessRate}%` : "—"],
       ["Streak Weeks", pro.streakWeeks],
       ["Voter Quality Score", pro.voterQualityScore !== null ? `${pro.voterQualityScore}%` : "—"],
       ["Total Followers", data.totalFollowers],
@@ -802,7 +802,7 @@ function ProContent({ data }: { data: AnalyticsData }) {
       <div>
         <SectionHeader title="How your records turned out" />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <StatCard icon={<Target className="w-5 h-5" />} label="Contributor Success Rate" value={data.contributorSuccessRate !== null ? `${data.contributorSuccessRate}%` : "—"} sub={`${data.sided_contributor} with contributor · ${data.sided_subject} with subject`} color="green" />
+          <StatCard icon={<Target className="w-5 h-5" />} label="Your records where most people sided with you" value={data.contributorSuccessRate !== null ? `${data.contributorSuccessRate}%` : "—"} sub={`${data.sided_contributor} with the writer · ${data.sided_subject} with the person it's about`} color="green" />
           <StatCard icon={<ShieldCheck className="w-5 h-5" />} label="Challenges you won" value={data.disputeResolutionRate !== null ? `${data.disputeResolutionRate}%` : "—"} sub="Of the records you challenged, how often most people sided with you" color="blue" />
         </div>
       </div>
@@ -907,7 +907,7 @@ export default function AnalyticsPage() {
             <StandardLockedOverlay />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 blur-sm pointer-events-none select-none">
               {["Profile Views", "Search Impressions", "Category Breakdown",
-                "Most Active Record", "Challenge Results", "Contributor Success Rate", "Comparison"]
+                "Most Active Record", "Challenge Results", "Your records where most people sided with you", "Comparison"]
                 .slice(0, typeof window !== "undefined" && window.innerWidth < 640 ? 3 : 8)
                 .map((label) => (
                 <LockedCard key={label} label={label} />

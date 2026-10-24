@@ -33,7 +33,7 @@ import { stageConfig } from "@/config/stageConfig";
 import AgreeDisagree from "@/components/reactions/AgreeDisagree";
 import MentionTextarea, { notifyMentions } from "@/components/MentionTextarea";
 
-import { outcomeLabel, outcomeChipClass, isTie, TIE_HINT } from "@/lib/outcome";
+import { outcomeLabel, outcomeChipClass, isTie, TIE_HINT, badgeName, visibleBadges } from "@/lib/outcome";
 const PUBLIC_STAGE_ORDER = [3, 6, 7] as const;
 const FULL_STAGE_ORDER = [2, 3, 4, 5, 6, 7] as const;
 const POST_PUBLISH_STAGE_ORDER = [3, 4, 5, 6, 7] as const;
@@ -116,11 +116,11 @@ function debateNoPostMessage(args: { viewerRole: ViewerRole; status: string; sta
   const s = normalizeStatus(status);
 
   if (stage >= 6) {
-    return "Debate is closed. Discussion is now read-only.";
+    return "Both sides have had their say. This part is read-only now.";
   }
 
   if (stage === 5 && s !== "debate") {
-    return "Debate is not currently open.";
+    return "Both sides isn't open right now.";
   }
 
   if (viewerRole === "public") {
@@ -703,7 +703,7 @@ function UserBadgePills({ userId, participantBadges }: { userId: string; partici
     <>
       {badges.map(b => (
         <span key={b.label} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full border border-gray-200 bg-gray-50 text-[10px] text-gray-600 font-medium">
-          {b.icon} {b.label}
+          {b.icon} {badgeName(b.label)}
         </span>
       ))}
     </>
@@ -1525,7 +1525,7 @@ function DebateTimerChip({ debateEndsAt, serverOffsetMs }: { debateEndsAt: strin
 
       if (remaining <= 0) {
         setEnded(true);
-        setLabel("Debate ended");
+        setLabel("Both sides have finished");
         return;
       }
 
@@ -1545,7 +1545,7 @@ function DebateTimerChip({ debateEndsAt, serverOffsetMs }: { debateEndsAt: strin
         <span>{label}</span>
       ) : (
         <>
-          Debate ends in: <span className="font-mono">{label}</span>
+          Time left to share sides: <span className="font-mono">{label}</span>
         </>
       )}
     </div>
@@ -1962,7 +1962,7 @@ function DebateCourtroom({
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="text-sm font-semibold text-gray-900">Both sides</div>
-          <div className="text-[11px] text-gray-500">Anything cannot be modified once posted.</div>
+          <div className="text-[11px] text-gray-500">Posts can&apos;t be edited once shared.</div>
         </div>
 
         {viewerRole !== "public" && record?.debate_ends_at ? (
@@ -3764,7 +3764,7 @@ function VotingCourtroom({
 
         {/* ================= Vote Statements ================= */}
         <div className="mt-6">
-          <div className="text-sm font-semibold text-gray-900 mb-4">Vote Statements</div>
+          <div className="text-sm font-semibold text-gray-900 mb-4">Why people voted</div>
 
           {votes.length === 0 ? (
             <div className="text-sm text-gray-500">No votes yet.</div>
@@ -3805,7 +3805,7 @@ function VotingCourtroom({
                     const executionActive = isExecutionWindowOpen;
                     return (
                       <div className="mt-2 rounded-xl border border-gray-200 bg-gray-50 p-3">
-                        <div className="text-[11px] font-semibold text-gray-700">Voter Disqualification Review</div>
+                        <div className="text-[11px] font-semibold text-gray-700">Should this vote be disqualified?</div>
                         {(() => {
                           const eligible = execState?.eligible_citizen_count ?? 0;
                           const yes = execState?.execute_yes_count ?? 0;
@@ -3815,7 +3815,7 @@ function VotingCourtroom({
                           return (
                             <div className="mt-2">
                               <div className="flex items-center justify-between mb-1">
-                                <span className="text-[11px] text-gray-500">{pct}% of citizens approved disqualification — {neededPct}% needed</span>                                
+                                <span className="text-[11px] text-gray-500">{pct}% of community members voted to disqualify it — {neededPct}% needed</span>                                
                               </div>
                               <div className="w-full h-1.5 rounded-full bg-gray-200 overflow-hidden">
                                 <div className={["h-full rounded-full transition-all", pct >= neededPct ? "bg-red-500" : "bg-yellow-400"].join(" ")} style={{ width: `${Math.min(100, pct)}%` }} />
@@ -3825,11 +3825,11 @@ function VotingCourtroom({
                         })()}
                         {executionActive && canCastExecutionVote ? (
                           <div className="mt-3 flex flex-col sm:flex-row gap-2">
-                            <button type="button" onClick={() => toggleExecutionVote(v.id, 1)} className={["flex-1 rounded-xl border px-4 py-2 text-sm font-semibold", execState?.my_direction === 1 ? "bg-red-600 text-white border-red-600" : "bg-white text-gray-800 hover:bg-gray-50"].join(" ")}>Approve Disqualification</button>
-                            <button type="button" onClick={() => toggleExecutionVote(v.id, -1)} className={["flex-1 rounded-xl border px-4 py-2 text-sm font-semibold", execState?.my_direction === -1 ? "bg-black text-white border-black" : "bg-white text-gray-800 hover:bg-gray-50"].join(" ")}>Oppose Disqualification</button>
+                            <button type="button" onClick={() => toggleExecutionVote(v.id, 1)} className={["flex-1 rounded-xl border px-4 py-2 text-sm font-semibold", execState?.my_direction === 1 ? "bg-red-600 text-white border-red-600" : "bg-white text-gray-800 hover:bg-gray-50"].join(" ")}>Disqualify this vote</button>
+                            <button type="button" onClick={() => toggleExecutionVote(v.id, -1)} className={["flex-1 rounded-xl border px-4 py-2 text-sm font-semibold", execState?.my_direction === -1 ? "bg-black text-white border-black" : "bg-white text-gray-800 hover:bg-gray-50"].join(" ")}>Keep this vote</button>
                           </div>
                         ) : executionActive ? (
-                          <div className="mt-2 text-xs text-gray-500">Only eligible citizens can approve disqualification.</div>
+                          <div className="mt-2 text-xs text-gray-500">Only eligible community members can decide this.</div>
                         ) : (
                           <div className="mt-2 text-xs text-gray-500">Community review opens after voting ends.</div>
                         )}
@@ -3923,7 +3923,7 @@ function VotingCourtroom({
                   {(executionByVote[String(v.id)]?.is_convicted || voteBadges[String(v.id)]?.is_convicted) && (
                     <div className="mt-3 text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg p-2 flex items-center gap-2">
                       <AlertTriangle className="h-4 w-4 flex-shrink-0" />
-                      <span>This vote does NOT count toward the final tally — this voter has been disqualified.</span>
+                      <span>This vote doesn't count toward the final result — it was disqualified.</span>
                     </div>
                   )}
 
@@ -4694,7 +4694,7 @@ export default function RecordDetail({
             .from("badges")
             .select("label, icon")
             .eq("user_id", contributorUserId);
-          setContributorBadges((cBadges ?? []).map((b: any) => ({ label: b.label, icon: b.icon })));
+          setContributorBadges(visibleBadges(cBadges as any[]).map((b: any) => ({ label: b.label, icon: b.icon })));
         } else {
           setContributorBadges([]);
         }
@@ -4714,7 +4714,7 @@ export default function RecordDetail({
           if (allIds.length) {
             const { data: allBadges } = await supabase.from("badges").select("user_id, label, icon").in("user_id", allIds);
             const map: Record<string, { label: string; icon: string }[]> = {};
-            (allBadges ?? []).forEach((b: any) => {
+            visibleBadges(allBadges as any[]).forEach((b: any) => {
               if (!map[b.user_id]) map[b.user_id] = [];
               // dedupe by label per user
               if (!map[b.user_id].find((x: any) => x.label === b.label)) {
@@ -5004,7 +5004,7 @@ export default function RecordDetail({
                 <div className="w-11 h-11 rounded-full overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center shrink-0">
                   {avatarUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={avatarUrl} alt="Contributor avatar" className="w-full h-full object-cover" />
+                    <img src={avatarUrl} alt="Writer's photo" className="w-full h-full object-cover" />
                   ) : (
                     <User className="w-7 h-7 text-gray-600" />
                   )}
@@ -5040,7 +5040,7 @@ export default function RecordDetail({
                           });
                           return Object.values(counts).map((b) => (
                             <span key={b.label} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-gray-200 bg-gray-50 text-xs text-gray-700 font-medium">
-                              {b.icon} {b.label}
+                              {b.icon} {badgeName(b.label)}
                             </span>
                           ));
                         })()}

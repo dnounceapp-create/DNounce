@@ -46,7 +46,7 @@ export default async function SubjectNameLayout({
     .maybeSingle();
 
   // Only enforce canonical when the subject exists. Nonexistent subjects
-  // fall through to the client page, which shows its own "Subject not found" UI.
+  // fall through to the client page, which shows its own "Profile not found" UI.
   if (subject) {
     const canonical = subjectSlug(subject.name, subject.nickname);
     if (name !== canonical) {

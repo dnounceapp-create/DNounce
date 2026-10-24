@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 
 import { summarizeRecords } from "@/lib/outcome";
 export const runtime = "nodejs";
-export const alt = "DNounce Subject Profile";
+export const alt = "DNounce profile";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 

@@ -356,7 +356,7 @@ export default function MyRecordsPage() {
         };
       case "Record ID":
         return (a, b) => a.id.localeCompare(b.id);
-      case "Subject (A → Z)":
+      case "Name (A → Z)":
         return (a, b) => a.subject_name.localeCompare(b.subject_name);
       case "Last Activity":
         return (a, b) =>
@@ -503,21 +503,21 @@ export default function MyRecordsPage() {
         {/* Stats Row */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
           <div className="bg-white/90 backdrop-blur-sm shadow-sm hover:shadow-md transition rounded-2xl p-4 sm:p-6 text-center border border-gray-100">
-            <p className="text-xs sm:text-sm font-medium text-gray-600">My Total Records</p>
+            <p className="text-xs sm:text-sm font-medium text-gray-600">Records about you</p>
             <p className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
               {stats.my_total_records}
             </p>
           </div>
 
           <div className="bg-white/90 backdrop-blur-sm shadow-sm hover:shadow-md transition rounded-2xl p-4 sm:p-6 text-center border border-gray-100">
-            <p className="text-xs sm:text-sm font-medium text-gray-600">Kept Records</p>
+            <p className="text-xs sm:text-sm font-medium text-gray-600">Most sided with the writer</p>
             <p className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
               {stats.sided_contributor}
             </p>
           </div>
 
           <div className="bg-white/90 backdrop-blur-sm shadow-sm hover:shadow-md transition rounded-2xl p-4 sm:p-6 text-center border border-gray-100">
-            <p className="text-xs sm:text-sm font-medium text-gray-600">Deleted Records</p>
+            <p className="text-xs sm:text-sm font-medium text-gray-600">Most sided with you</p>
             <p className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
               {stats.sided_subject}
             </p>

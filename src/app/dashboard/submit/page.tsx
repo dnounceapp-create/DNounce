@@ -276,7 +276,7 @@ export default function SubmitRecordPage() {
     if (!tempSubject) return;
     const updated: ExternalSubjectPreview = {
       ...tempSubject,
-      name: `${submitFirstName} ${submitLastName}`.trim() || "(Unnamed Subject)",
+      name: `${submitFirstName} ${submitLastName}`.trim() || "(No name given)",
       nickname: submitNickname || null,
       organization: submitOrganization || null,
       location: submitLocation || null,
@@ -457,7 +457,7 @@ export default function SubmitRecordPage() {
     const newTemp: ExternalSubjectPreview = {
       kind: "external",
       id: tempId,
-      name: `${submitFirstName} ${submitLastName}`.trim() || "(Unnamed Subject)",
+      name: `${submitFirstName} ${submitLastName}`.trim() || "(No name given)",
       nickname: submitNickname || null,
       organization: submitOrganization || null,
       location: submitLocation || null,
@@ -603,7 +603,7 @@ export default function SubmitRecordPage() {
           const { data: newSubject, error: newSubjectError } = await supabase
             .from("subjects")
             .insert({
-              name: `${submitFirstName} ${submitLastName}`.trim() || "(Unnamed Subject)",
+              name: `${submitFirstName} ${submitLastName}`.trim() || "(No name given)",
               nickname: submitNickname || null,
               organization: submitOrganization || null,
               location: submitLocation || null,
@@ -740,7 +740,7 @@ export default function SubmitRecordPage() {
             <div className="flex flex-col text-center mb-5 sm:mb-6">
               <h2 className="text-base sm:text-lg font-semibold text-gray-800">Their contact info</h2>
               <p className="text-xs sm:text-sm text-gray-500 leading-relaxed max-w-lg mx-auto">
-                Enter a phone number and/or email. We’ll automatically search for matching DNounce users or existing subjects.
+                Enter a phone number and/or email. We’ll look for them on DNounce automatically.
               </p>
             </div>
 
@@ -769,7 +769,7 @@ export default function SubmitRecordPage() {
             <div className="mt-6 bg-blue-50 border border-blue-200 text-blue-800 rounded-xl p-4 text-sm flex gap-3 items-start">
               <AlertTriangle className="w-5 h-5 mt-0.5 flex-shrink-0 text-blue-600" />
               <p>
-                <strong>Why we ask:</strong> Every submission triggers a quick notification to the subject so they can view/respond.
+                <strong>Why we ask:</strong> We let the person know about your record so they can read it and reply.
               </p>
             </div>
           </div>
@@ -924,7 +924,7 @@ export default function SubmitRecordPage() {
                       onClick={handleCreateTempSubject}
                       className="text-sm text-gray-700 font-medium underline hover:text-black transition"
                     >
-                      Subject doesn’t exist yet?
+                      Not on DNounce yet?
                     </button>
                   </div>
                 )}
@@ -953,7 +953,7 @@ export default function SubmitRecordPage() {
                     }}
                     className="text-sm text-blue-600 hover:text-blue-800 underline transition"
                   >
-                    Change subject selection
+                    Pick someone else
                   </button>
                 </div>
               </div>

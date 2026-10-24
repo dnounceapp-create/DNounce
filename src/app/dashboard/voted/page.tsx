@@ -256,7 +256,7 @@ export default function VotedRecordsPage() {
       case "Newest Submitted":
         return (a, b) =>
           new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime();
-      case "Subject (A → Z)":
+      case "Name (A → Z)":
         return (a, b) => a.subject_name.localeCompare(b.subject_name);
       default:
         return () => 0;

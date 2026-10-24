@@ -218,7 +218,7 @@ export default function NotificationsPage() {
           <Section title="Community Activity" subtitle="For community statements and replies.">
             <ToggleRow
               title="New community statement on your record"
-              desc="When a citizen or voter posts a community statement on a record you're involved in."
+              desc="When someone in the community posts a statement on a record you're involved in."
               value={prefs.notif_community_new_statement}
               onChange={set("notif_community_new_statement")}
             />

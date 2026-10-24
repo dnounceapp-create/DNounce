@@ -19,6 +19,7 @@ import {
 import Link from "next/link";
 
 import RecordOutcomeSummary, { type OutcomeSummaryRecord } from "@/components/profile/RecordOutcomeSummary";
+import { badgeName, visibleBadges } from "@/lib/outcome";
 type Scores = {
   subject_score: number | null;
   contributor_score: number | null;
@@ -66,7 +67,7 @@ const SCORE_CARDS = [
   { key: "citizen_score" as keyof Scores, label: "Citizen Score", desc: "Reactions to your community statements & replies", icon: Users, color: "text-orange-500" },
 ];
 
-const ALL_BADGES: { label: string; icon: string }[] = [
+const ALL_BADGES_RAW: { label: string; icon: string }[] = [
   { label: "Top Contributor", icon: "🏆" },
   { label: "Top Voter",       icon: "🗳️" },
   { label: "Top Citizen",     icon: "🌟" },
@@ -79,6 +80,7 @@ const ALL_BADGES: { label: string; icon: string }[] = [
   { label: "Expert",          icon: "🎓" },
   { label: "Struggling",      icon: "📉" },
 ];
+const ALL_BADGES = visibleBadges(ALL_BADGES_RAW);
 
 const STATUS_LABELS: Record<string, string> = {
   ai_verification: "Awaiting Claim", subject_notified: "Private preview",
@@ -158,7 +160,7 @@ function BadgeCard({ badge, count, records, loadRecords }: {
     <div className="rounded-xl border bg-white border-gray-200">
       <div className="flex items-center gap-3 px-3 py-2.5">
         <span className="text-lg shrink-0">{badge.icon}</span>
-        <span className="text-sm font-medium text-gray-900 flex-1">{badge.label}</span>
+        <span className="text-sm font-medium text-gray-900 flex-1">{badgeName(badge.label)}</span>
         <span className="text-sm font-semibold text-gray-500 shrink-0">— {count}</span>
         <button onClick={handleExpand} className="shrink-0 text-gray-400 hover:text-gray-700 transition ml-1">
           {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -238,7 +240,7 @@ export default function ReputationPage() {
       });
       if (finalUserScores?.updated_at) setLastUpdated(finalUserScores.updated_at);
       // "Convicted" was renamed to "Lost voting rights"; read old rows under the new name.
-      setBadges((badgesRes.data || []).map((b: any) => b.label === "Convicted" ? { ...b, label: "Lost voting rights" } : b));
+      setBadges(visibleBadges((badgesRes.data || []).map((b: any) => b.label === "Convicted" ? { ...b, label: "Lost voting rights" } : b)));
     } catch (err) {
       console.error("Failed to load reputation:", err);
     } finally {
