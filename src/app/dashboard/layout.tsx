@@ -1200,33 +1200,32 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <div>
                 <h4 className="text-white font-semibold mb-3">Platform</h4>
                 <ul className="space-y-2 text-sm">
-                  <li><Link href="#" className="hover:text-white">Search Profiles</Link></li>
-                  <li><Link href="#" className="hover:text-white">Share Feedback</Link></li>
-                  <li><Link href="#" className="hover:text-white">Community Review</Link></li>
-                  <li><Link href="#" className="hover:text-white">Guidelines</Link></li>
+                  <li><Link href="/searchprofiles" className="hover:text-white">Search Profiles</Link></li>
+                  <li><Link href="/dashboard/submit" className="hover:text-white">Share Experience</Link></li>
+                  <li><Link href="/?section=voting-section" className="hover:text-white">Community</Link></li>
+                  <li><Link href="/?section=guidelines-section" className="hover:text-white">Guidelines</Link></li>
                 </ul>
               </div>
               <div>
                 <h4 className="text-white font-semibold mb-3">Legal</h4>
                 <ul className="space-y-2 text-sm">
-                  <li><Link href="#" className="hover:text-white">Terms of Service</Link></li>
-                  <li><Link href="#" className="hover:text-white">Privacy Policy</Link></li>
-                  <li><Link href="#" className="hover:text-white">Transparency Report</Link></li>
-                  <li><Link href="#" className="hover:text-white">Legal Framework</Link></li>
+                  <li><Link href="/legal#terms" className="hover:text-white">Terms of Service</Link></li>
+                  <li><Link href="/legal#privacy" className="hover:text-white">Privacy Policy</Link></li>
+                  <li><Link href="/legal#transparency" className="hover:text-white">Transparency Report</Link></li>
+                  <li><Link href="/legal#framework" className="hover:text-white">Legal Framework</Link></li>
                 </ul>
               </div>
               <div>
                 <h4 className="text-white font-semibold mb-3">Support</h4>
                 <ul className="space-y-2 text-sm">
-                  <li><Link href="#" className="hover:text-white">Help Center</Link></li>
-                  <li><Link href="#" className="hover:text-white">Contact Support</Link></li>
-                  <li><Link href="#" className="hover:text-white">Appeal Process</Link></li>
-                  <li><Link href="#" className="hover:text-white">Status Page</Link></li>
+                  <li><Link href="/support" className="hover:text-white">Help Center</Link></li>
+                  <li><Link href="/dashboard/settings/support" className="hover:text-white">Contact Support</Link></li>
+                  <li><Link href="/support#status" className="hover:text-white">Status Page</Link></li>
                 </ul>
               </div>
             </div>
             <div className="mt-10 border-t border-gray-700 pt-6 text-center text-xs text-gray-400 max-w-6xl mx-auto px-6">
-              © 2025 DNounce. All rights reserved. Verifying experiences, preserving reputations.
+              © {new Date().getFullYear()} DNounce. All rights reserved. Verifying experiences, preserving reputations.
             </div>
           </footer>
         </main>

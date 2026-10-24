@@ -5,7 +5,7 @@ import ShareExperienceButton from "./ShareExperienceButton";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Share your experience | DNounce",
+  title: { absolute: "Share your experience | DNounce" },
   robots: { index: false, follow: false },
 };
 

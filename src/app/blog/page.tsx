@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Blog | DNounce",
+  title: { absolute: "Blog | DNounce" },
   description: "Tips, guides, and insights on reputation, hiring, and dispute resolution.",
 };
 

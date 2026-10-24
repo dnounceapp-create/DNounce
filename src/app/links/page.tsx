@@ -155,9 +155,9 @@ export default function LinksPage() {
 
                   {/* Title: subject vs contributor */}
                   <div className="text-base font-semibold text-gray-900 leading-tight mb-2">
-                    {r.subject_name || "Subject"}{" "}
+                    {r.subject_name || "Someone"}{" "}
                     <span className="text-gray-400 font-medium">vs</span>{" "}
-                    {r.contributor_name || "Contributor"}
+                    {r.contributor_name || "A writer"}
                   </div>
 
                   {/* Preview */}

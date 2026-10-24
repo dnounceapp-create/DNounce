@@ -451,9 +451,10 @@ export default function SubjectDemoWaitressPage() {
                         <div className="mt-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                           <div className="flex flex-wrap items-center gap-2">
                             <span className="text-xs text-gray-700">{r.category}</span>
-                            <span className="text-xs rounded-full border bg-gray-50 px-2 py-1 text-gray-700">
-                              {demoStageLabel(r.stage)}
-                            </span>
+                            {/* Same as real profiles: a stage chip only while a record is being challenged */}
+                            {["deletion_request", "debate", "voting"].includes(demoStageToStatus(r.stage)) && (
+                              <span className="text-xs rounded-full border bg-gray-50 px-2 py-1 text-gray-700">{demoStageLabel(r.stage)}</span>
+                            )}
                             <span className="text-xs text-gray-500">
                               📅 {new Date(r.date).toLocaleDateString()}
                             </span>

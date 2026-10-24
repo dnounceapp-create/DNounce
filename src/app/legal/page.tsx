@@ -3,7 +3,7 @@ import { Shield, FileText, Eye, Scale } from "lucide-react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Legal | DNounce",
+  title: { absolute: "Legal | DNounce" },
   description: "Terms of Service, Privacy Policy, and Legal Framework for DNounce.",
 };
 

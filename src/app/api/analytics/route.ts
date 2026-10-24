@@ -306,7 +306,7 @@ export async function GET(req: NextRequest) {
     const { data: subjectNameData } = subjectId
       ? await supabase.from("subjects").select("name").eq("subject_uuid", subjectId).single()
       : { data: null };
-    const subjectName = subjectNameData?.name ?? "Subject";
+    const subjectName = subjectNameData?.name ?? "Someone";
 
     const recordEngagement = recordsAboutMe.map((r: any) => {
       const rawCred = (r.ai_vendor_1_result ?? r.anonymity_status ?? "").toString();

@@ -800,7 +800,7 @@ export default function SubjectProfilePage() {
   }
 
   function recordTitle(r: SubjectRecord) {
-    const subjectName = subject?.name || "Subject";
+    const subjectName = subject?.name || "Someone";
     const contributor = contributorLabelByRules(r);
     return `${contributor} • ${subjectName}`;
   }

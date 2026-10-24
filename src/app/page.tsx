@@ -1268,8 +1268,8 @@ export default function HomePage() {
             <div>
               <h3 className="text-sm font-semibold text-gray-300 mb-3">Platform</h3>
               <ul className="space-y-2 text-sm text-gray-500">
-                {["Search Profiles","Share Experience","Community Review","Guidelines"].map((item) => (
-                  <li key={item}><a href="#" className="hover:text-white transition-colors">{item}</a></li>
+                {[["Search Profiles","/searchprofiles"],["Share Experience","/dashboard/submit"],["Community","/?section=voting-section"],["Guidelines","/?section=guidelines-section"]].map(([item, href]) => (
+                  <li key={item}><a href={href} className="hover:text-white transition-colors">{item}</a></li>
                 ))}
               </ul>
             </div>
@@ -1291,7 +1291,7 @@ export default function HomePage() {
             </div>
           </div>
           <div className="border-t border-gray-800 pt-6 text-center text-xs text-gray-600">
-            © 2024 DNounce. All rights reserved.
+            © {new Date().getFullYear()} DNounce. All rights reserved.
           </div>
         </div>
       </footer>

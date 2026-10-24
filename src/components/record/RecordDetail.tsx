@@ -359,7 +359,7 @@ function makeViewState(args: {
     canPostDebate,
     canViewVoting,
 
-    subject: { name: subjectName || "Subject", avatarUrl: args.subjectAvatarUrl, href: subjectProfileHref },
+    subject: { name: subjectName || "the person it's about", avatarUrl: args.subjectAvatarUrl, href: subjectProfileHref },
     contributor: contributorIdentity,
 
     contributorLinkAllowedForViewer,
@@ -965,7 +965,7 @@ function ReplyBubble({
                 {author.name}
               </div>
             )}
-            <span className="text-[11px] text-gray-500">{formatTimestampNoSeconds(node.created_at)}</span>
+            <span className="text-[11px] text-gray-500">{node.author_role === "subject" ? "The person it's about" : "The writer"} · {formatTimestampNoSeconds(node.created_at)}</span>
           </div>
 
           <div className="mt-1 text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{node.body}</div>
@@ -1273,7 +1273,7 @@ function StatementCard({
               <div className="flex flex-wrap items-center gap-1 mt-0.5">
                 <UserBadgePills userId={node.author_user_id} participantBadges={participantBadges} />
               </div>
-              <div className="mt-1 text-[11px] text-gray-500">{formatTimestampNoSeconds(node.created_at)}</div>
+              <div className="mt-1 text-[11px] text-gray-500">{node.author_role === "subject" ? "The person it's about" : "The writer"} · {formatTimestampNoSeconds(node.created_at)}</div>
             </div>
           </div>
         </div>
@@ -1756,7 +1756,7 @@ function DebateCourtroom({
 
   function getAuthorPresentation(role: "subject" | "contributor") {
     if (role === "subject") {
-      return { name: subjectName || "Subject", avatarUrl: null as string | null, href: subjectProfileHref };
+      return { name: subjectName || "the person it's about", avatarUrl: null as string | null, href: subjectProfileHref };
     }
 
     if (viewerRole === "contributor") {
@@ -3640,7 +3640,7 @@ function VotingCourtroom({
                     {isTie(record?.final_outcome) && (
                       <div className="text-[11px] text-gray-500">{TIE_HINT}</div>
                     )}
-                    <TallyChip contributorCount={contributorCount} subjectCount={subjectCount} totalCount={totalCount} contributorName={contributorDisplayName} subjectName={record?.subject?.name ?? "Subject"} />
+                    <TallyChip contributorCount={contributorCount} subjectCount={subjectCount} totalCount={totalCount} contributorName={contributorDisplayName} subjectName={record?.subject?.name ?? "the person it's about"} />
                     {Object.values(voteBadges).filter(b => b.is_convicted).length > 0 && (
                       <div className="absolute top-full right-0 mt-1 hidden group-hover:block bg-gray-800 text-white text-xs rounded-lg p-2 whitespace-nowrap z-10">
                         {Object.values(voteBadges).filter(b => b.is_convicted).length} vote(s) that lost voting rights, excluded from tally
@@ -3675,7 +3675,7 @@ function VotingCourtroom({
               <div className="text-xs font-semibold text-gray-900">Your vote</div>
               <div className="mt-2 inline-flex items-center gap-2 rounded-full border bg-white px-3 py-1 text-xs font-semibold">
                 <span className={myVote!.choice === "side_with_contributor" ? "text-blue-700" : "text-indigo-700"}>
-                {myVote!.choice === "side_with_contributor" ? `Sided with ${contributorDisplayName}` : `Sided with ${record?.subject?.name ?? "Subject"}`}
+                {myVote!.choice === "side_with_contributor" ? `Sided with ${contributorDisplayName}` : `Sided with ${record?.subject?.name ?? "the person it's about"}`}
                 </span>
                 <span className="text-gray-400">•</span>
                 <span className="text-gray-600">{formatTimestampNoSeconds(myVote!.created_at)}</span>
@@ -3721,7 +3721,7 @@ function VotingCourtroom({
                       : "bg-white text-gray-800 hover:bg-gray-50",
                   ].join(" ")}
                 >
-                  Side with {record?.subject?.name ?? "Subject"}
+                  Side with {record?.subject?.name ?? "the person it's about"}
                 </button>
               </div>
 
@@ -3792,7 +3792,7 @@ function VotingCourtroom({
                         ? "text-blue-700 border-blue-200 bg-blue-50"
                         : "text-indigo-700 border-indigo-200 bg-indigo-50",
                     ].join(" ")}>
-                      {v.choice === "side_with_contributor" ? `With ${contributorDisplayName}` : `With ${record?.subject?.name ?? "Subject"}`}
+                      {v.choice === "side_with_contributor" ? `With ${contributorDisplayName}` : `With ${record?.subject?.name ?? "the person it's about"}`}
                     </span>
                   </div>
 
@@ -4828,7 +4828,7 @@ export default function RecordDetail({
     linkAllowed: reveal,
   };
 
-  const subjectName = (subject?.name as string) || "Subject";
+  const subjectName = (subject?.name as string) || "the person it's about";
   const subjectProfileHref = subject?.subject_uuid ? `/subject/${subject.subject_uuid}/${subjectSlug(subject?.name as string, subject?.nickname as string | null)}/${citySlug(subject?.location as string | null)}` : null;
   const resolvedSubjectAvatarUrl = subjectAvatarUrl;
 
@@ -4940,7 +4940,7 @@ export default function RecordDetail({
 
           <button
             type="button"
-            onClick={() => openReport("subject", subject?.subject_uuid ?? "", subject?.name ?? "Subject")}
+            onClick={() => openReport("subject", subject?.subject_uuid ?? "", subject?.name ?? "the person it's about")}
             className="absolute top-4 right-4 inline-flex items-center gap-1 text-[11px] font-medium text-gray-400 hover:text-red-500 transition-colors"
             title="Report this person"
           >

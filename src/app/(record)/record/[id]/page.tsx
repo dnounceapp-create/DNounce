@@ -39,7 +39,7 @@ export async function generateMetadata({
   }
 
   return {
-    title,
+    title: { absolute: title },
     description,
     openGraph: {
       title,

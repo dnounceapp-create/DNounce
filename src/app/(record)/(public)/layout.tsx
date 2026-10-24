@@ -3,161 +3,96 @@
 import { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
+
+/**
+ * Header for signed-out visitors on records, profiles, the blog and request
+ * pages. Same names and look as the homepage and demo pages. The links go to
+ * the homepage sections (these pages don't have those sections themselves).
+ */
+const NAV: [string, string][] = [
+  ["How it works", "how-it-works"],
+  ["Community", "voting-section"],
+  ["Guidelines", "guidelines-section"],
+  ["Legal", "legal-section"],
+];
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const goLogin = () =>
+    router.push(`/loginsignup?redirectTo=${encodeURIComponent(window.location.pathname)}`);
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
-
-      {/* --------------------------------------------------------- */}
-      {/*                 TOP NAV — EXACT DNOUNCE CLONE             */}
-      {/* --------------------------------------------------------- */}
-      <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-20">
-
-            {/* Logo */}
-            <div
-              className="flex items-center gap-2 sm:gap-4 cursor-pointer"
-              onClick={() => router.push("/")}
-            >
+      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 sm:gap-3 cursor-pointer" onClick={() => router.push("/")}>
               <Image
                 src="/logo.png"
                 alt="DNounce Logo"
-                width={90}
-                height={90}
+                width={52}
+                height={52}
                 priority
+                className="w-[52px] h-[52px] sm:w-[74px] sm:h-[74px]"
               />
-              <span className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900">
-                DNounce
-              </span>
+              <span className="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">DNounce</span>
             </div>
 
-            {/* Desktop Nav */}
-            <nav className="hidden md:flex flex-1 justify-center gap-12">
-              <button
-                onClick={() =>
-                  document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" })
-                }
-                className="text-gray-700 font-medium hover:text-red-700 transition-colors text-sm"
-              >
-                How DNounce Works
-              </button>
-
-              <button
-                onClick={() =>
-                  document.getElementById("voting-section")?.scrollIntoView({ behavior: "smooth" })
-                }
-                className="text-gray-700 font-medium hover:text-red-700 transition-colors text-sm"
-              >
-                Community Review
-              </button>
-
-              <button
-                onClick={() =>
-                  document.getElementById("guidelines-section")?.scrollIntoView({ behavior: "smooth" })
-                }
-                className="text-gray-700 font-medium hover:text-red-700 transition-colors text-sm"
-              >
-                Guidelines
-              </button>
-
-              <button
-                onClick={() =>
-                  document.getElementById("legal-section")?.scrollIntoView({ behavior: "smooth" })
-                }
-                className="text-gray-700 font-medium hover:text-red-700 transition-colors text-sm"
-              >
-                Legal
-              </button>
+            <nav className="hidden md:flex items-center gap-8">
+              {NAV.map(([label, id]) => (
+                <a key={id} href={`/?section=${id}`} className="text-sm text-gray-500 hover:text-gray-900 transition-colors">
+                  {label}
+                </a>
+              ))}
             </nav>
 
-            {/* Login + Mobile Menu */}
-            <div className="flex items-center gap-3">
-              <Button
-                size="sm"
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-                onClick={() => router.push(`/loginsignup?redirectTo=${encodeURIComponent(window.location.pathname)}`)}
+            <div className="flex items-center gap-2 sm:gap-3">
+              <button onClick={goLogin} className="hidden md:block text-sm text-gray-600 hover:text-gray-900 transition-colors">
+                Log in
+              </button>
+              <button
+                onClick={goLogin}
+                className="bg-gray-900 hover:bg-black text-white text-xs sm:text-sm font-medium px-3 sm:px-4 py-2 rounded-xl transition-colors"
               >
-                Login / Sign Up
-              </Button>
+                Get started
+              </button>
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="md:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100"
+                aria-label="Open menu"
+              >
+                <div className="w-4 h-0.5 bg-current mb-1" />
+                <div className="w-4 h-0.5 bg-current mb-1" />
+                <div className="w-4 h-0.5 bg-current" />
+              </button>
+            </div>
+          </div>
 
-              {/* Mobile Hamburger */}
-              <div className="md:hidden flex items-center">
-                <button
-                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                  className="p-2 rounded-md text-gray-700 hover:bg-gray-100 focus:outline-none"
+          {mobileMenuOpen && (
+            <div className="md:hidden pt-4 pb-2 space-y-1 border-t border-gray-100 mt-3">
+              {NAV.map(([label, id]) => (
+                <a
+                  key={id}
+                  href={`/?section=${id}`}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block w-full text-left px-3 py-2.5 text-sm text-gray-600 hover:bg-gray-50 rounded-lg"
                 >
-                  ☰
-                </button>
-              </div>
+                  {label}
+                </a>
+              ))}
+              <button
+                onClick={() => { setMobileMenuOpen(false); goLogin(); }}
+                className="block w-full text-left px-3 py-2.5 text-sm text-gray-600 hover:bg-gray-50 rounded-lg"
+              >
+                Log in
+              </button>
             </div>
-          </div>
+          )}
         </div>
-
-        {/* Mobile Dropdown */}
-        {mobileMenuOpen && (
-          <div className="md:hidden border-t border-gray-200 bg-white">
-            <nav className="flex flex-col p-4 gap-4 text-sm">
-              <button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" });
-                }}
-                className="text-gray-700 font-medium hover:text-red-700 transition-colors text-left"
-              >
-                How DNounce Works
-              </button>
-
-              <button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  document.getElementById("voting-section")?.scrollIntoView({ behavior: "smooth" });
-                }}
-                className="text-gray-700 font-medium hover:text-red-700 transition-colors text-left"
-              >
-                Community Review
-              </button>
-
-              <button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  document.getElementById("guidelines-section")?.scrollIntoView({ behavior: "smooth" });
-                }}
-                className="text-gray-700 font-medium hover:text-red-700 transition-colors text-left"
-              >
-                Guidelines
-              </button>
-
-              <button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  document.getElementById("legal-section")?.scrollIntoView({ behavior: "smooth" });
-                }}
-                className="text-gray-700 font-medium hover:text-red-700 transition-colors text-left"
-              >
-                Legal
-              </button>
-
-              <Button
-                size="sm"
-                className="bg-blue-600 hover:bg-blue-700 text-white mt-2"
-                onClick={() => router.push(`/loginsignup?redirectTo=${encodeURIComponent(window.location.pathname)}`)}
-              >
-                Login / Sign Up
-              </Button>
-            </nav>
-          </div>
-        )}
       </header>
 
-      {/* PAGE CONTENT */}
-      <main className="flex-1">
-        {children}
-      </main>
+      <main className="flex-1">{children}</main>
     </div>
   );
 }

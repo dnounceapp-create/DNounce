@@ -20,7 +20,7 @@ export async function generateMetadata({
     .maybeSingle();
 
   if (!subject) {
-    return { title: "Profile | DNounce" };
+    return { title: { absolute: "Profile | DNounce" } };
   }
 
   const displayName = subject.nickname
@@ -54,7 +54,7 @@ export async function generateMetadata({
   const imageUrl = subject.avatar_url ?? undefined;
 
   return {
-    title,
+    title: { absolute: title },
     description: fullDescription,
     openGraph: {
       title,
