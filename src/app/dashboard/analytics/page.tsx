@@ -33,7 +33,6 @@ interface AnalyticsData {
   totalDebateStatements: number;
   totalSubmitted: number;
   totalRecordsAboutMe: number;
-  subjectScore: number | null;
   totalProfileViews: number;
   uniqueViewers: number;
   newViewerCount: number;
@@ -60,7 +59,7 @@ interface AnalyticsData {
   contributorSuccessRate: number | null;
   mostActiveRole: string | null;
   roleActivity: Record<string, number>;
-  comparisonData: { category: string; myScore: string; avgScore: string; sampleSize: number; percentile: number } | null;
+  comparisonData: RankInfo | null;
   totalFollowers: number;
   totalPins: number;
   recordEngagement: RecordEngagement[];
@@ -84,21 +83,36 @@ interface AnalyticsData {
     avgHoursToFirstVote: number | null;
     voterQualityScore: number | null;
     streakWeeks: number;
-    reputationHealthScore: number;
-    scoreSnapshots: { subject_score: number; credibility_score: number; overall_score: number; week_start: string }[];
-    marketPosition: { rank: number; total: number; topPct: number; category: string; medianScore: string; myScore: string } | null;
+    recordsByWeek: { week: string; newRecords: number; challenges: number }[];
+    marketPosition: RankInfo | null;
     totalFollowers: number;
     totalPins: number;
     notifOptIns: number;
-    competitorBenchmark: {
-      zipCode: string;
-      myScore: number;
-      avgScoreInZip: number;
-      totalInZip: number;
-      rankInZip: number;
-      topPctInZip: number;
-    } | null;
+    competitorBenchmark: { zipCode: string; rankInZip: number | null; totalInZip: number } | null;
   } | null;
+}
+
+/** Rank by subject score only. No percentiles and no score numbers. */
+type RankInfo = { category: string; rank: number | null; total: number };
+
+const RANK_NOTE = "Ranked by how records about each person turned out: star ratings, challenges, and who most people sided with.";
+
+function RankCard({ rank, total, intro }: { rank: number | null; total: number; intro: React.ReactNode }) {
+  return (
+    <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
+      <p className="text-xs text-gray-500 mb-3">{intro}</p>
+      {rank === null ? (
+        <p className="text-sm text-gray-500">Not ranked yet — you&apos;ll get a rank once there&apos;s a public record about you.</p>
+      ) : total <= 1 ? (
+        <p className="text-sm text-gray-700">You&apos;re the only one here so far, so there&apos;s no one to rank against yet.</p>
+      ) : (
+        <p className="text-3xl font-bold text-indigo-600">
+          #{rank} <span className="text-base font-normal text-gray-400">of {total}</span>
+        </p>
+      )}
+      <p className="mt-3 text-[11px] text-gray-400">{RANK_NOTE}</p>
+    </div>
+  );
 }
 
 function StatCard({ icon, label, value, sub, color = "blue" }: {
@@ -474,32 +488,21 @@ function InsightsContent({ data }: { data: AnalyticsData }) {
         </div>
       </div>
 
-      {data.comparisonData ? (
-        <div>
-          <SectionHeader title="Benchmark vs. Category Average" />
-          <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
-            <p className="text-xs text-gray-500 mb-4">
-              Based on <span className="font-semibold text-gray-700">{data.comparisonData.sampleSize}</span> profiles in the <span className="font-semibold text-gray-700">{data.comparisonData.category}</span> category
-            </p>
-            <div className="grid grid-cols-3 gap-4 text-center mb-4">
-              <div><p className="text-2xl font-bold text-blue-600">{data.comparisonData.myScore}</p><p className="text-xs text-gray-400 mt-0.5">Your Score</p></div>
-              <div><p className="text-2xl font-bold text-gray-400">{data.comparisonData.avgScore}</p><p className="text-xs text-gray-400 mt-0.5">Category Avg</p></div>
-              <div><p className="text-2xl font-bold text-indigo-600">{data.comparisonData.percentile}%</p><p className="text-xs text-gray-400 mt-0.5">Percentile</p></div>
-            </div>
-            <div className="mt-4 bg-gray-100 rounded-full h-2">
-              <div className="h-2 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500" style={{ width: `${data.comparisonData.percentile}%` }} />
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div>
-          <SectionHeader title="Benchmark vs. Category Average" />
+      <div>
+        <SectionHeader title="Your Rank" />
+        {data.comparisonData ? (
+          <RankCard
+            rank={data.comparisonData.rank}
+            total={data.comparisonData.total}
+            intro={<>Among <span className="font-semibold text-gray-700">{data.comparisonData.category}</span> profiles on DNounce</>}
+          />
+        ) : (
           <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm text-center">
             <Award className="w-6 h-6 text-gray-300 mx-auto mb-2" />
-            <p className="text-xs text-gray-400">Not enough similar profiles yet to compare. Check back as more users join.</p>
+            <p className="text-xs text-gray-400">Add your job title in Settings to see how you rank among similar profiles.</p>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       <ReputationReachSection data={data} />
     </div>
@@ -528,10 +531,11 @@ function ProContent({ data }: { data: AnalyticsData }) {
       ["Challenges you won", data.disputeResolutionRate !== null ? `${data.disputeResolutionRate}%` : "—"],
       ["Your records where most people sided with you", data.contributorSuccessRate !== null ? `${data.contributorSuccessRate}%` : "—"],
       ["Streak Weeks", pro.streakWeeks],
-      ["Voter Quality Score", pro.voterQualityScore !== null ? `${pro.voterQualityScore}%` : "—"],
+      ["Votes on your records not flagged", pro.voterQualityScore !== null ? `${pro.voterQualityScore}%` : "—"],
+      ["Rank among similar profiles", pro.marketPosition?.rank ? `#${pro.marketPosition.rank} of ${pro.marketPosition.total}` : "—"],
       ["Total Followers", data.totalFollowers],
       ["Total Pins", data.totalPins],
-      ["Competitor Rank in Zip", pro.competitorBenchmark ? `#${pro.competitorBenchmark.rankInZip} of ${pro.competitorBenchmark.totalInZip}` : "—"],
+      ["Rank in your ZIP code", pro.competitorBenchmark?.rankInZip ? `#${pro.competitorBenchmark.rankInZip} of ${pro.competitorBenchmark.totalInZip}` : "—"],
     ];
     const csv = rows.map(r => r.join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
@@ -547,47 +551,39 @@ function ProContent({ data }: { data: AnalyticsData }) {
 
       {pro.marketPosition && (
         <div>
-          <SectionHeader title="Market Position" />
-          <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
-            <p className="text-xs text-gray-500 mb-4">
-              {pro.marketPosition.total <= 1
-                ? <>You are the first <span className="font-semibold text-gray-700">{pro.marketPosition.category}</span> on DNounce.</>
-                : <>Your standing among <span className="font-semibold text-gray-700">{pro.marketPosition.total}</span> other <span className="font-semibold text-gray-700">{pro.marketPosition.category}</span> profiles on DNounce</>
-              }
-            </p>
-            <div className="grid grid-cols-3 gap-4 text-center mb-4">
-              <div><p className="text-2xl font-bold text-indigo-600">#{pro.marketPosition.rank}</p><p className="text-xs text-gray-400 mt-0.5">Your Rank</p></div>
-              <div><p className="text-2xl font-bold text-blue-600">Top {pro.marketPosition.topPct}%</p><p className="text-xs text-gray-400 mt-0.5">Percentile</p></div>
-              <div><p className="text-2xl font-bold text-gray-400">{pro.marketPosition.medianScore}</p><p className="text-xs text-gray-400 mt-0.5">Category Median</p></div>
-            </div>
-            <div className="bg-gray-100 rounded-full h-2">
-              <div className="h-2 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500" style={{ width: `${100 - pro.marketPosition.topPct}%` }} />
-            </div>
-          </div>
+          <SectionHeader title="Your Rank" />
+          <RankCard
+            rank={pro.marketPosition.rank}
+            total={pro.marketPosition.total}
+            intro={<>Among <span className="font-semibold text-gray-700">{pro.marketPosition.category}</span> profiles on DNounce</>}
+          />
         </div>
       )}
 
-      {pro.scoreSnapshots.length > 0 && (
-        <div>
-          <SectionHeader title="Score Trajectory (Last 13 Weeks)" />
-          <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm overflow-x-auto">
-            <div className="flex items-end gap-2 h-24 min-w-max">
-              {pro.scoreSnapshots.map((snap, i) => {
-                const score = Number(snap.subject_score ?? 0);
-                const maxScore = Math.max(...pro.scoreSnapshots.map(s => Number(s.subject_score ?? 0)));
-                const pct = maxScore > 0 ? (score / maxScore) * 100 : 0;
-                return (
-                  <div key={i} className="flex flex-col items-center gap-1 w-8">
-                    <span className="text-[9px] text-gray-400">{score.toFixed(0)}</span>
-                    <div className="w-6 bg-gradient-to-t from-blue-500 to-indigo-400 rounded-t" style={{ height: `${Math.max(4, pct * 0.72)}px` }} />
-                    <span className="text-[9px] text-gray-400 rotate-45 origin-left whitespace-nowrap">{snap.week_start.slice(5)}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+      <div>
+        <SectionHeader title="Records About You (Last 13 Weeks)" />
+        <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm overflow-x-auto">
+          {pro.recordsByWeek.every((w) => w.newRecords === 0 && w.challenges === 0) ? (
+            <p className="text-xs text-gray-400 text-center">No new records about you in the last 13 weeks.</p>
+          ) : (
+            <>
+              <div className="flex items-end gap-2 h-24 min-w-max">
+                {pro.recordsByWeek.map((w) => {
+                  const max = Math.max(1, ...pro.recordsByWeek.map((x) => x.newRecords));
+                  return (
+                    <div key={w.week} className="flex flex-col items-center gap-1 w-8" title={`${w.newRecords} new · ${w.challenges} challenged`}>
+                      <span className="text-[9px] text-gray-400">{w.newRecords}</span>
+                      <div className="w-6 bg-gradient-to-t from-blue-500 to-indigo-400 rounded-t" style={{ height: `${Math.max(4, (w.newRecords / max) * 72)}px` }} />
+                      <span className="text-[9px] text-gray-400 rotate-45 origin-left whitespace-nowrap">{w.week.slice(5)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="mt-4 text-[11px] text-gray-400">New public records each week. Hover a bar to see how many were challenged.</p>
+            </>
+          )}
         </div>
-      )}
+      </div>
 
       <div>
         <SectionHeader title="Audience Growth" />
@@ -662,7 +658,7 @@ function ProContent({ data }: { data: AnalyticsData }) {
         <SectionHeader title="Engagement Velocity" />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <StatCard icon={<Clock className="w-5 h-5" />} label="Avg. Hours to First Vote" value={pro.avgHoursToFirstVote !== null ? `${pro.avgHoursToFirstVote}h` : "—"} sub="After a record is published about you" color="orange" />
-          <StatCard icon={<BarChart2 className="w-5 h-5" />} label="Voter Quality Score" value={pro.voterQualityScore !== null ? `${pro.voterQualityScore}%` : "—"} sub="% of high-quality voters on your records" color="green" />
+          <StatCard icon={<BarChart2 className="w-5 h-5" />} label="Careful Votes" value={pro.voterQualityScore !== null ? `${pro.voterQualityScore}%` : "—"} sub="Votes on your records that weren't flagged as low quality" color="green" />
         </div>
       </div>
 
@@ -693,39 +689,17 @@ function ProContent({ data }: { data: AnalyticsData }) {
       <ReputationReachSection data={data} />
 
       <div>
-        <SectionHeader title="Local Competitor Benchmarking" />
+        <SectionHeader title="Your Rank in Your ZIP Code" />
         {pro.competitorBenchmark ? (
-          <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
-            <p className="text-xs text-gray-500 mb-4">
-              How your Trust Score compares to other professionals in{" "}
-              <span className="font-semibold text-gray-700">{pro.competitorBenchmark.zipCode}</span> —{" "}
-              {pro.competitorBenchmark.totalInZip} total in your area
-            </p>
-            <div className="grid grid-cols-3 gap-4 text-center mb-4">
-              <div>
-                <p className="text-2xl font-bold text-indigo-600">#{pro.competitorBenchmark.rankInZip}</p>
-                <p className="text-xs text-gray-400 mt-0.5">Rank in ZIP</p>
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-blue-600">Top {pro.competitorBenchmark.topPctInZip}%</p>
-                <p className="text-xs text-gray-400 mt-0.5">In Your Area</p>
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-gray-400">{pro.competitorBenchmark.avgScoreInZip.toFixed(1)}</p>
-                <p className="text-xs text-gray-400 mt-0.5">Avg ZIP Score</p>
-              </div>
-            </div>
-            <div className="bg-gray-100 rounded-full h-2 mb-2">
-              <div className="h-2 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500" style={{ width: `${100 - pro.competitorBenchmark.topPctInZip}%` }} />
-            </div>
-            <p className="text-xs text-gray-400 text-center">
-              Your score: <span className="font-semibold text-gray-700">{pro.competitorBenchmark.myScore.toFixed(1)}</span> · Area average: <span className="font-semibold text-gray-700">{pro.competitorBenchmark.avgScoreInZip.toFixed(1)}</span>
-            </p>
-          </div>
+          <RankCard
+            rank={pro.competitorBenchmark.rankInZip}
+            total={pro.competitorBenchmark.totalInZip}
+            intro={<>Among profiles in <span className="font-semibold text-gray-700">{pro.competitorBenchmark.zipCode}</span></>}
+          />
         ) : (
           <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm text-center">
             <Wifi className="w-6 h-6 text-gray-300 mx-auto mb-2" />
-            <p className="text-xs text-gray-400">Not enough professionals in your area yet. Check back as more users join.</p>
+            <p className="text-xs text-gray-400">Add a ZIP code to your location to see how you rank nearby.</p>
           </div>
         )}
       </div>
@@ -907,7 +881,7 @@ export default function AnalyticsPage() {
             <StandardLockedOverlay />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 blur-sm pointer-events-none select-none">
               {["Profile Views", "Search Impressions", "Category Breakdown",
-                "Most Active Record", "Challenge Results", "Your records where most people sided with you", "Comparison"]
+                "Most Active Record", "Challenge Results", "Your records where most people sided with you", "Your Rank"]
                 .slice(0, typeof window !== "undefined" && window.innerWidth < 640 ? 3 : 8)
                 .map((label) => (
                 <LockedCard key={label} label={label} />

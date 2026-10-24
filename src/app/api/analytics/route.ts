@@ -4,6 +4,24 @@ import { cookies } from "next/headers";
 import { computeContributorHash } from "@/lib/contributorHash";
 
 import { outcomeSide } from "@/lib/outcome";
+/**
+ * Rank by subject score only (KJ, 2026-10-24): "#3 of 14". No percentiles,
+ * no score numbers shown. Ties share the better rank. People with no score
+ * yet (no public records) aren't ranked.
+ */
+function rankAmong(mine: number | null, others: (number | null)[]) {
+  if (mine === null) return null;
+  const scored = others.filter((s): s is number => s !== null && !Number.isNaN(s));
+  return { rank: 1 + scored.filter((s) => s > mine).length, total: scored.length + 1 };
+}
+
+async function scoresFor(supabase: any, subjectIds: string[], excludeId: string | null) {
+  const ids = subjectIds.filter((id) => id && id !== excludeId);
+  if (ids.length === 0) return [];
+  const { data } = await supabase.from("subject_scores").select("subject_score").in("subject_uuid", ids);
+  return (data ?? []).map((r: any) => (r.subject_score === null ? null : Number(r.subject_score)));
+}
+
 export async function GET(req: NextRequest) {
   try {
     const cookieStore = await cookies();
@@ -50,7 +68,6 @@ export async function GET(req: NextRequest) {
       votesRes,
       citizenStatementsRes,
       debateStatementsRes,
-      userScoreRes,
       subjectScoreRes,
       categoryRes,
       baseFollowsRes,
@@ -64,13 +81,12 @@ export async function GET(req: NextRequest) {
         ? supabase.from("search_impressions").select("appeared_at, query, searcher_auth_user_id").eq("subject_id", subjectId)
         : Promise.resolve({ data: [] }),
       subjectId
-        ? supabase.from("records").select("id, status, final_outcome, anonymity_status, ai_vendor_1_result, category, voting_started_at, decision_made_at, debate_started_at, published_at, created_at, contributor_display_name, contributor_identity_preference, record_alias").eq("subject_id", subjectId).in("status", ["published", "deletion_request", "debate", "voting", "decision"])
+        ? supabase.from("records").select("id, status, final_outcome, anonymity_status, ai_vendor_1_result, category, voting_started_at, decision_made_at, debate_started_at, dispute_started_at, published_at, created_at, contributor_display_name, contributor_identity_preference, record_alias").eq("subject_id", subjectId).in("status", ["published", "deletion_request", "debate", "voting", "decision"])
         : Promise.resolve({ data: [] }),
       supabase.from("records").select("id, status, final_outcome, ai_vendor_1_result, anonymity_status, category").or(`contributor_id.eq.${contributorId ?? "00000000-0000-0000-0000-000000000000"},anon_contributor_hash.eq.${anonHash}`),
       supabase.from("record_votes").select("id, record_id, choice, created_at").eq("user_id", user.id),
       supabase.from("record_community_statements").select("id, record_id").eq("author_user_id", user.id),
       supabase.from("record_debate_messages").select("id, record_id").eq("author_user_id", user.id),
-      supabase.from("user_scores").select("credibility_score, contributor_score, voter_score, citizen_score, overall_score").eq("user_id", user.id).single(),
       subjectId
         ? supabase.from("subject_scores").select("subject_score").eq("subject_uuid", subjectId).single()
         : Promise.resolve({ data: null }),
@@ -93,7 +109,6 @@ export async function GET(req: NextRequest) {
     const votes = (votesRes as any).data || [];
     const citizenStatements = (citizenStatementsRes as any).data || [];
     const debateStatements = (debateStatementsRes as any).data || [];
-    const userScore = (userScoreRes as any).data;
     const subjectScore = (subjectScoreRes as any).data;
     const category = (categoryRes as any).data?.job_title ?? null;
     const baseFollows = (baseFollowsRes as any).data || [];
@@ -363,45 +378,30 @@ export async function GET(req: NextRequest) {
     };
     const mostActiveRole = Object.entries(roleActivity).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
 
-    // ─── Comparison vs similar profiles ──────────────────────────────────
+    // ─── Rank among similar profiles (subject score only) ────────────────
 
-    let comparisonData: any = null;
-    if (category && subjectId) {
+    const mySubjectScore: number | null =
+      subjectScore?.subject_score === null || subjectScore?.subject_score === undefined ? null : Number(subjectScore.subject_score);
+
+    async function categoryRank() {
+      if (!category || !subjectId) return null;
       const { data: similarUsers } = await supabase
         .from("user_accountdetails")
         .select("user_id")
         .ilike("job_title", `%${category}%`)
-        .neq("user_id", user.id)
-        .limit(50);
-
-      if (similarUsers && similarUsers.length > 0) {
-        const { data: similarSubjects } = await supabase
-          .from("subjects")
-          .select("subject_uuid")
-          .in("owner_auth_user_id", similarUsers.map((u: any) => u.user_id));
-
-        if (similarSubjects && similarSubjects.length > 0) {
-          const { data: similarScores } = await supabase
-            .from("subject_scores")
-            .select("subject_score")
-            .in("subject_uuid", similarSubjects.map((s: any) => s.subject_uuid));
-
-          if (similarScores && similarScores.length > 0) {
-            const scores = similarScores.map((s: any) => Number(s.subject_score ?? 0));
-            const avgScore = scores.reduce((a: number, b: number) => a + b, 0) / scores.length;
-            const myScore = Number(subjectScore?.subject_score ?? 0);
-            const percentile = Math.round(scores.filter((s: number) => s <= myScore).length / scores.length * 100);
-            comparisonData = {
-              category,
-              myScore: myScore.toFixed(1),
-              avgScore: avgScore.toFixed(1),
-              sampleSize: scores.length,
-              percentile,
-            };
-          }
-        }
-      }
+        .neq("user_id", user!.id)
+        .limit(200);
+      if (!similarUsers || similarUsers.length === 0) return { category, rank: mySubjectScore === null ? null : 1, total: 1 };
+      const { data: similarSubjects } = await supabase
+        .from("subjects")
+        .select("subject_uuid")
+        .in("owner_auth_user_id", similarUsers.map((u: any) => u.user_id));
+      const others = await scoresFor(supabase, (similarSubjects ?? []).map((x: any) => x.subject_uuid), subjectId);
+      const r = rankAmong(mySubjectScore, others);
+      return { category, rank: r?.rank ?? null, total: r?.total ?? others.filter((x: number | null) => x !== null).length + 1 };
     }
+
+    const comparisonData = await categoryRank();
 
     // ─── PRO-ONLY queries ─────────────────────────────────────────────────
 
@@ -477,7 +477,7 @@ export async function GET(req: NextRequest) {
       }
 
       // Submit clicks and social link clicks
-      const [submitClicksRes, socialClicksRes, recordViewsRes, scoreSnapshotsRes, followsRes, pinsRes] = await Promise.all([
+      const [submitClicksRes, socialClicksRes, recordViewsRes, followsRes, pinsRes] = await Promise.all([
         subjectId
           ? supabase.from("submit_clicks").select("clicked_at, clicker_auth_user_id").eq("subject_id", subjectId)
           : Promise.resolve({ data: [] }),
@@ -487,7 +487,6 @@ export async function GET(req: NextRequest) {
         subjectId
           ? supabase.from("record_views").select("record_id, viewed_date").eq("subject_id", subjectId)
           : Promise.resolve({ data: [] }),
-        supabase.from("score_snapshots").select("subject_score, credibility_score, overall_score, week_start").eq("user_id", user.id).order("week_start", { ascending: true }).limit(13),
         subjectId
           ? supabase.from("record_follows").select("record_id").in("record_id", recordsAboutMe.map((r: any) => r.id))
           : Promise.resolve({ data: [] }),
@@ -499,7 +498,6 @@ export async function GET(req: NextRequest) {
       const submitClicks = (submitClicksRes as any).data || [];
       const socialClicks = (socialClicksRes as any).data || [];
       const recordViews = (recordViewsRes as any).data || [];
-      const scoreSnapshots = (scoreSnapshotsRes as any).data || [];
       const follows = (followsRes as any).data || [];
       const pins = (pinsRes as any).data || [];
 
@@ -593,68 +591,8 @@ export async function GET(req: NextRequest) {
         streakWeeks = Math.floor((Date.now() - lastDispute.getTime()) / (1000 * 60 * 60 * 24 * 7));
       }
 
-      // Reputation Health Score (0-100)
-      // 40% subject score (normalized to 100), 20% dispute win rate, 20% credibility quality, 10% engagement velocity, 10% streak
-      const subjectScoreNorm = Math.min(100, (Number(subjectScore?.subject_score ?? 0) / 10) * 100);
-      const disputeComponent = disputeResolutionRate ?? 50;
-      const credQuality = anonymityBreakdown.find(c => c.label === "Anonymity Granted")
-        ? Math.round((anonymityBreakdown.find(c => c.label === "Anonymity Granted")!.count / Math.max(1, totalSubmitted)) * 100)
-        : 50;
-      const velocityComponent = avgHoursToFirstVote !== null
-        ? Math.max(0, 100 - Math.min(100, avgHoursToFirstVote / 2.4))
-        : 50;
-      const streakComponent = Math.min(100, streakWeeks * 10);
-      const reputationHealthScore = Math.round(
-        subjectScoreNorm * 0.4 +
-        disputeComponent * 0.2 +
-        credQuality * 0.2 +
-        velocityComponent * 0.1 +
-        streakComponent * 0.1
-      );
-
-      // Market position — rank in category
-      let marketPosition: any = null;
-      if (category && subjectId) {
-        const { data: similarUsers } = await supabase
-          .from("user_accountdetails")
-          .select("user_id")
-          .ilike("job_title", `%${category}%`)
-          .limit(200);
-
-        if (similarUsers && similarUsers.length > 0) {
-          const { data: similarSubjects } = await supabase
-            .from("subjects")
-            .select("subject_uuid")
-            .in("owner_auth_user_id", similarUsers.map((u: any) => u.user_id));
-
-          if (similarSubjects && similarSubjects.length > 0) {
-            const { data: allScores } = await supabase
-              .from("subject_scores")
-              .select("subject_score")
-              .in("subject_uuid", similarSubjects.map((s: any) => s.subject_uuid));
-
-            if (allScores && allScores.length > 0) {
-              const scores = allScores.map((s: any) => Number(s.subject_score ?? 0)).sort((a, b) => b - a);
-              const myScore = Number(subjectScore?.subject_score ?? 0);
-              const rank = scores.findIndex(s => s <= myScore) + 1;
-              const topPct = Math.round((rank / scores.length) * 100);
-              const median = scores[Math.floor(scores.length / 2)];
-              const avgRecordVolume = totalRecordsAboutMe;
-              const categoryAvgDispute = disputeResolutionRate;
-              marketPosition = {
-                rank,
-                total: scores.length,
-                topPct,
-                category,
-                medianScore: median.toFixed(1),
-                myScore: myScore.toFixed(1),
-                avgRecordVolume,
-                categoryAvgDispute,
-              };
-            }
-          }
-        }
-      }
+      // Market position — rank in category (same as the comparison above)
+      const marketPosition = comparisonData;
 
       // Notification opt-in count (how many people want updates about records on your profile)
       const { count: notifOptIns } = await supabase
@@ -662,7 +600,7 @@ export async function GET(req: NextRequest) {
         .select("*", { count: "exact", head: true })
         .in("record_id", recordsAboutMe.map((r: any) => r.id));
 
-      // ── Competitor benchmarking by zip code ──
+      // ── Rank in your ZIP code (subject score only) ──
       let competitorBenchmark: any = null;
       const { data: mySubjectData } = await supabase
         .from("subjects")
@@ -670,39 +608,37 @@ export async function GET(req: NextRequest) {
         .eq("subject_uuid", subjectId)
         .single();
 
-      if (mySubjectData?.location) {
-        const zip = (mySubjectData.location.match(/\d{5}/) || [])[0] ?? null;
-        if (zip) {
-          const { data: nearbySubjects } = await supabase
-            .from("subjects")
-            .select("subject_uuid, owner_auth_user_id")
-            .ilike("location", `%${zip}%`)
-            .neq("subject_uuid", subjectId)
-            .limit(200);
+      const zip = mySubjectData?.location ? ((mySubjectData.location.match(/\d{5}/) || [])[0] ?? null) : null;
+      if (zip) {
+        const { data: nearbySubjects } = await supabase
+          .from("subjects")
+          .select("subject_uuid")
+          .ilike("location", `%${zip}%`)
+          .neq("subject_uuid", subjectId)
+          .limit(200);
+        const others = await scoresFor(supabase, (nearbySubjects ?? []).map((x: any) => x.subject_uuid), subjectId);
+        const r = rankAmong(mySubjectScore, others);
+        competitorBenchmark = { zipCode: zip, rankInZip: r?.rank ?? null, totalInZip: r?.total ?? others.filter((x: number | null) => x !== null).length + 1 };
+      }
 
-          if (nearbySubjects && nearbySubjects.length > 0) {
-            const { data: nearbyScores } = await supabase
-              .from("subject_scores")
-              .select("subject_score, subject_uuid")
-              .in("subject_uuid", nearbySubjects.map((s: any) => s.subject_uuid));
-
-            if (nearbyScores && nearbyScores.length > 0) {
-              const scores = nearbyScores.map((s: any) => Number(s.subject_score ?? 0)).sort((a, b) => b - a);
-              const myScore = Number(subjectScore?.subject_score ?? 0);
-              const avgScoreInZip = scores.reduce((a: number, b: number) => a + b, 0) / scores.length;
-              const rankInZip = scores.findIndex(s => s <= myScore) + 1;
-              const topPctInZip = Math.round((rankInZip / scores.length) * 100);
-              competitorBenchmark = {
-                zipCode: zip,
-                myScore,
-                avgScoreInZip: Math.round(avgScoreInZip * 10) / 10,
-                totalInZip: scores.length,
-                rankInZip,
-                topPctInZip,
-              };
-            }
-          }
-        }
+      // Records about you, last 13 weeks (new public records and new challenges per week)
+      const recordsByWeek: { week: string; newRecords: number; challenges: number }[] = [];
+      for (let i = 12; i >= 0; i--) {
+        const weekStart = new Date();
+        weekStart.setDate(weekStart.getDate() - weekStart.getDay() - i * 7);
+        weekStart.setHours(0, 0, 0, 0);
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekEnd.getDate() + 7);
+        const inWeek = (iso?: string | null) => {
+          if (!iso) return false;
+          const d = new Date(iso);
+          return d >= weekStart && d < weekEnd;
+        };
+        recordsByWeek.push({
+          week: weekStart.toISOString().split("T")[0],
+          newRecords: recordsAboutMe.filter((r: any) => inWeek(r.published_at)).length,
+          challenges: recordsAboutMe.filter((r: any) => inWeek(r.dispute_started_at)).length,
+        });
       }
 
       proData = {
@@ -737,11 +673,8 @@ export async function GET(req: NextRequest) {
         // Streak
         streakWeeks,
 
-        // Reputation health
-        reputationHealthScore,
-
-        // Score trajectory
-        scoreSnapshots,
+        // Records about you, by week
+        recordsByWeek,
 
         // Market position
         marketPosition,
@@ -767,14 +700,6 @@ export async function GET(req: NextRequest) {
       totalDebateStatements: debateStatements.length,
       totalSubmitted,
       totalRecordsAboutMe,
-
-      // Scores
-      credibilityScore: userScore?.credibility_score ?? null,
-      contributorScore: userScore?.contributor_score ?? null,
-      voterScore: userScore?.voter_score ?? null,
-      citizenScore: userScore?.citizen_score ?? null,
-      overallScore: userScore?.overall_score ?? null,
-      subjectScore: subjectScore?.subject_score ?? null,
 
       // Profile views
       totalProfileViews,

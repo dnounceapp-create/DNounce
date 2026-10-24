@@ -30,7 +30,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     .single();
   if (!data) return {};
   return {
-    title: `${data.title} | DNounce Blog`,
+    title: { absolute: `${data.title} | DNounce Blog` },
     description: data.description,
     openGraph: {
       title: data.title,
