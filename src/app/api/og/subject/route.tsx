@@ -2,6 +2,7 @@ import { ImageResponse } from "next/og";
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest } from "next/server";
 
+import { summarizeRecords } from "@/lib/outcome";
 export const runtime = "nodejs";
 
 const supabaseAdmin = createClient(
@@ -29,30 +30,27 @@ export async function GET(req: NextRequest) {
   const avatarUrl = subject.avatar_url ?? null;
 
   let bio: string | null = null;
-  let scores: any = null;
 
   if (subject.owner_auth_user_id) {
-    const [acctRes, scoresRes] = await Promise.all([
-      supabaseAdmin.from("user_accountdetails").select("bio").eq("user_id", subject.owner_auth_user_id).maybeSingle(),
-      supabaseAdmin.from("user_scores").select("overall_score, contributor_score, voter_score, citizen_score").eq("user_id", subject.owner_auth_user_id).maybeSingle(),
-    ]);
+    const acctRes = await supabaseAdmin.from("user_accountdetails").select("bio").eq("user_id", subject.owner_auth_user_id).maybeSingle();
     bio = acctRes.data?.bio ?? null;
-    scores = scoresRes.data ?? null;
   }
 
-  const [{ data: subjectScoreData }, { count: totalRecords }, { count: evidenceCount }, { count: opinionCount }] = await Promise.all([
-    supabaseAdmin.from("subject_scores").select("subject_score").eq("subject_uuid", id).maybeSingle(),
-    supabaseAdmin.from("records").select("id", { count: "exact", head: true }).eq("subject_id", id).in("status", ["published", "deletion_request", "debate", "voting", "decision"]),
-    supabaseAdmin.from("records").select("id", { count: "exact", head: true }).eq("subject_id", id).in("status", ["published", "deletion_request", "debate", "voting", "decision"]).ilike("ai_vendor_1_result", "%Anonymity Granted%"),
-    supabaseAdmin.from("records").select("id", { count: "exact", head: true }).eq("subject_id", id).in("status", ["published", "deletion_request", "debate", "voting", "decision"]).ilike("ai_vendor_1_result", "%Anonymity Not Granted%"),
-  ]);
-
+  // How their records turned out (replaces the old 0–100 scores). Public records only.
+  const { data: recs } = await supabaseAdmin
+    .from("records")
+    .select("status, final_outcome, dispute_started_at")
+    .eq("subject_id", id)
+    .eq("is_published", true)
+    .is("deleted_at", null);
+  const sum = summarizeRecords(recs ?? []);
+  const totalRecords = sum.total;
   const scoreList = [
-    { label: "Subject Score", value: subjectScoreData?.subject_score ?? null },
-    { label: "Overall Score", value: scores?.overall_score ?? null },
-    { label: "Contributor Score", value: scores?.contributor_score ?? null },
-    { label: "Voter Score", value: scores?.voter_score ?? null },
-    { label: "Citizen Score", value: scores?.citizen_score ?? null },
+    { label: "Public records", value: sum.total },
+    { label: "Challenged", value: sum.challenged },
+    { label: "Sided with them", value: sum.sidedWithThem },
+    { label: "Sided with the writer", value: sum.sidedWithWriter },
+    { label: "Ties", value: sum.ties },
   ];
 
   const logoUrl = `${process.env.NEXT_PUBLIC_SITE_URL || "https://dnounce.com"}/logo.png`;
@@ -127,7 +125,7 @@ export async function GET(req: NextRequest) {
 
           {/* Tabs row */}
           <div style={{ display: "flex", borderBottom: "1px solid #E5E7EB" }}>
-            {["Records About Me", "Reputations & Badges", "Social Media"].map((tab, i) => (
+            {["Records", "Badges", "Social media"].map((tab, i) => (
               <div key={tab} style={{ display: "flex", flex: 1, justifyContent: "center", padding: "8px 16px", fontSize: 13, fontWeight: i === 0 ? 600 : 400, color: i === 0 ? "#2563EB" : "#6B7280", borderBottom: i === 0 ? "2px solid #2563EB" : "2px solid transparent", marginBottom: -1 }}>
                 {tab}
               </div>

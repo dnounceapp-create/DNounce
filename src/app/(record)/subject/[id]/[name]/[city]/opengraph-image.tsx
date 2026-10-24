@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
 import { createClient } from "@supabase/supabase-js";
 
+import { summarizeRecords } from "@/lib/outcome";
 export const runtime = "nodejs";
 export const alt = "DNounce Subject Profile";
 export const size = { width: 1200, height: 630 };
@@ -63,33 +64,25 @@ export default async function SubjectOGImage({
   const loc = subject.location || "";
   const avatarUrl = subject.avatar_url ?? null;
 
-  // Fetch bio + scores
+  // Fetch bio
   let bio: string | null = null;
-  let scores: any = null;
-
   if (subject.owner_auth_user_id) {
-    const [acctRes, scoresRes] = await Promise.all([
-      supabaseAdmin
-        .from("user_accountdetails")
-        .select("bio")
-        .eq("user_id", subject.owner_auth_user_id)
-        .maybeSingle(),
-      supabaseAdmin
-        .from("user_scores")
-        .select("overall_score, contributor_score, voter_score, citizen_score")
-        .eq("user_id", subject.owner_auth_user_id)
-        .maybeSingle(),
-    ]);
+    const acctRes = await supabaseAdmin
+      .from("user_accountdetails")
+      .select("bio")
+      .eq("user_id", subject.owner_auth_user_id)
+      .maybeSingle();
     bio = acctRes.data?.bio ?? null;
-    scores = scoresRes.data ?? null;
   }
 
-  // Subject score
-  const { data: subjectScoreData } = await supabaseAdmin
-    .from("subject_scores")
-    .select("subject_score")
-    .eq("subject_uuid", id)
-    .maybeSingle();
+  // How their records turned out (replaces the old 0–100 scores). Public records only.
+  const { data: recs } = await supabaseAdmin
+    .from("records")
+    .select("status, final_outcome, dispute_started_at")
+    .eq("subject_id", id)
+    .eq("is_published", true)
+    .is("deleted_at", null);
+  const sum = summarizeRecords(recs ?? []);
 
   const logoUrl = `${process.env.NEXT_PUBLIC_SITE_URL || "https://dnounce.com"}/logo.png`;
 
@@ -238,12 +231,12 @@ export default async function SubjectOGImage({
           {/* Right: scores */}
           <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", gap: 16, minWidth: 200 }}>
             <div style={{ color: "#FFD700", fontSize: 13, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>
-              Reputation
+              How records turned out
             </div>
-            <ScorePill label="Subject Score" value={subjectScoreData?.subject_score ?? null} />
-            <ScorePill label="Overall Score" value={scores?.overall_score ?? null} />
-            <ScorePill label="Contributor" value={scores?.contributor_score ?? null} />
-            <ScorePill label="Voter Score" value={scores?.voter_score ?? null} />
+            <ScorePill label="Public records" value={sum.total} />
+            <ScorePill label="Challenged" value={sum.challenged} />
+            <ScorePill label="Sided with them" value={sum.sidedWithThem} />
+            <ScorePill label="Sided with the writer" value={sum.sidedWithWriter} />
           </div>
         </div>
       </div>

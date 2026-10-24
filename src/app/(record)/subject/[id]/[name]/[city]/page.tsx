@@ -30,6 +30,7 @@ import dynamic from "next/dynamic";
 
 
 import { outcomeLabel, outcomeChipClass } from "@/lib/outcome";
+import RecordOutcomeSummary from "@/components/profile/RecordOutcomeSummary";
 function getPlatformIcon(platformRaw: string) {
   const p = (platformRaw || "").toLowerCase();
   if (p === "instagram") return FaInstagram;
@@ -543,7 +544,7 @@ export default function SubjectProfilePage() {
           id, created_at, submitted_at, published_at, description,
           anonymity_status, ai_vendor_1_result, is_published, status,
           voting_ends_at, rating, category, record_type, record_alias,
-          contributor_display_name, contributor_identity_preference, final_outcome
+          contributor_display_name, contributor_identity_preference, final_outcome, dispute_started_at
         `)
         .eq("subject_id", subjectId)
         .in("status", ["published", "deletion_request", "debate", "voting", "decision"])
@@ -931,21 +932,8 @@ export default function SubjectProfilePage() {
                 </div>
               </div>
 
-              {/* RIGHT: Scores */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 text-center">
-                {[
-                  { label: "Subject Score", val: subjectScores?.subject_score },
-                  { label: "Overall Score", val: subjectScores?.overall_score },
-                  { label: "Contributor Score", val: subjectScores?.contributor_score },
-                  { label: "Voter Score", val: subjectScores?.voter_score },
-                  { label: "Citizen Score", val: subjectScores?.citizen_score },
-                ].map((s) => (
-                  <div key={s.label}>
-                    <p className="text-xl font-bold text-gray-900">{s.val != null ? s.val : "—"}</p>
-                    <p className="text-xs text-gray-600">{s.label}</p>
-                  </div>
-                ))}
-              </div>
+              {/* RIGHT: how their records turned out (replaces the old scores) */}
+              <RecordOutcomeSummary records={records} />
             </div>
 
             {/* Submit Record CTA */}

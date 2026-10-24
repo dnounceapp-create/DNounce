@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { QRCodeCanvas } from "qrcode.react";
 import { supabase } from "@/lib/supabaseClient";
+import RecordOutcomeSummary from "@/components/profile/RecordOutcomeSummary";
+import { demoStageToStatus, demoStageLabel } from "@/lib/outcome";
 import {
   User,
   Copy,
@@ -366,23 +368,10 @@ export default function SubjectDemoRealtorPage() {
                   </div>
                 </div>
 
-                {/* RIGHT: Scores */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 text-center">
-                  {[
-                    { label: "Subject Score", val: SCORES.subject_score },
-                    { label: "Overall Score", val: SCORES.overall_score },
-                    { label: "Contributor Score", val: SCORES.contributor_score },
-                    { label: "Voter Score", val: SCORES.voter_score },
-                    { label: "Citizen Score", val: SCORES.citizen_score },
-                  ].map((s) => (
-                    <div key={s.label}>
-                      <p className="text-xl font-bold text-gray-900">
-                        {s.val != null ? s.val : "—"}
-                      </p>
-                      <p className="text-xs text-gray-600">{s.label}</p>
-                    </div>
-                  ))}
-                </div>
+                {/* RIGHT: how their records turned out (replaces the old scores) */}
+                <RecordOutcomeSummary
+                  records={RECORDS.map((r: any) => ({ status: demoStageToStatus(r.stage), final_outcome: r.final_outcome ?? null }))}
+                />
               </div>
 
               {/* Submit Record CTA */}
@@ -463,7 +452,7 @@ export default function SubjectDemoRealtorPage() {
                           <div className="flex flex-wrap items-center gap-2">
                             <span className="text-xs text-gray-700">{r.category}</span>
                             <span className="text-xs rounded-full border bg-gray-50 px-2 py-1 text-gray-700">
-                              {r.stage}
+                              {demoStageLabel(r.stage)}
                             </span>
                             <span className="text-xs text-gray-500">
                               📅 {new Date(r.date).toLocaleDateString()}

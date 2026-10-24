@@ -76,3 +76,45 @@ export function publicStageLabel(status?: string | null, finalOutcome?: string |
 export function isPubliclyVisible(r?: { is_published?: boolean | null; published_at?: string | null; deleted_at?: string | null } | null): boolean {
   return !!r && !r.deleted_at && (r.is_published === true || !!r.published_at);
 }
+
+/**
+ * Demo pages store a stage as display text ("Voting in Progress", "Settled"...),
+ * sometimes using older names. Map it to the internal status so demos use the
+ * same labels and counts as real records.
+ */
+export function demoStageToStatus(text?: string | null): string {
+  const t = (text ?? "").toLowerCase();
+  if (t.includes("notified") || t.includes("preview")) return "subject_notified";
+  if (t.includes("disput") || t.includes("deletion") || t.includes("challeng")) return "deletion_request";
+  if (t.includes("debate") || t.includes("both sides")) return "debate";
+  if (t.includes("vot")) return "voting";
+  if (t.includes("settled") || t.includes("decision") || t.includes("result") || t.includes("kept") || t.includes("sided")) return "decision";
+  return "published";
+}
+
+/** Current public stage name for a demo stage text. */
+export function demoStageLabel(text?: string | null): string {
+  const status = demoStageToStatus(text);
+  return status === "subject_notified" ? "Private preview" : publicStageLabel(status);
+}
+
+/** Counts behind "How their records turned out" (replaces the old 0–100 scores). */
+export type OutcomeSummaryRecord = {
+  status?: string | null;
+  final_outcome?: string | null;
+  dispute_started_at?: string | null;
+};
+
+const PUBLIC_STATUSES = ["published", "deletion_request", "debate", "voting", "decision"];
+
+export function summarizeRecords(records: OutcomeSummaryRecord[]) {
+  const pub = records.filter((r) => PUBLIC_STATUSES.includes((r.status ?? "").toLowerCase()));
+  return {
+    total: pub.length,
+    challenged: pub.filter((r) => !!r.dispute_started_at || ["deletion_request", "debate", "voting", "decision"].includes((r.status ?? "").toLowerCase())).length,
+    sidedWithThem: pub.filter((r) => outcomeSide(r.final_outcome) === "subject").length,
+    sidedWithWriter: pub.filter((r) => outcomeSide(r.final_outcome) === "contributor").length,
+    ties: pub.filter((r) => isTie(r.final_outcome)).length,
+  };
+}
+

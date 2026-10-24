@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
+import RecordOutcomeSummary, { type OutcomeSummaryRecord } from "@/components/profile/RecordOutcomeSummary";
 type Scores = {
   subject_score: number | null;
   contributor_score: number | null;
@@ -186,6 +187,8 @@ export default function ReputationPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [contributorId, setContributorId] = useState<string | null>(null);
   const [badgeRecords, setBadgeRecords] = useState<Record<string, RecordRef[] | null>>({});
+  const [aboutMe, setAboutMe] = useState<OutcomeSummaryRecord[]>([]);
+  const [wroteByMe, setWroteByMe] = useState<OutcomeSummaryRecord[]>([]);
 
   async function loadData() {
     try {
@@ -196,6 +199,18 @@ export default function ReputationPage() {
       const { data: subjectRow } = await supabase.from("subjects").select("subject_uuid").eq("owner_auth_user_id", session.user.id).maybeSingle();
       const { data: contribRow } = await supabase.from("contributors").select("id").eq("auth_user_id", session.user.id).maybeSingle();
       if (contribRow?.id) setContributorId(contribRow.id);
+
+      // Plain outcome counts (replace the old 0–100 scores)
+      const [aboutRes, wroteRes] = await Promise.all([
+        subjectRow?.subject_uuid
+          ? supabase.from("records").select("status,final_outcome,dispute_started_at").eq("subject_id", subjectRow.subject_uuid)
+          : Promise.resolve({ data: [] as any[] }),
+        contribRow?.id
+          ? supabase.from("records").select("status,final_outcome,dispute_started_at").eq("contributor_id", contribRow.id)
+          : Promise.resolve({ data: [] as any[] }),
+      ]);
+      setAboutMe((aboutRes as any).data ?? []);
+      setWroteByMe((wroteRes as any).data ?? []);
 
       const [userScoresRes, subjectScoreRes, badgesRes] = await Promise.all([
         supabase.from("user_scores").select("contributor_score,voter_score,citizen_score,overall_score,updated_at").eq("user_id", session.user.id).maybeSingle(),
@@ -350,56 +365,24 @@ records = mapped.map((r, i) => ({ ...r, comment_count: counts[i] }));
           <div>
             <h1 className="text-2xl font-bold text-gray-900">My Reputation</h1>
             <p className="text-sm text-gray-500 mt-1">
-              Your scores and badges across all roles on DNounce.
+              How records about you, and records you wrote, turned out — plus your badges.
             </p>
           </div>
           <button onClick={handleRefresh} disabled={refreshing}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition">
             <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
-            {refreshing ? "Recalculating…" : "Recalculate"}
+            {refreshing ? "Refreshing…" : "Refresh"}
           </button>
         </div>
 
-        {/* Overall Score */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-6">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-6">
-            <div className="flex items-center gap-5">
-              <ScoreRing score={scores?.overall_score ?? null} />
-              <div>
-                <p className="text-3xl font-extrabold text-gray-900">
-                  {scores?.overall_score != null ? scores.overall_score : "—"}
-                  <span className="text-lg font-medium text-gray-400"> / 100</span>
-                </p>
-                <p className="text-sm font-medium text-gray-700">Overall Score</p>
-                <p className="text-xs text-gray-400 mt-0.5">Average of all roles you've participated in</p>
-              </div>
-            </div>
-            <div className="sm:ml-auto text-xs text-gray-500 bg-gray-50 border rounded-xl p-3 max-w-xs leading-relaxed">
-              Click <span className="font-semibold text-gray-700">Recalculate</span> to refresh your scores after new activity. Only roles with at least one contribution count toward your overall.
-            </div>
+        {/* How records turned out (replaces the old scores) */}
+        <div className="grid grid-cols-1 gap-4">
+          <div className="bg-white border border-gray-200 rounded-2xl p-6">
+            <RecordOutcomeSummary records={aboutMe} title="Records about you" themLabel="Sided with you" align="left" />
           </div>
-        </div>
-
-        {/* Score Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {SCORE_CARDS.map(card => {
-            const Icon = card.icon;
-            const score = scores?.[card.key] ?? null;
-            return (
-              <div key={card.key} className="bg-white border border-gray-200 rounded-2xl p-5">
-                <div className="flex items-start justify-between gap-3 mb-4">
-                  <div className="flex items-center gap-2">
-                    <Icon className={`w-5 h-5 ${card.color} shrink-0`} />
-                    <span className="font-semibold text-gray-900 text-sm">{card.label}</span>
-                  </div>
-                  <ScoreRing score={score} />
-                </div>
-                <ScoreBar score={score} />
-                <p className="text-xs text-gray-500 mt-2">{card.desc}</p>
-                {score === null && <p className="text-xs text-gray-400 mt-1 italic">No activity yet in this role.</p>}
-              </div>
-            );
-          })}
+          <div className="bg-white border border-gray-200 rounded-2xl p-6">
+            <RecordOutcomeSummary records={wroteByMe} title="Records you wrote" themLabel="Sided with the other person" writerLabel="Sided with you" align="left" />
+          </div>
         </div>
 
         {/* Badges */}
