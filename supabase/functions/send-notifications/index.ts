@@ -17,16 +17,16 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 type Theme = { label: string; color: string; soft: string; icon: string };
 
 const THEMES: Record<string, Theme> = {
-  record:    { label: "New record",      color: "#2563EB", soft: "#EFF6FF", icon: "📝" },
-  challenge: { label: "Challenge",       color: "#D97706", soft: "#FFFBEB", icon: "⚖️" },
+  record:    { label: "New on your profile",      color: "#2563EB", soft: "#EFF6FF", icon: "📝" },
+  challenge: { label: "Your record",       color: "#D97706", soft: "#FFFBEB", icon: "⚖️" },
   bothsides: { label: "Both sides",      color: "#0891B2", soft: "#ECFEFF", icon: "💬" },
   vote:      { label: "Community vote",  color: "#7C3AED", soft: "#F5F3FF", icon: "🗳️" },
   results:   { label: "Results",         color: "#4F46E5", soft: "#EEF2FF", icon: "📣" },
-  account:   { label: "Your account",    color: "#059669", soft: "#ECFDF5", icon: "✅" },
-  billing:   { label: "Billing",         color: "#111827", soft: "#F3F4F6", icon: "💳" },
+  account:   { label: "Your profile",    color: "#059669", soft: "#ECFDF5", icon: "✅" },
+  billing:   { label: "Your plan",         color: "#111827", soft: "#F3F4F6", icon: "💳" },
   badge:     { label: "New badge",       color: "#C026D3", soft: "#FDF4FF", icon: "🏅" },
   heads_up:  { label: "Heads up",        color: "#DC2626", soft: "#FEF2F2", icon: "⚠️" },
-  activity:  { label: "Activity",        color: "#0EA5E9", soft: "#F0F9FF", icon: "🔔" },
+  activity:  { label: "Update",        color: "#0EA5E9", soft: "#F0F9FF", icon: "🔔" },
 };
 
 function themeFor(type: string): Theme {
@@ -73,41 +73,16 @@ function callout(html: string, theme: Theme) {
   </table>`;
 }
 
-/** "What happens next" steps. The current step is highlighted. */
-function timeline(steps: { title: string; text: string }[], current: number, theme: Theme) {
-  const rows = steps
-    .map((s, i) => {
-      const done = i < current;
-      const now = i === current;
-      const dotBg = now ? theme.color : done ? "#9CA3AF" : "#FFFFFF";
-      const dotBorder = now ? theme.color : "#D1D5DB";
-      const dotText = now || done ? "#FFFFFF" : "#9CA3AF";
-      return `
-      <tr>
-        <td width="34" valign="top" style="padding:0 0 14px;">
-          <div style="width:24px;height:24px;line-height:24px;border-radius:12px;background:${dotBg};border:1px solid ${dotBorder};text-align:center;font-family:${FONT};font-size:12px;font-weight:700;color:${dotText};">${i + 1}</div>
-        </td>
-        <td valign="top" style="padding:2px 0 14px;font-family:${FONT};">
-          <div style="font-size:14px;font-weight:600;color:${now ? theme.color : "#111827"};">${s.title}${now ? ` <span style="font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:${theme.color};">· Now</span>` : ""}</div>
-          <div style="font-size:13px;line-height:20px;color:#6B7280;">${s.text}</div>
-        </td>
-      </tr>`;
-    })
+/** A short, friendly list (optional heading). */
+function tips(heading: string, items: string[]) {
+  const head = heading
+    ? `<div style="font-family:${FONT};font-size:15px;font-weight:700;color:#111827;margin:0 0 10px;">${heading}</div>`
+    : "";
+  const rows = items
+    .map((t) => `<tr><td width="22" valign="top" style="font-family:${FONT};font-size:15px;line-height:24px;color:#9CA3AF;">•</td><td style="font-family:${FONT};font-size:15px;line-height:24px;color:#374151;padding-bottom:6px;">${t}</td></tr>`)
     .join("");
-  return `
-  <div style="margin:28px 0 4px;padding-top:24px;border-top:1px solid #E5E7EB;">
-    <div style="font-family:${FONT};font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#6B7280;margin-bottom:14px;">What happens next</div>
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${rows}</table>
-  </div>`;
+  return `<div style="margin:24px 0 8px;">${head}<table role="presentation" cellpadding="0" cellspacing="0" border="0">${rows}</table></div>`;
 }
-
-const LIFECYCLE = [
-  { title: "Private preview", text: "The person it's about can read it privately for 24 hours." },
-  { title: "Public", text: "The record goes public. The person it's about can challenge it once." },
-  { title: "Both sides", text: "If it's challenged, both people get 3 days to share their side, with evidence." },
-  { title: "Community vote", text: "For 2 days, people read both stories and pick who they side with — with a reason." },
-  { title: "Results", text: "A week later, the result shows on the record. The record always stays up." },
-];
 
 function layout(opts: {
   theme: Theme;
@@ -153,14 +128,14 @@ function layout(opts: {
               ${body}
             </td></tr>
             <tr><td style="padding:8px 36px 32px;">
-              <p style="margin:24px 0 0;font-family:${FONT};font-size:15px;line-height:24px;color:#374151;">Thanks for being part of DNounce,<br><strong style="color:#111827;">The DNounce Team</strong></p>
+              <p style="margin:24px 0 0;font-family:${FONT};font-size:15px;line-height:24px;color:#374151;">— The DNounce team</p>
             </td></tr>
           </table>
         </td></tr>
 
         <!-- Trust note -->
         <tr><td style="padding:20px 8px 0;font-family:${FONT};font-size:12px;line-height:18px;color:#6B7280;text-align:center;">
-          🔒 DNounce will never ask for your password or payment details by email. If you're unsure about a link, go to <a href="${APP_URL}" style="color:#4B5563;">dnounce.com</a> yourself and sign in.
+          We'll never ask for your password by email. Not sure a link is real? Just go to <a href="${APP_URL}" style="color:#4B5563;">dnounce.com</a> and sign in.
         </td></tr>
 
         <!-- Footer -->
@@ -169,7 +144,7 @@ function layout(opts: {
           <a href="${APP_URL}/legal#privacy" style="color:#6B7280;text-decoration:none;">Privacy</a> &nbsp;·&nbsp;
           <a href="${APP_URL}/legal#terms" style="color:#6B7280;text-decoration:none;">Terms</a> &nbsp;·&nbsp;
           <a href="${settings}" style="color:#6B7280;text-decoration:none;">Email settings</a>
-          <br>You're getting this email because you have a DNounce account.
+          <br>You're getting this because you have a DNounce account.
           <br>© ${year} DNounce · New York, NY
         </td></tr>
 
@@ -190,8 +165,7 @@ function toText(headline: string, firstName: string, lines: string[], link?: { l
     ...lines,
     ...(link ? ["", `${link.label}: ${link.href}`] : []),
     "",
-    "Thanks for being part of DNounce,",
-    "The DNounce Team",
+    "— The DNounce team",
     "",
     `Email settings: ${APP_URL}/dashboard/settings/notifications`,
   ].join("\n");
@@ -266,138 +240,143 @@ Deno.serve(async (req) => {
         return new Response("Record not found", { status: 200 });
       }
       const who = writer === "the writer" ? "Someone" : writer;
-      const category = record.category ? ` about your work as a ${esc(record.category)}` : "";
-      subject = `${who} wrote a record about you`;
+      subject = `${who} shared an experience about you`;
       headline = `${esc(who)} shared an experience about you`;
-      preheader = "You can read it privately for the next 24 hours, before it goes public.";
-      link = { label: "Read it privately", href: recordUrl! };
+      preheader = "You get a private first look before anyone else.";
+      link = { label: "Read it now", href: recordUrl! };
       body =
-        para(`${esc(who)} wrote a record about you on DNounce${category}. You're the first to know.`) +
-        callout(`<strong>🔒 Private for 24 hours.</strong> Only you can see it right now. After that it goes public, and you can share your side.`, theme) +
-        button(recordUrl!, "Read it privately →", theme.color) +
-        timeline(LIFECYCLE, 0, theme) +
-        para(`<span style="font-size:13px;color:#6B7280;">Record ID: ${esc(record.id)}. To check this email is real, go to dnounce.com yourself and look the record up.</span>`);
+        para("You get a private first look. For the next 24 hours, only you can see it — then it goes public on your profile.") +
+        button(recordUrl!, "Read it now", theme.color) +
+        tips("If something doesn't look right", [
+          "Once it's public, you can tell your side of the story.",
+          "People will hear from both of you before they decide who they side with.",
+          "The record always shows both sides, so the full story is there for everyone."
+        ]);
       textLines = [
-        `${who} wrote a record about you on DNounce${record.category ? ` about your work as a ${record.category}` : ""}.`,
-        "Only you can see it for the next 24 hours. After that it goes public, and you can share your side or challenge it.",
-        "If you challenge it, you both get 3 days to share your side, then the community votes. The record always stays up.",
+        `${who} shared an experience about you on DNounce.`,
+        "You get a private first look. For the next 24 hours, only you can see it — then it goes public on your profile.",
+        "If something doesn't look right, you can tell your side once it's public.",
       ];
 
     } else if (type === "stage_4_contributor" && notification.record_id) {
-      subject = notification.title || "Your record was challenged";
-      headline = esc(subject);
-      preheader = "Both sides opens in 24 hours. Here's what to expect.";
-      link = { label: "See your record", href: recordUrl! };
+      const { subject: person } = await recordNames(notification.record_id);
+      const who = person === "the person it's about" ? "The person you wrote about" : person;
+      subject = `${who} sees things differently`;
+      headline = `${esc(who)} wants to share their side`;
+      preheader = "Your record stays up. Here's what happens next.";
+      link = { label: "View your record", href: recordUrl! };
       body =
-        para(esc(notification.body || "The person your record is about sees things differently and challenged it.")) +
-        callout(`<strong>Your record stays up</strong> whatever happens. Now's a great time to gather anything that backs up your side — messages, receipts, photos.`, theme) +
-        button(recordUrl!, "See your record →", theme.color) +
-        timeline([
-          { title: "Challenged", text: "Both sides opens in 24 hours." },
-          { title: "Both sides", text: "You both get 3 days to share your side, with evidence." },
-          ...LIFECYCLE.slice(3),
-        ], 0, theme);
+        para(`${esc(who)} challenged your record. That's okay — your record stays up, and you'll both get a fair chance to be heard.`) +
+        tips("What happens next", [
+          "Tomorrow, you'll both have 3 days to share your side.",
+          "Then the community reads both stories and votes.",
+          "We'll email you when the results are in.",
+        ]) +
+        callout("<strong>Tip:</strong> Have messages, receipts or photos? Now's a great time to gather them.", theme) +
+        button(recordUrl!, "View your record", theme.color);
       textLines = [
-        notification.body || "The person your record is about sees things differently and challenged it.",
-        "In 24 hours you both get 3 days to share your side. Then the community votes for 2 days, and the result shows a week later.",
-        "Your record stays up whatever happens.",
+        `${who} challenged your record. That's okay — your record stays up, and you'll both get a fair chance to be heard.`,
+        "Tomorrow, you'll both have 3 days to share your side. Then the community reads both stories and votes. We'll email you when the results are in.",
+        "Tip: have messages, receipts or photos? Now's a great time to gather them.",
       ];
 
     } else if (type === "verdict_countdown" && notification.record_id) {
-      subject = "Results come out tomorrow";
-      headline = "The results come out tomorrow";
-      preheader = "The community has voted. Here's when you'll see where people landed.";
-      link = { label: "See the record", href: recordUrl! };
+      subject = "Results are coming tomorrow";
+      headline = "Results are coming tomorrow";
+      preheader = "Voting has closed. We'll let you know the moment they're in.";
+      link = { label: "View the record", href: recordUrl! };
       body =
-        para("The community vote on a record you're part of is closed, and the results go live tomorrow.") +
-        callout("Set a reminder — you'll get another email the moment they're out.", theme) +
-        button(recordUrl!, "See the record →", theme.color);
-      textLines = ["The community vote on a record you're part of is closed. The results go live tomorrow."];
+        para("Voting has closed on a record you're part of. We'll email you the moment the results are in.") +
+        button(recordUrl!, "View the record", theme.color);
+      textLines = ["Voting has closed on a record you're part of. We'll email you the moment the results are in."];
 
     } else if (type === "verdict_announced" && notification.record_id) {
       const { record, writer, subject: person } = await recordNames(notification.record_id);
       const result = outcomeSentence(record?.final_outcome, writer, person);
       subject = "The results are in";
-      headline = "The results are in";
-      preheader = result ?? "See where the community landed.";
+      headline = "The community has spoken";
+      preheader = result ?? "See how it turned out.";
       link = { label: "See the results", href: recordUrl! };
       body =
-        para("The community has weighed in on a record you're part of.") +
+        para("The votes are counted on a record you're part of.") +
         (result
-          ? callout(`<div style="font-size:12px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:${theme.color};margin-bottom:4px;">Result</div><div style="font-size:18px;font-weight:700;color:#111827;">${esc(result)}</div>`, theme)
-          : callout("Nobody voted on this one, so there's no result label. Both sides are still there for anyone to read.", theme)) +
-        para("The record stays up, together with both sides and the reasons people gave.") +
-        button(recordUrl!, "See the results →", theme.color);
+          ? callout(`<div style="font-size:18px;font-weight:700;color:#111827;">${esc(result)}</div>`, theme)
+          : callout("Nobody voted on this one, so there's no result to show.", theme)) +
+        para("The record stays up with both sides, so anyone can see the full story.") +
+        button(recordUrl!, "See the results", theme.color);
       textLines = [
-        "The community has weighed in on a record you're part of.",
-        result ? `Result: ${result}` : "Nobody voted on this one, so there's no result label.",
-        "The record stays up, together with both sides and the reasons people gave.",
+        "The votes are counted on a record you're part of.",
+        result ?? "Nobody voted on this one, so there's no result to show.",
+        "The record stays up with both sides, so anyone can see the full story.",
       ];
 
     } else if (type === "verdict_community_unlock" && notification.record_id) {
-      subject = "The conversation is open again";
-      headline = "You can join the conversation again";
-      preheader = "It's been a week since the results came out.";
-      link = { label: "Go to the record", href: recordUrl! };
+      subject = "Comments are open again";
+      headline = "Comments are open again";
+      preheader = "You can join the conversation on this record.";
+      link = { label: "Join the conversation", href: recordUrl! };
       body =
-        para("It's been a week since the results came out. You can now post and reply in the record's community section.") +
-        button(recordUrl!, "Go to the record →", theme.color);
-      textLines = ["It's been a week since the results came out. You can now post and reply in the record's community section."];
+        para("It's been a week since the results came out, so you can comment on this record again.") +
+        button(recordUrl!, "Join the conversation", theme.color);
+      textLines = ["It's been a week since the results came out, so you can comment on this record again."];
 
     } else if (type === "claim_approved") {
-      subject = "Your profile is officially yours";
-      headline = "Welcome — your profile is officially yours 🎉";
-      preheader = "You can now manage your page and respond to records about you.";
-      link = { label: "Go to your dashboard", href: `${APP_URL}/dashboard/myrecords` };
+      subject = `Welcome, ${firstName === "there" ? "your profile is ready" : firstName} 🎉`;
+      headline = "It's official — this profile is yours";
+      preheader = "Make it your own in a few minutes.";
+      link = { label: "Go to my profile", href: `${APP_URL}/dashboard/myrecords` };
       body =
-        para("Great news: we've confirmed it's you. Your DNounce profile now belongs to you.") +
-        callout(`<strong>Here's what you can do now</strong><br>• Update your profile details<br>• Read every record about you<br>• Share your side, or challenge a record you see differently`, theme) +
-        button(`${APP_URL}/dashboard/myrecords`, "Go to your dashboard →", theme.color);
+        para("We've confirmed it's you. Here's what you can do now:") +
+        tips("", [
+          "Add your photo, bio and links so people know who you are.",
+          "See every record about you in one place.",
+          "Tell your side whenever you need to.",
+        ]) +
+        button(`${APP_URL}/dashboard/myrecords`, "Go to my profile", theme.color);
       textLines = [
-        "We've confirmed it's you. Your DNounce profile now belongs to you.",
-        "You can update your profile, read every record about you, and share your side or challenge a record.",
+        "We've confirmed it's you — this profile is yours.",
+        "Add your photo, bio and links, see every record about you, and tell your side whenever you need to.",
       ];
 
     } else if (type === "claim_rejected") {
-      subject = "An update on your profile claim";
-      headline = "We couldn't confirm your claim this time";
+      subject = "We couldn't confirm your profile";
+      headline = "We couldn't confirm it's you — yet";
       preheader = "Here's why, and how to try again.";
-      link = { label: "Contact support", href: `${APP_URL}/dashboard/settings/support` };
+      link = { label: "Get help", href: `${APP_URL}/dashboard/settings/support` };
       body =
-        para("Thanks for claiming your profile. We weren't able to approve it this time.") +
-        callout(`<strong>Reason:</strong> ${esc(notification.body || "No reason was given.")}`, theme) +
-        para("If you think we got it wrong, or you have more to show us, our team is happy to take another look.") +
-        button(`${APP_URL}/dashboard/settings/support`, "Contact support →", theme.color);
+        para("Thanks for claiming your profile. We weren't able to confirm it this time.") +
+        callout(`<strong>Why:</strong> ${esc(notification.body || "We didn't have enough to confirm it.")}`, theme) +
+        para("Think we got it wrong? Send us a message and a real person will take another look.") +
+        button(`${APP_URL}/dashboard/settings/support`, "Get help", theme.color);
       textLines = [
-        "We weren't able to approve your profile claim this time.",
-        `Reason: ${notification.body || "No reason was given."}`,
-        "If you think we got it wrong, contact support and we'll take another look.",
+        "We weren't able to confirm your profile claim this time.",
+        `Why: ${notification.body || "We didn't have enough to confirm it."}`,
+        "Think we got it wrong? Send us a message and a real person will take another look.",
       ];
 
     } else if (type === "trial_ending") {
       subject = "Your free trial ends in 3 days";
       headline = "Your free trial ends in 3 days";
-      preheader = "No action needed to keep going.";
-      link = { label: "Manage your plan", href: `${APP_URL}/dashboard/settings/billing` };
+      preheader = "Nothing to do if you'd like to keep going.";
+      link = { label: "Manage my plan", href: `${APP_URL}/dashboard/settings/billing` };
       body =
-        (notification.body ? para(esc(notification.body)) : "") +
-        callout("<strong>Want to keep going?</strong> No action needed — your plan continues automatically when the trial ends.<br><strong>Prefer to cancel?</strong> You can do it any time before then from Billing.", theme) +
-        button(`${APP_URL}/dashboard/settings/billing`, "Manage your plan →", theme.color);
+        para("Hope you're enjoying it! If you'd like to keep going, there's nothing to do — your plan continues automatically.") +
+        para("Changed your mind? You can cancel any time before then.") +
+        button(`${APP_URL}/dashboard/settings/billing`, "Manage my plan", theme.color);
       textLines = [
-        notification.body || "",
-        "No action is needed to keep going — your plan continues automatically when the trial ends.",
-        "You can cancel any time before then from Billing.",
-      ].filter(Boolean);
+        "If you'd like to keep going, there's nothing to do — your plan continues automatically.",
+        "Changed your mind? You can cancel any time before then.",
+      ];
 
     } else {
       // Every other notification: same design, using the title and body the database wrote.
-      subject = notification.title || "An update from DNounce";
+      subject = notification.title || "Something new on DNounce";
       headline = esc(subject);
-      preheader = notification.body || "There's something new on DNounce.";
-      link = recordUrl ? { label: "View the record", href: recordUrl } : { label: "Open DNounce", href: `${APP_URL}/dashboard` };
+      preheader = notification.body || "There's something new for you on DNounce.";
+      link = recordUrl ? { label: "Take a look", href: recordUrl } : { label: "Open DNounce", href: `${APP_URL}/dashboard` };
       body =
         para(esc(notification.body || "There's something new for you on DNounce.")) +
-        button(link.href, `${link.label} →`, theme.color);
+        button(link.href, link.label, theme.color);
       textLines = [notification.body || "There's something new for you on DNounce."];
     }
 
