@@ -98,7 +98,7 @@ function prettyStage(status?: string | null) {
   const s = (status || "").toLowerCase();
   if (s === "published") return "Public";
   if (s === "deletion_request") return "Challenged";
-  if (s === "debate") return "Both sides";
+  if (s === "debate") return "Debate";
   if (s === "voting") return "Community vote";
   if (s === "decision") return "Results";
   return "Public";
@@ -1010,7 +1010,7 @@ export default function SubjectProfilePage() {
                       <option value="">All stages</option>
                       <option value="published">Public</option>
                       <option value="deletion_request">Challenged</option>
-                      <option value="debate">Both sides</option>
+                      <option value="debate">Debate</option>
                       <option value="voting">Community vote</option>
                       <option value="decision">Results</option>
                     </select>

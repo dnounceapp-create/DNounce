@@ -196,7 +196,7 @@ export default function FollowingRecordsPage() {
       "Private preview": (r) => r.stage === 2,
       Public: (r) => r.stage === 3,
       Challenged: (r) => r.stage === 4,
-      "Both sides": (r) => r.stage === 5,
+      "Debate": (r) => r.stage === 5,
       "Community vote": (r) => r.stage === 6,
       Anonymity: (r) => r.stage === 7,
 "Sided with the writer": (r) => outcomeSide(r.outcome) === "contributor",
@@ -274,7 +274,7 @@ export default function FollowingRecordsPage() {
               <option>Private preview</option>
               <option>Public</option>
               <option>Challenged</option>
-              <option>Both sides</option>
+              <option>Debate</option>
               <option>Community vote</option>
               <option value="Sided with the writer">Most sided with the writer</option>
               <option value="Sided with the person it's about">Most sided with the person it's about</option>

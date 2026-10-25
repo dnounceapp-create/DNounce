@@ -315,7 +315,7 @@ export default function MyRecordsPage() {
       "Private preview": (record) => record.stage === 2,
       Public: (record) => record.stage === 3,
       Challenged: (record) => record.stage === 4,
-      "Both sides": (record) => record.stage === 5,
+      "Debate": (record) => record.stage === 5,
       "Community vote": (record) => record.stage === 6,
       Anonymity: (record) => record.stage === 7,
 "Sided with the writer": (record) => outcomeSide(record.outcome) === "contributor",
@@ -542,7 +542,7 @@ export default function MyRecordsPage() {
               <option>Private preview</option>
               <option>Public</option>
               <option>Challenged</option>
-              <option>Both sides</option>
+              <option>Debate</option>
               <option>Community vote</option>
               <option value="Sided with the writer">Most sided with the writer</option>
               <option value="Sided with the person it's about">Most sided with the person it's about</option>

@@ -29,7 +29,7 @@ describe("demo stages", () => {
   it("maps old stage names to current ones", () => {
     expect(demoStageToStatus("Voting in Progress")).toBe("voting");
     expect(demoStageLabel("Record in Dispute")).toBe("Challenged");
-    expect(demoStageLabel("Debate Phase")).toBe("Both sides");
+    expect(demoStageLabel("Debate Phase")).toBe("Debate");
     expect(demoStageLabel("Subject Notified")).toBe("Private preview");
     expect(demoStageLabel("Record Published")).toBe("Public");
   });

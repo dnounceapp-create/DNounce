@@ -19,7 +19,7 @@ type Theme = { label: string; color: string; soft: string; icon: string };
 const THEMES: Record<string, Theme> = {
   record:    { label: "New on your profile",      color: "#2563EB", soft: "#EFF6FF", icon: "📝" },
   challenge: { label: "Your record",       color: "#D97706", soft: "#FFFBEB", icon: "⚖️" },
-  bothsides: { label: "Both sides",      color: "#0891B2", soft: "#ECFEFF", icon: "💬" },
+  bothsides: { label: "Debate",          color: "#0891B2", soft: "#ECFEFF", icon: "💬" },
   vote:      { label: "Community vote",  color: "#7C3AED", soft: "#F5F3FF", icon: "🗳️" },
   results:   { label: "Results",         color: "#4F46E5", soft: "#EEF2FF", icon: "📣" },
   account:   { label: "Your profile",    color: "#059669", soft: "#ECFDF5", icon: "✅" },
@@ -229,6 +229,12 @@ Deno.serve(async (req) => {
     const firstName = accountData?.first_name || "there";
 
     const type: string = notification.type || "";
+
+    // No email for these (KJ, Oct 25): the writer already sees a confirmation screen
+    // after submitting, and the person who challenged knows their challenge opens the debate.
+    // The in-app notification still shows.
+    const NO_EMAIL = new Set(["stage_2_contributor", "stage_5_subject"]);
+    if (NO_EMAIL.has(type)) return new Response("No email for this type", { status: 200 });
     const theme = themeFor(type);
     const recordUrl = notification.record_id ? `${APP_URL}/record/${notification.record_id}` : null;
 
@@ -246,8 +252,8 @@ Deno.serve(async (req) => {
     const otherName = info?.role === "writer" ? personName : writerName;
     // Add a full stop unless the text already ends with one ("Devon A.").
     const dot = (t: string) => (/[.!?]$/.test(t.trim()) ? t.trim() : `${t.trim()}.`);
-    const BOTH_SIDES = tips("How Both sides works", [
-      "Both sides is a 3-day space where the writer and the person it's about each tell their side.",
+    const BOTH_SIDES = tips("How the debate works", [
+      "The debate lasts 3 days. The writer and the person it's about each tell their side.",
       "You can reply to each other and add photos, messages or receipts. Posts can't be edited once shared.",
       "Everyone else can read along. Then the community votes on who they side with.",
     ]);
@@ -274,6 +280,11 @@ Deno.serve(async (req) => {
         ],
         btn: "Read it now",
         href: recordUrl!,
+        extra: tips("Your options", [
+          "<strong>Read it first.</strong> Only you can see it for now.",
+          "<strong>See it differently?</strong> Once it's public, you can challenge it. That opens a 3-day debate where you and the writer each tell your side.",
+          "<strong>The community decides.</strong> After the debate, people who don't know either of you read both sides and vote. DNounce never takes sides.",
+        ]),
       });
 
     } else if (type === "stage_2_contributor" && info?.record) {
@@ -294,8 +305,7 @@ Deno.serve(async (req) => {
         pre: "The person it's about can now challenge it, once.",
         head: "Your record is now public",
         paras: [
-          `Your record about ${personName} is live on their profile, and it will stay up.`,
-          "The person it's about can challenge it once, and a challenge never removes it.",
+          `Your record about ${personName} is live on their profile.`,
         ],
         btn: "View your record",
         href: recordUrl!,
@@ -308,7 +318,7 @@ Deno.serve(async (req) => {
         head: "The record about you is now public",
         paras: [
           "Anyone can read it on your profile now.",
-          "If you see things differently, you can challenge it once. That opens Both sides, so people hear from both of you.",
+          `If you want to challenge the record, you can. Challenging it starts a debate with ${dot(writerName === "the writer" ? "the writer" : writerName)}`,
         ],
         btn: "View the record",
         href: recordUrl!,
@@ -318,11 +328,11 @@ Deno.serve(async (req) => {
     } else if (type === "stage_4_contributor" && info?.record) {
       simple({
         subj: `${personName} challenged your record`,
-        pre: "Your record stays up. Here's what happens next.",
-        head: "Your record stays up",
+        pre: "Here's what happens next.",
+        head: `${personName} challenged your record`,
         paras: [
-          `${personName} has challenged your record. It stays up exactly as written.`,
-          "Both sides opens in 24 hours, and you can tell your side there.",
+          `${personName} sees things differently and challenged your record.`,
+          "The debate starts in 24 hours, and you can tell your side there.",
         ],
         btn: "See your record",
         href: recordUrl!,
@@ -331,11 +341,11 @@ Deno.serve(async (req) => {
 
     } else if (type === "stage_5_contributor" && info?.record) {
       simple({
-        subj: "Both sides is open. Tell your side.",
+        subj: "The debate is open. Tell your side.",
         pre: "You have 3 days to post, reply and add evidence.",
-        head: "Both sides is open",
+        head: "The debate is open",
         paras: [
-          `Both sides is now open on your record about ${personName}, and it runs for 3 days.`,
+          `The debate is now open on your record about ${personName}, and it runs for 3 days.`,
           `This is your space to tell your side in your own words and reply to ${dot(personName)} Once you post, it can't be edited, so take your time.`,
         ],
         btn: "Tell your side",
@@ -345,11 +355,11 @@ Deno.serve(async (req) => {
 
     } else if (type === "stage_5_subject" && info?.record) {
       simple({
-        subj: "Both sides is open. Tell your side.",
+        subj: "The debate is open. Tell your side.",
         pre: "You have 3 days to post, reply and add evidence.",
-        head: "Both sides is open on your challenge",
+        head: "Your debate is open",
         paras: [
-          "Your challenge has opened Both sides on the record about you.",
+          "Your challenge has opened a debate on the record about you.",
           `This is your 3-day space to tell your side in your own words and reply to ${dot(writerName)} Once you post, it can't be edited, so take your time.`,
         ],
         btn: "Tell your side",
@@ -362,12 +372,12 @@ Deno.serve(async (req) => {
       const hoursLeft = endsMs !== null && endsMs > 0 ? Math.max(1, Math.round(endsMs / 3_600_000)) : null;
       const who = otherName === "the writer" ? "The writer" : otherName === "the person it's about" ? "The person it's about" : otherName;
       simple({
-        subj: `${who} just replied in Both sides`,
+        subj: `${who} replied in your debate`,
         pre: "You can reply until the 3 days end.",
-        head: "New reply in Both sides",
+        head: "New reply in your debate",
         paras: [
-          `${who} just posted in Both sides. Nothing you've posted has changed, and you can reply until the 3 days end.`,
-          ...(hoursLeft ? [`Both sides closes in about ${hoursLeft} hour${hoursLeft === 1 ? "" : "s"}.`] : []),
+          `${who} just posted in the debate. You can reply until the 3 days end.`,
+          ...(hoursLeft ? [`The debate closes in about ${hoursLeft} hour${hoursLeft === 1 ? "" : "s"}.`] : []),
         ],
         btn: "Read and reply",
         href: recordUrl!,
@@ -375,72 +385,67 @@ Deno.serve(async (req) => {
 
     } else if ((type === "stage_6_subject" || type === "stage_6_contributor") && info?.record) {
       simple({
-        subj: "Both sides has closed. Voting starts.",
+        subj: "The debate has closed. Voting starts.",
         pre: "The community now reads both sides and picks a side.",
         head: "The community votes now",
         paras: [
-          `Both sides is now closed on the record about ${personName}.`,
+          `The debate is now closed on the record about ${personName}.`,
           "Signed-in members will read both stories and pick who they side with, with a short reason. Voting runs for 2 days.",
-          "You can't vote on this record, and it stays up with both sides visible.",
+          "You can't vote on this record, but you can watch."
         ],
-        btn: "Read both sides",
+        btn: "Read the debate",
         href: recordUrl!,
       });
 
     } else if ((type === "voting_ended_subject" || type === "voting_ended_contributor") && info?.record) {
+      const mine = info.role === "writer" ? "your record" : "the record about you";
       simple({
         subj: "Voting is closed. Results are coming.",
-        pre: "Thanks for taking part. Results come out in about a week.",
+        pre: "Results come out in about a week.",
         head: "Voting is closed",
         paras: [
-          `Voting on the record about ${personName} has closed. Thank you to everyone who took part.`,
-          "Results come out in about a week, and the record stays up with both sides and every vote reason visible.",
+          `Voting on ${mine} has closed.`,
+          "Results come out in about a week. We'll email you when they're in.",
         ],
-        btn: "Read both sides",
+        btn: "Read the debate",
+        href: recordUrl!,
+      });
+
+    } else if (type === "voting_ended_voter" && info?.record) {
+      simple({
+        subj: "Thanks for voting",
+        pre: "Voting has closed. Results come out in about a week.",
+        head: "Thanks for voting",
+        paras: [
+          `Voting on the record about ${personName} has closed. Thanks for taking the time to read both sides and give your reason.`,
+          "Results come out in about a week.",
+        ],
+        btn: "View the record",
         href: recordUrl!,
       });
 
     } else if (type === "verdict_announced" && info?.record) {
+      // The email never gives the result away — people open the record to see it.
       const raw = (info.record.final_outcome ?? "").toLowerCase();
-      const side = raw === "tie" ? "tie" : raw === "keep" || raw.includes("contributor") ? "writer" : raw === "delete" || raw.includes("subject") ? "subject" : null;
-      const mine = info.role === "writer" ? "your record" : "the record about you";
-      const winnerIsMe = side !== null && side !== "tie" && side === info.role;
-      const winnerName = side === "writer" ? writerName : personName;
-      if (side === null) {
+      const hasResult = raw !== "";
+      const mine = info.role === "writer" ? "your record" : info.role === "subject" ? "the record about you" : `the record about ${personName}`;
+      if (!hasResult) {
         simple({
           subj: "No votes were cast",
-          pre: "There's no result this time. The record stays up.",
+          pre: "There's no result this time.",
           head: "No result this time",
-          paras: [`Nobody voted on ${mine}, so there's no result. The record stays up, with both sides visible.`],
+          paras: [`Nobody voted on ${mine}, so there's no result this time.`],
           btn: "Read the record",
-          href: recordUrl!,
-        });
-      } else if (side === "tie") {
-        simple({
-          subj: "It's a tie. The community is split.",
-          pre: "People saw both sides and disagreed.",
-          head: "It's a tie",
-          paras: [`The community is split right down the middle on ${mine}. The record stays up, with both sides and every vote reason visible.`],
-          btn: "See the results",
-          href: recordUrl!,
-        });
-      } else if (winnerIsMe) {
-        simple({
-          subj: "The community sided with you",
-          pre: "See what people said, and why.",
-          head: "Most people sided with you",
-          paras: [`The community has voted on ${mine}, and most people sided with you. The record stays up, with both sides and every vote reason visible.`],
-          btn: "See the results",
           href: recordUrl!,
         });
       } else {
         simple({
           subj: "The results are in",
-          pre: "Here's how the community voted, and why.",
-          head: `Most people sided with ${winnerName}`,
+          pre: "Find out who the community sided with.",
+          head: "The community has spoken",
           paras: [
-            `Voting on ${mine} is over, and most people sided with ${winnerName}. The record stays up, with both sides and every vote reason visible.`,
-            "Read the reasons to see why people voted the way they did.",
+            `The votes are counted on ${mine}.`,
+            "Who did people side with, and why? Your results are waiting.",
           ],
           btn: "See the results",
           href: recordUrl!,
@@ -454,7 +459,7 @@ Deno.serve(async (req) => {
         head: "The conversation is open to you",
         paras: [
           `Now that the results are out, you can comment on the record about ${personName}.`,
-          "Keep it firsthand and stick to what happened. The record and the results stay as they are.",
+          "Keep it firsthand and stick to what happened.",
         ],
         btn: "Join the conversation",
         href: recordUrl!,
@@ -532,7 +537,7 @@ Deno.serve(async (req) => {
         head: "There's news on a record you follow",
         paras: [
           notification.body || "There's something new on a record you follow.",
-          "You're getting this because you follow or pinned this record. Your own records aren't affected.",
+          "You're getting this because you follow or pinned this record.",
         ],
         btn: "See what's new",
         href: recordUrl ?? `${APP_URL}/dashboard/following`,
@@ -545,7 +550,7 @@ Deno.serve(async (req) => {
         head: "Your profile is claimed",
         paras: [
           "Your claim has been approved, so the profile is now linked to your account.",
-          "You can see every record about you, and if you see one differently, challenge it to tell your side in Both sides. Records stay up either way.",
+          "You can see every record about you. If you see one differently, challenge it to start a debate and tell your side.",
         ],
         btn: "Go to your profile",
         href: `${APP_URL}/dashboard/myrecords`,

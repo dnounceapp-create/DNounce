@@ -725,7 +725,7 @@ export default function HomePage() {
               { step: "01", title: "Submit a record", desc: "Share your experience clearly and honestly. Your first name and last initial will appear publicly on the record." },
               { step: "02", title: "Private preview", desc: "We let the person know right away. Only they can see it for 24 hours." },
               { step: "03", title: "Public", desc: "The record goes live, and they can reply." },
-              { step: "04", title: "Challenge", desc: "If they see it differently, they can challenge it. Then you both get 3 days to share your side." },
+              { step: "04", title: "Challenge", desc: "If they see it differently, they can challenge it. That opens a 3-day debate where you both share your side." },
               { step: "05", title: "Strangers weigh in", desc: "For 2 days, people who've never met either of them read both stories and take a side." },
               { step: "06", title: "See who won people over", desc: "The record stays up, now with the community's answer on it — or a tie, if they couldn't decide." },
             ].map((item) => (

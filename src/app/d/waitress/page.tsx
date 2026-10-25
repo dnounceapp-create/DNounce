@@ -154,7 +154,7 @@ const STAGES = [
   { id: 2, label: "Private preview" },
   { id: 3, label: "Public" },
   { id: 4, label: "Challenged" },
-  { id: 5, label: "Both sides" },
+  { id: 5, label: "Debate" },
   { id: 6, label: "Community vote" },
   { id: 7, label: "Results" },
 ];
@@ -824,12 +824,12 @@ export default function DemoWaitressPage() {
       <section className="border border-gray-200 rounded-2xl p-4 sm:p-5 bg-white">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <div className="text-sm font-semibold text-gray-900">Both sides</div>
+            <div className="text-sm font-semibold text-gray-900">Debate</div>
             <div className="text-[11px] text-gray-500">Posts can&apos;t be edited once shared.</div>
           </div>
           <div className="inline-flex items-center gap-2 rounded-full border bg-white px-3 py-1 text-xs font-semibold text-gray-700 shrink-0">
             <span className="h-2 w-2 rounded-full bg-gray-400" />
-            Both sides have finished
+            The debate has ended
           </div>
         </div>
 
@@ -854,7 +854,7 @@ export default function DemoWaitressPage() {
         </div>
 
         <div className="mt-3 text-xs text-gray-500">
-          Both sides have had their say. This part is read-only now.
+          The debate is over. This part is read-only now.
         </div>
       </section>
 

@@ -189,7 +189,7 @@ export default function NotificationsPage() {
           </Section>
 
           {/* ── Debate ── */}
-          <Section title="When both sides share" subtitle="For records you wrote, or ones about you.">
+          <Section title="Debates" subtitle="For records you wrote, or ones about you.">
             <ToggleRow
               title="New opening statement"
               desc="When the other person first shares their side."
@@ -250,7 +250,7 @@ export default function NotificationsPage() {
           <Section title="Pinned Records" subtitle="Records you've pinned to your dashboard.">
             <ToggleRow
               title="Record challenged"
-              desc="When a record you pinned is challenged and both sides start sharing."
+              desc="When a record you pinned is challenged and the debate starts."
               value={prefs.notif_pinned_debate_open}
               onChange={set("notif_pinned_debate_open")}
             />
@@ -278,7 +278,7 @@ export default function NotificationsPage() {
           <Section title="Following Records" subtitle="Records you're following for updates.">
             <ToggleRow
               title="Record challenged"
-              desc="When a record you follow is challenged and both sides start sharing."
+              desc="When a record you follow is challenged and the debate starts."
               value={prefs.notif_following_debate_open}
               onChange={set("notif_following_debate_open")}
             />

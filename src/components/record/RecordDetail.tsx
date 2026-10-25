@@ -116,11 +116,11 @@ function debateNoPostMessage(args: { viewerRole: ViewerRole; status: string; sta
   const s = normalizeStatus(status);
 
   if (stage >= 6) {
-    return "Both sides have had their say. This part is read-only now.";
+    return "The debate is over. This part is read-only now.";
   }
 
   if (stage === 5 && s !== "debate") {
-    return "Both sides isn't open right now.";
+    return "The debate isn't open right now.";
   }
 
   if (viewerRole === "public") {
@@ -1525,7 +1525,7 @@ function DebateTimerChip({ debateEndsAt, serverOffsetMs }: { debateEndsAt: strin
 
       if (remaining <= 0) {
         setEnded(true);
-        setLabel("Both sides have finished");
+        setLabel("The debate has ended");
         return;
       }
 
@@ -1961,7 +1961,7 @@ function DebateCourtroom({
     <section className="border border-gray-200 rounded-2xl p-4 sm:p-5 bg-white">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="text-sm font-semibold text-gray-900">Both sides</div>
+          <div className="text-sm font-semibold text-gray-900">Debate</div>
           <div className="text-[11px] text-gray-500">Posts can&apos;t be edited once shared.</div>
         </div>
 

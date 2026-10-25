@@ -65,7 +65,7 @@ export function publicStageLabel(status?: string | null, finalOutcome?: string |
   switch ((status ?? "").toLowerCase()) {
     case "published": return "Public";
     case "deletion_request": return "Challenged";
-    case "debate": return "Both sides";
+    case "debate": return "Debate";
     case "voting": return "Community vote";
     case "decision": return outcomeLabel(finalOutcome) ?? "Results";
     default: return "Public";

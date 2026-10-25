@@ -4,7 +4,7 @@ export const stageShortLabel: Record<number, string> = {
   2: "Private preview",
   3: "Public",
   4: "Challenged",
-  5: "Both sides",
+  5: "Debate",
   6: "Community vote",
   7: "Results",
 };
@@ -130,7 +130,7 @@ export const stageConfig: Record<number, StageConfig> = {
   4: {
     label: "Challenged",
     happens:
-      "The person it's about challenged it, and the writer has been told. In 24 hours, both sides get to talk.",
+      "The person it's about challenged it, and the writer has been told. In 24 hours, the debate starts.",
     timeline: {
       summary: "As soon as it's challenged",
       start: "onSubjectDispute",
@@ -146,7 +146,7 @@ export const stageConfig: Record<number, StageConfig> = {
   },
 
   5: {
-    label: "Both sides",
+    label: "Debate",
     happens:
       "The writer and the person it's about each share their side, with evidence if they have it.",
     timeline: {
@@ -169,7 +169,7 @@ export const stageConfig: Record<number, StageConfig> = {
     happens:
       "People read both sides and pick who they side with, with a short reason.",
     timeline: {
-      summary: "2 days, right after both sides finish",
+      summary: "2 days, right after the debate ends",
       start: "onDebateEnd",
       durationHours: 48,
     },
