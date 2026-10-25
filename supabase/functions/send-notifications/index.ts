@@ -171,27 +171,33 @@ function toText(headline: string, firstName: string, lines: string[], link?: { l
   ].join("\n");
 }
 
-/* Same wording as the site (src/lib/outcome.ts). */
-const TIE_LABEL = "It's a tie — the community is split right down the middle";
-function outcomeSentence(raw: string | null | undefined, writer: string, subject: string): string | null {
-  const s = (raw ?? "").toLowerCase();
-  if (s === "tie") return TIE_LABEL;
-  if (s === "keep" || s.includes("contributor")) return `Most people sided with ${writer}`;
-  if (s === "delete" || s.includes("subject")) return `Most people sided with ${subject}`;
-  return null;
-}
-
-async function recordNames(recordId: string) {
+async function recordInfo(recordId: string, userId: string) {
   const { data } = await supabase
     .from("records")
-    .select("id, category, final_outcome, contributor_display_name, contributor_identity_preference, subject:subjects(name)")
+    .select("id, category, rating, final_outcome, debate_ends_at, contributor_id, subject_id, contributor_display_name, contributor_identity_preference")
     .eq("id", recordId)
     .maybeSingle();
-  const showWriter = !!data && data.contributor_identity_preference !== false && !!data.contributor_display_name;
+  const rec = data as any;
+  let subjectName = "the person it's about";
+  let subjectOwner: string | null = null;
+  let writerUser: string | null = null;
+  if (rec?.subject_id) {
+    const { data: s } = await supabase.from("subjects").select("name, owner_auth_user_id").eq("subject_uuid", rec.subject_id).maybeSingle();
+    if ((s as any)?.name) subjectName = (s as any).name;
+    subjectOwner = (s as any)?.owner_auth_user_id ?? null;
+  }
+  if (rec?.contributor_id) {
+    const { data: c } = await supabase.from("contributors").select("user_id").eq("id", rec.contributor_id).maybeSingle();
+    writerUser = (c as any)?.user_id ?? null;
+  }
+  const showWriter = !!rec && rec.contributor_identity_preference !== false && !!rec.contributor_display_name;
+  const role: "writer" | "subject" | "other" =
+    userId && userId === writerUser ? "writer" : userId && userId === subjectOwner ? "subject" : "other";
   return {
-    record: data as any,
-    writer: showWriter ? String(data!.contributor_display_name) : "the writer",
-    subject: ((data as any)?.subject?.name as string) || "the person it's about",
+    record: rec,
+    writer: showWriter ? String(rec.contributor_display_name) : "the writer",
+    subject: subjectName,
+    role,
   };
 }
 
@@ -233,151 +239,359 @@ Deno.serve(async (req) => {
     let textLines: string[] = [];
     let link: { label: string; href: string } | undefined;
 
-    if (type === "stage_2_subject" && notification.record_id) {
-      const { record, writer } = await recordNames(notification.record_id);
-      if (!record) {
-        console.error("Record fetch failed. record_id:", notification.record_id);
-        return new Response("Record not found", { status: 200 });
+    // Wording drafted by Runable (Oct 25), checked against how the site works.
+    const info = notification.record_id ? await recordInfo(notification.record_id, notification.user_id) : null;
+    const writerName = info?.writer ?? "the writer";
+    const personName = info?.subject ?? "the person it's about";
+    const otherName = info?.role === "writer" ? personName : writerName;
+    // Add a full stop unless the text already ends with one ("Devon A.").
+    const dot = (t: string) => (/[.!?]$/.test(t.trim()) ? t.trim() : `${t.trim()}.`);
+    const BOTH_SIDES = tips("How Both sides works", [
+      "Both sides is a 3-day space where the writer and the person it's about each tell their side.",
+      "You can reply to each other and add photos, messages or receipts. Posts can't be edited once shared.",
+      "Everyone else can read along. Then the community votes on who they side with.",
+    ]);
+    const GUIDELINES = `${APP_URL}/?section=guidelines-section`;
+    const simple = (opts: { subj: string; pre: string; head: string; paras: string[]; btn: string; href: string; extra?: string }) => {
+      subject = opts.subj;
+      preheader = opts.pre;
+      headline = esc(opts.head);
+      link = { label: opts.btn, href: opts.href };
+      body = opts.paras.map((p) => para(esc(p))).join("") + (opts.extra ?? "") + button(opts.href, opts.btn, theme.color);
+      textLines = [...opts.paras];
+    };
+
+    if (type === "stage_2_subject" && info?.record) {
+      const who = writerName === "the writer" ? "Someone" : writerName;
+      const stars = info.record.rating ? ` and gave it ${info.record.rating} out of 10 stars` : "";
+      simple({
+        subj: "A record was written about you",
+        pre: "You get the first look. It's private for 24 hours.",
+        head: "You have a new record to read",
+        paras: [
+          `You get the first look. ${who} wrote a firsthand record about working with you${stars}.`,
+          "You can read it privately for the next 24 hours, then it goes public on your profile.",
+        ],
+        btn: "Read it now",
+        href: recordUrl!,
+      });
+
+    } else if (type === "stage_2_contributor" && info?.record) {
+      simple({
+        subj: "Your record is in",
+        pre: `We let ${personName} know. It goes public in 24 hours.`,
+        head: "Thanks — your record is in",
+        paras: [
+          `We let ${personName} know about your record. They get a private first look for 24 hours, then it goes public on their profile.`,
+        ],
+        btn: "View your record",
+        href: recordUrl!,
+      });
+
+    } else if (type === "stage_3_contributor" && info?.record) {
+      simple({
+        subj: "Your record is live",
+        pre: "The person it's about can now challenge it, once.",
+        head: "Your record is now public",
+        paras: [
+          `Your record about ${personName} is live on their profile, and it will stay up.`,
+          "The person it's about can challenge it once, and a challenge never removes it.",
+        ],
+        btn: "View your record",
+        href: recordUrl!,
+      });
+
+    } else if (type === "stage_3_subject" && info?.record) {
+      simple({
+        subj: "The record about you is now public",
+        pre: "See it differently? You can challenge it once.",
+        head: "The record about you is now public",
+        paras: [
+          "Anyone can read it on your profile now.",
+          "If you see things differently, you can challenge it once. That opens Both sides, so people hear from both of you.",
+        ],
+        btn: "View the record",
+        href: recordUrl!,
+        extra: BOTH_SIDES,
+      });
+
+    } else if (type === "stage_4_contributor" && info?.record) {
+      simple({
+        subj: `${personName} challenged your record`,
+        pre: "Your record stays up. Here's what happens next.",
+        head: "Your record stays up",
+        paras: [
+          `${personName} has challenged your record. It stays up exactly as written.`,
+          "Both sides opens in 24 hours, and you can tell your side there.",
+        ],
+        btn: "See your record",
+        href: recordUrl!,
+        extra: BOTH_SIDES,
+      });
+
+    } else if (type === "stage_5_contributor" && info?.record) {
+      simple({
+        subj: "Both sides is open. Tell your side.",
+        pre: "You have 3 days to post, reply and add evidence.",
+        head: "Both sides is open",
+        paras: [
+          `Both sides is now open on your record about ${personName}, and it runs for 3 days.`,
+          `This is your space to tell your side in your own words and reply to ${dot(personName)} Once you post, it can't be edited, so take your time.`,
+        ],
+        btn: "Tell your side",
+        href: recordUrl!,
+        extra: BOTH_SIDES,
+      });
+
+    } else if (type === "stage_5_subject" && info?.record) {
+      simple({
+        subj: "Both sides is open. Tell your side.",
+        pre: "You have 3 days to post, reply and add evidence.",
+        head: "Both sides is open on your challenge",
+        paras: [
+          "Your challenge has opened Both sides on the record about you.",
+          `This is your 3-day space to tell your side in your own words and reply to ${dot(writerName)} Once you post, it can't be edited, so take your time.`,
+        ],
+        btn: "Tell your side",
+        href: recordUrl!,
+        extra: BOTH_SIDES,
+      });
+
+    } else if (type === "debate_reply" && info?.record) {
+      const endsMs = info.record.debate_ends_at ? new Date(info.record.debate_ends_at).getTime() - Date.now() : null;
+      const hoursLeft = endsMs !== null && endsMs > 0 ? Math.max(1, Math.round(endsMs / 3_600_000)) : null;
+      const who = otherName === "the writer" ? "The writer" : otherName === "the person it's about" ? "The person it's about" : otherName;
+      simple({
+        subj: `${who} just replied in Both sides`,
+        pre: "You can reply until the 3 days end.",
+        head: "New reply in Both sides",
+        paras: [
+          `${who} just posted in Both sides. Nothing you've posted has changed, and you can reply until the 3 days end.`,
+          ...(hoursLeft ? [`Both sides closes in about ${hoursLeft} hour${hoursLeft === 1 ? "" : "s"}.`] : []),
+        ],
+        btn: "Read and reply",
+        href: recordUrl!,
+      });
+
+    } else if ((type === "stage_6_subject" || type === "stage_6_contributor") && info?.record) {
+      simple({
+        subj: "Both sides has closed. Voting starts.",
+        pre: "The community now reads both sides and picks a side.",
+        head: "The community votes now",
+        paras: [
+          `Both sides is now closed on the record about ${personName}.`,
+          "Signed-in members will read both stories and pick who they side with, with a short reason. Voting runs for 2 days.",
+          "You can't vote on this record, and it stays up with both sides visible.",
+        ],
+        btn: "Read both sides",
+        href: recordUrl!,
+      });
+
+    } else if ((type === "voting_ended_subject" || type === "voting_ended_contributor") && info?.record) {
+      simple({
+        subj: "Voting is closed. Results are coming.",
+        pre: "Thanks for taking part. Results come out in about a week.",
+        head: "Voting is closed",
+        paras: [
+          `Voting on the record about ${personName} has closed. Thank you to everyone who took part.`,
+          "Results come out in about a week, and the record stays up with both sides and every vote reason visible.",
+        ],
+        btn: "Read both sides",
+        href: recordUrl!,
+      });
+
+    } else if (type === "verdict_announced" && info?.record) {
+      const raw = (info.record.final_outcome ?? "").toLowerCase();
+      const side = raw === "tie" ? "tie" : raw === "keep" || raw.includes("contributor") ? "writer" : raw === "delete" || raw.includes("subject") ? "subject" : null;
+      const mine = info.role === "writer" ? "your record" : "the record about you";
+      const winnerIsMe = side !== null && side !== "tie" && side === info.role;
+      const winnerName = side === "writer" ? writerName : personName;
+      if (side === null) {
+        simple({
+          subj: "No votes were cast",
+          pre: "There's no result this time. The record stays up.",
+          head: "No result this time",
+          paras: [`Nobody voted on ${mine}, so there's no result. The record stays up, with both sides visible.`],
+          btn: "Read the record",
+          href: recordUrl!,
+        });
+      } else if (side === "tie") {
+        simple({
+          subj: "It's a tie. The community is split.",
+          pre: "People saw both sides and disagreed.",
+          head: "It's a tie",
+          paras: [`The community is split right down the middle on ${mine}. The record stays up, with both sides and every vote reason visible.`],
+          btn: "See the results",
+          href: recordUrl!,
+        });
+      } else if (winnerIsMe) {
+        simple({
+          subj: "The community sided with you",
+          pre: "See what people said, and why.",
+          head: "Most people sided with you",
+          paras: [`The community has voted on ${mine}, and most people sided with you. The record stays up, with both sides and every vote reason visible.`],
+          btn: "See the results",
+          href: recordUrl!,
+        });
+      } else {
+        simple({
+          subj: "The results are in",
+          pre: "Here's how the community voted, and why.",
+          head: `Most people sided with ${winnerName}`,
+          paras: [
+            `Voting on ${mine} is over, and most people sided with ${winnerName}. The record stays up, with both sides and every vote reason visible.`,
+            "Read the reasons to see why people voted the way they did.",
+          ],
+          btn: "See the results",
+          href: recordUrl!,
+        });
       }
-      const who = writer === "the writer" ? "Someone" : writer;
-      subject = `${who} shared an experience about you`;
-      headline = `${esc(who)} shared an experience about you`;
-      preheader = "You get a private first look before anyone else.";
-      link = { label: "Read it now", href: recordUrl! };
-      body =
-        para("You get a private first look. For the next 24 hours, only you can see it — then it goes public on your profile.") +
-        button(recordUrl!, "Read it now", theme.color) +
-        tips("If something doesn't look right", [
-          "Once it's public, you can tell your side of the story.",
-          "People will hear from both of you before they decide who they side with.",
-          "The record always shows both sides, so the full story is there for everyone."
-        ]);
-      textLines = [
-        `${who} shared an experience about you on DNounce.`,
-        "You get a private first look. For the next 24 hours, only you can see it — then it goes public on your profile.",
-        "If something doesn't look right, you can tell your side once it's public.",
-      ];
 
-    } else if (type === "stage_4_contributor" && notification.record_id) {
-      const { subject: person } = await recordNames(notification.record_id);
-      const who = person === "the person it's about" ? "The person you wrote about" : person;
-      subject = `${who} sees things differently`;
-      headline = `${esc(who)} wants to share their side`;
-      preheader = "Your record stays up. Here's what happens next.";
-      link = { label: "View your record", href: recordUrl! };
-      body =
-        para(`${esc(who)} challenged your record. That's okay — your record stays up, and you'll both get a fair chance to be heard.`) +
-        tips("What happens next", [
-          "Tomorrow, you'll both have 3 days to share your side.",
-          "Then the community reads both stories and votes.",
-          "We'll email you when the results are in.",
-        ]) +
-        callout("<strong>Tip:</strong> Have messages, receipts or photos? Now's a great time to gather them.", theme) +
-        button(recordUrl!, "View your record", theme.color);
-      textLines = [
-        `${who} challenged your record. That's okay — your record stays up, and you'll both get a fair chance to be heard.`,
-        "Tomorrow, you'll both have 3 days to share your side. Then the community reads both stories and votes. We'll email you when the results are in.",
-        "Tip: have messages, receipts or photos? Now's a great time to gather them.",
-      ];
+    } else if (type === "seven_day_unlock" && info?.record) {
+      simple({
+        subj: "You can comment on this record now",
+        pre: "The results are out, and the conversation is open to you.",
+        head: "The conversation is open to you",
+        paras: [
+          `Now that the results are out, you can comment on the record about ${personName}.`,
+          "Keep it firsthand and stick to what happened. The record and the results stay as they are.",
+        ],
+        btn: "Join the conversation",
+        href: recordUrl!,
+      });
 
-    } else if (type === "verdict_countdown" && notification.record_id) {
-      subject = "Results are coming tomorrow";
-      headline = "Results are coming tomorrow";
-      preheader = "Voting has closed. We'll let you know the moment they're in.";
-      link = { label: "View the record", href: recordUrl! };
-      body =
-        para("Voting has closed on a record you're part of. We'll email you the moment the results are in.") +
-        button(recordUrl!, "View the record", theme.color);
-      textLines = ["Voting has closed on a record you're part of. We'll email you the moment the results are in."];
+    } else if (type === "voter_reply" && recordUrl) {
+      simple({
+        subj: "Someone replied to your vote",
+        pre: "Take a look, and reply if you like.",
+        head: "A reply to your vote",
+        paras: [`Someone replied to the reason you gave for your vote on the record about ${personName}.`],
+        btn: "See the reply",
+        href: recordUrl,
+      });
 
-    } else if (type === "verdict_announced" && notification.record_id) {
-      const { record, writer, subject: person } = await recordNames(notification.record_id);
-      const result = outcomeSentence(record?.final_outcome, writer, person);
-      subject = "The results are in";
-      headline = "The community has spoken";
-      preheader = result ?? "See how it turned out.";
-      link = { label: "See the results", href: recordUrl! };
-      body =
-        para("The votes are counted on a record you're part of.") +
-        (result
-          ? callout(`<div style="font-size:18px;font-weight:700;color:#111827;">${esc(result)}</div>`, theme)
-          : callout("Nobody voted on this one, so there's no result to show.", theme)) +
-        para("The record stays up with both sides, so anyone can see the full story.") +
-        button(recordUrl!, "See the results", theme.color);
-      textLines = [
-        "The votes are counted on a record you're part of.",
-        result ?? "Nobody voted on this one, so there's no result to show.",
-        "The record stays up with both sides, so anyone can see the full story.",
-      ];
+    } else if (type === "voter_flagged") {
+      simple({
+        subj: "Your vote reason was flagged",
+        pre: "Your vote still counts for now.",
+        head: "Your vote reason was flagged",
+        paras: [
+          `Other members flagged the reason you gave for your vote on the record about ${personName} as careless.`,
+          "Your vote still counts unless enough members flag it.",
+        ],
+        btn: "Read the guidelines",
+        href: GUIDELINES,
+        extra: tips("", [
+          "Every vote needs a short reason.",
+          "Careless reasons can be flagged by other members.",
+          "Enough flags removes the vote from the count.",
+        ]),
+      });
 
-    } else if (type === "verdict_community_unlock" && notification.record_id) {
-      subject = "Comments are open again";
-      headline = "Comments are open again";
-      preheader = "You can join the conversation on this record.";
-      link = { label: "Join the conversation", href: recordUrl! };
-      body =
-        para("It's been a week since the results came out, so you can comment on this record again.") +
-        button(recordUrl!, "Join the conversation", theme.color);
-      textLines = ["It's been a week since the results came out, so you can comment on this record again."];
+    } else if (type === "voter_convicted") {
+      simple({
+        subj: "Your vote was removed from the count",
+        pre: "Here's why, and what it means for your badge.",
+        head: "Your vote was removed",
+        paras: [
+          `Enough members flagged your reason on the record about ${personName} as careless, so your vote has been removed from the count.`,
+          "This only affects your vote, not any records. Your profile now shows a Lost voting rights badge.",
+        ],
+        btn: "Read the guidelines",
+        href: GUIDELINES,
+        extra: tips("", [
+          "Every vote needs a short, specific reason.",
+          "Enough careless flags removes a vote from the count.",
+        ]),
+      });
+
+    } else if (type === "badge_earned") {
+      const badge = String(notification.title || "").split("—").pop()?.replace(/^[^A-Za-z]+/, "").trim() || "a new";
+      const WHY: Record<string, string> = {
+        "Top Writer": "writing records that hold up — almost all of them were never challenged, or most people sided with you",
+        "Well Regarded": "records about you holding up really well with the community",
+        "Top Community Member": "comments that people find helpful",
+        "Top Voter": "vote reasons that people find helpful",
+        "Rising Star": "a record that got the community talking",
+        "Fan Favorite": "posts that people have only reacted to positively",
+      };
+      const why = WHY[badge];
+      simple({
+        subj: `You earned the ${badge} badge`,
+        pre: "It now shows on your profile.",
+        head: `You earned the ${badge} badge`,
+        paras: [why ? `You've earned the ${badge} badge for ${why}. It now shows on your profile, next to your name.` : (notification.body || `You've earned the ${badge} badge. It now shows on your profile.`)],
+        btn: "See your badges",
+        href: `${APP_URL}/dashboard/reputation`,
+      });
+
+    } else if (/^(pinned|following)_/.test(type)) {
+      simple({
+        subj: notification.title || "New activity on a record you follow",
+        pre: notification.body || "There's news on a record you follow.",
+        head: "There's news on a record you follow",
+        paras: [
+          notification.body || "There's something new on a record you follow.",
+          "You're getting this because you follow or pinned this record. Your own records aren't affected.",
+        ],
+        btn: "See what's new",
+        href: recordUrl ?? `${APP_URL}/dashboard/following`,
+      });
 
     } else if (type === "claim_approved") {
-      subject = `Welcome, ${firstName === "there" ? "your profile is ready" : firstName} 🎉`;
-      headline = "It's official — this profile is yours";
-      preheader = "Make it your own in a few minutes.";
-      link = { label: "Go to my profile", href: `${APP_URL}/dashboard/myrecords` };
-      body =
-        para("We've confirmed it's you. Here's what you can do now:") +
-        tips("", [
-          "Add your photo, bio and links so people know who you are.",
-          "See every record about you in one place.",
-          "Tell your side whenever you need to.",
-        ]) +
-        button(`${APP_URL}/dashboard/myrecords`, "Go to my profile", theme.color);
-      textLines = [
-        "We've confirmed it's you — this profile is yours.",
-        "Add your photo, bio and links, see every record about you, and tell your side whenever you need to.",
-      ];
+      simple({
+        subj: "Your profile is claimed",
+        pre: "It's yours to manage on DNounce.",
+        head: "Your profile is claimed",
+        paras: [
+          "Your claim has been approved, so the profile is now linked to your account.",
+          "You can see every record about you, and if you see one differently, challenge it to tell your side in Both sides. Records stay up either way.",
+        ],
+        btn: "Go to your profile",
+        href: `${APP_URL}/dashboard/myrecords`,
+      });
 
     } else if (type === "claim_rejected") {
-      subject = "We couldn't confirm your profile";
-      headline = "We couldn't confirm it's you — yet";
-      preheader = "Here's why, and how to try again.";
-      link = { label: "Get help", href: `${APP_URL}/dashboard/settings/support` };
-      body =
-        para("Thanks for claiming your profile. We weren't able to confirm it this time.") +
-        callout(`<strong>Why:</strong> ${esc(notification.body || "We didn't have enough to confirm it.")}`, theme) +
-        para("Think we got it wrong? Send us a message and a real person will take another look.") +
-        button(`${APP_URL}/dashboard/settings/support`, "Get help", theme.color);
-      textLines = [
-        "We weren't able to confirm your profile claim this time.",
-        `Why: ${notification.body || "We didn't have enough to confirm it."}`,
-        "Think we got it wrong? Send us a message and a real person will take another look.",
-      ];
+      simple({
+        subj: "We couldn't approve your claim",
+        pre: "Here's why, and what you can do next.",
+        head: "We couldn't approve your claim",
+        paras: [
+          `We couldn't approve your profile claim. Reason: ${dot(notification.body || "we didn't have enough to confirm it")}`,
+          "If you have more details, send us a message and we'll take another look.",
+        ],
+        btn: "Contact support",
+        href: `${APP_URL}/dashboard/settings/support`,
+      });
 
     } else if (type === "trial_ending") {
-      subject = "Your free trial ends in 3 days";
-      headline = "Your free trial ends in 3 days";
-      preheader = "Nothing to do if you'd like to keep going.";
-      link = { label: "Manage my plan", href: `${APP_URL}/dashboard/settings/billing` };
-      body =
-        para("Hope you're enjoying it! If you'd like to keep going, there's nothing to do — your plan continues automatically.") +
-        para("Changed your mind? You can cancel any time before then.") +
-        button(`${APP_URL}/dashboard/settings/billing`, "Manage my plan", theme.color);
-      textLines = [
-        "If you'd like to keep going, there's nothing to do — your plan continues automatically.",
-        "Changed your mind? You can cancel any time before then.",
-      ];
+      const { data: sub } = await supabase.from("subscriptions").select("plan_id, trial_ends_at").eq("user_id", notification.user_id).maybeSingle();
+      const plan = (sub as any)?.plan_id === "pro" ? "Pro plan at $24.99" : "Insights plan at $9.99";
+      const ends = (sub as any)?.trial_ends_at
+        ? new Date((sub as any).trial_ends_at).toLocaleDateString("en-US", { month: "long", day: "numeric", timeZone: "America/New_York" })
+        : null;
+      simple({
+        subj: "Your free trial ends in 3 days",
+        pre: ends ? `Keep your plan, or change it before ${ends}.` : "Keep your plan, or change it before it ends.",
+        head: "Your free trial ends in 3 days",
+        paras: [
+          `Nothing is charged until your free trial ends${ends ? ` on ${ends}` : ""}. After that, your ${plan} bills each month.`,
+          "You can change or cancel anytime in your billing settings.",
+        ],
+        btn: "Manage your plan",
+        href: `${APP_URL}/dashboard/settings/billing`,
+      });
 
     } else {
-      // Every other notification: same design, using the title and body the database wrote.
-      subject = notification.title || "Something new on DNounce";
-      headline = esc(subject);
-      preheader = notification.body || "There's something new for you on DNounce.";
-      link = recordUrl ? { label: "Take a look", href: recordUrl } : { label: "Open DNounce", href: `${APP_URL}/dashboard` };
-      body =
-        para(esc(notification.body || "There's something new for you on DNounce.")) +
-        button(link.href, link.label, theme.color);
-      textLines = [notification.body || "There's something new for you on DNounce."];
+      // Anything else (replies on your record, flagged votes on your record...): same design, database wording.
+      simple({
+        subj: notification.title || "Something new on DNounce",
+        pre: notification.body || "There's something new for you on DNounce.",
+        head: notification.title || "Something new on DNounce",
+        paras: [notification.body || "There's something new for you on DNounce."],
+        btn: recordUrl ? "Take a look" : "Open DNounce",
+        href: recordUrl ?? `${APP_URL}/dashboard`,
+      });
     }
 
     const html = layout({ theme, preheader, headline, body, firstName });
