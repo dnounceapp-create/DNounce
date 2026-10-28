@@ -33,7 +33,7 @@ export async function POST(req: Request) {
     // gets its content here, only after the code has been checked.
     const { data: record } = await supabaseAdmin
       .from("records")
-      .select("description, contributor_display_name, anonymity_status, contributor_claimed, dnounce_mod_record, contributor_override_used, category, relationship, rating, location, subject_id, contributor_identity_preference")
+      .select("description, contributor_display_name, contributor_claimed, dnounce_mod_record, contributor_override_used, category, relationship, rating, location, subject_id, contributor_identity_preference")
       .eq("id", recordId)
       .maybeSingle();
 

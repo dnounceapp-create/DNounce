@@ -120,8 +120,9 @@ export function summarizeRecords(records: OutcomeSummaryRecord[]) {
 
 
 /**
- * Badge names as people see them. The database keeps the original labels
- * (the badge rules use them); only the displayed name changes here.
+ * Badge names. Since Oct 27 the database stores the new names too
+ * (Top Writer, Well Regarded, Top Community Member, Lost voting rights);
+ * this map only catches any old row or demo data still using a former name.
  * "Expert" is hidden for now (KJ, 2026-10-24) — nothing is deleted.
  */
 const BADGE_DISPLAY: Record<string, string> = {

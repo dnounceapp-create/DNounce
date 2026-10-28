@@ -68,10 +68,10 @@ const SCORE_CARDS = [
 ];
 
 const ALL_BADGES_RAW: { label: string; icon: string }[] = [
-  { label: "Top Contributor", icon: "🏆" },
+  { label: "Top Writer", icon: "🏆" },
   { label: "Top Voter",       icon: "🗳️" },
-  { label: "Top Citizen",     icon: "🌟" },
-  { label: "Top Subject",     icon: "👑" },
+  { label: "Top Community Member",     icon: "🌟" },
+  { label: "Well Regarded",     icon: "👑" },
   { label: "Rising Star",     icon: "⭐" },
   { label: "Controversial",   icon: "🌶️" },
   { label: "Low-Quality Voter", icon: "⚠️" },
@@ -271,7 +271,7 @@ export default function ReputationPage() {
     if (!userId) return;
     let records: RecordRef[] = [];
     try {
-      if (["Top Contributor", "Rising Star", "Expert"].includes(label)) {
+      if (["Top Writer", "Rising Star", "Expert"].includes(label)) {
         const anonHash = await computeContributorHash(userId);
         const { data } = await supabase.from("records").select("id,status,category,final_outcome,anonymity_status,ai_vendor_1_result,created_at,record_alias,contributor_display_name,contributor_identity_preference,subject:subjects(name)").or(`contributor_id.eq.${contributorId ?? "00000000-0000-0000-0000-000000000000"},anon_contributor_hash.eq.${anonHash}`).order("created_at", { ascending: false }).limit(20);
         const mapped = (data ?? []).map((r: any) => ({ id: r.id, subject_name: r.subject?.name ?? "Unknown", contributor_alias: (() => {
@@ -302,7 +302,7 @@ records = mapped.map((r, i) => ({ ...r, comment_count: counts[i] }));
           }));
 records = mapped.map((r, i) => ({ ...r, comment_count: counts[i] }));
         }
-      } else if (["Top Citizen", "Fan Favorite", "Controversial", "Struggling"].includes(label)) {
+      } else if (["Top Community Member", "Fan Favorite", "Controversial", "Struggling"].includes(label)) {
         const { data: stmts } = await supabase.from("record_community_statements").select("record_id").eq("author_user_id", userId).limit(20);
         const ids = [...new Set((stmts ?? []).map((s: any) => s.record_id).filter(Boolean))];
         if (ids.length) {
@@ -319,7 +319,7 @@ records = mapped.map((r, i) => ({ ...r, comment_count: counts[i] }));
           }));
 records = mapped.map((r, i) => ({ ...r, comment_count: counts[i] }));
         }
-      } else if (label === "Top Subject") {
+      } else if (label === "Well Regarded") {
         const { data: subjectRow } = await supabase.from("subjects").select("subject_uuid").eq("owner_auth_user_id", userId).maybeSingle();
         if (subjectRow?.subject_uuid) {
           const { data } = await supabase.from("records").select("id,status,category,final_outcome,anonymity_status,ai_vendor_1_result,created_at,record_alias,contributor_display_name,contributor_identity_preference,subject:subjects(name)").eq("subject_id", subjectRow.subject_uuid).order("created_at", { ascending: false }).limit(20);

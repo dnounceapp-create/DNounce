@@ -38,7 +38,6 @@ export async function GET(
       description,
       category,
       location,
-      anonymity_status,
       relationship,
       status,
       is_published,

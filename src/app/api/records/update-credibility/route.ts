@@ -67,12 +67,6 @@ export async function POST(req: Request) {
         subject_notified_at: now,
         // Still read by the record page's stage fallback; harmless to keep.
         ai_completed_at: now,
-        // Legacy columns: written exactly as before so the database trigger that
-        // emails the subject sees the same update. Every new record shows the
-        // contributor's name. These go in the Phase 2 database pass.
-        anonymity_status: "Anonymity Not Granted",
-        ai_vendor_1_result: "Anonymity Not Granted",
-        ai_vendor_1_score: 0.6,
       })
       .eq("id", recordId);
 

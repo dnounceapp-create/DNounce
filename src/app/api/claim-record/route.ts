@@ -83,8 +83,6 @@ export async function POST(req: Request) {
         contributor_claimed: true,
         contributor_override_used: true,
         status: 'subject_notified',
-        ai_vendor_1_result: 'Anonymity Not Granted',
-        anonymity_status: 'Anonymity Not Granted', // Contributor names are always shown on new records (first name + last initial).
         contributor_display_name: toFirstInitial(displayName) || 'SuperHero123', // Contributor names are always shown on new records (first name + last initial).
         ai_completed_at: new Date().toISOString(),
         submitted_at: new Date().toISOString(),
