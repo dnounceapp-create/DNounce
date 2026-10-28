@@ -252,11 +252,6 @@ Deno.serve(async (req) => {
     const otherName = info?.role === "writer" ? personName : writerName;
     // Add a full stop unless the text already ends with one ("Devon A.").
     const dot = (t: string) => (/[.!?]$/.test(t.trim()) ? t.trim() : `${t.trim()}.`);
-    const BOTH_SIDES = tips("How the debate works", [
-      "The debate lasts 3 days. The writer and the person it's about each tell their side.",
-      "You can reply to each other and add photos, messages or receipts. Posts can't be edited once shared.",
-      "Everyone else can read along. Then the community votes on who they side with.",
-    ]);
     const GUIDELINES = `${APP_URL}/?section=guidelines-section`;
     const simple = (opts: { subj: string; pre: string; head: string; paras: string[]; btn: string; href: string; extra?: string }) => {
       subject = opts.subj;
@@ -267,210 +262,160 @@ Deno.serve(async (req) => {
       textLines = [...opts.paras];
     };
 
+    // Wording by StoreClaw (Oct 27), checked against how the site works. Voice: one fact, one feeling, one action.
+    const writerShown = writerName === "the writer" ? "The writer" : writerName;
+    const REFRESHER = callout(
+      `<strong>Quick refresher:</strong> once a record is public, ${esc(personName)} can challenge it once. After that, ${esc(writerName)} and ${esc(personName)} get three days to tell their side — messages, photos, receipts, whatever backs up the story. Then the community reads both sides and votes on who they side with. Nobody at DNounce decides — the community does.`,
+      theme,
+    );
+
     if (type === "stage_2_subject" && info?.record) {
-      const who = writerName === "the writer" ? "Someone" : writerName;
-      const stars = info.record.rating ? ` and gave it ${info.record.rating} out of 10 stars` : "";
       simple({
-        subj: "A record was written about you",
-        pre: "You get the first look. It's private for 24 hours.",
-        head: "You have a new record to read",
+        subj: "Someone shared an experience about you",
+        pre: "Only you can see this for the next 24 hours.",
+        head: "You're the only one who can see this right now",
         paras: [
-          `You get the first look. ${who} wrote a firsthand record about working with you${stars}.`,
-          "You can read it privately for the next 24 hours, then it goes public on your profile.",
+          `${writerShown} shared a firsthand experience about you on DNounce. For the next 24 hours, you're the only one who can see it — nobody else yet. Take a look before it goes public.`,
+          "Once it's public, you can challenge it and tell your side.",
         ],
-        btn: "Read it now",
-        href: recordUrl!,
-        extra: tips("Your options", [
-          "<strong>Read it first.</strong> Only you can see it for now.",
-          "<strong>See it differently?</strong> Once it's public, you can challenge it. That opens a 3-day debate where you and the writer each tell your side.",
-          "<strong>The community decides.</strong> After the debate, people who don't know either of you read both sides and vote. DNounce never takes sides.",
-        ]),
-      });
-
-    } else if (type === "stage_2_contributor" && info?.record) {
-      simple({
-        subj: "Your record is in",
-        pre: `We let ${personName} know. It goes public in 24 hours.`,
-        head: "Thanks — your record is in",
-        paras: [
-          `We let ${personName} know about your record. They get a private first look for 24 hours, then it goes public on their profile.`,
-        ],
-        btn: "View your record",
-        href: recordUrl!,
-      });
-
-    } else if (type === "stage_3_contributor" && info?.record) {
-      simple({
-        subj: "Your record is live",
-        pre: "The person it's about can now challenge it, once.",
-        head: "Your record is now public",
-        paras: [
-          `Your record about ${personName} is live on their profile.`,
-        ],
-        btn: "View your record",
+        btn: "See what they said",
         href: recordUrl!,
       });
 
     } else if (type === "stage_3_subject" && info?.record) {
       simple({
-        subj: "The record about you is now public",
-        pre: "See it differently? You can challenge it once.",
-        head: "The record about you is now public",
+        subj: "Your private look has ended",
+        pre: "The record is now visible on your profile.",
+        head: "It's public now — here's what you can do",
         paras: [
-          "Anyone can read it on your profile now.",
-          `If you want to challenge the record, you can. Challenging it starts a debate with ${dot(writerName === "the writer" ? "the writer" : writerName)}`,
+          `Your 24-hour private window has ended. ${writerShown}'s record is now visible on your profile. If you see it differently, you can challenge it once and tell your side.`,
         ],
         btn: "View the record",
         href: recordUrl!,
-        extra: BOTH_SIDES,
+        extra: REFRESHER,
+      });
+
+    } else if (type === "stage_3_contributor" && info?.record) {
+      simple({
+        subj: "Your record is live",
+        pre: `Your experience about ${personName} is now public.`,
+        head: "Your record is now public",
+        paras: [`Your experience about ${personName} is now visible on their profile. Thanks for sharing it honestly — that's what makes DNounce work.`],
+        btn: "View your record",
+        href: recordUrl!,
       });
 
     } else if (type === "stage_4_contributor" && info?.record) {
       simple({
         subj: `${personName} challenged your record`,
-        pre: "Here's what happens next.",
-        head: `${personName} challenged your record`,
-        paras: [
-          `${personName} sees things differently and challenged your record.`,
-          "The debate starts in 24 hours, and you can tell your side there.",
-        ],
-        btn: "See your record",
+        pre: "A debate opens in 24 hours.",
+        head: `${personName} wants to tell their side`,
+        paras: [`${personName} challenged your record. In 24 hours, a 3-day debate opens where you can both share your side — messages, photos, or receipts, whatever backs up your story.`],
+        btn: "Get ready to respond",
         href: recordUrl!,
-        extra: BOTH_SIDES,
+        extra: REFRESHER,
       });
 
     } else if (type === "stage_5_contributor" && info?.record) {
       simple({
-        subj: "The debate is open. Tell your side.",
-        pre: "You have 3 days to post, reply and add evidence.",
+        subj: "The debate is open — 3 days",
+        pre: "Post your side before the debate closes.",
         head: "The debate is open",
-        paras: [
-          `The debate is now open on your record about ${personName}, and it runs for 3 days.`,
-          `This is your space to tell your side in your own words and reply to ${dot(personName)} Once you post, it can't be edited, so take your time.`,
-        ],
-        btn: "Tell your side",
+        paras: ["You can now post your side of the story — messages, photos, receipts, whatever tells it best. The debate stays open for 3 days, then voting begins."],
+        btn: "Join the debate",
         href: recordUrl!,
-        extra: BOTH_SIDES,
-      });
-
-    } else if (type === "stage_5_subject" && info?.record) {
-      simple({
-        subj: "The debate is open. Tell your side.",
-        pre: "You have 3 days to post, reply and add evidence.",
-        head: "Your debate is open",
-        paras: [
-          "Your challenge has opened a debate on the record about you.",
-          `This is your 3-day space to tell your side in your own words and reply to ${dot(writerName)} Once you post, it can't be edited, so take your time.`,
-        ],
-        btn: "Tell your side",
-        href: recordUrl!,
-        extra: BOTH_SIDES,
       });
 
     } else if (type === "debate_reply" && info?.record) {
+      const who = otherName === "the writer" ? "The writer" : otherName === "the person it's about" ? "The person it's about" : otherName;
       const endsMs = info.record.debate_ends_at ? new Date(info.record.debate_ends_at).getTime() - Date.now() : null;
       const hoursLeft = endsMs !== null && endsMs > 0 ? Math.max(1, Math.round(endsMs / 3_600_000)) : null;
-      const who = otherName === "the writer" ? "The writer" : otherName === "the person it's about" ? "The person it's about" : otherName;
       simple({
-        subj: `${who} replied in your debate`,
-        pre: "You can reply until the 3 days end.",
-        head: "New reply in your debate",
+        subj: `${who} just replied`,
+        pre: "Take a look, and reply if you want to.",
+        head: `${who} posted in the debate`,
         paras: [
-          `${who} just posted in the debate. You can reply until the 3 days end.`,
-          ...(hoursLeft ? [`The debate closes in about ${hoursLeft} hour${hoursLeft === 1 ? "" : "s"}.`] : []),
+          `${who} just added their side. Take a look, and reply if you want to.`,
+          ...(hoursLeft ? [`You have about ${hoursLeft} hour${hoursLeft === 1 ? "" : "s"} left to reply.`] : []),
         ],
-        btn: "Read and reply",
+        btn: "Read their reply",
         href: recordUrl!,
       });
 
     } else if ((type === "stage_6_subject" || type === "stage_6_contributor") && info?.record) {
       simple({
-        subj: "The debate has closed. Voting starts.",
-        pre: "The community now reads both sides and picks a side.",
-        head: "The community votes now",
-        paras: [
-          `The debate is now closed on the record about ${personName}.`,
-          "Signed-in members will read both stories and pick who they side with, with a short reason. Voting runs for 2 days.",
-          "You can't vote on this record, but you can watch."
-        ],
-        btn: "Read the debate",
+        subj: "Voting is now open",
+        pre: "The community reads both sides for the next 2 days.",
+        head: "The debate's closed — now the community decides",
+        paras: ["The debate is over. For the next 2 days, community members will read both sides and vote on who they side with. There's nothing left to post — just sit tight."],
+        btn: "View the record",
         href: recordUrl!,
       });
 
     } else if ((type === "voting_ended_subject" || type === "voting_ended_contributor") && info?.record) {
-      const mine = info.role === "writer" ? "your record" : "the record about you";
       simple({
-        subj: "Voting is closed. Results are coming.",
-        pre: "Results come out in about a week.",
-        head: "Voting is closed",
-        paras: [
-          `Voting on ${mine} has closed.`,
-          "Results come out in about a week. We'll email you when they're in.",
-        ],
-        btn: "Read the debate",
+        subj: "Voting's closed — results soon",
+        pre: "Results will be ready in about a week.",
+        head: "Voting has ended",
+        paras: ["Community voting is closed. Results will be ready in about a week. We'll email you the moment they're in."],
+        btn: "View the record",
         href: recordUrl!,
       });
 
     } else if (type === "voting_ended_voter" && info?.record) {
       simple({
-        subj: "Thanks for voting",
-        pre: "Voting has closed. Results come out in about a week.",
-        head: "Thanks for voting",
+        subj: "Voting's closed — results soon",
+        pre: "Results will be ready in about a week.",
+        head: "Voting has ended",
         paras: [
-          `Voting on the record about ${personName} has closed. Thanks for taking the time to read both sides and give your reason.`,
-          "Results come out in about a week.",
+          `Voting on the record about ${personName} is closed. Results will be ready in about a week.`,
+          "Thanks for taking part — your reason is part of the record.",
         ],
-        btn: "View the record",
+        btn: "See the record",
         href: recordUrl!,
       });
 
     } else if (type === "verdict_announced" && info?.record) {
-      // The email never gives the result away — people open the record to see it.
-      const raw = (info.record.final_outcome ?? "").toLowerCase();
-      const hasResult = raw !== "";
+      // Never reveal the result in the email.
+      const hasResult = (info.record.final_outcome ?? "") !== "";
       const mine = info.role === "writer" ? "your record" : info.role === "subject" ? "the record about you" : `the record about ${personName}`;
       if (!hasResult) {
         simple({
-          subj: "No votes were cast",
+          subj: "No votes came in",
           pre: "There's no result this time.",
           head: "No result this time",
           paras: [`Nobody voted on ${mine}, so there's no result this time.`],
-          btn: "Read the record",
+          btn: "View the record",
           href: recordUrl!,
         });
       } else {
         simple({
           subj: "The results are in",
-          pre: "Find out who the community sided with.",
-          head: "The community has spoken",
-          paras: [
-            `The votes are counted on ${mine}.`,
-            "Who did people side with, and why? Your results are waiting.",
-          ],
+          pre: "See how the community sided.",
+          head: "The results are in",
+          paras: [`The community has finished voting on ${mine}. Open it to see who people sided with, and why.`],
           btn: "See the results",
           href: recordUrl!,
         });
       }
 
     } else if (type === "seven_day_unlock" && info?.record) {
+      const other = info.role === "writer" ? personName : writerName;
       simple({
-        subj: "You can comment on this record now",
-        pre: "The results are out, and the conversation is open to you.",
-        head: "The conversation is open to you",
-        paras: [
-          `Now that the results are out, you can comment on the record about ${personName}.`,
-          "Keep it firsthand and stick to what happened.",
-        ],
-        btn: "Join the conversation",
+        subj: "You can comment now",
+        pre: "Say what you want people to know.",
+        head: "Now it's your turn to comment",
+        paras: [`Now that the results are out, you and ${other} can comment directly on the record. Say what you want people to know.`],
+        btn: "Add your comment",
         href: recordUrl!,
       });
 
     } else if (type === "voter_reply" && recordUrl) {
       simple({
         subj: "Someone replied to your vote",
-        pre: "Take a look, and reply if you like.",
-        head: "A reply to your vote",
-        paras: [`Someone replied to the reason you gave for your vote on the record about ${personName}.`],
+        pre: "Take a look at what they said.",
+        head: "Someone responded to your vote",
+        paras: ["You voted on a record, and someone replied to your reason. Take a look."],
         btn: "See the reply",
         href: recordUrl,
       });
@@ -481,89 +426,69 @@ Deno.serve(async (req) => {
         pre: "Your vote still counts for now.",
         head: "Your vote reason was flagged",
         paras: [
-          `Other members flagged the reason you gave for your vote on the record about ${personName} as careless.`,
-          "Your vote still counts unless enough members flag it.",
+          "Another member flagged your reason as careless. If enough members agree, your vote could be removed. For now, it still counts.",
         ],
         btn: "Read the guidelines",
         href: GUIDELINES,
-        extra: tips("", [
-          "Every vote needs a short reason.",
-          "Careless reasons can be flagged by other members.",
-          "Enough flags removes the vote from the count.",
-        ]),
       });
 
     } else if (type === "voter_convicted") {
       simple({
-        subj: "Your vote was removed from the count",
-        pre: "Here's why, and what it means for your badge.",
+        subj: "Your vote didn't count this time",
+        pre: "Here's what happened.",
         head: "Your vote was removed",
-        paras: [
-          `Enough members flagged your reason on the record about ${personName} as careless, so your vote has been removed from the count.`,
-          "This only affects your vote, not any records. Your profile now shows a Lost voting rights badge.",
-        ],
-        btn: "Read the guidelines",
+        paras: ["Enough members flagged your reason as careless, so your vote was removed from the count, and you've received a \"Lost voting rights\" badge. A clear, specific reason helps your vote count."],
+        btn: "Learn more",
         href: GUIDELINES,
-        extra: tips("", [
-          "Every vote needs a short, specific reason.",
-          "Enough careless flags removes a vote from the count.",
-        ]),
       });
 
     } else if (type === "badge_earned") {
-      const badge = String(notification.title || "").split("—").pop()?.replace(/^[^A-Za-z]+/, "").trim() || "a new";
-      const WHY: Record<string, string> = {
-        "Top Writer": "writing records that hold up — almost all of them were never challenged, or most people sided with you",
-        "Well Regarded": "records about you holding up really well with the community",
-        "Top Community Member": "comments that people find helpful",
-        "Top Voter": "vote reasons that people find helpful",
-        "Rising Star": "a record that got the community talking",
-        "Fan Favorite": "posts that people have only reacted to positively",
+      const badge = String(notification.title || "").split("—").pop()?.replace(/^[^A-Za-z]+/, "").trim() || "a new badge";
+      const LINE: Record<string, string> = {
+        "Top Writer": "Your records hold up. People believe what you share.",
+        "Well Regarded": "Records about you tend to hold up well.",
+        "Top Community Member": "Your comments get real reactions from the community.",
+        "Top Voter": "Your vote reasons get real reactions. People trust your judgment.",
+        "Rising Star": "One of your records has the community talking.",
+        "Fan Favorite": "Every reaction on your posts has been positive.",
       };
-      const why = WHY[badge];
       simple({
-        subj: `You earned the ${badge} badge`,
+        subj: `You earned a badge: ${badge}`,
         pre: "It now shows on your profile.",
-        head: `You earned the ${badge} badge`,
-        paras: [why ? `You've earned the ${badge} badge for ${why}. It now shows on your profile, next to your name.` : (notification.body || `You've earned the ${badge} badge. It now shows on your profile.`)],
-        btn: "See your badges",
+        head: `You earned ${badge}`,
+        paras: [LINE[badge] ? `${LINE[badge]} Keep it up.` : (notification.body || "It now shows on your profile. Keep it up.")],
+        btn: "See your badge",
         href: `${APP_URL}/dashboard/reputation`,
       });
 
     } else if (/^(pinned|following)_/.test(type)) {
       simple({
-        subj: notification.title || "New activity on a record you follow",
-        pre: notification.body || "There's news on a record you follow.",
-        head: "There's news on a record you follow",
-        paras: [
-          notification.body || "There's something new on a record you follow.",
-          "You're getting this because you follow or pinned this record.",
-        ],
+        subj: "There's an update on a record you're following",
+        pre: notification.body || "Take a look at what's new.",
+        head: "New activity on a record you follow",
+        paras: [notification.body || "Something new happened on a record you're following or pinned."],
         btn: "See what's new",
         href: recordUrl ?? `${APP_URL}/dashboard/following`,
       });
 
     } else if (type === "claim_approved") {
       simple({
-        subj: "Your profile is claimed",
-        pre: "It's yours to manage on DNounce.",
-        head: "Your profile is claimed",
-        paras: [
-          "Your claim has been approved, so the profile is now linked to your account.",
-          "You can see every record about you. If you see one differently, challenge it to start a debate and tell your side.",
-        ],
+        subj: "Your profile is now yours",
+        pre: "You can manage it from here on.",
+        head: "Your claim was approved",
+        paras: ["You're verified — this profile is now officially yours. You can see and respond to records about you from here on."],
         btn: "Go to your profile",
         href: `${APP_URL}/dashboard/myrecords`,
       });
 
     } else if (type === "claim_rejected") {
       simple({
-        subj: "We couldn't approve your claim",
+        subj: "Your claim wasn't approved",
         pre: "Here's why, and what you can do next.",
         head: "We couldn't approve your claim",
         paras: [
-          `We couldn't approve your profile claim. Reason: ${dot(notification.body || "we didn't have enough to confirm it")}`,
-          "If you have more details, send us a message and we'll take another look.",
+          `We weren't able to verify your claim this time. Reason: ${dot(notification.body || "we didn't have enough to confirm it")}`,
+          "Have more details? Send them to us and we'll take another look.",
         ],
         btn: "Contact support",
         href: `${APP_URL}/dashboard/settings/support`,
@@ -571,24 +496,21 @@ Deno.serve(async (req) => {
 
     } else if (type === "trial_ending") {
       const { data: sub } = await supabase.from("subscriptions").select("plan_id, trial_ends_at").eq("user_id", notification.user_id).maybeSingle();
-      const plan = (sub as any)?.plan_id === "pro" ? "Pro plan at $24.99" : "Insights plan at $9.99";
+      const pro = (sub as any)?.plan_id === "pro";
       const ends = (sub as any)?.trial_ends_at
         ? new Date((sub as any).trial_ends_at).toLocaleDateString("en-US", { month: "long", day: "numeric", timeZone: "America/New_York" })
         : null;
       simple({
-        subj: "Your free trial ends in 3 days",
-        pre: ends ? `Keep your plan, or change it before ${ends}.` : "Keep your plan, or change it before it ends.",
-        head: "Your free trial ends in 3 days",
-        paras: [
-          `Nothing is charged until your free trial ends${ends ? ` on ${ends}` : ""}. After that, your ${plan} bills each month.`,
-          "You can change or cancel anytime in your billing settings.",
-        ],
+        subj: "Your trial ends in 3 days",
+        pre: "Keep your plan or let it end — your choice.",
+        head: "Your trial ends in 3 days",
+        paras: [`Your free trial of ${pro ? "Pro" : "Insights"} ends ${ends ? `on ${ends}` : "in 3 days"}. After that, you'll be billed ${pro ? "$24.99/mo" : "$9.99/mo"} unless you cancel. You can manage this anytime in billing.`],
         btn: "Manage your plan",
         href: `${APP_URL}/dashboard/settings/billing`,
       });
 
     } else {
-      // Anything else (replies on your record, flagged votes on your record...): same design, database wording.
+      // Anything else (comments on your record, etc.): same design, the notice's own wording.
       simple({
         subj: notification.title || "Something new on DNounce",
         pre: notification.body || "There's something new for you on DNounce.",
