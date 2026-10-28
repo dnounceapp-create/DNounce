@@ -1,5 +1,6 @@
 "use client";
 
+import { notify, friendlyError } from "@/components/ui/use-toast";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -107,7 +108,7 @@ export default function AgreeDisagree({
 
     const { data: userRes } = await supabase.auth.getUser();
     if (!userRes?.user?.id) {
-      alert("Please sign in to react.");
+      notify("Please sign in to react.");
       return;
     }
 
@@ -118,7 +119,7 @@ export default function AgreeDisagree({
     });
 
     if (error) {
-      alert(error.message);
+      notify(friendlyError(error, "We couldn't save your reaction. Please try again."), "destructive");
       return;
     }
 

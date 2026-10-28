@@ -1,5 +1,6 @@
 "use client";
 
+import { notify, friendlyError } from "@/components/ui/use-toast";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import {
@@ -1902,7 +1903,7 @@ function DebateCourtroom({
     if (!text) return;
 
     if (text.length > maxChars) {
-      alert(`Max ${maxChars} characters.`);
+      notify(`Please keep it under ${maxChars} characters.`);
       return;
     }
 
@@ -1951,7 +1952,7 @@ function DebateCourtroom({
       opts.after();
       await load();
     } catch (e: any) {
-      alert(e?.message || "Failed to post.");
+      notify(friendlyError(e, "We couldn't post that. Please try again."), "destructive");
     } finally {
       setPosting(false);
     }
@@ -2988,7 +2989,7 @@ function VotingCourtroom({
     const text = communityStatementDraft.trim();
     if (!text) return;
     if (text.length > maxChars) {
-      alert(`Max ${maxChars} characters.`);
+      notify(`Please keep it under ${maxChars} characters.`);
       return;
     }
 
@@ -3032,7 +3033,7 @@ function VotingCourtroom({
           loadExecutionByVote(record.id, actorId),
         ]);
       } catch (e: any) {
-      alert(e?.message || "Failed to post statement.");
+      notify(friendlyError(e, "We couldn't post your statement. Please try again."), "destructive");
     } finally {
       setPostingReply(false);
     }
@@ -3045,7 +3046,7 @@ function VotingCourtroom({
     const text = communityReplyDraft.trim();
     if (!text) return;
     if (text.length > maxChars) {
-      alert(`Max ${maxChars} characters.`);
+      notify(`Please keep it under ${maxChars} characters.`);
       return;
     }
 
@@ -3090,7 +3091,7 @@ function VotingCourtroom({
       setReplyingToCommunity(null);
       await loadCommunity(record.id, actorId);
     } catch (e: any) {
-      alert(e?.message || "Failed to post reply.");
+      notify(friendlyError(e, "We couldn't post your reply. Please try again."), "destructive");
     } finally {
       setPostingReply(false);
     }
@@ -3106,7 +3107,7 @@ function VotingCourtroom({
       const actorId = await getActorId();
       await loadCommunity(record.id, actorId);
     } catch (e: any) {
-      alert(e?.message || "Failed to edit reply.");
+      notify(friendlyError(e, "We couldn't save your changes. Please try again."), "destructive");
     } finally {
       setPostingReply(false);
     }
@@ -3121,7 +3122,7 @@ function VotingCourtroom({
       const actorId = await getActorId();
       await loadCommunity(record.id, actorId);
     } catch (e: any) {
-      alert(e?.message || "Failed to delete reply.");
+      notify(friendlyError(e, "We couldn't delete your reply. Please try again."), "destructive");
     } finally {
       setPostingReply(false);
     }
@@ -3320,16 +3321,16 @@ function VotingCourtroom({
     if (!canVote) return;
 
     if (!choice) {
-      alert("Please choose a side.");
+      notify("Please choose a side.");
       return;
     }
     const trimmed = reason.trim();
     if (!trimmed) {
-      alert("Please write a reason for your vote.");
+      notify("Please write a reason for your vote.");
       return;
     }
     if (trimmed.length > maxChars) {
-      alert(`Max ${maxChars} characters.`);
+      notify(`Please keep it under ${maxChars} characters.`);
       return;
     }
 
@@ -3361,7 +3362,7 @@ function VotingCourtroom({
         ]);
         loadVoteBadges(record.id).then(setVoteBadges);
     } catch (e: any) {
-      alert(e?.message || "Failed to submit vote.");
+      notify(friendlyError(e, "We couldn't save your vote. Please try again."), "destructive");
     } finally {
       setSubmitting(false);
     }
@@ -3400,7 +3401,7 @@ function VotingCourtroom({
     const text = replyDraft.trim();
     if (!text) return;
     if (text.length > maxChars) {
-      alert(`Max ${maxChars} characters.`);
+      notify(`Please keep it under ${maxChars} characters.`);
       return;
     }
   
@@ -3511,7 +3512,7 @@ function VotingCourtroom({
         return { ...prev, [voteId]: nextRoots };
       });
   
-      alert(e?.message || "Failed to post reply.");
+      notify(friendlyError(e, "We couldn't post your reply. Please try again."), "destructive");
     } finally {
       setPostingReply(false);
     }
@@ -3533,7 +3534,7 @@ function VotingCourtroom({
         loadExecutionByVote(record.id, actorId),
       ]);
     } catch (e: any) {
-      alert(e?.message || "Failed to edit reply.");
+      notify(friendlyError(e, "We couldn't save your changes. Please try again."), "destructive");
     } finally {
       setPostingReply(false);
     }
@@ -3551,7 +3552,7 @@ function VotingCourtroom({
         loadExecutionByVote(record.id, actorId),
       ]);
     } catch (e: any) {
-      alert(e?.message || "Failed to delete reply.");
+      notify(friendlyError(e, "We couldn't delete your reply. Please try again."), "destructive");
     } finally {
       setPostingReply(false);
     }
@@ -3578,7 +3579,7 @@ function VotingCourtroom({
 
       loadVoteBadges(record.id).then(setVoteBadges);
     } catch (e: any) {
-      alert(e?.message || "Failed to submit execution vote.");
+      notify(friendlyError(e, "We couldn't save your choice. Please try again."), "destructive");
     }
   }
 
@@ -3877,7 +3878,7 @@ function VotingCourtroom({
                             setMyFlags((prev) => new Set([...prev, String(v.id)]));
                             loadVoteBadges(record.id).then(setVoteBadges);
                           } catch (e: any) {
-                            alert(e?.message || "Failed to flag.");
+                            notify(friendlyError(e, "We couldn't flag that. Please try again."), "destructive");
                           }
                         }}
                         className={[
@@ -4316,7 +4317,7 @@ export default function RecordDetail({
       if (error) throw error;
       setReportDone(true);
     } catch (e: any) {
-      alert(e?.message || "Failed to submit report.");
+      notify(friendlyError(e, "We couldn't send your report. Please try again."), "destructive");
     } finally {
       setReportSubmitting(false);
     }

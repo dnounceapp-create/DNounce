@@ -1,5 +1,6 @@
 "use client";
 
+import { notify, friendlyError } from "@/components/ui/use-toast";
 import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
@@ -206,11 +207,11 @@ export default function CommunityPollDetailPage() {
 
   async function submitVote() {
     if (!isVotingOpen || myVote || !sessionUserId) return;
-    if (!choice) { alert("Please choose an option."); return; }
+    if (!choice) { notify("Please choose an option."); return; }
     const trimmed = reason.trim();
-    if (!trimmed) { alert("Please write a reason for your vote."); return; }
-    if (trimmed.length < minChars) { alert(`Reason must be at least ${minChars} characters.`); return; }
-    if (trimmed.length > maxChars) { alert(`Max ${maxChars} characters.`); return; }
+    if (!trimmed) { notify("Please write a reason for your vote."); return; }
+    if (trimmed.length < minChars) { notify(`Please write at least ${minChars} characters.`); return; }
+    if (trimmed.length > maxChars) { notify(`Please keep it under ${maxChars} characters.`); return; }
     setSubmitting(true);
     try {
       // Alias generation: get_or_create_alias RPC FKs p_record_id to the records
@@ -229,7 +230,7 @@ export default function CommunityPollDetailPage() {
       setMyVote({ option_id: choice, reason: trimmed, created_at: data.created_at });
       await Promise.all([loadVotes(), loadFlagCounts()]);
     } catch (e: any) {
-      alert(e?.message || "Failed to submit vote.");
+      notify(friendlyError(e, "We couldn't save your vote. Please try again."), "destructive");
     } finally {
       setSubmitting(false);
     }
@@ -282,7 +283,7 @@ export default function CommunityPollDetailPage() {
   async function postReply(voteId: string) {
     const text = replyDraft.trim();
     if (!text || !sessionUserId) return;
-    if (text.length > maxChars) { alert(`Max ${maxChars} characters.`); return; }
+    if (text.length > maxChars) { notify(`Please keep it under ${maxChars} characters.`); return; }
     setPostingReply(true);
     try {
       // Alias generation: get_or_create_alias RPC FKs p_record_id to the records
@@ -310,7 +311,7 @@ export default function CommunityPollDetailPage() {
       setReplyDraft("");
       setReplyingTo(null);
     } catch (e: any) {
-      alert(e?.message || "Failed to post reply.");
+      notify(friendlyError(e, "We couldn't post your reply. Please try again."), "destructive");
     } finally {
       setPostingReply(false);
     }
