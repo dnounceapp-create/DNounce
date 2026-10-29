@@ -243,26 +243,9 @@ export default function UserSetupPage() {
         return;
       }
 
-      const contactRes = await fetch('/api/claim-codes/contact-check', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sessionData?.session?.access_token ?? ''}` },
-        body: JSON.stringify({ phone: cleanPhone, email: sessionData?.session?.user?.email ?? '' }),
-      });
-      const contactCheck = await contactRes.json().catch(() => ({ phoneInUse: false, emailInUse: false }));
-
-      if (contactCheck.phoneInUse) {
-        setPopup({ type: "warning", message: "This phone number is already in use.", visible: true });
-        setTimeout(() => setPopup({ type: null, message: "", visible: false }), 3500);
-        setSaving(false);
-        return;
-      }
-
-      if (contactCheck.emailInUse) {
-        setPopup({ type: "warning", message: "This email is already in use.", visible: true });
-        setTimeout(() => setPopup({ type: null, message: "", visible: false }), 3500);
-        setSaving(false);
-        return;
-      }
+      // (Removed: a check that blocked sign-up when this email/phone belonged to a
+      // DNounce-posted record, which stopped the very person it's about from joining.
+      // Matching now happens safely in create_subject_if_not_exists.)
 
       const { error: rpcError } = await supabase.rpc("update_user_accountdetails", {
         p_user_id: userId,
@@ -325,15 +308,8 @@ export default function UserSetupPage() {
 
       if (updateError) throw updateError;
 
-      // Auto-link user to subject profile if their phone/email matches a seeded record
-      const cleanEmail = sessionData?.session?.user?.email?.trim().toLowerCase() || '';
-      if (cleanPhone || cleanEmail) {
-        await fetch('/api/user/link-subject', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId, phone: cleanPhone, email: cleanEmail }),
-        });
-      }
+      // Connecting to an existing profile happens in create_subject_if_not_exists above:
+      // a confirmed email connects them; a phone match only asks an admin to review.
 
       setSuccess(true);
       const claimRecordId = sessionStorage.getItem('claim_record_id');

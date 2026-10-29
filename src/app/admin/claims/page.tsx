@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 import { Loader2, Copy, Check, Plus, X, MapPin, User, FileText } from "lucide-react";
+import SubjectClaimRequests from "./SubjectClaimRequests";
 
 const DNOUNCE_MOD_CONTRIBUTOR_ID = 'ef0fdd91-38c6-438b-8229-f2efa16bdaa9';
 const DNOUNCE_MOD_AUTH_ID = 'b164ea4a-6ced-48dc-9546-cab73967d6b8';
@@ -279,6 +280,7 @@ export default function AdminClaimsPage() {
           <div><span className="text-blue-500">Contributor ID:</span> {DNOUNCE_MOD_CONTRIBUTOR_ID}</div>
         </div>
       </div>
+      <SubjectClaimRequests />
       {showForm && (
         <div className="rounded-2xl border border-gray-200 bg-white p-6 space-y-6 shadow-sm">
           <h2 className="text-base font-semibold text-gray-900">Generate Record</h2>

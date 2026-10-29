@@ -4,8 +4,9 @@ import { requireSession, authErrorResponse } from "@/lib/apiAuth";
 
 /**
  * Claims an unclaimed subject profile for the caller, but only when the
- * profile's email matches the caller's confirmed login email. The check used to
- * run in the browser, which let anyone claim any unclaimed profile.
+ * profile's email matches the caller's confirmed login email.
+ * The claim itself (one profile per person, notice, audit log) happens in the
+ * database function claim_subject_for_user.
  */
 export async function POST(req: Request) {
   let caller;
@@ -36,31 +37,16 @@ export async function POST(req: Request) {
     subj.email.trim().toLowerCase() === caller.email.trim().toLowerCase();
   if (!emailMatch) return NextResponse.json({ error: "Email does not match" }, { status: 403 });
 
-  const { data: updated, error } = await admin
-    .from("subjects")
-    .update({ owner_auth_user_id: caller.id })
-    .eq("subject_uuid", subjectId)
-    .is("owner_auth_user_id", null)
-    .select("subject_uuid");
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  if (!updated?.length) return NextResponse.json({ error: "Already claimed" }, { status: 409 });
-
-  await admin.from("admin_audit_log").insert({
-    admin_user_id: caller.id,
-    admin_level: 0,
-    action: "auto_claim",
-    target_type: "subject",
-    target_id: subjectId,
-    note: "Auto-claimed via email match",
+  // One profile per person: the database moves them onto this profile and removes
+  // their empty sign-up profile (or asks an admin if that one has records).
+  const { data: result, error } = await admin.rpc("claim_subject_for_user", {
+    p_user_id: caller.id,
+    p_subject_uuid: subjectId,
+    p_source: "profile page (email match)",
   });
-
-  await admin.from("notifications").insert({
-    user_id: caller.id,
-    title: "Your profile claim was approved",
-    body: "Your profile on DNounce is now yours. You can manage it from your dashboard.",
-    type: "claim_approved",
-    record_id: null,
-  });
+  if (error) return NextResponse.json({ error: "We couldn't claim this profile. Please try again." }, { status: 500 });
+  if (result === "taken") return NextResponse.json({ error: "Already claimed" }, { status: 409 });
+  if (result === "needs_review") return NextResponse.json({ ok: true, review: true });
 
   return NextResponse.json({ ok: true });
 }

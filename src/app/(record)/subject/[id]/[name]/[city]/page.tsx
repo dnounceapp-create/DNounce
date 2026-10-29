@@ -252,6 +252,14 @@ function ClaimBanner({
       setLoading(false);
       return;
     }
+    const body = await res.json().catch(() => ({}));
+    if (body?.review) {
+      // They already own another profile with records; our team links them.
+      setClaimState("claim-submitted");
+      setLoading(false);
+      onClaimed();
+      return;
+    }
 
     setClaimState("auto-claimed");
     setLoading(false);
