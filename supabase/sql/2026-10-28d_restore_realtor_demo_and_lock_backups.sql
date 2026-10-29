@@ -1,5 +1,6 @@
 -- 1) Put back the realtor demo row that the test-data delete removed by mistake
---    (it pointed at one of the deleted test records; that link is cleared).
+--    exactly as it was. (Demo rows use their own record ids, like the other demos;
+--    nothing else needs to come back.)
 -- 2) Make every backup table private (row level security on, no public access).
 -- Safe to run more than once.
 
@@ -10,7 +11,7 @@ DECLARE
 BEGIN
   -- 1) Restore demo row(s) from the backup, unless already back
   INSERT INTO public.demo_records
-  SELECT (jsonb_populate_record(NULL::public.demo_records, b.row_data || jsonb_build_object('record_id', NULL))).*
+  SELECT (jsonb_populate_record(NULL::public.demo_records, b.row_data)).*
   FROM public.deleted_rows_backup_20261028 b
   WHERE b.table_name = 'demo_records'
     AND NOT EXISTS (SELECT 1 FROM public.demo_records d WHERE d.id::text = b.row_data->>'id');
