@@ -332,7 +332,7 @@ const STAGE_CONFIG: Record<string, {
   },
   subject_notified: {
     label: "Mark Subject as Notified", color: "yellow",
-    desc: "The person it's about is notified. The record goes public automatically 24 hours after it was submitted.",
+    desc: "The subject is notified. The record goes public automatically 24 hours after it was submitted.",
     fields: [
       { key: "note", label: "Reason", type: "textarea", required: true },
     ],

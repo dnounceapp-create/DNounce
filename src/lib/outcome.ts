@@ -30,8 +30,8 @@ export function outcomeSide(raw?: string | null): OutcomeSide | null {
 }
 
 export const OUTCOME_LABEL: Record<OutcomeSide, string> = {
-  contributor: "Most people sided with the writer",
-  subject: "Most people sided with the person it's about",
+  contributor: "Most people sided with the contributor",
+  subject: "Most people sided with the subject",
 };
 
 export const OUTCOME_CHIP: Record<OutcomeSide, string> = {
@@ -41,7 +41,7 @@ export const OUTCOME_CHIP: Record<OutcomeSide, string> = {
 
 /**
  * "Most people sided with Jane D." when names are known, otherwise a plain
- * role ("the writer" / "the person it's about").
+ * role ("the contributor" / "the subject").
  */
 export function outcomeLabel(
   raw?: string | null,
@@ -120,14 +120,14 @@ export function summarizeRecords(records: OutcomeSummaryRecord[]) {
 
 
 /**
- * Badge names. Since Oct 27 the database stores the new names too
- * (Top Writer, Well Regarded, Top Community Member, Lost voting rights);
+ * Badge names. Since Nov 5 (KJ: "just subject and contributor") the database
+ * stores Top Contributor, Top Subject, Top Community Member, Lost voting rights;
  * this map only catches any old row or demo data still using a former name.
  * "Expert" is hidden for now (KJ, 2026-10-24) — nothing is deleted.
  */
 const BADGE_DISPLAY: Record<string, string> = {
-  "Top Contributor": "Top Writer",
-  "Top Subject": "Well Regarded",
+  "Top Writer": "Top Contributor",
+  "Well Regarded": "Top Subject",
   "Top Citizen": "Top Community Member",
   "Convicted": "Lost voting rights",
 };

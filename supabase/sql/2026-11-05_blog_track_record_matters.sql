@@ -42,7 +42,7 @@ At first, that last point can feel scary. What if someone writes something unfai
 
 Here's the thing: a profile where the pro can remove anything they don't like is worthless to the person reading it. If everything is spotless, nobody believes it. The fact that records can't be cleaned up is what gives your good ones their weight.
 
-And you're not left without a voice. If a record gets it wrong, you can challenge it. That opens a **debate**, where you and the writer each tell your side, and then the community votes on it. Nobody at DNounce picks a winner, and nobody can pay to make a record go away.
+And you're not left without a voice. If a record gets it wrong, you can challenge it. That opens a **debate**, where you and the contributor each tell your side, and then the community votes on it. Nobody at DNounce picks a winner, and nobody can pay to make a record go away.
 
 ## Your record follows your work, not your platform
 

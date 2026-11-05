@@ -723,7 +723,7 @@ export default function HomePage() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {[
               { step: "01", title: "Submit a record", desc: "Share your experience clearly and honestly. Your first name and last initial will appear publicly on the record." },
-              { step: "02", title: "Private preview", desc: "We let the person know right away. Only they can see it for 24 hours." },
+              { step: "02", title: "Private preview", desc: "We let the subject know right away. Only they can see it for 24 hours." },
               { step: "03", title: "Public", desc: "The record goes live, and they can reply." },
               { step: "04", title: "Challenge", desc: "If they see it differently, they can challenge it. That opens a 3-day debate where you both share your side." },
               { step: "05", title: "Strangers weigh in", desc: "For 2 days, people who've never met either of them read both stories and take a side." },
@@ -1088,7 +1088,7 @@ export default function HomePage() {
 
           <div className="space-y-4">
             <div className="bg-white border border-green-200 rounded-2xl p-6">
-              <h3 className="font-semibold text-green-800 mb-3">For writers</h3>
+              <h3 className="font-semibold text-green-800 mb-3">For contributors</h3>
               <div className="space-y-2.5 text-sm text-gray-600">
                 <p><span className="font-medium text-gray-800">Truth defense:</span> Truthful submissions are protected against defamation claims.</p>
                 <p><span className="font-medium text-gray-800">Fair comment:</span> Opinions based on disclosed facts are generally protected.</p>
@@ -1097,7 +1097,7 @@ export default function HomePage() {
             </div>
 
             <div className="bg-white border border-blue-200 rounded-2xl p-6">
-              <h3 className="font-semibold text-blue-800 mb-3">For the person it&apos;s about</h3>
+              <h3 className="font-semibold text-blue-800 mb-3">For the subject</h3>
               <div className="space-y-2.5 text-sm text-gray-600">
                 <p><span className="font-medium text-gray-800">You hear first:</span> We tell you right away, and you see it 24 hours before anyone else.</p>
                 <p><span className="font-medium text-gray-800">Tell your side:</span> Challenge any record. You both get 3 days to share your side, then the community weighs in.</p>
@@ -1212,8 +1212,8 @@ export default function HomePage() {
                 <p className="font-semibold mb-2 text-gray-600">Important Legal Notice</p>
                 <p className="mb-2">By submitting this record, you acknowledge that DNounce is a neutral platform operating under Section 230 of the Communications Decency Act. You — not DNounce — are solely responsible for the accuracy and legality of your submission.</p>
                 <p className="mb-2">You certify that your submission is truthful to the best of your knowledge and based on either verifiable evidence or honest personal opinion. Submitting knowingly false or malicious content may result in permanent account suspension and exposes you to legal liability.</p>
-                <p className="mb-2">Your name: Your first name and last initial will appear publicly on the record. The person you're writing about will see it.</p>
-                <p>We&apos;ll let the person know. They can reply, or challenge the record so both sides get heard.</p>
+                <p className="mb-2">Your name: Your first name and last initial will appear publicly on the record. The subject will see it.</p>
+                <p>We&apos;ll let the subject know. They can reply, or challenge the record so both sides get heard.</p>
               </div>
             </div>
 

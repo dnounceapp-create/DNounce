@@ -241,7 +241,7 @@ export default function NotificationsPage() {
             <ToggleRow
               locked
               title="Results announced"
-              desc="When the results come out. Always sent to the writer and the person it's about — can't be turned off."
+              desc="When the results come out. Always sent to the contributor and the subject — can't be turned off."
               value={true}
             />
           </Section>

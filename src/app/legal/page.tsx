@@ -75,8 +75,8 @@ export default function LegalPage() {
               </div>
 
               <div>
-                <h3 className="font-semibold text-gray-900 mb-2">Writer names</h3>
-                <p>Your first name and last initial appear publicly on every record you submit. The person you&apos;re writing about will see it. You&apos;re responsible for what you write. Older records whose writer was promised anonymity stay hidden; for those, we hold your identity on file, encrypted and separately from your review. We do not publish it. If we receive a legally valid demand for it, we will tell you before we disclose anything, unless a court orders us not to. We do not promise to litigate on your behalf.</p>
+                <h3 className="font-semibold text-gray-900 mb-2">Contributor names</h3>
+                <p>Your first name and last initial appear publicly on every record you submit. The subject will see it. You&apos;re responsible for what you write. Older records whose contributor was promised anonymity stay hidden; for those, we hold your identity on file, encrypted and separately from your review. We do not publish it. If we receive a legally valid demand for it, we will tell you before we disclose anything, unless a court orders us not to. We do not promise to litigate on your behalf.</p>
               </div>
 
               <div>
@@ -118,7 +118,7 @@ export default function LegalPage() {
 
               <div>
                 <h3 className="font-semibold text-gray-900 mb-2">Older anonymous records</h3>
-                <p>For older records whose writer was promised anonymity: We hold your identity on file, encrypted and separately from your review. We do not publish it. If we receive a legally valid demand for it, we will tell you before we disclose anything, unless a court orders us not to. We do not promise to litigate on your behalf.</p>
+                <p>For older records whose contributor was promised anonymity: We hold your identity on file, encrypted and separately from your review. We do not publish it. If we receive a legally valid demand for it, we will tell you before we disclose anything, unless a court orders us not to. We do not promise to litigate on your behalf.</p>
               </div>
 
               <div>
@@ -154,13 +154,13 @@ export default function LegalPage() {
 
             <div className="space-y-6 text-sm text-gray-600 leading-relaxed">
               <div>
-                <h3 className="font-semibold text-gray-900 mb-2">How writer names work</h3>
-                <p>Every new record shows the writer&apos;s first name and last initial. Older records whose writer was promised anonymity stay hidden. If a record is challenged, the community votes on who they side with, and votes are shown as counts. DNounce does not take a side.</p>
+                <h3 className="font-semibold text-gray-900 mb-2">How contributor names work</h3>
+                <p>Every new record shows the contributor&apos;s first name and last initial. Older records whose contributor was promised anonymity stay hidden. If a record is challenged, the community votes on who they side with, and votes are shown as counts. DNounce does not take a side.</p>
               </div>
 
               <div>
                 <h3 className="font-semibold text-gray-900 mb-2">How moderation works</h3>
-                <p>When a record is challenged, the writer and the person it&apos;s about each get 3 days to share their side, followed by a 2-day community vote. The record stays up whatever the result. Admins can intervene when records violate guidelines. All admin actions are logged internally. No record is removed or altered based on commercial interests or pressure from any party.</p>
+                <p>When a record is challenged, the contributor and the subject each get 3 days to share their side, followed by a 2-day community vote. The record stays up whatever the result. Admins can intervene when records violate guidelines. All admin actions are logged internally. No record is removed or altered based on commercial interests or pressure from any party.</p>
               </div>
 
               <div>
@@ -192,21 +192,21 @@ export default function LegalPage() {
 
               <div>
                 <h3 className="font-semibold text-gray-900 mb-2">Anti-SLAPP Protection</h3>
-                <p>DNounce actively opposes the use of litigation as a tool to silence community accountability. Any attempt to use legal process to suppress records, or compel DNounce to act against its platform principles will be treated as a potential Strategic Lawsuit Against Public Participation (SLAPP). DNounce reserves the right to oppose such actions vigorously, including filing motions to quash subpoenas and seeking attorney's fees under applicable anti-SLAPP statutes. If you are attempting to use legal process to silence a writer rather than seeking genuine redress, be advised that DNounce will not facilitate that effort.</p>
+                <p>DNounce actively opposes the use of litigation as a tool to silence community accountability. Any attempt to use legal process to suppress records, or compel DNounce to act against its platform principles will be treated as a potential Strategic Lawsuit Against Public Participation (SLAPP). DNounce reserves the right to oppose such actions vigorously, including filing motions to quash subpoenas and seeking attorney's fees under applicable anti-SLAPP statutes. If you are attempting to use legal process to silence a contributor rather than seeking genuine redress, be advised that DNounce will not facilitate that effort.</p>
               </div>
 
               <div>
-                <h3 className="font-semibold text-gray-900 mb-2">Requests for a writer's identity</h3>
+                <h3 className="font-semibold text-gray-900 mb-2">Requests for a contributor's identity</h3>
                 <p>We hold your identity on file, encrypted and separately from your review. We do not publish it. If we receive a legally valid demand for it, we will tell you before we disclose anything, unless a court orders us not to. We do not promise to litigate on your behalf.</p>
               </div>
 
               <div>
-                <h3 className="font-semibold text-gray-900 mb-2">For writers — your protections</h3>
+                <h3 className="font-semibold text-gray-900 mb-2">For contributors — your protections</h3>
                 <p>Truthful statements are generally protected from defamation claims. Honest opinions based on real experiences are typically protected as fair comment. DNounce is not your legal shield — if you submit false information, you bear that liability. Write truthfully.</p>
               </div>
 
               <div>
-                <h3 className="font-semibold text-gray-900 mb-2">For the person a record is about — your rights</h3>
+                <h3 className="font-semibold text-gray-900 mb-2">For subjects — your rights</h3>
                 <p>You have the right to be notified when a record is submitted about you. You have the right to reply and to challenge it. Challenged records stay on DNounce and show which side the community took. If a record is provably false and causes harm, your legal remedy is against the person who submitted it — not against DNounce. DNounce is immune from defamation liability for user-submitted content under Section 230. If you believe a record is false, challenge it. The community will decide who they side with.</p>
               </div>
 

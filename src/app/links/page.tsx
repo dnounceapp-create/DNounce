@@ -157,7 +157,7 @@ export default function LinksPage() {
                   <div className="text-base font-semibold text-gray-900 leading-tight mb-2">
                     {r.subject_name || "Someone"}{" "}
                     <span className="text-gray-400 font-medium">vs</span>{" "}
-                    {r.contributor_name || "A writer"}
+                    {r.contributor_name || "A contributor"}
                   </div>
 
                   {/* Preview */}

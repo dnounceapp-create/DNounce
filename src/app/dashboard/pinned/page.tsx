@@ -199,8 +199,8 @@ export default function PinnedRecordsPage() {
       "Debate": (r) => r.stage === 5,
       "Community vote": (r) => r.stage === 6,
       Anonymity: (r) => r.stage === 7,
-"Sided with the writer": (r) => outcomeSide(r.outcome) === "contributor",
-"Sided with the person it's about": (r) => outcomeSide(r.outcome) === "subject",
+"Sided with the contributor": (r) => outcomeSide(r.outcome) === "contributor",
+"Sided with the subject": (r) => outcomeSide(r.outcome) === "subject",
 "It's a tie": (r) => isTie(r.outcome),
     };
     return map[status] ?? (() => true);
@@ -276,8 +276,8 @@ export default function PinnedRecordsPage() {
               <option>Challenged</option>
               <option>Debate</option>
               <option>Community vote</option>
-              <option value="Sided with the writer">Most sided with the writer</option>
-              <option value="Sided with the person it's about">Most sided with the person it's about</option>
+              <option value="Sided with the contributor">Most sided with the contributor</option>
+              <option value="Sided with the subject">Most sided with the subject</option>
               <option value="It's a tie">It's a tie</option>
             </select>
  

@@ -95,7 +95,7 @@ export const stageConfig: Record<number, StageConfig> = {
   2: {
     label: "Private preview",
     happens:
-      "The person it's about has been told. For 24 hours, only they and the writer can see it.",
+      "The subject has been told. For 24 hours, only they and the contributor can see it.",
     timeline: {
       summary: "Right after it's submitted",
       start: "onSubmission",
@@ -114,7 +114,7 @@ export const stageConfig: Record<number, StageConfig> = {
     label: "Public",
     happens: "Anyone can see the record now.",
     timeline: {
-      summary: "24 hours after the person it's about is told",
+      summary: "24 hours after the subject is told",
       start: "onPublish",
     },
     flags: { isPublic: true, interactionsLocked: false },
@@ -130,7 +130,7 @@ export const stageConfig: Record<number, StageConfig> = {
   4: {
     label: "Challenged",
     happens:
-      "The person it's about challenged it, and the writer has been told. In 24 hours, the debate starts.",
+      "The subject challenged it, and the contributor has been told. In 24 hours, the debate starts.",
     timeline: {
       summary: "As soon as it's challenged",
       start: "onSubjectDispute",
@@ -148,7 +148,7 @@ export const stageConfig: Record<number, StageConfig> = {
   5: {
     label: "Debate",
     happens:
-      "The writer and the person it's about each share their side, with evidence if they have it.",
+      "The contributor and the subject each share their side, with evidence if they have it.",
     timeline: {
       summary: "3 days, starting 24 hours after the challenge",
       start: "onContributorNotifiedOfDispute",
@@ -226,11 +226,11 @@ export interface OutcomeLabel {
 
 export const outcomeLabels: OutcomeLabel[] = [
   {
-    label: "Most people sided with the writer",
+    label: "Most people sided with the contributor",
     color: "bg-green-100 text-green-700 border border-black/30",
   },
   {
-    label: "Most people sided with the person it's about",
+    label: "Most people sided with the subject",
     color: "bg-red-100 text-red-700 border border-black/30",
   },
 ];

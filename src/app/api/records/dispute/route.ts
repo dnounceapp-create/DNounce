@@ -46,7 +46,7 @@ export async function POST(req: Request) {
     .maybeSingle();
 
   if (!subject?.owner_auth_user_id || subject.owner_auth_user_id !== caller.id) {
-    return NextResponse.json({ error: "Only the person this record is about can challenge it." }, { status: 403 });
+    return NextResponse.json({ error: "Only the subject can challenge it." }, { status: 403 });
   }
 
   if (rec.status !== "published" || rec.is_published !== true) {

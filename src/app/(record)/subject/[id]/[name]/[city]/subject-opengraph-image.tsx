@@ -236,7 +236,7 @@ export default async function SubjectOGImage({
             <ScorePill label="Public records" value={sum.total} />
             <ScorePill label="Challenged" value={sum.challenged} />
             <ScorePill label="Sided with them" value={sum.sidedWithThem} />
-            <ScorePill label="Sided with the writer" value={sum.sidedWithWriter} />
+            <ScorePill label="Sided with the contributor" value={sum.sidedWithWriter} />
           </div>
         </div>
       </div>

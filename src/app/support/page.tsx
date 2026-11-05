@@ -12,11 +12,11 @@ const faqs = [
   },
   {
     q: "What happens after I submit a record?",
-    a: "We let the person you wrote about know right away. 24 hours later it goes public, and they can reply or challenge it.",
+    a: "We let the subject know right away. 24 hours later it goes public, and they can reply or challenge it.",
   },
   {
     q: "Someone wrote about me. How do I challenge it?",
-    a: "Once it's public, go to My Records and tap Challenge. In 24 hours you and the writer each get 3 days to share your side, then the community votes for 2 days. The record stays up either way and shows where people landed.",
+    a: "Once it's public, go to My Records and tap Challenge. In 24 hours you and the contributor each get 3 days to share your side, then the community votes for 2 days. The record stays up either way and shows where people landed.",
   },
   {
     q: "Can I delete my account?",
@@ -32,7 +32,7 @@ const faqs = [
   },
   {
     q: "I think a record about me is false. What can I do?",
-    a: "Challenge it — that's exactly what it's for. If you believe it's defamatory and want to take legal action against the writer, talk to a lawyer. We'll cooperate with valid legal processes.",
+    a: "Challenge it — that's exactly what it's for. If you believe it's defamatory and want to take legal action against the contributor, talk to a lawyer. We'll cooperate with valid legal processes.",
   },
   {
     q: "My account was suspended. What do I do?",

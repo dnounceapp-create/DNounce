@@ -371,7 +371,7 @@ export async function GET(req: NextRequest) {
     // ─── Most active role ──────────────────────────────────────────────────
 
     const roleActivity = {
-      "Writer": totalSubmitted,
+      "Contributor": totalSubmitted,
       "Community Voter": votes.length,
       "Community member": citizenStatements.length,
       "Shared their side": debateStatements.length,
