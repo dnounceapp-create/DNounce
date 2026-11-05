@@ -5,8 +5,8 @@
  * saying which side most voters took. It is a count of votes, not a finding of
  * fact by DNounce.
  *
- * The database stores `keep` (most voters sided with the contributor),
- * `delete` (most voters sided with the subject), `tie` (evenly split), or null
+ * The database stores `keep` (most voters sided with Contributor),
+ * `delete` (most voters sided with Subject), `tie` (evenly split), or null
  * when nobody voted (no label is shown). The names are historical: a
  * `delete` outcome does NOT remove the record. Older code also wrote
  * `sided_with_*` / `side_with_*`; every spelling is accepted here.
@@ -30,8 +30,8 @@ export function outcomeSide(raw?: string | null): OutcomeSide | null {
 }
 
 export const OUTCOME_LABEL: Record<OutcomeSide, string> = {
-  contributor: "Most people sided with the contributor",
-  subject: "Most people sided with the subject",
+  contributor: "Most people sided with Contributor",
+  subject: "Most people sided with Subject",
 };
 
 export const OUTCOME_CHIP: Record<OutcomeSide, string> = {
@@ -41,7 +41,7 @@ export const OUTCOME_CHIP: Record<OutcomeSide, string> = {
 
 /**
  * "Most people sided with Jane D." when names are known, otherwise a plain
- * role ("the contributor" / "the subject").
+ * role ("Contributor" / "Subject").
  */
 export function outcomeLabel(
   raw?: string | null,

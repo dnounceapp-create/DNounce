@@ -221,7 +221,7 @@ function ClaimBanner({
         return;
       }
 
-      // The subject's email is checked on the server and never sent to the browser.
+      // Subject's email is checked on the server and never sent to the browser.
       const res = await fetch("/api/subjects/claim-status", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

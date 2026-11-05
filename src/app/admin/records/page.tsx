@@ -237,14 +237,14 @@ export default function AdminRecordsPage() {
 
   const identityFields: SmartField[] = [
     { key: "id", label: "Record ID", type: "readonly" },
-    { key: "_warn", type: "warning", label: "", help: "This controls whether the contributor's real name is shown. Anonymity Granted: contributor's preference is respected. Anonymity Not Granted: always shows real name." },
+    { key: "_warn", type: "warning", label: "", help: "This controls whether Contributor's real name is shown. Anonymity Granted: contributor's preference is respected. Anonymity Not Granted: always shows real name." },
     { key: "contributor_identity_preference", label: "Show contributor name (First L.)", type: "boolean", required: true, help: "Yes for every new and claimed record. No only for old records whose contributor was promised anonymity." },
-    { key: "contributor_display_name", label: "Override Display Name", type: "text", help: "Optional. Leave blank to use the contributor's actual name." },
+    { key: "contributor_display_name", label: "Override Display Name", type: "text", help: "Optional. Leave blank to use Contributor's actual name." },
   ];
 
   const outcomeFields: SmartField[] = [
     { key: "id", label: "Record ID", type: "readonly" },
-    { key: "_warn", type: "warning", label: "", help: "Overriding the final outcome changes what users see and may affect the subject's score. This is a significant action." },
+    { key: "_warn", type: "warning", label: "", help: "Overriding the final outcome changes what users see and may affect Subject's score. This is a significant action." },
     { key: "final_outcome", label: "Final Outcome", type: "select", required: true, options: [{ value: "keep", label: "Community sided with contributor" }, { value: "delete", label: "Community sided with subject (record stays)" }] },
     { key: "finalized_at", label: "Finalized At", type: "datetime-local", required: true },
   ];
@@ -271,7 +271,7 @@ export default function AdminRecordsPage() {
     { key: "subject_nickname", label: "Nickname / Also Known As", type: "text", section: "Identity" },
     { key: "subject_organization", label: "Organization", type: "text", section: "Details" },
     { key: "subject_location", label: "Location", type: "text", section: "Details" },
-    { key: "subject_email", label: "Email Address", type: "email", section: "Contact", help: "The subject's contact email (not public).", validate: v => v && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? "Invalid email format" : null },
+    { key: "subject_email", label: "Email Address", type: "email", section: "Contact", help: "Subject's contact email (not public).", validate: v => v && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? "Invalid email format" : null },
     { key: "subject_phone", label: "Phone Number", type: "text", section: "Contact" },
   ];
 

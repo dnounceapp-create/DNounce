@@ -178,7 +178,7 @@ async function recordInfo(recordId: string, userId: string) {
     .eq("id", recordId)
     .maybeSingle();
   const rec = data as any;
-  let subjectName = "the subject";
+  let subjectName = "Subject";
   let subjectOwner: string | null = null;
   let writerUser: string | null = null;
   if (rec?.subject_id) {
@@ -195,7 +195,7 @@ async function recordInfo(recordId: string, userId: string) {
     userId && userId === writerUser ? "writer" : userId && userId === subjectOwner ? "subject" : "other";
   return {
     record: rec,
-    writer: showWriter ? String(rec.contributor_display_name) : "the contributor",
+    writer: showWriter ? String(rec.contributor_display_name) : "Contributor",
     subject: subjectName,
     role,
   };
@@ -230,7 +230,7 @@ Deno.serve(async (req) => {
 
     const type: string = notification.type || "";
 
-    // No email for these (KJ, Oct 25): the contributor already sees a confirmation screen
+    // No email for these (KJ, Oct 25): Contributor already sees a confirmation screen
     // after submitting, and the person who challenged knows their challenge opens the debate.
     // The in-app notification still shows.
     const NO_EMAIL = new Set(["stage_2_contributor", "stage_5_subject"]);
@@ -247,8 +247,8 @@ Deno.serve(async (req) => {
 
     // Wording drafted by Runable (Oct 25), checked against how the site works.
     const info = notification.record_id ? await recordInfo(notification.record_id, notification.user_id) : null;
-    const writerName = info?.writer ?? "the contributor";
-    const personName = info?.subject ?? "the subject";
+    const writerName = info?.writer ?? "Contributor";
+    const personName = info?.subject ?? "Subject";
     const otherName = info?.role === "writer" ? personName : writerName;
     // Add a full stop unless the text already ends with one ("Devon A.").
     const dot = (t: string) => (/[.!?]$/.test(t.trim()) ? t.trim() : `${t.trim()}.`);
@@ -263,7 +263,7 @@ Deno.serve(async (req) => {
     };
 
     // Wording by StoreClaw (Oct 27), checked against how the site works. Voice: one fact, one feeling, one action.
-    const writerShown = writerName === "the contributor" ? "The contributor" : writerName;
+    const writerShown = writerName === "Contributor" ? "Contributor" : writerName;
     const REFRESHER = callout(
       `<strong>Quick refresher:</strong> once a record is public, ${esc(personName)} can challenge it once. After that, ${esc(writerName)} and ${esc(personName)} get three days to tell their side — messages, photos, receipts, whatever backs up the story. Then the community reads both sides and votes on who they side with. Nobody at DNounce decides — the community does.`,
       theme,
@@ -327,7 +327,7 @@ Deno.serve(async (req) => {
       });
 
     } else if (type === "debate_reply" && info?.record) {
-      const who = otherName === "the contributor" ? "The contributor" : otherName === "the subject" ? "The subject" : otherName;
+      const who = otherName === "Contributor" ? "Contributor" : otherName === "Subject" ? "Subject" : otherName;
       const endsMs = info.record.debate_ends_at ? new Date(info.record.debate_ends_at).getTime() - Date.now() : null;
       const hoursLeft = endsMs !== null && endsMs > 0 ? Math.max(1, Math.round(endsMs / 3_600_000)) : null;
       simple({

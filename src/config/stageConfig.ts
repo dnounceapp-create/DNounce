@@ -95,7 +95,7 @@ export const stageConfig: Record<number, StageConfig> = {
   2: {
     label: "Private preview",
     happens:
-      "The subject has been told. For 24 hours, only they and the contributor can see it.",
+      "Subject has been told. For 24 hours, only they and Contributor can see it.",
     timeline: {
       summary: "Right after it's submitted",
       start: "onSubmission",
@@ -114,7 +114,7 @@ export const stageConfig: Record<number, StageConfig> = {
     label: "Public",
     happens: "Anyone can see the record now.",
     timeline: {
-      summary: "24 hours after the subject is told",
+      summary: "24 hours after Subject is told",
       start: "onPublish",
     },
     flags: { isPublic: true, interactionsLocked: false },
@@ -130,7 +130,7 @@ export const stageConfig: Record<number, StageConfig> = {
   4: {
     label: "Challenged",
     happens:
-      "The subject challenged it, and the contributor has been told. In 24 hours, the debate starts.",
+      "Subject challenged it, and Contributor has been told. In 24 hours, the debate starts.",
     timeline: {
       summary: "As soon as it's challenged",
       start: "onSubjectDispute",
@@ -148,7 +148,7 @@ export const stageConfig: Record<number, StageConfig> = {
   5: {
     label: "Debate",
     happens:
-      "The contributor and the subject each share their side, with evidence if they have it.",
+      "Contributor and Subject each share their side, with evidence if they have it.",
     timeline: {
       summary: "3 days, starting 24 hours after the challenge",
       start: "onContributorNotifiedOfDispute",
@@ -226,11 +226,11 @@ export interface OutcomeLabel {
 
 export const outcomeLabels: OutcomeLabel[] = [
   {
-    label: "Most people sided with the contributor",
+    label: "Most people sided with Contributor",
     color: "bg-green-100 text-green-700 border border-black/30",
   },
   {
-    label: "Most people sided with the subject",
+    label: "Most people sided with Subject",
     color: "bg-red-100 text-red-700 border border-black/30",
   },
 ];

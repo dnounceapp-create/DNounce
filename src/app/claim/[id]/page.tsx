@@ -289,7 +289,7 @@ export default function ClaimOverridePage() {
       <div className="max-w-md w-full rounded-2xl border border-green-200 bg-green-50 p-8 text-center">
         <CheckCircle className="w-8 h-8 text-green-500 mx-auto mb-4" />
         <div className="text-base font-semibold text-green-900 mb-2">Record claimed successfully!</div>
-        <div className="text-sm text-green-700 mb-1">Your record has been updated. We let the subject know. It goes public in 24 hours.</div>
+        <div className="text-sm text-green-700 mb-1">Your record has been updated. We let Subject know. It goes public in 24 hours.</div>
         <div className="text-sm text-gray-400">Redirecting you back to the record...</div>
       </div>
     </div>
@@ -316,7 +316,7 @@ export default function ClaimOverridePage() {
           <div className="bg-gray-50 border border-gray-200 rounded-2xl p-5 sm:p-8 shadow-sm">
             <div className="flex flex-col text-center mb-5 sm:mb-6">
               <h2 className="text-base sm:text-lg font-semibold text-gray-800">About</h2>
-              <p className="text-xs sm:text-sm text-gray-500">The subject. This can&apos;t be changed.</p>
+              <p className="text-xs sm:text-sm text-gray-500">Subject. This can&apos;t be changed.</p>
             </div>
             <div className="flex items-center gap-4 bg-white border border-gray-200 rounded-2xl px-5 py-4">
               <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
@@ -385,7 +385,7 @@ export default function ClaimOverridePage() {
 
           {/* Contributor name notice */}
           <div className="mb-8 mt-8 rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700 leading-relaxed">
-            <span className="font-semibold">Your name:</span> Your first name and last initial will appear publicly on this record. The subject will see it. You're responsible for what you write.
+            <span className="font-semibold">Your name:</span> Your first name and last initial will appear publicly on this record. Subject will see it. You're responsible for what you write.
           </div>
 
           {/* Evidence Upload */}
@@ -494,8 +494,8 @@ export default function ClaimOverridePage() {
               <p className="font-semibold mb-2 text-gray-600">Important Legal Notice</p>
               <p className="mb-2">By submitting this record, you acknowledge that DNounce is a neutral platform operating under Section 230 of the Communications Decency Act. You — not DNounce — are solely responsible for the accuracy and legality of your submission.</p>
               <p className="mb-2">You certify that your submission is truthful to the best of your knowledge and based on either verifiable evidence or honest personal opinion. Submitting knowingly false or malicious content may result in permanent account suspension and exposes you to legal liability.</p>
-              <p className="mb-2">Your name: Your first name and last initial will appear publicly on this record. The subject will see it.</p>
-              <p>We&apos;ll let the subject know. They can reply, or challenge the record so both sides get heard.</p>
+              <p className="mb-2">Your name: Your first name and last initial will appear publicly on this record. Subject will see it.</p>
+              <p>We&apos;ll let Subject know. They can reply, or challenge the record so both sides get heard.</p>
             </div>
           </div>
 
@@ -511,7 +511,7 @@ export default function ClaimOverridePage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
           <div className="bg-white rounded-2xl p-8 w-full max-w-sm shadow-2xl">
             <h2 className="text-lg font-bold text-gray-900 mb-2">Are you absolutely sure?</h2>
-            <p className="text-sm text-gray-500 mb-6">This will permanently claim the record under your account. We&apos;ll let the subject know again. <span className="font-semibold text-gray-700">You can never edit this record again.</span></p>
+            <p className="text-sm text-gray-500 mb-6">This will permanently claim the record under your account. We&apos;ll let Subject know again. <span className="font-semibold text-gray-700">You can never edit this record again.</span></p>
             <div className="flex gap-3">
               <button type="button" onClick={() => setShowConfirm(false)} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition">Go back</button>
               <button type="button" onClick={() => { setShowConfirm(false); handleClaim(); }} disabled={saving}

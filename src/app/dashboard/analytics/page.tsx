@@ -272,8 +272,8 @@ function ReputationReachSection({ data }: { data: AnalyticsData }) {
           ) : sorted.map((r) => {
             const credLabel = normalizeCredLabel(r.anonymity_status);
             const outcomeLabel =
-              outcomeSide(r.final_outcome) === "contributor" ? "Most people sided with the contributor" :
-              outcomeSide(r.final_outcome) === "subject" ? "Most people sided with the subject" : null;
+              outcomeSide(r.final_outcome) === "contributor" ? "Most people sided with Contributor" :
+              outcomeSide(r.final_outcome) === "subject" ? "Most people sided with Subject" : null;
             const dateStr = r.submitted_at
               ? new Date(r.submitted_at).toLocaleDateString()
               : null;
@@ -776,7 +776,7 @@ function ProContent({ data }: { data: AnalyticsData }) {
       <div>
         <SectionHeader title="How your records turned out" />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <StatCard icon={<Target className="w-5 h-5" />} label="Your records where most people sided with you" value={data.contributorSuccessRate !== null ? `${data.contributorSuccessRate}%` : "—"} sub={`${data.sided_contributor} with the contributor · ${data.sided_subject} with the subject`} color="green" />
+          <StatCard icon={<Target className="w-5 h-5" />} label="Your records where most people sided with you" value={data.contributorSuccessRate !== null ? `${data.contributorSuccessRate}%` : "—"} sub={`${data.sided_contributor} with Contributor · ${data.sided_subject} with Subject`} color="green" />
           <StatCard icon={<ShieldCheck className="w-5 h-5" />} label="Challenges you won" value={data.disputeResolutionRate !== null ? `${data.disputeResolutionRate}%` : "—"} sub="Of the records you challenged, how often most people sided with you" color="blue" />
         </div>
       </div>

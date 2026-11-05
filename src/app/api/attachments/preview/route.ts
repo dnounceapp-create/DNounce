@@ -108,7 +108,7 @@ async function isUserAllowedToPreview({
   role: string;
   userId: string;
 }) {
-  // Example: user can preview if they are the subject/contributor/voter on this record,
+  // Example: user can preview if they are Subject/contributor/voter on this record,
   // or if they’re the owner of this file path (userId match),
   // or if they have a platform role that allows it.
   if (currentUserId === userId) return true;

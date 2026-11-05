@@ -1,6 +1,6 @@
 /**
  * Computes the same SHA-256 hash used at submission time for zero-knowledge anonymous records.
- * Used to look up anonymous submissions in the contributor's dashboard without exposing identity.
+ * Used to look up anonymous submissions in Contributor's dashboard without exposing identity.
  */
 export async function computeContributorHash(authUserId: string): Promise<string> {
   const pepper = process.env.ANON_HASH_PEPPER ?? "";

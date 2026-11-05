@@ -94,7 +94,7 @@ export async function GET(
   const subject = Array.isArray((data as any).subject) ? (data as any).subject[0] : (data as any).subject;
 
   // Only published, non-deleted records are public. Anyone else gets the same
-  // 404 as a missing record, unless they are the contributor, the subject's
+  // 404 as a missing record, unless they are Contributor, Subject's
   // owner, or an admin (the "record submitted" page checks this right after
   // submission, before the record is published).
   const isPublic =

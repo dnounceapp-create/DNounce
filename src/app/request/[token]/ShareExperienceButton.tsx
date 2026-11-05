@@ -6,7 +6,7 @@ export default function ShareExperienceButton({ token, subjectUuid, relationship
   const router = useRouter();
 
   function handleClick() {
-    // Same subject_id param the subject page's own Submit button uses
+    // Same subject_id param Subject page's own Submit button uses
     const redirectTo = `/dashboard/submit?subject_id=${subjectUuid}&relationship=${relationship}&request=${token}`;
     // New users lose redirectTo during onboarding, so also hand off via sessionStorage (same as the claim flow)
     sessionStorage.setItem("request_redirect", redirectTo);

@@ -3,11 +3,11 @@ import { createClient } from "@supabase/supabase-js";
 import { requireSession, authErrorResponse } from "@/lib/apiAuth";
 
 /**
- * The subject challenges a published record (shown to users as "Challenge").
+ * Subject challenges a published record (shown to users as "Challenge").
  *
  * Subjects have no database permission to change records, so this used to be
  * silently ignored when done from the browser. It runs here instead, with the
- * service role, after checking that the caller owns the subject profile the
+ * service role, after checking that the caller owns Subject profile the
  * record is about and that the record is published and not already disputed.
  *
  * A dispute never removes the record. It opens the debate and community vote;
@@ -46,7 +46,7 @@ export async function POST(req: Request) {
     .maybeSingle();
 
   if (!subject?.owner_auth_user_id || subject.owner_auth_user_id !== caller.id) {
-    return NextResponse.json({ error: "Only the subject can challenge it." }, { status: 403 });
+    return NextResponse.json({ error: "Only Subject can challenge it." }, { status: 403 });
   }
 
   if (rec.status !== "published" || rec.is_published !== true) {
@@ -65,6 +65,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "This record has already been challenged." }, { status: 409 });
   }
 
-  // The database trigger on status change notifies the contributor (stage_4_contributor).
+  // The database trigger on status change notifies Contributor (stage_4_contributor).
   return NextResponse.json({ ok: true });
 }

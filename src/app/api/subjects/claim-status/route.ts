@@ -6,7 +6,7 @@ import { requireSession, authErrorResponse } from "@/lib/apiAuth";
  * Tells the logged-in caller what they can do with a subject profile:
  * already-owner | claimed-other | pending | unclaimed-match | unclaimed-no-match
  *
- * The subject's email is compared here, on the server, and is never returned.
+ * Subject's email is compared here, on the server, and is never returned.
  */
 export async function POST(req: Request) {
   let caller;

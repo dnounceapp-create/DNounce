@@ -19,7 +19,7 @@ describe("summarizeRecords", () => {
 describe("outcomeLabel", () => {
   it("uses names, ties, and nothing for no votes", () => {
     expect(outcomeLabel("delete", { subject: "Sam S." })).toBe("Most people sided with Sam S.");
-    expect(outcomeLabel("keep")).toBe("Most people sided with the contributor");
+    expect(outcomeLabel("keep")).toBe("Most people sided with Contributor");
     expect(outcomeLabel("tie")).toMatch(/tie/i);
     expect(outcomeLabel(null)).toBeNull();
   });

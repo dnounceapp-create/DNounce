@@ -326,13 +326,13 @@ const STAGE_CONFIG: Record<string, {
     label: "Reset to Awaiting Claim", color: "gray",
     desc: "The record will be hidden from public view and held until it is claimed or moved on again.",
     fields: [
-      { key: "_warn", type: "warning", label: "", help: "This will make the record private immediately. The subject and contributor will be notified." },
+      { key: "_warn", type: "warning", label: "", help: "This will make the record private immediately. Subject and Contributor will be notified." },
       { key: "note", label: "Reason for reset", type: "textarea", required: true, help: "Be specific — this is logged and visible to all admins." },
     ],
   },
   subject_notified: {
     label: "Mark Subject as Notified", color: "yellow",
-    desc: "The subject is notified. The record goes public automatically 24 hours after it was submitted.",
+    desc: "Subject is notified. The record goes public automatically 24 hours after it was submitted.",
     fields: [
       { key: "note", label: "Reason", type: "textarea", required: true },
     ],
@@ -348,7 +348,7 @@ const STAGE_CONFIG: Record<string, {
   },
   deletion_request: {
     label: "Mark as Challenged", color: "red",
-    desc: "The subject is formally requesting deletion. The record will be locked and prepared for debate.",
+    desc: "Subject is formally requesting deletion. The record will be locked and prepared for debate.",
     fields: [
       { key: "dispute_started_at", label: "Dispute Started At", type: "datetime-local", required: true },
       { key: "note", label: "Reason / context", type: "textarea", required: true },
@@ -365,7 +365,7 @@ const STAGE_CONFIG: Record<string, {
   },
   voting: {
     label: "Open Community Voting", color: "blue",
-    desc: "The community voting window opens. Citizens and voters can now side with the contributor or subject.",
+    desc: "The community voting window opens. Citizens and voters can now side with Contributor or Subject.",
     fields: [
       { key: "voting_started_at", label: "Voting Starts", type: "datetime-local", required: true },
       { key: "voting_ends_at", label: "Voting Ends", type: "datetime-local", required: true, help: "Standard is 48 hours from start date." },

@@ -14,7 +14,7 @@ export default function RecordOutcomeSummary({
   records,
   title = "How their records turned out",
   themLabel = "Sided with them",
-  writerLabel = "Sided with the contributor",
+  writerLabel = "Sided with Contributor",
   align = "right",
 }: {
   records: OutcomeSummaryRecord[];

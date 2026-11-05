@@ -318,8 +318,8 @@ export default function MyRecordsPage() {
       "Debate": (record) => record.stage === 5,
       "Community vote": (record) => record.stage === 6,
       Anonymity: (record) => record.stage === 7,
-"Sided with the contributor": (record) => outcomeSide(record.outcome) === "contributor",
-"Sided with the subject": (record) => outcomeSide(record.outcome) === "subject",
+"Sided with Contributor": (record) => outcomeSide(record.outcome) === "contributor",
+"Sided with Subject": (record) => outcomeSide(record.outcome) === "subject",
 "It's a tie": (record) => isTie(record.outcome),
     };
     return map[status] ?? (() => true);
@@ -435,7 +435,7 @@ export default function MyRecordsPage() {
 
       // Show success confirmation modal
       setDisputeSuccessId(id);
-      setDisputeToast({ type: "success", msg: "Challenge sent. We let the contributor know." });
+      setDisputeToast({ type: "success", msg: "Challenge sent. We let Contributor know." });
     } catch (err: any) {
       setDisputeToast({ type: "error", msg: err?.message || "We couldn't send your challenge. Please try again." });
     } finally {
@@ -510,7 +510,7 @@ export default function MyRecordsPage() {
           </div>
 
           <div className="bg-white/90 backdrop-blur-sm shadow-sm hover:shadow-md transition rounded-2xl p-4 sm:p-6 text-center border border-gray-100">
-            <p className="text-xs sm:text-sm font-medium text-gray-600">Most sided with the contributor</p>
+            <p className="text-xs sm:text-sm font-medium text-gray-600">Most sided with Contributor</p>
             <p className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
               {stats.sided_contributor}
             </p>
@@ -544,8 +544,8 @@ export default function MyRecordsPage() {
               <option>Challenged</option>
               <option>Debate</option>
               <option>Community vote</option>
-              <option value="Sided with the contributor">Most sided with the contributor</option>
-              <option value="Sided with the subject">Most sided with the subject</option>
+              <option value="Sided with Contributor">Most sided with Contributor</option>
+              <option value="Sided with Subject">Most sided with Subject</option>
               <option value="It's a tie">It's a tie</option>
             </select>
 
@@ -793,7 +793,7 @@ export default function MyRecordsPage() {
           <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-md p-6 space-y-4">
             <h2 className="text-white font-semibold text-lg">Challenge this record?</h2>
             <p className="text-gray-400 text-sm leading-relaxed">
-              We'll let the contributor know. In 24 hours, you'll both get 3 days to share your side. Then the community votes for 2 days. Whatever happens, the record stays up and shows where people landed.
+              We'll let Contributor know. In 24 hours, you'll both get 3 days to share your side. Then the community votes for 2 days. Whatever happens, the record stays up and shows where people landed.
             </p>
             <p className="text-orange-400 text-xs font-medium">You can&apos;t undo this.</p>
             <div className="flex gap-3 pt-2">
@@ -825,7 +825,7 @@ export default function MyRecordsPage() {
               <h2 className="text-gray-900 font-semibold text-lg">Challenge sent</h2>
             </div>
             <p className="text-gray-600 text-sm leading-relaxed">
-              We let the contributor know. We&apos;ll email you when it&apos;s time to share your side.
+              We let Contributor know. We&apos;ll email you when it&apos;s time to share your side.
             </p>
             <div className="bg-orange-50 border border-orange-200 rounded-xl p-3">
               <p className="text-orange-700 text-xs font-medium">What happens next</p>

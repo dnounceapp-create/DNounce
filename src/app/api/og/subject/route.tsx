@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
     { label: "Public records", value: sum.total },
     { label: "Challenged", value: sum.challenged },
     { label: "Sided with them", value: sum.sidedWithThem },
-    { label: "Sided with the contributor", value: sum.sidedWithWriter },
+    { label: "Sided with Contributor", value: sum.sidedWithWriter },
     { label: "Ties", value: sum.ties },
   ];
 

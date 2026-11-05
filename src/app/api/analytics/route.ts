@@ -348,7 +348,7 @@ export async function GET(req: NextRequest) {
     // ─── Dispute resolution ───────────────────────────────────────────────
 
     const disputed = recordsAboutMe.filter((r: any) => ["debate", "voting", "decision"].includes(r.status));
-    // Records about this user: "in your favor" means most voters sided with them (the subject).
+    // Records about this user: "in your favor" means most voters sided with them (Subject).
     const resolvedInFavor = disputed.filter((r: any) => outcomeSide(r.final_outcome) === "subject").length;
     const disputeResolutionRate = disputed.length > 0 ? Math.round((resolvedInFavor / disputed.length) * 100) : null;
 

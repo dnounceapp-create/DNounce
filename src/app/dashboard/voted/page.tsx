@@ -226,8 +226,8 @@ export default function VotedRecordsPage() {
       "Debate": (r) => r.stage === 5,
       "Community vote": (r) => r.stage === 6,
       Anonymity: (r) => r.stage === 7,
-"Sided with the contributor": (r) => outcomeSide(r.outcome) === "contributor",
-"Sided with the subject": (r) => outcomeSide(r.outcome) === "subject",
+"Sided with Contributor": (r) => outcomeSide(r.outcome) === "contributor",
+"Sided with Subject": (r) => outcomeSide(r.outcome) === "subject",
 "It's a tie": (r) => isTie(r.outcome),
     };
     return map[status] ?? (() => true);
@@ -330,8 +330,8 @@ export default function VotedRecordsPage() {
               <option>Challenged</option>
               <option>Debate</option>
               <option>Community vote</option>
-              <option value="Sided with the contributor">Most sided with the contributor</option>
-              <option value="Sided with the subject">Most sided with the subject</option>
+              <option value="Sided with Contributor">Most sided with Contributor</option>
+              <option value="Sided with Subject">Most sided with Subject</option>
               <option value="It's a tie">It's a tie</option>
             </select>
 
@@ -344,8 +344,8 @@ export default function VotedRecordsPage() {
               }
             >
               <option value="">My Vote</option>
-              <option value="side_with_contributor">You sided with the contributor</option>
-              <option value="side_with_subject">You sided with the subject</option>
+              <option value="side_with_contributor">You sided with Contributor</option>
+              <option value="side_with_subject">You sided with Subject</option>
             </select>
 
             {hasActiveFilters && (
@@ -505,7 +505,7 @@ export default function VotedRecordsPage() {
                     <ThumbsUp
                       className={`h-3 w-3 ${record.vote_choice === "side_with_subject" ? "rotate-180" : ""}`}
                     />
-                    {record.vote_choice === "side_with_contributor" ? "With the contributor" : "With the subject"}
+                    {record.vote_choice === "side_with_contributor" ? "With Contributor" : "With Subject"}
                   </span>
                 </div>
               </div>

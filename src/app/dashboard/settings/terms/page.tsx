@@ -33,11 +33,11 @@ export default function TermsPage() {
             },
             {
               title: "6. Record Lifecycle",
-              body: "When you submit a record, the subject is notified and the record is published 24 hours later. DNounce does not classify, verify, or endorse records. If a record is challenged, community votes are user-generated and shown as counts. DNounce is not the publisher, editor, or endorser of any record on the platform."
+              body: "When you submit a record, Subject is notified and the record is published 24 hours later. DNounce does not classify, verify, or endorse records. If a record is challenged, community votes are user-generated and shown as counts. DNounce is not the publisher, editor, or endorser of any record on the platform."
             },
             {
               title: "7. Contributor Names",
-              body: "Your first name and last initial appear publicly on every record you submit. The subject will see it. You are responsible for what you write. Older records whose contributor was promised anonymity stay hidden."
+              body: "Your first name and last initial appear publicly on every record you submit. Subject will see it. You are responsible for what you write. Older records whose contributor was promised anonymity stay hidden."
             },
             {
               title: "8. Limitation of Liability",

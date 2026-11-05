@@ -42,7 +42,7 @@ export async function POST(req: Request) {
       (data ?? []).forEach((r) => userIds.add(r.user_id));
     }
 
-    // Never suggest the subject themselves
+    // Never suggest Subject themselves
     userIds.delete(user.id);
     if (userIds.size === 0) return NextResponse.json({ users: [] });
 

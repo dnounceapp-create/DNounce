@@ -392,7 +392,7 @@ export default function SubmitRecordPage() {
       setSubmitNickname(data.nickname || "");
       setSubmitOrganization(data.organization || "");
       setSubmitLocation(data.location || "");
-      // Subject email/phone are private; the contributor enters them if they know them.
+      // Subject email/phone are private; Contributor enters them if they know them.
 
       setAutoSearched(true);
     })();
@@ -769,7 +769,7 @@ export default function SubmitRecordPage() {
             <div className="mt-6 bg-blue-50 border border-blue-200 text-blue-800 rounded-xl p-4 text-sm flex gap-3 items-start">
               <AlertTriangle className="w-5 h-5 mt-0.5 flex-shrink-0 text-blue-600" />
               <p>
-                <strong>Why we ask:</strong> We let the subject know about your record so they can read it and reply.
+                <strong>Why we ask:</strong> We let Subject know about your record so they can read it and reply.
               </p>
             </div>
           </div>
@@ -1020,7 +1020,7 @@ export default function SubmitRecordPage() {
               </div>
               {/* Contributor name notice */}
               <div className="mb-8 mt-8 rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700 leading-relaxed">
-                <span className="font-semibold">Your name:</span> Your first name and last initial will appear publicly on this record. The subject will see it. You're responsible for what you write.
+                <span className="font-semibold">Your name:</span> Your first name and last initial will appear publicly on this record. Subject will see it. You're responsible for what you write.
               </div>
 
           {/* Evidence Upload */}
@@ -1136,8 +1136,8 @@ export default function SubmitRecordPage() {
               <h4 className="font-semibold mb-2">Important Legal Notice:</h4>
               <p className="mb-2">By submitting this record, you acknowledge that DNounce is a neutral public platform operating under Section 230 of the Communications Decency Act (47 U.S.C. § 230). DNounce is not the publisher, editor, or endorser of any user-submitted content. You — not DNounce — are solely responsible for the accuracy and legality of your submission.</p>
               <p className="mb-2">You certify that your submission is truthful to the best of your knowledge and based on either verifiable evidence or honest personal opinion. Submitting knowingly false, fabricated, or malicious content may result in permanent account suspension and exposes you to legal liability.</p>
-              <p className="mb-2">Your name: Your first name and last initial will appear publicly on this record. The subject will see it. You&apos;re responsible for what you write.</p>
-              <p className="mb-2">We&apos;ll let the subject know. They can reply, or challenge the record so both sides get heard. If they challenge it, you agree to share your side in good faith.</p>
+              <p className="mb-2">Your name: Your first name and last initial will appear publicly on this record. Subject will see it. You&apos;re responsible for what you write.</p>
+              <p className="mb-2">We&apos;ll let Subject know. They can reply, or challenge the record so both sides get heard. If they challenge it, you agree to share your side in good faith.</p>
               <p className="mb-2">You retain copyright of your original content but grant DNounce a non-exclusive license to display and distribute it as part of our platform services. We do not sell your content to third parties.</p>
             </div>
 
