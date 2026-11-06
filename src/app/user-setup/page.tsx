@@ -311,6 +311,16 @@ export default function UserSetupPage() {
       // Connecting to an existing profile happens in create_subject_if_not_exists above:
       // a confirmed email connects them; a phone match only asks an admin to review.
 
+      // Pre-built profile (outreach): if their verified email matches one, it's theirs now.
+      try {
+        const { data: s } = await supabase.auth.getSession();
+        await fetch('/api/prospects/claim', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${s.session?.access_token ?? ''}` },
+          body: '{}',
+        });
+      } catch {}
+
       setSuccess(true);
       const claimRecordId = sessionStorage.getItem('claim_record_id');
       const claimCode = sessionStorage.getItem('claim_code');

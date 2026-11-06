@@ -190,6 +190,7 @@ function ClaimProfile() {
                 <p className="text-sm font-semibold text-blue-600">Hi {preview.first_name},</p>
                 <h1 className="mt-1 text-xl font-bold text-gray-900">Your DNounce profile is ready</h1>
                 <p className="mt-1 text-sm text-gray-600">Claim it free to make it yours. Nobody can see it until you do.</p>
+                <p className="mt-2 text-xs text-gray-500">Sign up or sign in with the email we contacted you at. Once you verify it, the profile is yours.</p>
 
                 <div className="mt-5 rounded-xl border border-gray-200 bg-gray-50 p-4">
                   <div className="flex items-center gap-3">
