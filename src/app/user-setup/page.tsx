@@ -319,6 +319,14 @@ export default function UserSetupPage() {
         return;
       }
 
+      // Pre-built profile claim (dnounce.com/claim?code=...): go back and finish claiming it
+      let profileCode: string | null = null;
+      try { profileCode = localStorage.getItem('dnounce_profile_code'); } catch {}
+      if (profileCode && /^[0-9]{6}$/.test(profileCode)) {
+        setTimeout(() => router.push(`/claim?code=${profileCode}`), 1200);
+        return;
+      }
+
       // Record request flow: send new users straight to the pre-selected submit page
       const requestRedirect = sessionStorage.getItem('request_redirect');
       if (requestRedirect && requestRedirect.startsWith('/dashboard/submit')) {
