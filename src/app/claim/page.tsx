@@ -214,7 +214,7 @@ function ClaimProfile() {
                 <ul className="mt-5 space-y-2 text-sm text-gray-700">
                   <li>• One link to share with clients, so new customers see your track record.</li>
                   <li>• Clients can write records about their experience with you.</li>
-                  <li>• Free, and nobody can pay to hide or remove a record.</li>
+                  <li>• If you disagree with a record, you can challenge it and tell your side.</li>
                 </ul>
 
                 {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
