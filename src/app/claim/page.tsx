@@ -6,8 +6,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { Loader2, CheckCircle, ShieldCheck, User } from "lucide-react";
 import RecordOutcomeSummary from "@/components/profile/RecordOutcomeSummary";
-import { demoLink, swapName } from "@/lib/demoPersonalize";
-import { Reactions, Comments, exampleLikes, exampleCommentCount } from "@/components/claim/ExampleInteractions";
+import { swapName } from "@/lib/demoPersonalize";
+import DemoRecordView from "@/components/demo/DemoRecordView";
+import { Reactions, exampleLikes, exampleCommentCount } from "@/components/claim/ExampleInteractions";
 
 /**
  * dnounce.com/claim?code=123456
@@ -65,8 +66,13 @@ function ClaimProfile() {
   const [examples, setExamples] = useState<DemoRow[]>([]);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [exSort, setExSort] = useState("Newest");
-  const [commentsOpen, setCommentsOpen] = useState<string | null>(null);
-  const [addedComments, setAddedComments] = useState<Record<string, number>>({});
+  function toggleOpen(slug: string) {
+    setExpanded((cur) => {
+      const next = cur === slug ? null : slug;
+      if (next) setTimeout(() => document.getElementById(`record-inline-${slug}`)?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
+      return next;
+    });
+  }
   const [exStage, setExStage] = useState("");
 
   // Two example records (one great, one bad) from the public demo pages
@@ -165,7 +171,6 @@ function ClaimProfile() {
     status: (r.debate_posts ?? []).length > 0 ? "voting" : "published",
     final_outcome: null,
   }) as any);
-  const persona = { name, org: preview?.company_name, loc: preview?.neighborhood, cat: preview?.trade };
 
   return (
     <main className="min-h-screen bg-gray-50 px-4 py-10 sm:py-16">
@@ -309,7 +314,7 @@ function ClaimProfile() {
               </div>
               <div>
                 <RecordOutcomeSummary records={exampleSummary} />
-                {examples.length > 0 && <p className="mt-1 text-[11px] text-gray-400 text-center lg:text-right">Example numbers</p>}
+                {examples.length > 0 && <p className="mt-1 text-[11px] text-gray-400 text-center lg:text-right">Demo numbers</p>}
               </div>
             </div>
 
@@ -355,14 +360,13 @@ function ClaimProfile() {
               <div className="space-y-4">
                 {shownExamples.map((r) => {
                   const open = expanded === r.slug;
-                  const href = demoLink(r.slug, persona, back);
                   const challenged = (r.debate_posts ?? []).length > 0;
                   return (
                     <div key={r.slug} className="w-full rounded-2xl border bg-white p-4 hover:shadow-sm hover:border-gray-300 transition">
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                         <div className="min-w-0">
                           <div className="text-sm font-semibold text-gray-900 truncate">
-                            DNounce App • {name} <span className="ml-1 align-middle text-[10px] font-semibold uppercase tracking-wide rounded-full bg-gray-100 text-gray-500 px-1.5 py-0.5">Example</span>
+                            DNounce App • {name} <span className="ml-1 align-middle text-[10px] font-bold uppercase tracking-wide rounded-full bg-amber-100 text-amber-800 px-2 py-0.5">Demo record</span>
                           </div>
                         </div>
                       </div>
@@ -371,8 +375,8 @@ function ClaimProfile() {
                           {(preview.trade || r.category) && <span className="text-xs text-gray-700">{preview.trade || r.category}</span>}
                           {challenged && <span className="text-xs rounded-full border bg-gray-50 px-2 py-1 text-gray-700">Community vote</span>}
                           <span className="text-xs text-gray-500">{r.created_at_display ? `📅 ${new Date(r.created_at_display + "T12:00:00").toLocaleDateString()}` : ""}</span>
-                          <button type="button" onClick={() => setCommentsOpen(commentsOpen === r.slug ? null : r.slug)} className="text-xs text-gray-500 hover:text-gray-800">
-                            💬 {exampleCommentCount(r.slug) + (addedComments[r.slug] ?? 0)} comments
+                          <button type="button" onClick={() => toggleOpen(r.slug)} className="text-xs text-gray-500 hover:text-gray-800">
+                            💬 {exampleCommentCount(r.slug)} comments
                           </button>
                         </div>
                       </div>
@@ -383,46 +387,23 @@ function ClaimProfile() {
                         <Reactions agree={exampleLikes(r.slug).agree} disagree={exampleLikes(r.slug).disagree} />
                       </div>
                       <div className="mt-4 flex flex-wrap items-center gap-2">
-                        <Link href={href} className="rounded-xl border px-3 py-1.5 text-xs hover:bg-gray-50">View record</Link>
-                        <button type="button" onClick={() => setExpanded(open ? null : r.slug)} className="rounded-xl border px-3 py-1.5 text-xs hover:bg-gray-50">
+                        <button type="button" onClick={() => toggleOpen(r.slug)} className="rounded-xl border px-3 py-1.5 text-xs hover:bg-gray-50">
                           {open ? "Collapse" : "Expand"}
                         </button>
-                        <button type="button" onClick={() => setCommentsOpen(commentsOpen === r.slug ? null : r.slug)} className="rounded-xl border px-3 py-1.5 text-xs hover:bg-gray-50">
-                          {commentsOpen === r.slug ? "Hide comments" : "Comments"}
-                        </button>
                       </div>
-                      {commentsOpen === r.slug && (
-                        <div className="mt-4">
-                          <Comments slug={r.slug} demoName={r.subject_name} name={name} onAdded={() => setAddedComments((m) => ({ ...m, [r.slug]: (m[r.slug] ?? 0) + 1 }))} />
-                        </div>
-                      )}
                       {open && (
-                        <div className="mt-4 border-t pt-4 space-y-3">
-                          <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-xs text-gray-600">
-                            <span><span className="text-gray-400">Written by</span> <span className="font-semibold text-gray-800">DNounce App</span></span>
-                            <span><span className="text-gray-400">Rating</span> <span className="font-semibold text-gray-800">{r.rating}/10</span></span>
-                            <span><span className="text-gray-400">Relationship</span> <span className="font-semibold text-gray-800">Client</span></span>
-                          </div>
-                          {challenged && (
-                            <div className="rounded-xl border bg-gray-50 p-3 space-y-3">
-                              <div className="text-xs font-semibold text-gray-700">Debate</div>
-                              {(r.debate_posts ?? []).slice(0, 3).map((p: any, i: number) => (
-                                <div key={i} className="text-sm">
-                                  <span className="font-semibold text-gray-900">{p.role === "subject" ? `${name} (Subject)` : "DNounce App (Contributor)"}:</span>{" "}
-                                  <span className="text-gray-700">{swapName(p.body, r.subject_name, name)}</span>
-                                </div>
-                              ))}
-                              {(r.seed_votes ?? []).length > 0 && (
-                                <div className="text-xs text-gray-600">{(r.seed_votes ?? []).length} community members have voted so far. Open the record to vote yourself.</div>
-                              )}
-                            </div>
-                          )}
+                        <div id={`record-inline-${r.slug}`} className="mt-4 border-t pt-4 -mx-1 sm:-mx-2">
+                          <DemoRecordView
+                            slug={r.slug}
+                            embedded
+                            persona={{ as: name, org: preview.company_name, loc: preview.neighborhood, cat: preview.trade, back }}
+                          />
                         </div>
                       )}
                     </div>
                   );
                 })}
-                <p className="text-xs text-gray-400 text-center">Example records so you can see how your profile works. They aren&apos;t real and won&apos;t be on it.</p>
+                <p className="text-xs text-gray-500 text-center">These are <strong>demo records</strong> so you can see how your profile works. They aren&apos;t real and won&apos;t be on your profile.</p>
               </div>
             ) : (
               <p className="text-center text-sm text-gray-500 pb-2">No records yet. Once your profile is live, share your link and clients can write about their experience with you.</p>
