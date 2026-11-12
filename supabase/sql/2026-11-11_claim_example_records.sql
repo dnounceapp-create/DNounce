@@ -2,7 +2,8 @@
 -- can see how records look on their profile. They're demo pages like the others
 -- (dnounce.com/d/claim-example-great and /d/claim-example-bad); the claim page shows
 -- them with the person's own name. Written without he/she so any name fits.
--- Copies an existing demo row for any columns not set here. Safe to run twice.
+-- Both are written by DNounce App. Copies an existing demo row for any columns not set
+-- here. Safe to run twice.
 
 DO $ex$
 DECLARE
@@ -33,7 +34,7 @@ BEGIN
       'subject_organization', 'Independent',
       'subject_location', 'New York, NY',
       'subject_demo_url', '/',
-      'contributor_name', 'Jordan P.',
+      'contributor_name', 'DNounce App',
       'category', 'Home services',
       'relationship', 'Client',
       'rating', 9,
@@ -59,7 +60,7 @@ BEGIN
       'subject_organization', 'Independent',
       'subject_location', 'New York, NY',
       'subject_demo_url', '/',
-      'contributor_name', 'Taylor M.',
+      'contributor_name', 'DNounce App',
       'category', 'Home services',
       'relationship', 'Client',
       'rating', 2,
@@ -68,7 +69,7 @@ BEGIN
       'debate_posts', jsonb_build_array(
         jsonb_build_object('id', 'ex-p1', 'role', 'subject', 'name', 'Alex Rivera', 'parentId', null, 'created_at', '2026-09-20T15:10:00Z',
           'body', 'The price went up because extra work was added halfway through, and I sent the new quote by text before starting it. The delay came from waiting on materials, which I explained at the time. I''m happy to share the messages.'),
-        jsonb_build_object('id', 'ex-p2', 'role', 'contributor', 'name', 'Taylor M.', 'parentId', null, 'created_at', '2026-09-20T19:42:00Z',
+        jsonb_build_object('id', 'ex-p2', 'role', 'contributor', 'name', 'DNounce App', 'parentId', null, 'created_at', '2026-09-20T19:42:00Z',
           'body', 'The extra work was small. I never agreed to a price that high, and nobody mentioned a materials delay until I asked.'),
         jsonb_build_object('id', 'ex-p3', 'role', 'subject', 'name', 'Alex Rivera', 'parentId', 'ex-p2', 'created_at', '2026-09-21T09:05:00Z',
           'body', 'Here is the text from Sept 2 with the updated quote, and the supplier''s delay notice. I should have called more often, and I''ve changed how I give updates since.')
@@ -95,6 +96,13 @@ BEGIN
 END
 $ex$;
 
+-- If the examples were added before (with other writer names), switch them to DNounce App
+UPDATE public.demo_records
+   SET contributor_name = 'DNounce App',
+       debate_posts = (SELECT coalesce(jsonb_agg(CASE WHEN p->>'role' = 'contributor' THEN jsonb_set(p, '{name}', '"DNounce App"') ELSE p END), '[]'::jsonb)
+                         FROM jsonb_array_elements(coalesce(debate_posts::jsonb, '[]'::jsonb)) p)
+ WHERE slug IN ('claim-example-great', 'claim-example-bad');
+
 -- Check
-SELECT slug, subject_name, rating, jsonb_array_length(coalesce(debate_posts, '[]'::jsonb)) AS debate_posts
+SELECT slug, contributor_name, subject_name, rating, jsonb_array_length(coalesce(debate_posts::jsonb, '[]'::jsonb)) AS debate_posts
   FROM public.demo_records WHERE slug LIKE 'claim-example-%' ORDER BY slug;

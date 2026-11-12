@@ -63,6 +63,8 @@ function ClaimProfile() {
   const [done, setDone] = useState<null | "claimed" | "review">(null);
   const [examples, setExamples] = useState<DemoRow[]>([]);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [exSort, setExSort] = useState("Newest");
+  const [exStage, setExStage] = useState("");
 
   // Two example records (one great, one bad) from the public demo pages
   useEffect(() => {
@@ -149,6 +151,13 @@ function ClaimProfile() {
   const back = `/claim?code=${code}`;
   const name = preview ? `${preview.first_name} ${preview.last_name}` : "";
   // Example totals that match the example records shown below
+  const shownExamples = examples
+    .filter((r) => !exStage || (exStage === "voting") === ((r.debate_posts ?? []).length > 0))
+    .sort((a, b) =>
+      exSort === "Rating: High" ? b.rating - a.rating
+      : exSort === "Rating: Low" ? a.rating - b.rating
+      : exSort === "Oldest" ? String(a.created_at_display).localeCompare(String(b.created_at_display))
+      : String(b.created_at_display).localeCompare(String(a.created_at_display)));
   const exampleSummary = examples.map((r) => ({
     status: (r.debate_posts ?? []).length > 0 ? "voting" : "published",
     final_outcome: null,
@@ -313,60 +322,91 @@ function ClaimProfile() {
               <span className="flex-1 text-center px-4 py-2 text-gray-400">Badges</span>
               <span className="flex-1 text-center px-4 py-2 text-gray-400">Social media</span>
             </div>
-            <div className="mb-6 text-center">
-              <div className="text-2xl font-bold text-gray-900">{examples.length}</div>
-              <div className="text-sm text-gray-500">Total Records</div>
+            {/* Filter + Sort (same as the profile page) */}
+            <div className="mb-5 flex flex-wrap items-center gap-3">
+              <select value={exSort} onChange={(e) => setExSort(e.target.value)} className="w-full sm:w-auto min-w-[210px] rounded-xl border px-3 py-2 text-sm bg-white">
+                <option>Newest</option>
+                <option>Oldest</option>
+                <option>Rating: High</option>
+                <option>Rating: Low</option>
+              </select>
+              <select value={exStage} onChange={(e) => setExStage(e.target.value)} className="w-full sm:w-auto min-w-[180px] rounded-xl border px-3 py-2 text-sm bg-white">
+                <option value="">All stages</option>
+                <option value="published">Public</option>
+                <option value="voting">Community vote</option>
+              </select>
+            </div>
+
+            {/* Breakdown */}
+            <div className="mb-6">
+              <h4 className="font-medium text-gray-900 mb-3">Record Breakdown</h4>
+              <div className="flex justify-center">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-gray-900">{examples.length}</div>
+                  <div className="text-sm text-gray-500">Total Records</div>
+                </div>
+              </div>
             </div>
 
             {examples.length > 0 ? (
               <div className="space-y-4">
-                <p className="text-xs text-gray-500">
-                  These are <strong>examples</strong> so you can see how records look on your profile. They aren&apos;t real and won&apos;t be on it.
-                </p>
-                {examples.map((r) => {
+                {shownExamples.map((r) => {
                   const open = expanded === r.slug;
                   const href = demoLink(r.slug, persona, back);
                   const challenged = (r.debate_posts ?? []).length > 0;
                   return (
                     <div key={r.slug} className="w-full rounded-2xl border bg-white p-4 hover:shadow-sm hover:border-gray-300 transition">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div className="text-sm font-semibold text-gray-900">
-                          {r.rating >= 6 ? "A great experience" : "A bad experience"}
-                          {" "}<span className="text-xs font-medium text-gray-500">★ {r.rating}/10</span>
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="text-sm font-semibold text-gray-900 truncate">
+                            DNounce App • {name} <span className="ml-1 align-middle text-[10px] font-semibold uppercase tracking-wide rounded-full bg-gray-100 text-gray-500 px-1.5 py-0.5">Example</span>
+                          </div>
                         </div>
-                        <span className="text-[11px] font-semibold uppercase tracking-wide rounded-full bg-amber-100 text-amber-800 px-2 py-0.5">Example</span>
                       </div>
-                      <div className="mt-2 flex flex-wrap items-center gap-2">
-                        {(preview.trade || r.category) && <span className="text-xs text-gray-700">{preview.trade || r.category}</span>}
-                        {challenged && <span className="text-xs rounded-full border bg-gray-50 px-2 py-1 text-gray-700">Challenged · Community vote</span>}
-                        {r.created_at_display && <span className="text-xs text-gray-500">📅 {r.created_at_display}</span>}
+                      <div className="mt-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div className="flex flex-wrap items-center gap-2">
+                          {(preview.trade || r.category) && <span className="text-xs text-gray-700">{preview.trade || r.category}</span>}
+                          {challenged && <span className="text-xs rounded-full border bg-gray-50 px-2 py-1 text-gray-700">Community vote</span>}
+                          <span className="text-xs text-gray-500">{r.created_at_display ? `📅 ${new Date(r.created_at_display + "T12:00:00").toLocaleDateString()}` : ""}</span>
+                          <span className="text-xs text-gray-500">💬 0 comments</span>
+                        </div>
                       </div>
                       <div className={`mt-3 text-sm text-gray-700 whitespace-pre-wrap ${open ? "" : "line-clamp-3"}`}>
                         {swapName(r.description, r.subject_name, name)}
                       </div>
-                      {open && challenged && (
-                        <div className="mt-4 rounded-xl border bg-gray-50 p-3 space-y-3">
-                          <div className="text-xs font-semibold text-gray-700">Debate</div>
-                          {(r.debate_posts ?? []).slice(0, 3).map((p: any, i: number) => (
-                            <div key={i} className="text-sm">
-                              <span className="font-semibold text-gray-900">{p.role === "subject" ? `${name} (Subject)` : `${p.name} (Contributor)`}:</span>{" "}
-                              <span className="text-gray-700">{swapName(p.body, r.subject_name, name)}</span>
-                            </div>
-                          ))}
-                          {(r.seed_votes ?? []).length > 0 && (
-                            <div className="text-xs text-gray-600">{(r.seed_votes ?? []).length} community members have voted so far. Open the record to vote yourself.</div>
-                          )}
-                        </div>
-                      )}
                       <div className="mt-4 flex flex-wrap items-center gap-2">
                         <Link href={href} className="rounded-xl border px-3 py-1.5 text-xs hover:bg-gray-50">View record</Link>
                         <button type="button" onClick={() => setExpanded(open ? null : r.slug)} className="rounded-xl border px-3 py-1.5 text-xs hover:bg-gray-50">
                           {open ? "Collapse" : "Expand"}
                         </button>
                       </div>
+                      {open && (
+                        <div className="mt-4 border-t pt-4 space-y-3">
+                          <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-xs text-gray-600">
+                            <span><span className="text-gray-400">Written by</span> <span className="font-semibold text-gray-800">DNounce App</span></span>
+                            <span><span className="text-gray-400">Rating</span> <span className="font-semibold text-gray-800">{r.rating}/10</span></span>
+                            <span><span className="text-gray-400">Relationship</span> <span className="font-semibold text-gray-800">Client</span></span>
+                          </div>
+                          {challenged && (
+                            <div className="rounded-xl border bg-gray-50 p-3 space-y-3">
+                              <div className="text-xs font-semibold text-gray-700">Debate</div>
+                              {(r.debate_posts ?? []).slice(0, 3).map((p: any, i: number) => (
+                                <div key={i} className="text-sm">
+                                  <span className="font-semibold text-gray-900">{p.role === "subject" ? `${name} (Subject)` : "DNounce App (Contributor)"}:</span>{" "}
+                                  <span className="text-gray-700">{swapName(p.body, r.subject_name, name)}</span>
+                                </div>
+                              ))}
+                              {(r.seed_votes ?? []).length > 0 && (
+                                <div className="text-xs text-gray-600">{(r.seed_votes ?? []).length} community members have voted so far. Open the record to vote yourself.</div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
+                <p className="text-xs text-gray-400 text-center">Example records so you can see how your profile works. They aren&apos;t real and won&apos;t be on it.</p>
               </div>
             ) : (
               <p className="text-center text-sm text-gray-500 pb-2">No records yet. Once your profile is live, share your link and clients can write about their experience with you.</p>
