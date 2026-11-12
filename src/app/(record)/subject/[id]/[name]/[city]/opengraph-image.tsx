@@ -75,7 +75,7 @@ export default async function SubjectOGImage({
     bio = acctRes.data?.bio ?? null;
   }
 
-  // How their records turned out (replaces the old 0–100 scores). Public records only.
+  // Records + subject score (KJ, Nov 11). Public records only.
   const { data: recs } = await supabaseAdmin
     .from("records")
     .select("status, final_outcome, dispute_started_at")
@@ -83,6 +83,8 @@ export default async function SubjectOGImage({
     .eq("is_published", true)
     .is("deleted_at", null);
   const sum = summarizeRecords(recs ?? []);
+  const { data: scoreRow } = await supabaseAdmin.from("subject_scores").select("subject_score").eq("subject_uuid", id).maybeSingle();
+  const subjectScore = typeof scoreRow?.subject_score === "number" ? String(Math.round(scoreRow.subject_score)) : "—";
 
   const logoUrl = `${process.env.NEXT_PUBLIC_SITE_URL || "https://dnounce.com"}/logo.png`;
 
@@ -231,12 +233,10 @@ export default async function SubjectOGImage({
           {/* Right: scores */}
           <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", gap: 16, minWidth: 200 }}>
             <div style={{ color: "#FFD700", fontSize: 13, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>
-              How records turned out
+              On DNounce
             </div>
-            <ScorePill label="Public records" value={sum.total} />
-            <ScorePill label="Challenged" value={sum.challenged} />
-            <ScorePill label="Sided with them" value={sum.sidedWithThem} />
-            <ScorePill label="Sided with Contributor" value={sum.sidedWithWriter} />
+            <ScorePill label="Records" value={sum.total} />
+            <ScorePill label="Subject score" value={subjectScore as any} />
           </div>
         </div>
       </div>

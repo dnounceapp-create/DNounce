@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { QRCodeCanvas } from "qrcode.react";
 import { supabase } from "@/lib/supabaseClient";
-import RecordOutcomeSummary from "@/components/profile/RecordOutcomeSummary";
+import SubjectStats from "@/components/profile/SubjectStats";
+import CardRating from "@/components/profile/CardRating";
 import { demoStageToStatus, demoStageLabel } from "@/lib/outcome";
 import {
   User,
@@ -368,10 +369,8 @@ export default function SubjectDemoFreelancerPage() {
                   </div>
                 </div>
 
-                {/* RIGHT: how their records turned out (replaces the old scores) */}
-                <RecordOutcomeSummary
-                  records={RECORDS.map((r: any) => ({ status: demoStageToStatus(r.stage), final_outcome: r.final_outcome ?? null }))}
-                />
+                {/* RIGHT: subject score */}
+                <SubjectStats score={SCORES?.subject_score} />
               </div>
 
               {/* Submit Record CTA */}
@@ -451,6 +450,7 @@ export default function SubjectDemoFreelancerPage() {
                         <div className="mt-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                           <div className="flex flex-wrap items-center gap-2">
                             <span className="text-xs text-gray-700">{r.category}</span>
+                            <CardRating rating={(r as any).rating} />
                             {/* Same as real profiles: a stage chip only while a record is being challenged */}
                             {["deletion_request", "debate", "voting"].includes(demoStageToStatus(r.stage)) && (
                               <span className="text-xs rounded-full border bg-gray-50 px-2 py-1 text-gray-700">{demoStageLabel(r.stage)}</span>

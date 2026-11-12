@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { Loader2, CheckCircle, ShieldCheck, User } from "lucide-react";
-import RecordOutcomeSummary from "@/components/profile/RecordOutcomeSummary";
+import SubjectStats from "@/components/profile/SubjectStats";
+import CardRating from "@/components/profile/CardRating";
 import { swapName } from "@/lib/demoPersonalize";
 import DemoRecordView from "@/components/demo/DemoRecordView";
 import { Reactions, exampleLikes, exampleCommentCount } from "@/components/claim/ExampleInteractions";
@@ -167,10 +168,6 @@ function ClaimProfile() {
       : exSort === "Rating: Low" ? a.rating - b.rating
       : exSort === "Oldest" ? String(a.created_at_display).localeCompare(String(b.created_at_display))
       : String(b.created_at_display).localeCompare(String(a.created_at_display)));
-  const exampleSummary = examples.map((r) => ({
-    status: (r.debate_posts ?? []).length > 0 ? "voting" : "published",
-    final_outcome: null,
-  }) as any);
 
   return (
     <main className="min-h-screen bg-gray-50 px-4 py-10 sm:py-16">
@@ -313,8 +310,7 @@ function ClaimProfile() {
                 </div>
               </div>
               <div>
-                <RecordOutcomeSummary records={exampleSummary} />
-                {examples.length > 0 && <p className="mt-1 text-[11px] text-gray-400 text-center lg:text-right">Demo numbers</p>}
+                <SubjectStats score={examples.length > 0 ? 68 : null} note={examples.length > 0 ? "Demo number" : undefined} />
               </div>
             </div>
 
@@ -373,6 +369,7 @@ function ClaimProfile() {
                       <div className="mt-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                         <div className="flex flex-wrap items-center gap-2">
                           {(preview.trade || r.category) && <span className="text-xs text-gray-700">{preview.trade || r.category}</span>}
+                          <CardRating rating={r.rating} />
                           {challenged && <span className="text-xs rounded-full border bg-gray-50 px-2 py-1 text-gray-700">Community vote</span>}
                           <span className="text-xs text-gray-500">{r.created_at_display ? `📅 ${new Date(r.created_at_display + "T12:00:00").toLocaleDateString()}` : ""}</span>
                           <button type="button" onClick={() => toggleOpen(r.slug)} className="text-xs text-gray-500 hover:text-gray-800">

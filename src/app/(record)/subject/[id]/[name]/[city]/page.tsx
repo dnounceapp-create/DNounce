@@ -30,7 +30,8 @@ import dynamic from "next/dynamic";
 
 
 import { outcomeLabel, outcomeChipClass, badgeName, visibleBadges } from "@/lib/outcome";
-import RecordOutcomeSummary from "@/components/profile/RecordOutcomeSummary";
+import SubjectStats from "@/components/profile/SubjectStats";
+import CardRating from "@/components/profile/CardRating";
 function getPlatformIcon(platformRaw: string) {
   const p = (platformRaw || "").toLowerCase();
   if (p === "instagram") return FaInstagram;
@@ -940,8 +941,8 @@ export default function SubjectProfilePage() {
                 </div>
               </div>
 
-              {/* RIGHT: how their records turned out (replaces the old scores) */}
-              <RecordOutcomeSummary records={records} />
+              {/* RIGHT: subject score */}
+              <SubjectStats score={subjectScores?.subject_score} />
             </div>
 
             {/* Submit Record CTA */}
@@ -1079,6 +1080,7 @@ export default function SubjectProfilePage() {
                         <div className="mt-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                           <div className="flex flex-wrap items-center gap-2">
                             {r.category && <span className="text-xs text-gray-700">{r.category}</span>}
+                            <CardRating rating={r.rating} />
                             {showStagePill && <span className="text-xs rounded-full border bg-gray-50 px-2 py-1 text-gray-700">{prettyStage(r.status)}</span>}
                             {/* No label when nobody voted. Ties get their own label. */}
                             {showOutcomePill && outcomeLabel(r.final_outcome) && (

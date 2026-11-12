@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
     bio = acctRes.data?.bio ?? null;
   }
 
-  // How their records turned out (replaces the old 0–100 scores). Public records only.
+  // Records + subject score (KJ, Nov 11). Public records only.
   const { data: recs } = await supabaseAdmin
     .from("records")
     .select("status, final_outcome, dispute_started_at")
@@ -44,13 +44,11 @@ export async function GET(req: NextRequest) {
     .eq("is_published", true)
     .is("deleted_at", null);
   const sum = summarizeRecords(recs ?? []);
+  const { data: scoreRow } = await supabaseAdmin.from("subject_scores").select("subject_score").eq("subject_uuid", id).maybeSingle();
+  const subjectScore = typeof scoreRow?.subject_score === "number" ? String(Math.round(scoreRow.subject_score)) : "—";
   const totalRecords = sum.total;
   const scoreList = [
-    { label: "Public records", value: sum.total },
-    { label: "Challenged", value: sum.challenged },
-    { label: "Sided with them", value: sum.sidedWithThem },
-    { label: "Sided with Contributor", value: sum.sidedWithWriter },
-    { label: "Ties", value: sum.ties },
+    { label: "Subject score", value: subjectScore },
   ];
 
   const logoUrl = `${process.env.NEXT_PUBLIC_SITE_URL || "https://dnounce.com"}/logo.png`;
