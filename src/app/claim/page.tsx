@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { Loader2, CheckCircle, ShieldCheck, User } from "lucide-react";
 import RecordOutcomeSummary from "@/components/profile/RecordOutcomeSummary";
 import { demoLink, swapName } from "@/lib/demoPersonalize";
+import { Reactions, Comments, exampleLikes, exampleCommentCount } from "@/components/claim/ExampleInteractions";
 
 /**
  * dnounce.com/claim?code=123456
@@ -64,6 +65,8 @@ function ClaimProfile() {
   const [examples, setExamples] = useState<DemoRow[]>([]);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [exSort, setExSort] = useState("Newest");
+  const [commentsOpen, setCommentsOpen] = useState<string | null>(null);
+  const [addedComments, setAddedComments] = useState<Record<string, number>>({});
   const [exStage, setExStage] = useState("");
 
   // Two example records (one great, one bad) from the public demo pages
@@ -368,18 +371,31 @@ function ClaimProfile() {
                           {(preview.trade || r.category) && <span className="text-xs text-gray-700">{preview.trade || r.category}</span>}
                           {challenged && <span className="text-xs rounded-full border bg-gray-50 px-2 py-1 text-gray-700">Community vote</span>}
                           <span className="text-xs text-gray-500">{r.created_at_display ? `📅 ${new Date(r.created_at_display + "T12:00:00").toLocaleDateString()}` : ""}</span>
-                          <span className="text-xs text-gray-500">💬 0 comments</span>
+                          <button type="button" onClick={() => setCommentsOpen(commentsOpen === r.slug ? null : r.slug)} className="text-xs text-gray-500 hover:text-gray-800">
+                            💬 {exampleCommentCount(r.slug) + (addedComments[r.slug] ?? 0)} comments
+                          </button>
                         </div>
                       </div>
                       <div className={`mt-3 text-sm text-gray-700 whitespace-pre-wrap ${open ? "" : "line-clamp-3"}`}>
                         {swapName(r.description, r.subject_name, name)}
+                      </div>
+                      <div className="mt-3">
+                        <Reactions agree={exampleLikes(r.slug).agree} disagree={exampleLikes(r.slug).disagree} />
                       </div>
                       <div className="mt-4 flex flex-wrap items-center gap-2">
                         <Link href={href} className="rounded-xl border px-3 py-1.5 text-xs hover:bg-gray-50">View record</Link>
                         <button type="button" onClick={() => setExpanded(open ? null : r.slug)} className="rounded-xl border px-3 py-1.5 text-xs hover:bg-gray-50">
                           {open ? "Collapse" : "Expand"}
                         </button>
+                        <button type="button" onClick={() => setCommentsOpen(commentsOpen === r.slug ? null : r.slug)} className="rounded-xl border px-3 py-1.5 text-xs hover:bg-gray-50">
+                          {commentsOpen === r.slug ? "Hide comments" : "Comments"}
+                        </button>
                       </div>
+                      {commentsOpen === r.slug && (
+                        <div className="mt-4">
+                          <Comments slug={r.slug} demoName={r.subject_name} name={name} onAdded={() => setAddedComments((m) => ({ ...m, [r.slug]: (m[r.slug] ?? 0) + 1 }))} />
+                        </div>
+                      )}
                       {open && (
                         <div className="mt-4 border-t pt-4 space-y-3">
                           <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-xs text-gray-600">

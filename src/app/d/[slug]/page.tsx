@@ -23,7 +23,8 @@ import Image from "next/image";
 import { useRouter, useParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import ScrollToVoter from "@/components/record/ScrollToVoter";
-import { safeClaimBack, swapName } from "@/lib/demoPersonalize";
+import { safeClaimBack, swapName, CLAIM_EXAMPLE_COMMENTS, CLAIM_EXAMPLE_LIKES } from "@/lib/demoPersonalize";
+import { Comments as ExampleComments } from "@/components/claim/ExampleInteractions";
 
 /* ─── Types ─────────────────────────────────────────── */
 
@@ -359,6 +360,9 @@ export default function DemoSlugPage() {
                 seed_votes: (data.seed_votes ?? []).map((v: any) => ({ ...v, explanation: swap(v.explanation) })),
               };
               setClaimBack(back);
+              setDemoOriginalName(demoName);
+              const likes = CLAIM_EXAMPLE_LIKES[data.slug as string];
+              if (likes) setRecordReaction((r) => (r.mine ? r : { ...r, agree: likes.agree, disagree: likes.disagree }));
             }
           } catch {}
           setDemoData(d);
@@ -367,6 +371,7 @@ export default function DemoSlugPage() {
       });
   }, [slug]);
   const [claimBack, setClaimBack] = useState<string | null>(null);
+  const [demoOriginalName, setDemoOriginalName] = useState<string | null>(null);
 
   // Derived data from demoData
   const RECORD = demoData ? {
@@ -1041,6 +1046,11 @@ export default function DemoSlugPage() {
       </section>
 
       </>
+      )}
+
+      {/* Community comments (example records on the claim page) */}
+      {claimBack && CLAIM_EXAMPLE_COMMENTS[slug] && (
+        <ExampleComments slug={slug} demoName={demoOriginalName ?? ""} name={SUBJECT.name} />
       )}
 
       {/* CTA banner */}
