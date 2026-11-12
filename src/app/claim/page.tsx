@@ -164,10 +164,11 @@ function ClaimProfile() {
 
   const back = `/claim?code=${code}`;
   const name = preview ? `${preview.first_name} ${preview.last_name}` : "";
-  // Demo bio: "Just a Electrician in McHenry!" -> grammar-aware article, city only
+  // Demo bio: "Just an electrician in McHenry, IL!" (city, state)
   const tradeWord = (preview?.trade || "pro").trim();
-  const city = (preview?.neighborhood || "").split(",")[0].trim();
-  const demoBio = `Just ${/^[aeiou]/i.test(tradeWord) ? "an" : "a"} ${tradeWord.toLowerCase()} in ${city || "town"}!`;
+  const hood = (preview?.neighborhood || "").trim();
+  const place = hood ? (hood.includes(",") ? hood : `${hood}, NY`) : "town";
+  const demoBio = `Just ${/^[aeiou]/i.test(tradeWord) ? "an" : "a"} ${tradeWord.toLowerCase()} in ${place}!`;
   const pageUrl = `https://www.dnounce.com/claim?code=${code}`;
   // Example totals that match the example records shown below
   const shownExamples = examples
