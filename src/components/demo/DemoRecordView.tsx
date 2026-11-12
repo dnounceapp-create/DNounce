@@ -413,6 +413,8 @@ export default function DemoRecordView({
                 subject_name: as,
                 subject_organization: (q.get("org") || "").trim().slice(0, 120) || "Independent",
                 subject_location: (q.get("loc") || "").trim().slice(0, 80) || data.subject_location,
+                // The record's own location is theirs too (never the copied demo's)
+                location: (q.get("loc") || "").trim().slice(0, 80) || null,
                 subject_demo_url: back,
                 category: (q.get("cat") || "").trim().slice(0, 60) || data.category,
                 description: swap(data.description),
