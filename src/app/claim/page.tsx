@@ -4,7 +4,8 @@ import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
-import { Loader2, CheckCircle, MapPin, Briefcase, ShieldCheck } from "lucide-react";
+import { Loader2, CheckCircle, ShieldCheck, User } from "lucide-react";
+import RecordOutcomeSummary from "@/components/profile/RecordOutcomeSummary";
 
 /**
  * dnounce.com/claim?code=123456
@@ -160,8 +161,8 @@ function ClaimProfile() {
           </div>
         )}
 
-        {/* The profile */}
-        {preview && (
+        {/* After claiming, or already claimed */}
+        {preview && (done || preview.claimed) && (
           <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
             {done === "claimed" ? (
               <div className="text-center">
@@ -185,73 +186,102 @@ function ClaimProfile() {
                   <Link href="/support" className="font-semibold text-blue-600">contact support</Link>.
                 </p>
               </div>
-            ) : (
-              <>
-                <p className="text-sm font-semibold text-blue-600">Hi {preview.first_name},</p>
-                <h1 className="mt-1 text-xl font-bold text-gray-900">Your DNounce profile is ready</h1>
-                <p className="mt-1 text-sm text-gray-600">Claim it free to make it yours. Nobody can see it until you claim it.</p>
-                <p className="mt-2 text-xs text-gray-500">Sign up or sign in with the email we contacted you at. Once you verify it, the profile is yours.</p>
-
-                <div className="mt-5 rounded-xl border border-gray-200 bg-gray-50 p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-lg font-bold text-blue-700">
-                      {preview.first_name[0]}{preview.last_name[0]}
-                    </div>
-                    <div>
-                      <div className="font-semibold text-gray-900">
-                        {name}
-                        {preview.nickname && <span className="font-normal text-gray-500"> “{preview.nickname}”</span>}
-                      </div>
-                      {preview.company_name && <div className="text-sm text-gray-600">{preview.company_name}</div>}
-                    </div>
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600">
-                    <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{preview.neighborhood}</span>
-                    {preview.trade && <span className="flex items-center gap-1"><Briefcase className="h-3.5 w-3.5" />{preview.trade}</span>}
-                  </div>
-                </div>
-
-                <ul className="mt-5 space-y-2 text-sm text-gray-700">
-                  <li>• One link to share with clients, so new customers see your track record.</li>
-                  <li>• Clients can write records about their experience with you.</li>
-                  <li>• If you disagree with a record, you can challenge it and tell your side.</li>
-                </ul>
-
-                {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
-
-                {session === "in" ? (
-                  <button
-                    onClick={claim}
-                    disabled={claiming}
-                    className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
-                  >
-                    {claiming && <Loader2 className="h-4 w-4 animate-spin" />} Claim my profile
-                  </button>
-                ) : session === "out" ? (
-                  <>
-                    <Link
-                      href={`/loginsignup?redirectTo=${encodeURIComponent(back)}`}
-                      onClick={() => saveCode(code)}
-                      className="mt-6 block w-full rounded-xl bg-blue-600 px-5 py-3 text-center text-sm font-semibold text-white hover:bg-blue-700"
-                    >
-                      Create my free account
-                    </Link>
-                    <p className="mt-3 text-center text-xs text-gray-500">
-                      Already on DNounce?{" "}
-                      <Link href={`/loginsignup?redirectTo=${encodeURIComponent(back)}`} onClick={() => saveCode(code)} className="font-semibold text-blue-600">
-                        Sign in
-                      </Link>{" "}
-                      and you&apos;ll come right back here.
-                    </p>
-                  </>
-                ) : (
-                  <div className="mt-6 flex justify-center"><Loader2 className="h-5 w-5 animate-spin text-gray-400" /></div>
-                )}
-              </>
-            )}
+            ) : null}
           </div>
         )}
 
+      </div>
+
+      {/* Their profile, exactly as it will look once it's live */}
+      {preview && !done && !preview.claimed && (
+        <div className="mx-auto w-full max-w-5xl">
+          {/* Claim banner */}
+          <div className="mb-4 rounded-2xl border border-blue-200 bg-blue-50 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold text-blue-700">Hi {preview.first_name}, this is your DNounce profile</p>
+              <p className="mt-1 text-sm text-gray-700">Claim it free to make it yours. Nobody can see it until you claim it.</p>
+              <p className="mt-1 text-xs text-gray-500">Sign up or sign in with the email we contacted you at. Once you verify it, the profile is yours.</p>
+              {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+            </div>
+            <div className="flex flex-col items-stretch sm:items-end gap-2 shrink-0">
+              {session === "in" ? (
+                <button
+                  onClick={claim}
+                  disabled={claiming}
+                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {claiming && <Loader2 className="h-4 w-4 animate-spin" />} Claim my profile
+                </button>
+              ) : session === "out" ? (
+                <>
+                  <Link
+                    href={`/loginsignup?redirectTo=${encodeURIComponent(back)}`}
+                    onClick={() => saveCode(code)}
+                    className="rounded-lg bg-blue-600 px-5 py-2.5 text-center text-sm font-semibold text-white hover:bg-blue-700"
+                  >
+                    Claim my profile
+                  </Link>
+                  <span className="text-xs text-gray-500 text-center sm:text-right">
+                    Already on DNounce?{" "}
+                    <Link href={`/loginsignup?redirectTo=${encodeURIComponent(back)}`} onClick={() => saveCode(code)} className="font-semibold text-blue-600">
+                      Sign in
+                    </Link>
+                  </span>
+                </>
+              ) : (
+                <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+              )}
+            </div>
+          </div>
+
+          {/* Same layout as the public profile page */}
+          <div className="border rounded-2xl bg-white p-3 sm:p-6">
+            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+              <div className="grid grid-cols-[96px_1fr] sm:grid-cols-[112px_1fr] gap-x-4 items-start lg:min-w-[300px]">
+                <div className="w-24 h-24 sm:w-28 sm:h-28 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
+                  <User className="h-10 w-10 text-gray-600" />
+                </div>
+                <div className="flex flex-col gap-1 pt-0.5">
+                  <h3 className="text-xl font-semibold text-gray-900 leading-tight">
+                    {name}
+                    {preview.nickname ? ` (${preview.nickname})` : ""}
+                  </h3>
+                  {preview.trade && <p className="text-sm font-semibold text-gray-800">{preview.trade}</p>}
+                  <p className="text-xs text-gray-500">{preview.company_name || "Independent"}</p>
+                  <p className="text-sm text-gray-500 flex items-center gap-1">
+                    <span>📍</span> {preview.neighborhood}
+                  </p>
+                </div>
+              </div>
+              <RecordOutcomeSummary records={[]} />
+            </div>
+
+            <div className="mt-6 rounded-2xl border bg-gray-50 p-4">
+              <div className="text-sm font-semibold text-gray-900">Your link to share with clients</div>
+              <div className="text-xs text-gray-600 mt-1">
+                Once you claim it, you get one link (and a QR code) to send clients so they can write a record about their experience with you.
+              </div>
+            </div>
+
+            <div className="flex border-b mb-6 mt-6 text-sm font-medium">
+              <span className="flex-1 text-center px-4 py-2 text-blue-600 border-b-2 border-blue-600">Records</span>
+              <span className="flex-1 text-center px-4 py-2 text-gray-400">Badges</span>
+              <span className="flex-1 text-center px-4 py-2 text-gray-400">Social media</span>
+            </div>
+            <div className="mb-6 text-center">
+              <div className="text-2xl font-bold text-gray-900">0</div>
+              <div className="text-sm text-gray-500">Total Records</div>
+            </div>
+            <ul className="mx-auto max-w-xl space-y-2 text-sm text-gray-700 pb-2">
+              <li>• One link to share with clients, so new customers see your track record.</li>
+              <li>• Clients can write records about their experience with you.</li>
+              <li>• If you disagree with a record, you can challenge it and tell your side.</li>
+            </ul>
+          </div>
+        </div>
+      )}
+
+      <div className="mx-auto w-full max-w-md">
         <p className="mt-6 text-center text-xs text-gray-500">
           Not you, or don&apos;t want a profile? <Link href="/support" className="underline">Let us know</Link> and we&apos;ll remove it.
         </p>
