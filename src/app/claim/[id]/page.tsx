@@ -315,8 +315,8 @@ export default function ClaimOverridePage() {
           {/* Subject Card */}
           <div className="bg-gray-50 border border-gray-200 rounded-2xl p-5 sm:p-8 shadow-sm">
             <div className="flex flex-col text-center mb-5 sm:mb-6">
-              <h2 className="text-base sm:text-lg font-semibold text-gray-800">About</h2>
-              <p className="text-xs sm:text-sm text-gray-500">Subject. This can&apos;t be changed.</p>
+              <h2 className="text-base sm:text-lg font-semibold text-gray-800">Subject</h2>
+              <p className="text-xs sm:text-sm text-gray-500">This can&apos;t be changed.</p>
             </div>
             <div className="flex items-center gap-4 bg-white border border-gray-200 rounded-2xl px-5 py-4">
               <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">

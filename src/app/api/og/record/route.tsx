@@ -142,7 +142,7 @@ export async function GET(req: NextRequest) {
               <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" stroke="#2563EB" strokeWidth="2" strokeLinecap="round" fill="none"/>
               <circle cx="12" cy="7" r="4" stroke="#2563EB" strokeWidth="2" fill="none"/>
             </svg>
-            <span style={{ fontSize: 12, color: "#2563EB", fontWeight: 600 }}>About</span>
+            <span style={{ fontSize: 12, color: "#2563EB", fontWeight: 600 }}>Subject</span>
           </div>
           {subjectAvatar ? (
             <img src={subjectAvatar} style={{ width: 38, height: 38, borderRadius: "50%", objectFit: "cover", border: "1px solid #E5E7EB", flexShrink: 0 }} />
@@ -167,7 +167,7 @@ export async function GET(req: NextRequest) {
               <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" stroke="#16A34A" strokeWidth="2" strokeLinecap="round" fill="none"/>
               <circle cx="12" cy="7" r="4" stroke="#16A34A" strokeWidth="2" fill="none"/>
             </svg>
-            <span style={{ fontSize: 12, color: "#16A34A", fontWeight: 600 }}>Written by</span>
+            <span style={{ fontSize: 12, color: "#16A34A", fontWeight: 600 }}>Contributor</span>
           </div>
           <div style={{ width: 38, height: 38, borderRadius: "50%", background: "#F3F4F6", border: "1px solid #E5E7EB", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             <svg width={20} height={20} viewBox="0 0 24 24" style={{ display: "flex" }}>

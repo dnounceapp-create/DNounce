@@ -666,7 +666,7 @@ export default function DemoPage() {
         <div className="border border-gray-200 rounded-2xl p-4 sm:p-5 bg-white relative">
           <div className="flex items-center gap-2 mb-3">
             <User className="w-4 h-4 text-blue-600" />
-            <h2 className="text-sm font-semibold text-gray-900">About</h2>
+            <h2 className="text-sm font-semibold text-gray-900">Subject</h2>
           </div>
           <div className="flex items-start gap-4">
             <div className="w-11 h-11 bg-gray-100 rounded-full border border-gray-200 flex items-center justify-center shrink-0">
@@ -683,7 +683,7 @@ export default function DemoPage() {
         <div className="border border-gray-200 rounded-2xl p-4 sm:p-5 bg-white relative">
           <div className="flex items-center gap-2 mb-3">
             <User className="w-4 h-4 text-green-600" />
-            <h2 className="text-sm font-semibold text-gray-900">Written by</h2>
+            <h2 className="text-sm font-semibold text-gray-900">Contributor</h2>
           </div>
           <div className="flex items-start gap-4">
             <div className="w-11 h-11 bg-gray-100 rounded-full border border-gray-200 flex items-center justify-center shrink-0">

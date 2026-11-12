@@ -4936,7 +4936,7 @@ export default function RecordDetail({
       <div className="border border-gray-200 rounded-2xl p-4 sm:p-5 bg-white relative">
           <div className="flex items-center gap-2 mb-3">
             <User className="w-4 h-4 text-blue-600" />
-            <h2 className="text-sm font-semibold text-gray-900">About</h2>
+            <h2 className="text-sm font-semibold text-gray-900">Subject</h2>
           </div>
 
           <button
@@ -4982,7 +4982,7 @@ export default function RecordDetail({
         <div className="border border-gray-200 rounded-2xl p-4 sm:p-5 bg-white relative">
           <div className="flex items-center gap-2 mb-3">
             <User className="w-4 h-4 text-green-600" />
-            <h2 className="text-sm font-semibold text-gray-900">Written by</h2>
+            <h2 className="text-sm font-semibold text-gray-900">Contributor</h2>
           </div>
 
           <button
