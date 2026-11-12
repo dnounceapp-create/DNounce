@@ -2,6 +2,8 @@
 
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
+import { QRCodeCanvas } from "qrcode.react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { Loader2, CheckCircle, ShieldCheck, User } from "lucide-react";
@@ -66,6 +68,8 @@ function ClaimProfile() {
   const [done, setDone] = useState<null | "claimed" | "review">(null);
   const [examples, setExamples] = useState<DemoRow[]>([]);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [qrOpen, setQrOpen] = useState(false);
+  const [qrCopied, setQrCopied] = useState(false);
   const [exSort, setExSort] = useState("Newest");
   function toggleOpen(slug: string) {
     setExpanded((cur) => {
@@ -160,6 +164,11 @@ function ClaimProfile() {
 
   const back = `/claim?code=${code}`;
   const name = preview ? `${preview.first_name} ${preview.last_name}` : "";
+  // Demo bio: "Just a Electrician in McHenry!" -> grammar-aware article, city only
+  const tradeWord = (preview?.trade || "pro").trim();
+  const city = (preview?.neighborhood || "").split(",")[0].trim();
+  const demoBio = `Just ${/^[aeiou]/i.test(tradeWord) ? "an" : "a"} ${tradeWord.toLowerCase()} in ${city || "town"}!`;
+  const pageUrl = `https://www.dnounce.com/claim?code=${code}`;
   // Example totals that match the example records shown below
   const shownExamples = examples
     .filter((r) => !exStage || (exStage === "voting") === ((r.debate_posts ?? []).length > 0))
@@ -293,7 +302,8 @@ function ClaimProfile() {
           {/* Same layout as the public profile page */}
           <div className="border rounded-2xl bg-white p-3 sm:p-6">
             <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
-              <div className="grid grid-cols-[96px_1fr] sm:grid-cols-[112px_1fr] gap-x-4 items-start lg:min-w-[300px]">
+              <div className="lg:min-w-[300px]">
+              <div className="grid grid-cols-[96px_1fr] sm:grid-cols-[112px_1fr] gap-x-4 items-start">
                 <div className="w-24 h-24 sm:w-28 sm:h-28 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
                   <User className="h-10 w-10 text-gray-600" />
                 </div>
@@ -308,6 +318,35 @@ function ClaimProfile() {
                     <span>📍</span> {preview.neighborhood}
                   </p>
                 </div>
+              </div>
+
+              {/* Demo bio, like the one people write on their profile */}
+              <p className="text-sm text-gray-600 mt-3 leading-relaxed">
+                {demoBio} <span className="text-[11px] text-gray-400">(demo bio)</span>
+              </p>
+
+              {/* Profile ID + QR row, like a real profile. The QR opens this same page. */}
+              <div className="mt-3 flex items-center gap-3 w-full">
+                <div className="flex items-center gap-2 text-xs text-gray-600 min-w-0">
+                  <span className="font-semibold text-gray-800">Profile ID:</span>
+                  <span className="font-mono text-gray-400">available once claimed</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setQrOpen(true)}
+                  className="ml-auto inline-flex items-center justify-center rounded-lg border bg-white p-2 hover:bg-gray-50"
+                  title="Show QR code"
+                >
+                  <div className="relative">
+                    <QRCodeCanvas value={pageUrl} size={36} level="H" includeMargin={true} />
+                    <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                      <div className="rounded bg-white p-px">
+                        <Image src="/logo.png" alt="DNounce" width={12} height={12} className="scale-150" priority unoptimized />
+                      </div>
+                    </div>
+                  </div>
+                </button>
+              </div>
               </div>
               <div>
                 <SubjectStats score={examples.length > 0 ? 68 : null} note={examples.length > 0 ? "Demo number" : undefined} />
@@ -405,6 +444,39 @@ function ClaimProfile() {
             ) : (
               <p className="text-center text-sm text-gray-500 pb-2">No records yet. Once your profile is live, share your link and clients can write about their experience with you.</p>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* QR modal: scanning it opens this same claim page */}
+      {qrOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setQrOpen(false)}>
+          <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <div className="font-semibold text-gray-900">QR Code</div>
+              <button type="button" onClick={() => setQrOpen(false)} className="rounded-full border p-1.5 text-gray-600 hover:bg-gray-100" title="Close">✕</button>
+            </div>
+            <div className="relative flex items-center justify-center rounded-xl border bg-white p-6">
+              <QRCodeCanvas value={pageUrl} size={240} level="H" includeMargin={true} />
+              <div className="absolute flex items-center justify-center">
+                <div className="relative w-[92px] h-[92px] rounded-md bg-white overflow-hidden ring-1 ring-gray-200">
+                  <Image src="/logo.png" alt="DNounce" fill priority unoptimized className="object-cover scale-[1.25]" />
+                </div>
+              </div>
+            </div>
+            <div className="mt-4 text-xs text-gray-600 break-all">{pageUrl}</div>
+            <p className="mt-2 text-xs text-gray-500">Once you claim your profile, this code opens your public profile so clients can find you and write a record.</p>
+            <div className="mt-3 flex justify-end">
+              <button
+                type="button"
+                onClick={async () => {
+                  try { await navigator.clipboard.writeText(pageUrl); setQrCopied(true); setTimeout(() => setQrCopied(false), 1500); } catch {}
+                }}
+                className="rounded-lg border px-3 py-1.5 text-xs hover:bg-gray-50"
+              >
+                {qrCopied ? "Copied" : "Copy link"}
+              </button>
+            </div>
           </div>
         </div>
       )}
