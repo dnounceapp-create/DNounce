@@ -23,6 +23,7 @@ import Image from "next/image";
 import { useRouter, useParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import ScrollToVoter from "@/components/record/ScrollToVoter";
+import { safeClaimBack, swapName } from "@/lib/demoPersonalize";
 
 /* ─── Types ─────────────────────────────────────────── */
 
@@ -331,10 +332,41 @@ export default function DemoSlugPage() {
       .eq("slug", slug)
       .single()
       .then(({ data }) => {
-        if (data) setDemoData(data);
+        if (data) {
+          // Opened from a claim page (/claim?code=...): show this example with the person's name,
+          // and send "back" to their claim page.
+          let d: any = data;
+          try {
+            const q = new URLSearchParams(window.location.search);
+            const as = (q.get("as") || "").trim().slice(0, 80);
+            const back = safeClaimBack(q.get("back"));
+            if (as && back) {
+              const demoName = data.subject_name as string;
+              const swap = (t: any) => (typeof t === "string" ? swapName(t, demoName, as) : t);
+              d = {
+                ...data,
+                subject_name: as,
+                subject_organization: (q.get("org") || "").trim().slice(0, 120) || "Independent",
+                subject_location: (q.get("loc") || "").trim().slice(0, 80) || data.subject_location,
+                subject_demo_url: back,
+                category: (q.get("cat") || "").trim().slice(0, 60) || data.category,
+                description: swap(data.description),
+                debate_posts: (data.debate_posts ?? []).map((p: any) => ({
+                  ...p,
+                  name: p.role === "subject" ? as : p.name,
+                  body: swap(p.body),
+                })),
+                seed_votes: (data.seed_votes ?? []).map((v: any) => ({ ...v, explanation: swap(v.explanation) })),
+              };
+              setClaimBack(back);
+            }
+          } catch {}
+          setDemoData(d);
+        }
         setDemoLoading(false);
       });
   }, [slug]);
+  const [claimBack, setClaimBack] = useState<string | null>(null);
 
   // Derived data from demoData
   const RECORD = demoData ? {
@@ -661,6 +693,13 @@ export default function DemoSlugPage() {
       {/* ── Page content ── */}
       <div className="mx-auto w-full max-w-3xl overflow-x-hidden px-3 pt-24 pb-4 sm:px-4 space-y-3 sm:space-y-4">
 
+      {claimBack && (
+        <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3">
+          <Link href={claimBack} className="text-sm font-semibold text-blue-700 hover:underline">← Back to your profile</Link>
+          <span className="text-xs text-gray-600">Example record — not real. This is how a record on your profile looks.</span>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center gap-2 mb-1 px-1">
         <FileText className="w-4 h-4 text-gray-400" />
@@ -742,7 +781,7 @@ export default function DemoSlugPage() {
 
         {/* Lifecycle chips */}
         <div className="pt-2">
-          <LifecycleChips current={6} />
+          <LifecycleChips current={DEBATE_POSTS.length > 0 ? 6 : 3} />
         </div>
 
         {/* Stars */}
@@ -782,10 +821,11 @@ export default function DemoSlugPage() {
         </div>
 
         {/* Attachments */}
+        {DEMO_ATTACHMENTS.length > 0 && (
         <div className="pt-4 border-t border-gray-200">
           <div className="flex items-center justify-between gap-2 mb-3">
             <div className="text-sm font-semibold text-gray-900">Attachments</div>
-            <div className="text-xs text-gray-500">2 file(s)</div>
+            <div className="text-xs text-gray-500">{DEMO_ATTACHMENTS.length} file(s)</div>
           </div>
           <div className="space-y-2">
             {DEMO_ATTACHMENTS.map((a: any) => (
@@ -821,8 +861,12 @@ export default function DemoSlugPage() {
             ))}
           </div>
         </div>
+        )}
       </div>
 
+      {/* Debate + vote only when the example record was challenged */}
+      {DEBATE_POSTS.length > 0 && (
+      <>
       {/* Debate section */}
       <section className="border border-gray-200 rounded-2xl p-4 sm:p-5 bg-white">
         <div className="flex items-start justify-between gap-3">
@@ -996,15 +1040,18 @@ export default function DemoSlugPage() {
         </div>
       </section>
 
+      </>
+      )}
+
       {/* CTA banner */}
       <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-4 sm:p-5 text-center">
         <div className="text-sm font-semibold text-indigo-900 mb-1">Take control of your reputation.</div>
         <div className="text-xs text-indigo-700 mb-3">Invite people to share their experience, and respond when you want to add context.</div>
         <button
-          onClick={() => router.push("/loginsignup?from=demo")}
+          onClick={() => router.push(claimBack ?? "/loginsignup?from=demo")}
           className="inline-flex items-center gap-2 rounded-full bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 transition"
         >
-          Get started
+          {claimBack ? "Claim my profile" : "Get started"}
         </button>
       </div>
 

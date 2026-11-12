@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { Loader2, CheckCircle, ShieldCheck, User } from "lucide-react";
 import RecordOutcomeSummary from "@/components/profile/RecordOutcomeSummary";
+import { demoLink, swapName } from "@/lib/demoPersonalize";
 
 /**
  * dnounce.com/claim?code=123456
@@ -14,6 +15,17 @@ import RecordOutcomeSummary from "@/components/profile/RecordOutcomeSummary";
 
 // Also read in /user-setup, so new sign-ups come back here after setup.
 const PROFILE_CODE_KEY = "dnounce_profile_code";
+
+type DemoRow = {
+  slug: string;
+  subject_name: string;
+  category: string | null;
+  rating: number;
+  description: string;
+  created_at_display: string | null;
+  debate_posts: any[] | null;
+  seed_votes: { choice?: string }[] | null;
+};
 
 type Preview = {
   first_name: string;
@@ -49,6 +61,25 @@ function ClaimProfile() {
   const [session, setSession] = useState<"unknown" | "out" | "needs_setup" | "in">("unknown");
   const [claiming, setClaiming] = useState(false);
   const [done, setDone] = useState<null | "claimed" | "review">(null);
+  const [examples, setExamples] = useState<DemoRow[]>([]);
+  const [expanded, setExpanded] = useState<string | null>(null);
+
+  // Two example records (one great, one bad) from the public demo pages
+  useEffect(() => {
+    (async () => {
+      const cols = "slug, subject_name, category, rating, description, created_at_display, debate_posts, seed_votes";
+      // The two made for this page; any other demo pages as a fallback.
+      const { data: made } = await supabase.from("demo_records").select(cols).in("slug", ["claim-example-great", "claim-example-bad"]);
+      const { data: all } = (made ?? []).length === 2 ? { data: made } : await supabase.from("demo_records").select(cols);
+      const rows = ((all ?? []) as DemoRow[]).filter((r) => r.slug && r.description && typeof r.rating === "number");
+      if (rows.length === 0) return;
+      const great = [...rows].sort((a, b) => b.rating - a.rating || (a.debate_posts?.length ?? 0) - (b.debate_posts?.length ?? 0))[0];
+      const bad = [...rows]
+        .filter((r) => r.slug !== great.slug)
+        .sort((a, b) => a.rating - b.rating || (b.debate_posts?.length ?? 0) - (a.debate_posts?.length ?? 0))[0];
+      setExamples([great, bad].filter(Boolean) as DemoRow[]);
+    })();
+  }, []);
 
   // Who's here?
   useEffect(() => {
@@ -117,6 +148,12 @@ function ClaimProfile() {
 
   const back = `/claim?code=${code}`;
   const name = preview ? `${preview.first_name} ${preview.last_name}` : "";
+  // Example totals that match the example records shown below
+  const exampleSummary = examples.map((r) => ({
+    status: (r.debate_posts ?? []).length > 0 ? "voting" : "published",
+    final_outcome: null,
+  }) as any);
+  const persona = { name, org: preview?.company_name, loc: preview?.neighborhood, cat: preview?.trade };
 
   return (
     <main className="min-h-screen bg-gray-50 px-4 py-10 sm:py-16">
@@ -200,7 +237,12 @@ function ClaimProfile() {
             <div>
               <p className="text-sm font-semibold text-blue-700">Hi {preview.first_name}, this is your DNounce profile</p>
               <p className="mt-1 text-sm text-gray-700">Claim it free to make it yours. Nobody can see it until you claim it.</p>
-              <p className="mt-1 text-xs text-gray-500">Sign up or sign in with the email we contacted you at. Once you verify it, the profile is yours.</p>
+              <ul className="mt-2 space-y-1 text-sm text-gray-700">
+                <li>• One link to share with clients, so new customers see your track record.</li>
+                <li>• Clients can write records about their experience with you.</li>
+                <li>• If you disagree with a record, you can challenge it and tell your side.</li>
+              </ul>
+              <p className="mt-2 text-xs text-gray-500">Sign up or sign in with the email we contacted you at. Once you verify it, the profile is yours.</p>
               {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
             </div>
             <div className="flex flex-col items-stretch sm:items-end gap-2 shrink-0">
@@ -253,7 +295,10 @@ function ClaimProfile() {
                   </p>
                 </div>
               </div>
-              <RecordOutcomeSummary records={[]} />
+              <div>
+                <RecordOutcomeSummary records={exampleSummary} />
+                {examples.length > 0 && <p className="mt-1 text-[11px] text-gray-400 text-center lg:text-right">Example numbers</p>}
+              </div>
             </div>
 
             <div className="mt-6 rounded-2xl border bg-gray-50 p-4">
@@ -269,14 +314,63 @@ function ClaimProfile() {
               <span className="flex-1 text-center px-4 py-2 text-gray-400">Social media</span>
             </div>
             <div className="mb-6 text-center">
-              <div className="text-2xl font-bold text-gray-900">0</div>
+              <div className="text-2xl font-bold text-gray-900">{examples.length}</div>
               <div className="text-sm text-gray-500">Total Records</div>
             </div>
-            <ul className="mx-auto max-w-xl space-y-2 text-sm text-gray-700 pb-2">
-              <li>• One link to share with clients, so new customers see your track record.</li>
-              <li>• Clients can write records about their experience with you.</li>
-              <li>• If you disagree with a record, you can challenge it and tell your side.</li>
-            </ul>
+
+            {examples.length > 0 ? (
+              <div className="space-y-4">
+                <p className="text-xs text-gray-500">
+                  These are <strong>examples</strong> so you can see how records look on your profile. They aren&apos;t real and won&apos;t be on it.
+                </p>
+                {examples.map((r) => {
+                  const open = expanded === r.slug;
+                  const href = demoLink(r.slug, persona, back);
+                  const challenged = (r.debate_posts ?? []).length > 0;
+                  return (
+                    <div key={r.slug} className="w-full rounded-2xl border bg-white p-4 hover:shadow-sm hover:border-gray-300 transition">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="text-sm font-semibold text-gray-900">
+                          {r.rating >= 6 ? "A great experience" : "A bad experience"}
+                          {" "}<span className="text-xs font-medium text-gray-500">★ {r.rating}/10</span>
+                        </div>
+                        <span className="text-[11px] font-semibold uppercase tracking-wide rounded-full bg-amber-100 text-amber-800 px-2 py-0.5">Example</span>
+                      </div>
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        {(preview.trade || r.category) && <span className="text-xs text-gray-700">{preview.trade || r.category}</span>}
+                        {challenged && <span className="text-xs rounded-full border bg-gray-50 px-2 py-1 text-gray-700">Challenged · Community vote</span>}
+                        {r.created_at_display && <span className="text-xs text-gray-500">📅 {r.created_at_display}</span>}
+                      </div>
+                      <div className={`mt-3 text-sm text-gray-700 whitespace-pre-wrap ${open ? "" : "line-clamp-3"}`}>
+                        {swapName(r.description, r.subject_name, name)}
+                      </div>
+                      {open && challenged && (
+                        <div className="mt-4 rounded-xl border bg-gray-50 p-3 space-y-3">
+                          <div className="text-xs font-semibold text-gray-700">Debate</div>
+                          {(r.debate_posts ?? []).slice(0, 3).map((p: any, i: number) => (
+                            <div key={i} className="text-sm">
+                              <span className="font-semibold text-gray-900">{p.role === "subject" ? `${name} (Subject)` : `${p.name} (Contributor)`}:</span>{" "}
+                              <span className="text-gray-700">{swapName(p.body, r.subject_name, name)}</span>
+                            </div>
+                          ))}
+                          {(r.seed_votes ?? []).length > 0 && (
+                            <div className="text-xs text-gray-600">{(r.seed_votes ?? []).length} community members have voted so far. Open the record to vote yourself.</div>
+                          )}
+                        </div>
+                      )}
+                      <div className="mt-4 flex flex-wrap items-center gap-2">
+                        <Link href={href} className="rounded-xl border px-3 py-1.5 text-xs hover:bg-gray-50">View record</Link>
+                        <button type="button" onClick={() => setExpanded(open ? null : r.slug)} className="rounded-xl border px-3 py-1.5 text-xs hover:bg-gray-50">
+                          {open ? "Collapse" : "Expand"}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-center text-sm text-gray-500 pb-2">No records yet. Once your profile is live, share your link and clients can write about their experience with you.</p>
+            )}
           </div>
         </div>
       )}
