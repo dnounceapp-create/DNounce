@@ -803,10 +803,12 @@ export default function DemoRecordView({
           </div>
         </div>
 
-        {/* Lifecycle chips */}
-        <div className="pt-2">
-          <LifecycleChips current={DEBATE_POSTS.length > 0 ? 6 : 3} />
-        </div>
+        {/* Lifecycle chips: like the real record page, only once a record is challenged */}
+        {DEBATE_POSTS.length > 0 && (
+          <div className="pt-2">
+            <LifecycleChips current={6} />
+          </div>
+        )}
 
         {/* Stars */}
         <div className="flex items-center gap-1.5 text-yellow-500">
