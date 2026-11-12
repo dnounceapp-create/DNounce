@@ -10,14 +10,12 @@ DECLARE
   base public.demo_records%ROWTYPE;
   id_type text;
   new_id jsonb;
-  alias jsonb;
   s text;
 BEGIN
   SELECT * INTO base FROM public.demo_records WHERE slug NOT LIKE 'claim-example-%' ORDER BY slug LIMIT 1;
   IF NOT FOUND THEN RAISE EXCEPTION 'No demo pages found to copy from; nothing changed.'; END IF;
   SELECT data_type INTO id_type FROM information_schema.columns
    WHERE table_schema = 'public' AND table_name = 'demo_records' AND column_name = 'id';
-  alias := coalesce(to_jsonb(base) -> 'seed_votes', '[]'::jsonb);
 
   -- 1) Make sure both rows exist
   FOREACH s IN ARRAY ARRAY['claim-example-great', 'claim-example-bad'] LOOP
@@ -81,13 +79,13 @@ BEGIN
       'ex-p5', jsonb_build_object('agree', 12, 'disagree', 5, 'mine', null)
     ),
     seed_votes = jsonb_build_array(
-      jsonb_build_object('id', 'ex-v1', 'alias', coalesce(alias->0->>'alias', 'Community member #7314'), 'choice', 'side_with_subject', 'created_at', '2026-09-23T13:00:00Z', 'agreeCount', 12, 'disagreeCount', 2,
+      jsonb_build_object('id', 'ex-v1', 'alias', 'jw@dnounce_731', 'choice', 'side_with_subject', 'created_at', '2026-09-23T13:00:00Z', 'agreeCount', 12, 'disagreeCount', 2,
         'explanation', 'There''s a text with the new quote sent before the extra work started. That counts as agreeing to it.'),
-      jsonb_build_object('id', 'ex-v2', 'alias', coalesce(alias->1->>'alias', 'Community member #2056'), 'choice', 'side_with_contributor', 'created_at', '2026-09-23T16:20:00Z', 'agreeCount', 7, 'disagreeCount', 5,
+      jsonb_build_object('id', 'ex-v2', 'alias', 'mara@dnounce_205', 'choice', 'side_with_contributor', 'created_at', '2026-09-23T16:20:00Z', 'agreeCount', 7, 'disagreeCount', 5,
         'explanation', 'Almost double for small extra work is a lot. A bigger change like that should have been signed off in writing.'),
-      jsonb_build_object('id', 'ex-v3', 'alias', coalesce(alias->2->>'alias', 'Community member #9481'), 'choice', 'side_with_subject', 'created_at', '2026-09-24T10:45:00Z', 'agreeCount', 9, 'disagreeCount', 1,
+      jsonb_build_object('id', 'ex-v3', 'alias', 'dk@dnounce_948', 'choice', 'side_with_subject', 'created_at', '2026-09-24T10:45:00Z', 'agreeCount', 9, 'disagreeCount', 1,
         'explanation', 'Both sides agree extra work was asked for, and the supplier notice explains most of the delay.'),
-      jsonb_build_object('id', 'ex-v4', 'alias', coalesce(alias->3->>'alias', 'Community member #3627'), 'choice', 'side_with_contributor', 'created_at', '2026-09-24T18:30:00Z', 'agreeCount', 6, 'disagreeCount', 4,
+      jsonb_build_object('id', 'ex-v4', 'alias', 'sol@dnounce_362', 'choice', 'side_with_contributor', 'created_at', '2026-09-24T18:30:00Z', 'agreeCount', 6, 'disagreeCount', 4,
         'explanation', 'Three weeks late with calls going unanswered is a real problem, whatever the reason.')
     )
   WHERE slug = 'claim-example-bad';
