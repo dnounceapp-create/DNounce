@@ -25,7 +25,7 @@ export const metadata: Metadata = {
   },
 
   title: {
-    default: "DNounce | Community-Moderated Reviews for Real Experiences",
+    default: "DNounce | Reviews people, not businesses.",
     template: "%s | DNounce",
   },
 
@@ -56,7 +56,7 @@ export const metadata: Metadata = {
     type: "website",
     url: "https://www.dnounce.com",
     siteName: "DNounce",
-    title: "DNounce | Reviews that tell the whole story.",
+    title: "DNounce | Reviews people, not businesses.",
     description:
       "DNounce is a platform for real reviews and service provider feedback. Share your experience, add your perspective, and see what others think before deciding who to trust.",
     images: [
@@ -64,7 +64,7 @@ export const metadata: Metadata = {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "DNounce — Community-moderated reviews",
+        alt: "DNounce: Reviews people, not businesses.",
       },
     ],
   },
@@ -73,7 +73,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     site: "@dnounce",
     creator: "@dnounce",
-    title: "DNounce | Reviews that tell the whole story.",
+    title: "DNounce | Reviews people, not businesses.",
     description:
       "DNounce is a platform for real reviews and service provider feedback. Share your experience, add your perspective, and see what others think before deciding who to trust.",
     images: ["/og-image.png"],
